@@ -1,0 +1,603 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PIKOM Golf Registration</title>
+    <link rel="stylesheet" href="{% static 'register/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'register/css/style.css' %}">
+    <script src="{% static 'register/js/jquery.min.js' %}"></script>
+
+   <!-- jQuery (must come first)
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> -->
+   
+</head>
+<body>
+  
+  <div class="container-xl py-5">
+    <div class="row mb-4">
+      <div class="col-12 p-0 overflow-hidden rounded mb-4 shadow-lg">
+        <img src="{% static 'register/images/banner2.png' %}" class="img-fluid" alt="">
+      </div>
+
+      <div class="col-12 mt-5">
+        <div class="alert alert-white" role="alert">
+          <p class="golf-time fs-4 fw-bold">
+            GOLF TIME: 12.30PM - 5.30PM | GOLF DINNER: 6.30PM - 9.30PM
+            <p class="text-danger"><strong>Registration Closing Date:</strong> 24 June 2025</p>
+          </p>
+          
+          <ul>
+            <li>For registration made of one (1) flight, all four (4) will remain on the same flight.If not, please fill up separate forms.
+            </li>
+            <li>Selection of flights will be arranged by PIKOM. The Flight Schedule will be sent out before play.</li>
+            <li>Substitutions are accepted upon prior notice of three (3) working days to the event.</li>
+            <li>PIKOM reserves the right to change or cancel this event as it deems necessary.</li>
+          </ul>
+
+          
+        </div>
+      </div>
+
+    </div>
+    
+    <form action="#" class="row">
+      <div class="col-12">
+        <h3 style="text-align:center; margin-bottom: 15px;">Select Package</h3>
+        <div class="d-flex gap-2 flex-column flex-xl-row playerchoice">
+          <label for="flight4" class="form-label flex-grow-1 d-flex p-3 flex-column align-items-center border rounded-2" >
+            <input type="radio" name="flight" id="flight4" value="4" checked>
+            <span class="flight-number">Flight of 4 Golfers</span>
+            <span class="flight-price">RM 4,000</span>
+          </label>
+          <label for="flight2" class="form-label flex-grow-1 d-flex p-3 flex-column align-items-center border rounded-2">
+            <input type="radio" name="flight" id="flight2" value="2" >
+            <span class="flight-number">2 Golfers</span>
+            <span class="flight-price">RM 2,200</span>
+          </label>
+        </div>
+      </div>
+      <div class="col-12 mt-5">
+        <div class="row g-4">
+
+            <div id="playerCardsContainer" class="row g-4 mt-4"></div>
+
+          <!-- <div class="col-xl-6 col-lg-12">
+            <div class="card card-body player-info-card  shadow">
+              <div class="row">
+                <div class="col-12">
+                  <h3 class="mb-4">Player 1</h3>
+                </div>
+
+                <div class="col-12">
+                  <div class="row">
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="title1" class="form-label">Title</label>
+                      <select name="title1" id="title1" class="form-select">
+                        <option value="" selected disabled>Select Title</option>
+                        <option value="Mr">Mr</option>
+                        <option value="Ms">Ms</option>
+                        <option value="Mrs">Mrs</option>
+                        <option value="Dr">Dr</option>
+                        <option value="Prof">Prof</option>
+                        <option value="Sir">Sir</option>
+                        <option value="Madam">Madam</option>
+                      </select>
+                    </div>
+                  
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="name1" class="form-label">Name</label>
+                      <input type="text" class="form-control" id="name1" name="name1" placeholder="Name">
+                    </div>
+
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="email1" class="form-label">Email</label>
+                      <input type="email" class="form-control" id="email1" name="email1" placeholder="Email">
+                    </div>
+
+                    
+
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="mobile1" class="form-label">Mobile Number</label>
+                      <input type="text" class="form-control" id="mobile1" name="mobile1" placeholder="Mobile Number">
+                    </div>
+
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="designation1" class="form-label">Designation</label>
+                      <input type="text" class="form-control" id="designation1" name="designation1" placeholder="Designation">
+                    </div>
+
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="organization1" class="form-label">Organization</label>
+                      <input type="text" class="form-control" id="organization1" name="organization1" placeholder="Organization">
+                    </div>
+
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="handicap1" class="form-label">Handicap</label>
+                      <input type="text" class="form-control" id="handicap1" name="handicap1" placeholder="Handicap">
+                    </div>
+
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="tshirt1" class="form-label">T-Shirt Size</label>
+                      <select name="tshirt1" id="tshirt1" class="form-select">
+                        <option value="" selected disabled>Select Size</option>
+                        <option value="XS">XS</option>
+                        <option value="S">S</option>
+                        <option value="M">M</option>
+                        <option value="L">L</option>
+                        <option value="XL">XL</option>
+                        <option value="XXL">XXL</option>
+                      </select>
+                    </div>
+
+                    <div class="d-flex align-items-center">
+                      <button type="button" class="btn btn-sm rounded-circle border flex-shrink-0 btn-icon" title="Size Chart">i</button>
+                      <span class="size-note small text-muted ms-2">See our size chart here.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-xl-6 col-lg-12">
+            <div class="card card-body player-info-card shadow">
+              <div class="row">
+                <div class="col-12">
+                  <h3 class="mb-4">Player 2</h3>
+                </div>
+
+                <div class="col-12">
+                  <div class="row">
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="title2" class="form-labe2">Title</label>
+                      <select name="title2" id="title2" class="form-select">
+                        <option value="" selected disabled>Select Title</option>
+                        <option value="Mr">Mr</option>
+                        <option value="Ms">Ms</option>
+                        <option value="Mrs">Mrs</option>
+                        <option value="Dr">Dr</option>
+                        <option value="Prof">Prof</option>
+                        <option value="Sir">Sir</option>
+                        <option value="Madam">Madam</option>
+                      </select>
+                    </div>
+                  
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="name2" class="form-label">Name</label>
+                      <input type="text" class="form-control" id="name2" name="name2" placeholder="Name">
+                    </div>
+
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="email2" class="form-label">Email</label>
+                      <input type="email" class="form-control" id="email2" name="email2" placeholder="Email">
+                    </div>
+
+                    
+
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="mobile2" class="form-label">Mobile Number</label>
+                      <input type="text" class="form-control" id="mobile2" name="mobile2" placeholder="Mobile Number">
+                    </div>
+
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="designation2" class="form-label">Designation</label>
+                      <input type="text" class="form-control" id="designation2" name="designation2" placeholder="Designation">
+                    </div>
+
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="organization2" class="form-label">Organization</label>
+                      <input type="text" class="form-control" id="organization2" name="organization2" placeholder="Organization">
+                    </div>
+
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="handicap2" class="form-label">Handicap</label>
+                      <input type="text" class="form-control" id="handicap2" name="handicap2" placeholder="Handicap">
+                    </div>
+
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="tshirt2" class="form-label">T-Shirt Size</label>
+                      <select name="tshirt2" id="tshirt2" class="form-select">
+                        <option value="" selected disabled>Select Size</option>
+                        <option value="XS">XS</option>
+                        <option value="S">S</option>
+                        <option value="M">M</option>
+                        <option value="L">L</option>
+                        <option value="XL">XL</option>
+                        <option value="XXL">XXL</option>
+                      </select>
+                    </div>
+
+                    <div class="d-flex align-items-center">
+                      <button type="button" class="btn btn-sm rounded-circle border flex-shrink-0 btn-icon" title="Size Chart">i</button>
+                      <span class="size-note small text-muted ms-2">See our size chart here.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-xl-6 col-lg-12">
+            <div class="card card-body player-info-card shadow">
+              <div class="row">
+                <div class="col-12">
+                  <h3 class="mb-4">Player 3</h3>
+                </div>
+
+                <div class="col-12">
+                  <div class="row">
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="title3" class="form-label">Title</label>
+                      <select name="title3" id="title3" class="form-select">
+                        <option value="" selected disabled>Select Title</option>
+                        <option value="Mr">Mr</option>
+                        <option value="Ms">Ms</option>
+                        <option value="Mrs">Mrs</option>
+                        <option value="Dr">Dr</option>
+                        <option value="Prof">Prof</option>
+                        <option value="Sir">Sir</option>
+                        <option value="Madam">Madam</option>
+                      </select>
+                    </div>
+                  
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="name3" class="form-label">Name</label>
+                      <input type="text" class="form-control" id="name3" name="name3" placeholder="Name">
+                    </div>
+
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="email3" class="form-label">Email</label>
+                      <input type="email" class="form-control" id="email3" name="email3" placeholder="Email">
+                    </div>
+
+                    
+
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="mobile3" class="form-label">Mobile Number</label>
+                      <input type="text" class="form-control" id="mobile3" name="mobile3" placeholder="Mobile Number">
+                    </div>
+
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="designation3" class="form-label">Designation</label>
+                      <input type="text" class="form-control" id="designation3" name="designation3" placeholder="Designation">
+                    </div>
+
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="organization3" class="form-label">Organization</label>
+                      <input type="text" class="form-control" id="organization3" name="organization3" placeholder="Organization">
+                    </div>
+
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="handicap3" class="form-label">Handicap</label>
+                      <input type="text" class="form-control" id="handicap3" name="handicap3" placeholder="Handicap">
+                    </div>
+
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="tshirt3" class="form-label">T-Shirt Size</label>
+                      <select name="tshirt3" id="tshirt3" class="form-select">
+                        <option value="" selected disabled>Select Size</option>
+                        <option value="XS">XS</option>
+                        <option value="S">S</option>
+                        <option value="M">M</option>
+                        <option value="L">L</option>
+                        <option value="XL">XL</option>
+                        <option value="XXL">XXL</option>
+                      </select>
+                    </div>
+
+                    <div class="d-flex align-items-center">
+                      <button type="button" class="btn btn-sm rounded-circle border flex-shrink-0 btn-icon" title="Size Chart">i</button>
+                      <span class="size-note small text-muted ms-2">See our size chart here.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-xl-6 col-lg-12">
+            <div class="card card-body player-info-card shadow">
+              <div class="row">
+                <div class="col-12">
+                  <h3 class="mb-4">Player 4</h3>
+                </div>
+
+                <div class="col-12">
+                  <div class="row">
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="title4" class="form-label">Title</label>
+                      <select name="title4" id="title4" class="form-select">
+                        <option value="" selected disabled>Select Title</option>
+                        <option value="Mr">Mr</option>
+                        <option value="Ms">Ms</option>
+                        <option value="Mrs">Mrs</option>
+                        <option value="Dr">Dr</option>
+                        <option value="Prof">Prof</option>
+                        <option value="Sir">Sir</option>
+                        <option value="Madam">Madam</option>
+                      </select>
+                    </div>
+                  
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="name4" class="form-label">Name</label>
+                      <input type="text" class="form-control" id="name4" name="name4" placeholder="Name">
+                    </div>
+
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="email4" class="form-label">Email</label>
+                      <input type="email" class="form-control" id="email4" name="email4" placeholder="Email">
+                    </div>
+
+                    
+
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="mobile4" class="form-label">Mobile Number</label>
+                      <input type="text" class="form-control" id="mobile4" name="mobile4" placeholder="Mobile Number">
+                    </div>
+
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="designation4" class="form-label">Designation</label>
+                      <input type="text" class="form-control" id="designation4" name="designation4" placeholder="Designation">
+                    </div>
+
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="organization4" class="form-label">Organization</label>
+                      <input type="text" class="form-control" id="organization4" name="organization4" placeholder="Organization">
+                    </div>
+
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="handicap4" class="form-label">Handicap</label>
+                      <input type="text" class="form-control" id="handicap4" name="handicap4" placeholder="Handicap">
+                    </div>
+
+                    <div class="col-xl-6 col-lg-12 mb-3">
+                      <label for="tshirt4" class="form-label">T-Shirt Size</label>
+                      <select name="tshirt4" id="tshirt4" class="form-select">
+                        <option value="" selected disabled>Select Size</option>
+                        <option value="XS">XS</option>
+                        <option value="S">S</option>
+                        <option value="M">M</option>
+                        <option value="L">L</option>
+                        <option value="XL">XL</option>
+                        <option value="XXL">XXL</option>
+                      </select>
+                    </div>
+
+                    <div class="d-flex align-items-center">
+                      <button type="button" class="btn btn-sm rounded-circle border flex-shrink-0 btn-icon" title="Size Chart">i</button>
+                      <span class="size-note small text-muted ms-2">See our size chart here.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div> -->
+          
+        </div>
+
+      </div>
+      <div class="co-12 mt-5 rounded shadow bg-white p-3">
+        <div class="row">
+          <div class="col-xl-6 text-start">
+            <input type="checkbox" id="terms" name="terms" value="yes">   
+            <label for="">I Agree with Terms & Conditions.</label>
+            
+          </div>
+          <div class="col-xl-6 col-lg-12 text-end">
+             <button type="button" id="submitBtn" class="btn btn-lg custom-btn">
+                <span id="submitBtnText">Register</span>
+                <span id="submitBtnLoader" class="d-none spinner-border spinner-border-sm"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </form>
+
+  </div> 
+
+      
+<script>
+    $(document).ready(function() {
+    // Initially disable the button
+        $('#submitBtn').prop('disabled', true);
+
+        $('#terms').change(function() {
+            if ($(this).is(':checked')) {
+                $('#submitBtn').prop('disabled', false);
+            } else {
+                $('#submitBtn').prop('disabled', true);
+            }
+        }); 
+    });
+
+    
+    $(document).on('input', 'input[id^="handicap"]', function() {
+        this.value = this.value.replace(/[^0-9]/g, '');
+        });
+
+
+    const playerCardTemplate = (index) => `
+    <div class="col-xl-6 col-lg-12">
+      <div class="card card-body player-info-card shadow">
+        <div class="row">
+          <div class="col-12">
+            <h3 class="mb-4">Player ${index}</h3>
+          </div>
+          <div class="col-12">
+            <div class="row">
+              <div class="col-xl-6 col-lg-12 mb-3">
+                <label for="title${index}" class="form-label">Title</label>
+                <select name="title${index}" id="title${index}" class="form-select">
+                  <option value="" selected disabled>Select Title</option>
+                  <option value="Mr">Mr</option>
+                  <option value="Ms">Ms</option>
+                  <option value="Mrs">Mrs</option>
+                  <option value="Dr">Dr</option>
+                  <option value="Prof">Prof</option>
+                  <option value="Sir">Sir</option>
+                  <option value="Madam">Madam</option>
+                </select>
+              </div>
+              <div class="col-xl-6 col-lg-12 mb-3">
+                <label for="name${index}" class="form-label"><b>Name <span class="text-danger">*</span></b></label>
+                <input type="text" class="form-control" id="name${index}" name="name${index}" placeholder="Name">
+              </div>
+              <div class="col-xl-6 col-lg-12 mb-3">
+                <label for="email${index}" class="form-label"><b>Email <span class="text-danger">*</span></b></label>
+                <input type="email" class="form-control" id="email${index}" name="email${index}" placeholder="Email">
+              </div>
+              <div class="col-xl-6 col-lg-12 mb-3">
+                <label for="mobile${index}" class="form-label"><b>Mobile Number <span class="text-danger">*</span></b></label>
+                <input type="text" class="form-control" id="mobile${index}" name="mobile${index}" placeholder="Mobile Number">
+              </div>
+              <div class="col-xl-6 col-lg-12 mb-3">
+                <label for="designation${index}" class="form-label">Designation</label>
+                <input type="text" class="form-control" id="designation${index}" name="designation${index}" placeholder="Designation">
+              </div>
+              <div class="col-xl-6 col-lg-12 mb-3">
+                <label for="organization${index}" class="form-label">Organization</label>
+                <input type="text" class="form-control" id="organization${index}" name="organization${index}" placeholder="Organization">
+              </div>
+              <div class="col-xl-6 col-lg-12 mb-3">
+                <label for="handicap${index}" class="form-label">Handicap</label>
+                <input type="number" class="form-control" id="handicap${index}" name="handicap${index}" placeholder="Handicap">
+              </div>
+              <div class="col-xl-6 col-lg-12 mb-3">
+                <label for="tshirt${index}" class="form-label"><b>T-Shirt Size <span class="text-danger">*</span></b></label>
+                <select name="tshirt${index}" id="tshirt${index}" class="form-select">
+                  <option value="" selected disabled>Select Size</option>
+                  <option value="XS">XS</option>
+                  <option value="S">S</option>
+                  <option value="M">M</option>
+                  <option value="L">L</option>
+                  <option value="XL">XL</option>
+                  <option value="XXL">XXL</option>
+                </select>
+              </div>
+              <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <button type="button" class="btn btn-sm rounded-circle border flex-shrink-0 btn-icon" title="Size Chart">i</button>
+                    <span class="size-note small text-muted ms-2">See our size chart here.</span>
+                </div>
+                <em class="text-muted small ms-3"><b><span class="text-danger">*</span></b> mandatory field</em>
+                </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+    function renderPlayerCards(count) {
+        const container = $('#playerCardsContainer');
+        container.empty(); // clear previous
+        for (let i = 1; i <= count; i++) {
+        container.append(playerCardTemplate(i));
+        }
+    }
+
+    
+    $('input[name="flight"]').on('change', function () {
+        const selectedCount = parseInt($(this).val());
+        renderPlayerCards(selectedCount);
+    });
+
+    
+    $(document).ready(function () {
+        const initialCount = $('input[name="flight"]:checked').val();
+        renderPlayerCards(parseInt(initialCount));
+    });
+
+
+    function collectPlayerData(count) {
+        const players = [];
+        for (let i = 1; i <= count; i++) {
+        players.push({
+            title: $(`#title${i}`).val(),
+            name: $(`#name${i}`).val(),
+            email: $(`#email${i}`).val(),
+            mobile: $(`#mobile${i}`).val(),
+            designation: $(`#designation${i}`).val(),
+            organization: $(`#organization${i}`).val(),
+            handicap: $(`#handicap${i}`).val(),
+            tshirt: $(`#tshirt${i}`).val(),
+        });
+        }
+        return players;
+    }
+
+    $('#submitBtn').on('click', function () {
+        toggleSaveBtnLoading(true);
+        const playerCount = parseInt($('input[name="flight"]:checked').val());
+        const players = collectPlayerData(playerCount);
+
+        if(players.some(player => !player.name || !player.email || !player.mobile || !player.tshirt)) {
+            alert('MANDATORY: Please fill in the name, email and mobile fields for each player.');
+            toggleSaveBtnLoading(false);
+            return;
+        }
+
+        $.ajax({
+            url: '/save_registration',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ players: players }),
+            headers: {
+                        'X-CSRFToken': getCSRFToken()
+                    },
+            success: function (response) {
+            if (response.success) {
+                //$('#playerCardsContainer').empty(); // clear form
+                //$('input[name="flight"][value="4"]').prop('checked', true).trigger('change'); // reset to default                
+                //$('#terms').prop('checked', false); // Uncheck the terms checkbox 
+                //$('#submitBtn').prop('disabled', true);// Disable the submit button
+
+                window.location.href = `/thankyou/${response.reg_no}/`;
+            }
+            //alert(response.message);
+            },
+            error: function () {
+            alert('An error occurred during submission.');
+            },
+            complete: function () {
+                toggleSaveBtnLoading(false);
+            }
+        });
+
+
+    });
+
+    function toggleSaveBtnLoading(isLoading) {
+        if (isLoading) {
+            $('#submitBtnText').addClass('d-none');
+            $('#submitBtnLoader').removeClass('d-none');
+        } else {
+            $('#submitBtnText').removeClass('d-none');
+            $('#submitBtnLoader').addClass('d-none');
+        }
+    }
+
+    function getCSRFToken() {
+        let name = 'csrftoken';
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            let cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                let cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+            
+
+</script>
+
+    
+</body>
+</html>
+<!-- index.html -->
