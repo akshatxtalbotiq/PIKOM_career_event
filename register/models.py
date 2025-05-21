@@ -33,13 +33,13 @@ class Player(models.Model):
         ('XXL', 'XXL'),
     ]
 
-    title = models.CharField(max_length=10, choices=TITLE_CHOICES)
+    title = models.CharField(max_length=10, choices=TITLE_CHOICES,null=True, blank=True)
     name = models.CharField(max_length=100)
     email = models.EmailField()
     mobile = models.CharField(max_length=20, blank=True, db_column="mobile")
-    designation = models.CharField(max_length=100, blank=True, db_column="designation")
+    designation = models.CharField(max_length=100, db_column="designation",null=True, blank=True)
     organization = models.CharField(max_length=100, blank=True, db_column="organization")
-    handicap = models.CharField(max_length=10, blank=True, db_column="handicap")
+    handicap = models.CharField(max_length=10, db_column="handicap",null=True, blank=True)
     tshirt_size = models.CharField(max_length=5, choices=TSHIRT_SIZES, db_column="tsize", blank=True)
     fkregistration = models.ForeignKey(Registration, on_delete=models.CASCADE, related_name='players', db_column="fkRegistration",default=None)
 
