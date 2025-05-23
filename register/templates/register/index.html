@@ -284,10 +284,13 @@
 
                   window.location.href = `/thankyou/${response.reg_no}/`;
               }
+              else {
+                    alert('An error occurred during submission! Please contact the administrator. Note: ' + response.message);
+              }
               //alert(response.message);
               },
               error: function () {
-              alert('An error occurred during submission.');
+              alert('An error occurred during submission. Please contact the administrator.');
               },
               complete: function () {
                   toggleSaveBtnLoading(false);

@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.humanize',
     'register',
+    'user',
 ]
 
 MIDDLEWARE = [
@@ -131,3 +132,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
+
+LOGIN_URL ='login'  # URL to redirect to for login4
+LOGOUT_URL = 'logout'  # URL to redirect to for logout

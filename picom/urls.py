@@ -19,11 +19,13 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from register import urls as register_urls
+from user import urls as user_urls
 from django.conf.urls import include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include(register_urls), name='register'),
+    path('', include(user_urls), name='user'),
 
 ]
 

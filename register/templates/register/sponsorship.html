@@ -1,0 +1,1035 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PIKOM Golf 2025 - Sponsership Program</title>
+  <meta name="description" content="PIKOM Golf 2025 - Sponsership Program" />
+  <meta name="keywords" content="PIKOM, Golf, Sponsorship, Program" />
+  <meta name="author" content="PIKOM" />
+  <link rel="icon" href="{% static 'register/images/favicon.png' %}" type="image/png" />
+  <link rel="apple-touch-icon" href="{% static 'register/images/favicon.png' %}" type="image/png" />
+
+
+  <link rel="stylesheet" href="{% static 'register/css/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'register/css/style.css' %}">
+  <style>
+    :root{
+      --bs-primary: #2e923d;
+      --bs-primary-rgb: 46, 146, 61;
+      --bs-primary-hover: #2e923d;
+    }
+    .bg-primary{
+      background-color: var(--bs-primary) !important;
+    }
+    .hero{
+      /*background: url('assets/images/Golf-PIKOM-Invitational-&-Charity-2025-V1.1---Sponsorship-Deck.jpg') no-repeat center center;
+      background-size: cover;*/
+    }
+
+    .registeration {
+
+      display: flex;
+      align-items: stretch;
+      background: url('static/register/images/footer-Sponsorship-Deck.png') no-repeat center center;
+      background-size: contain;
+
+      .card{
+        background-color: #12273d44;
+        border-radius: .75rem .75rem 0 0 ;
+        min-height: calc(100% - 4rem);
+        border: none;
+        &card-body{
+          padding: 1.5rem;
+
+          
+        }
+        label.form-label{
+          color: #fff !important;
+        }
+      }
+    
+    }
+
+    #sponsorsipForm .btn-close{
+      width: 2rem;
+      height: 2rem;
+      border-radius: 4px;
+      background-color: #cacaca;
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      z-index: 999;
+    }
+    .package{
+      .package-image{
+        min-height: 500px;height: 100%;
+        border-radius: 1rem;
+
+        >.package-bg{
+          position: absolute;
+          top: 0;
+          left: 0;
+          background-position: center center;
+          background-size: cover;
+          width: 100%;
+          height: 100%;
+          background-repeat: no-repeat;
+          display: block;
+        }
+      }
+
+      .package-title{
+        font-size: 2.75rem;
+        color: var(--bs-secondary);
+        font-weight: bold;
+        text-transform: uppercase;
+      }
+      .package-price{
+        font-size: 2rem;
+        color: var(--bs-primary);
+        font-weight: bold;
+        text-transform: capitalize;
+      }
+    }
+
+    .btn-golf{
+      background: #51dda7;
+      color: #000000;
+      &:hover{
+        background: #2e923d;
+        color: #fafafa;
+        box-shadow: 0 0 10px #2e923d;
+      }
+    }
+    .fullbg{
+      background: url('static/register/images/tropicana-esort-washed.jpg') no-repeat center center;
+      background-size: cover;
+      background-attachment: fixed;
+      padding: 2rem 0;
+    }
+    .card.why{
+      border-radius: 1rem;
+      padding: 2rem;
+      background-color: #fafafac7;
+      border: none;
+    }
+    @media (max-width: 768px){
+      .package {
+        .package-title {
+          font-size: 2rem;
+          color: var(--bs-secondary);
+          font-weight: bold;
+          text-align: center;
+        }
+        .package-price{
+          text-align: center;
+        }
+      }
+      .package-details{
+        div.w-5{
+          width: 100% !important;
+
+          .btn{
+            white-space: nowrap;
+          }
+        }
+      }
+    }
+  </style>
+</head>
+<body>
+  
+  <header class="header container-fluid bg-light color-dark p-3 shadow">
+    <div class="row">
+      <div class="col-12 d-flex justify-content-between align-items-center">
+          <p class="text-gray mb-0">PIKOM Golf 2025 Sponsorship Program</p>
+          <a class="text-gray mb-0 nav-link fw-bold">Buy Ticket</a>
+      </div>
+    </div>
+  </header>
+
+  <section class="hero container-xl py-5">
+    <div class="row">
+      <div class="col-12">
+        <div class="rounded-5 overflow-hidden shadow-lg">
+          <img src="{% static 'register/images/Golf-PIKOM-Invitational-&-Charity-2025-V1.1---Sponsorship-Deck.jpg' %}" class="img-fluid d-none d-xl-block" style="object-fit: none;" alt="">
+          <img src="{% static 'register/images/banner-moile.jpeg' %}" class="img-fluid  d-block d-xl-none" style="object-fit:cover;" alt="">
+        </div>
+      </div>
+    </div>
+    
+  </section>
+  <section class="fullbg py-4">
+    <div class="container">
+      <div class="row py-3 gy-3">
+        <div class="col-xl-6 col-lg-12">
+          <div class="card card-body why h-100 shadow-lg">
+            <h3 class="text-secondary fw-bold text-center mb-3">Why Sponsor the PIKOM Golf Invitational?</h3>
+            <ul>
+              <li>
+                <p><strong>Enhanced Brand Visibility:</strong> Prominent logo
+                  placement across event assets — from banners
+                  to tee boxes and golf balls</p>
+              </li>
+              <li>
+                <p><strong>Enhanced Brand Visibility:</strong> Prominent logo
+                  placement across event assets — from banners
+                  to tee boxes and golf balls</p>
+              </li>
+              <li>
+                <p><strong>Enhanced Brand Visibility:</strong> Prominent logo
+                  placement across event assets — from banners
+                  to tee boxes and golf balls</p>
+              </li>
+              <li>
+                <p><strong>Enhanced Brand Visibility:</strong> Prominent logo
+                  placement across event assets — from banners
+                  to tee boxes and golf balls</p>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="col-xl-6 col-lg-12">
+          <div class="card card-body why h-100 shadow-lg">
+            <h3 class="text-secondary fw-bold text-center mb-3">Why Sponsor the PIKOM Golf Invitational?</h3>
+            <ul>
+              <li>
+                <p><strong>Enhanced Brand Visibility:</strong> Prominent logo
+                  placement across event assets — from banners
+                  to tee boxes and golf balls</p>
+              </li>
+              <li>
+                <p><strong>Enhanced Brand Visibility:</strong> Prominent logo
+                  placement across event assets — from banners
+                  to tee boxes and golf balls</p>
+              </li>
+              <li>
+                <p><strong>Enhanced Brand Visibility:</strong> Prominent logo
+                  placement across event assets — from banners
+                  to tee boxes and golf balls</p>
+              </li>
+              <li>
+                <p><strong>Enhanced Brand Visibility:</strong> Prominent logo
+                  placement across event assets — from banners
+                  to tee boxes and golf balls</p>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section class="packages">
+    <div class="container">
+      <div class="row package py-5 gy-3">
+        <div class="col-xl-4 col-lg-12">
+          <div class="card card-body p-0 overflow-hidden package-image shadow-lg" >
+            <!-- <div class="package-bg" style="background-image: url(assets/images/sponsorships-img/1.jpg);"></div> -->
+            {% with img_url='register/images/sponsorships-img/1.jpg' %}
+            <div class="package-bg" style="background-image: url('{% static img_url %}');"></div>
+            {% endwith %}
+          </div>
+          
+        </div>
+        <div class="col-xl-8 col-lg-12">
+          <div class="package-details h-100 d-flex flex-column">
+            <div class="pb-3">
+              <h3 class="package-title">Platinum Sponsor</h3>
+              <h3 class="package-price">RM 50,000</h3>
+            </div>
+            <div class="flex-grow-1">
+              <p class="fw-semibold fs-4"> Benefits</p>
+              <ul>
+                <li>Exclusive Tournament Naming Rights</li>
+                <li>One (1) Golfer in VIP Flight</li>
+                <li>Two (2) Golf Flights (8 Golfers) - Complimentary</li>
+                <li>Exclusive Corporate Branding on Tee-box Signage #1</li>
+                <li>Exclusive Corporate Branding on Ad-Board X 2</li>
+                <li>Exclusive Corporate Branding on Pin Flags & Tee Markers</li>
+                <li>Company Marketing Gift/Material can be Included in Goodie Bag</li>
+                <li>Prominent Logo Placing on All Advertorial Materials (Ad-Board, Bunting & Banner)</li>
+                <li>Recognition in Marketing Collaterals</li>
+                <li>Welcome Address at Golf Gala Dinner</li>
+                <li>1 seat at VIP Table at Golf Gala Dinner</li>
+                <li>Complimentary One (1) Dinner Table (10 pax) at Golf Gala Dinner</li>
+                <li>Corporate Video (3 mins) to be Played Before Start of Golf Gala Dinner</li>
+                <li> Placement of 2x Corporate Buntings at Dinner Hall</li>
+                </ul>
+            </div>
+            
+            
+            <div class="d-flex justify-content-end">
+              <button type="button" class="btn btn-lg btn-golf" data-bs-toggle="modal" data-bs-target="#sponsorsipForm" data-id="P1" data-package="PLATINUM SPONSOR" data-price="RM 50,000">Register now</button>
+            </div>
+            
+          </div>
+          
+        </div>
+      </div>
+      <div class="row package py-5 gy-3">
+        <div class="col-xl-4 col-lg-12">
+          <div class="card card-body p-0 overflow-hidden package-image shadow-lg">
+            {% with img_url='register/images/sponsorships-img/2.jpg' %}
+            <div class="package-bg" style="background-image: url('{% static img_url %}');"></div>
+            {% endwith %}
+          </div>
+      
+        </div>
+        <div class="col-xl-8 col-lg-12">
+          <div class="package-details h-100 d-flex flex-column">
+            <div class="pb-3">
+              <h3 class="package-title">Gold Sponsor</h3>
+              <h3 class="package-price">RM 35,000</h3>
+            </div>
+            <div class="flex-grow-1">
+              <p class="fw-semibold fs-4"> Benefits</p>
+              <ul>
+                <li>One (1) Golf Flight (4 Golfers) – Complimentary</li>
+                <li>Complimentary One (1) Dinner Table (10 pax) at Golf Gala Dinner </li>
+                <li>Exclusive Corporate Branding on Tee-Box Signage #10</li>
+                <li>Company Marketing Gift/Material can be Included in Goodie Bag</li>
+                <li>Prominent Logo Placing on All Advertorial Materials (Ad-Board, Bunting & Banner)</li>
+                <li>Recognition in Marketing Collaterals</li>
+              </ul>
+            </div>
+      
+      
+            <div class="d-flex justify-content-end">
+              <button type="button" class="btn btn-lg btn-golf" data-bs-toggle="modal" data-bs-target="#sponsorsipForm" data-id="P2"
+                data-package="GOLD SPONSOR" data-price="RM 35,000">Register Now</button>
+            </div>
+      
+          </div>
+      
+        </div>
+      </div>
+      <div class="row package py-5 gy-3">
+        <div class="col-xl-4 col-lg-12">
+          <div class="card card-body p-0 overflow-hidden package-image shadow-lg">
+            <!-- <div class="package-bg" style="background-image: url({% static 'register/images/sponsorships-img/4.jpg' %});"></div> -->
+             {% with img_url='register/images/sponsorships-img/4.jpg' %}
+            <div class="package-bg" style="background-image: url('{% static img_url %}');"></div>
+            {% endwith %}
+          </div>
+      
+        </div>
+        <div class="col-xl-8 col-lg-12">
+          <div class="package-details h-100 d-flex flex-column">
+            <div class="pb-3">
+              <h3 class="package-title">Golf T-shirt Sponsor</h3>
+              <h3 class="package-price">RM 30,000</h3>
+            </div>
+            <div class="flex-grow-1">
+              <p class="fw-semibold fs-4"> Benefits</p>
+              <ul>
+                <li>Exclusive Corporate Branding on Golf T-Shirt</li>
+                <li>One (1) Golf Flight (4 Golfers) - Complimentary</li>
+                <li>Complimentary Five (5) Pax at Golf Gala Dinner</li>
+                <li>Company Marketing Gift/Material can be Included in Goodie Bag</li>
+                <li>Prominent Logo Placing on All Advertorial Materials (Ad-Board, Bunting & Banner)</li>
+                <li>Recognition in Marketing Collaterals</li>
+              </ul>
+            </div>
+      
+      
+            <div class="d-flex justify-content-end">
+              <button type="button" class="btn btn-lg btn-golf" data-bs-toggle="modal" data-bs-target="#sponsorsipForm" data-id="P3"
+                data-package="GOLF T-SHIRT SPONSOR" data-price="RM 30,000">Register Now</button>
+            </div>
+      
+          </div>
+      
+        </div>
+      </div>
+      <div class="row package py-5 gy-3">
+        <div class="col-xl-4 col-lg-12">
+          <div class="card card-body p-0 overflow-hidden package-image shadow-lg">
+            <!-- <div class="package-bg" style="background-image: url({% static 'register/images/sponsorships-img/5.jpg' %});"></div> -->
+             {% with img_url='register/images/sponsorships-img/5.jpg' %}
+            <div class="package-bg" style="background-image: url('{% static img_url %}');"></div>
+            {% endwith %}
+          </div>
+      
+        </div>
+        <div class="col-xl-8 col-lg-12">
+          <div class="package-details h-100 d-flex flex-column">
+            <div class="pb-3">
+              <h3 class="package-title">Duffle Bag Sponsor</h3>
+              <h3 class="package-price">RM 25,000</h3>
+            </div>
+            <div class="flex-grow-1">
+              <p class="fw-semibold fs-4"> Benefits</p>
+              <ul>
+                <li>Exclusive Corporate Branding on Duffle Bag & Hand Towel</li>
+                <li>One (1) Golf Flight (4 Golfers) – Complimentary</li>
+                <li>Complimentary Four (4) Pax at Golf Gala Dinner </li>
+                <li>Company Marketing Gift/Material can be Included in Goodie Bag</li>
+                <li>Prominent Logo Placing on All Advertorial Materials (Ad-Board, Bunting & Banner)</li>
+                <li>Recognition in Marketing Collaterals</li>
+              </ul>
+            </div>
+      
+      
+            <div class="d-flex justify-content-end">
+              <button type="button" class="btn btn-lg btn-golf" data-bs-toggle="modal" data-bs-target="#sponsorsipForm" data-id="P4"
+                data-package="DUFFLE BAG SPONSOR" data-price="RM 25,000">Register Now</button>
+            </div>
+      
+          </div>
+      
+        </div>
+      </div>
+      <div class="row package py-5 gy-3">
+        <div class="col-xl-4 col-lg-12">
+          <div class="card card-body p-0 overflow-hidden package-image shadow-lg">
+            <!-- <div class="package-bg" style="background-image: url({% static 'register/images/sponsorships-img/6.jpg' %});"></div> -->
+             {% with img_url='register/images/sponsorships-img/6.jpg' %}
+            <div class="package-bg" style="background-image: url('{% static img_url %}');"></div>
+            {% endwith %}
+          </div>
+      
+        </div>
+        <div class="col-xl-8 col-lg-12">
+          <div class="package-details h-100 d-flex flex-column">
+            <div class="pb-3">
+              <h3 class="package-title">Golf Cap Sponsor</h3>
+              <h3 class="package-price">RM 15,000</h3>
+            </div>
+            <div class="flex-grow-1">
+              <p class="fw-semibold fs-4"> Benefits</p>
+              <ul>
+                <li>Exclusive Corporate Branding on Golf cap</li>
+                <li>One (1) Golf Flight (4 Golfers) – Complimentary</li>
+                <li>Complimentary Three (3) Pax at Golf Gala Dinner </li>
+                <li>Logo Placing on all Advertorial Materials (Ad-Board, Bunting & Banner)</li>
+                <li>Recognition in Marketing Collaterals</li>
+              </ul>
+            </div>
+      
+      
+            <div class="d-flex justify-content-end">
+              <button type="button" class="btn btn-lg btn-golf" data-bs-toggle="modal" data-bs-target="#sponsorsipForm" data-id="P5"
+                data-package="GOLF CAP SPONSOR" data-price="RM 3015,000">Register Now</button>
+            </div>
+      
+          </div>
+      
+        </div>
+      </div>
+      <div class="row package py-5 gy-3">
+        <div class="col-xl-4 col-lg-12">
+          <div class="card card-body p-0 overflow-hidden package-image shadow-lg">
+            <!-- <div class="package-bg" style="background-image: url({% static 'register/images/sponsorships-img/7.jpg' %});"></div> -->
+            {% with img_url='register/images/sponsorships-img/7.jpg' %}
+            <div class="package-bg" style="background-image: url('{% static img_url %}');"></div>
+            {% endwith %}
+          </div>
+      
+        </div>
+        <div class="col-xl-8 col-lg-12">
+          <div class="package-details h-100 d-flex flex-column">
+            <div class="pb-3">
+              <h3 class="package-title">Umbrella Sponsor</h3>
+              <h3 class="package-price">RM 15,000</h3>
+            </div>
+            <div class="flex-grow-1">
+              <p class="fw-semibold fs-4"> Benefits</p>
+              <ul>
+                <li>Exclusive Corporate Branding on Umbrella</li>
+                <li>One (1) Golf Flight (4 Golfers) – Complimentary</li>
+                <li>Complimentary Three (3) Pax at Golf Gala Dinner</li>
+                <li>Logo Placing on All Advertorial Materials (Ad-Board, Bunting & Banner)</li>
+                <li>Recognition in Marketing Collaterals</li>
+              </ul>
+            </div>
+      
+      
+            <div class="d-flex justify-content-end">
+              <button type="button" class="btn btn-lg btn-golf" data-bs-toggle="modal" data-bs-target="#sponsorsipForm" data-id="P6"
+                data-package="UMBRELLA SPONSOR" data-price="RM 15,000">Register Now</button>
+            </div>
+      
+          </div>
+      
+        </div>
+      </div>
+      <div class="row package py-5 gy-3">
+        <div class="col-xl-4 col-lg-12">
+          <div class="card card-body p-0 overflow-hidden package-image shadow-lg">
+            <!-- <div class="package-bg" style="background-image: url({% static 'register/images/sponsorships-img/8.jpg' %});"></div> -->
+             {% with img_url='register/images/sponsorships-img/8.jpg' %}
+            <div class="package-bg" style="background-image: url('{% static img_url %}');"></div>
+            {% endwith %}
+          </div>
+      
+        </div>
+        <div class="col-xl-8 col-lg-12">
+          <div class="package-details h-100 d-flex flex-column">
+            <div class="pb-3">
+              <h3 class="package-title">Golf Sleeve Sponsor</h3>
+              <h3 class="package-price">RM 10,000</h3>
+            </div>
+            <div class="flex-grow-1">
+              <p class="fw-semibold fs-4"> Benefits</p>
+              <ul>
+                <li>Exclusive Corporate Branding on Golf Sleeve</li>
+                <li>Two (2) Golfers - Complimentary</li>
+                <li>Complimentary Two (2) Pax at Golf Gala Dinner</li>
+                <li>Logo Placing on All Advertorial Materials (Ad-Board, Bunting & Banner)</li>
+                <li>Recognition in Marketing Collaterals</li>
+              </ul>
+            </div>
+      
+      
+            <div class="d-flex justify-content-end">
+              <button type="button" class="btn btn-lg btn-golf" data-bs-toggle="modal" data-bs-target="#sponsorsipForm" data-id="P7"
+                data-package="GOLF SLEEVE SPONSOR" data-price="RM 10,000">Register Now</button>
+            </div>
+      
+          </div>
+      
+        </div>
+      </div>
+      <div class="row package py-5 gy-3">
+        <div class="col-xl-4 col-lg-12">
+          <div class="card card-body p-0 overflow-hidden package-image shadow-lg">
+            <!-- <div class="package-bg" style="background-image: url({% static 'register/images/sponsorships-img/9.jpg' %});"></div> -->
+             {% with img_url='register/images/sponsorships-img/9.jpg' %}
+            <div class="package-bg" style="background-image: url('{% static img_url %}');"></div>
+            {% endwith %}
+          </div>
+      
+        </div>
+        <div class="col-xl-8 col-lg-12">
+          <div class="package-details h-100 d-flex flex-column">
+            <div class="pb-3">
+              <h3 class="package-title">Tee-Box & Novelty Sponsor</h3>
+              <h3 class="package-price">RM 3,500 each</h3>
+            </div>
+            <div class="flex-grow-1">
+              <p class="fw-semibold fs-4"> Benefits</p>
+              
+              <p>Exclusive Corporate Branding</p>
+
+              <p class="fw-bold mb-0">Tee-Box Sponsor</p>
+              <p > Pick your hole - 18 Tee Boxes Available for Sponsor Branding</p>
+
+              <p class="fw-bold mb-0">Novelty Sponsor</p>
+              <div class="row w-5" style="width: 50%; max-width: 100%;">
+                <div class="col">
+                  <h1><span class="btn btn-success">Nearest-To-Line</span></h1>
+                </div>
+                <div class="col">
+                  <h1><span class="btn btn-success">Longest Drive</span></h1>
+                </div>
+                <div class="col">
+                  <h1><span class="btn btn-success">Nearest-To-Pin</span></h1>
+                </div>
+                <div class="col">
+                  <h1><span class="btn btn-success">Hold-in-One Insurance</span></h1>
+                </div>
+
+              </div>
+            </div>
+      
+      
+            <div class="d-flex justify-content-end">
+              <button type="button" class="btn btn-lg btn-golf" data-bs-toggle="modal" data-bs-target="#sponsorsipForm" data-id="P8"
+                data-package="TEE-BOX & NOVELTY SPONSOR" data-price="RM 3,500 each">Register Now</button>
+            </div>
+      
+          </div>
+      
+        </div>
+      </div>
+      <div class="row package py-5 gy-3">
+        <div class="col-xl-4 col-lg-12">
+          <div class="card card-body p-0 overflow-hidden package-image shadow-lg">
+            <!-- <div class="package-bg" style="background-image: url({% static 'register/images/sponsorships-img/10.jpg' %});"></div> -->
+             {% with img_url='register/images/sponsorships-img/10.jpg' %}
+            <div class="package-bg" style="background-image: url('{% static img_url %}');"></div>
+            {% endwith %}
+          </div>
+      
+        </div>
+        <div class="col-xl-8 col-lg-12">
+          <div class="package-details h-100 d-flex flex-column">
+            <div class="pb-3">
+              <h3 class="package-title">Golf Gala Dinner Sponsor</h3>
+              <h3 class="package-price">RM 25,000</h3>
+            </div>
+            <div class="flex-grow-1">
+              <p class="fw-semibold fs-4"> Benefits</p>
+              <ul>
+                <li>One (1) Golf Flight (4 Golfers) – Complimentary</li>
+                <li>Complimentary One (1) Dinner Table (10 pax) at Golf Gala Dinner </li>
+                <li>Corporate Video (2 mins) to be Played Before Start of Golf Gala Dinner</li>
+                <li>Exclusive Corporate Branding on Table Tent Cards</li>
+                <li>Placement of 2x Corporate Buntings at Dinner Hall</li>
+                <li>Recognition in Marketing Collaterals</li>
+              </ul>
+            </div>
+      
+      
+            <div class="d-flex justify-content-end">
+              <button type="button" class="btn btn-lg btn-golf" data-bs-toggle="modal" data-bs-target="#sponsorsipForm" data-id="P9"
+                data-package="GOLF GALA DINNER SPONSOR" data-price="RM 25,000">Register Now</button>
+            </div>
+      
+          </div>
+      
+        </div>
+      </div>
+      <div class="row package py-5 gy-3">
+        <div class="col-xl-4 col-lg-12">
+          <div class="card card-body p-0 overflow-hidden package-image shadow-lg">
+            <!-- <div class="package-bg" style="background-image: url({% static 'register/images/sponsorships-img/11.jpg' %});"></div> -->
+            {% with img_url='register/images/sponsorships-img/11.jpg' %}
+            <div class="package-bg" style="background-image: url('{% static img_url %}');"></div>
+            {% endwith %}
+          </div>
+      
+        </div>
+        <div class="col-xl-8 col-lg-12">
+          <div class="package-details h-100 d-flex flex-column">
+            <div class="pb-3">
+              <h3 class="package-title">Luncheon Sponsor</h3>
+              <h3 class="package-price">RM 10,000</h3>
+            </div>
+            <div class="flex-grow-1">
+              <p class="fw-semibold fs-4"> Benefits</p>
+              <ul>
+                <li>Exclusive Corporate Branding as Luncheon Sponsor at the Golfer's Terrace or Lunch Hall </li>
+                <li>One (1) Golf Flight (4 Golfers) – Complimentary</li>
+                <li>Complimentary Two (2) Pax at Golf Gala Dinner</li>
+                <li>Placement of 2x Corporate Buntings at Lunch Hall</li>
+                <li>Recognition in Marketing Collaterals</li>
+              </ul>
+            </div>
+      
+      
+            <div class="d-flex justify-content-end">
+              <button type="button" class="btn btn-lg btn-golf" data-bs-toggle="modal" data-bs-target="#sponsorsipForm" data-id="P10"
+                data-package="LUNCHEON SPONSOR" data-price="RM 10,000">Register Now</button>
+            </div>
+      
+          </div>
+      
+        </div>
+      </div>
+      <div class="row package py-5 gy-3">
+        <div class="col-xl-4 col-lg-12">
+          <div class="card card-body p-0 overflow-hidden package-image shadow-lg">
+            <!-- <div class="package-bg" style="background-image: url({% static 'register/images/sponsorships-img/12.jpg' %});"></div> -->
+            {% with img_url='register/images/sponsorships-img/12.jpg' %}
+            <div class="package-bg" style="background-image: url('{% static img_url %}');"></div>
+            {% endwith %}
+          </div>
+      
+        </div>
+        <div class="col-xl-8 col-lg-12">
+          <div class="package-details h-100 d-flex flex-column">
+            <div class="pb-3">
+              <h3 class="package-title">Golf Gala Dinner Table Sponsor</h3>
+              <h3 class="package-price">RM 2,500</h3>
+            </div>
+            <div class="flex-grow-1">
+              <p class="fw-semibold fs-4"> Benefits</p>
+              <ul>
+                <li>Complimentary One (1) Dinner Table (10 pax) at Golf Gala Dinner</li>
+                <li>Recognition in Marketing Collaterals</li>
+              </ul>
+            </div>
+      
+      
+            <div class="d-flex justify-content-end">
+              <button type="button" class="btn btn-lg btn-golf" data-bs-toggle="modal" data-bs-target="#sponsorsipForm" data-id="P11"
+                data-package="GOLF GALA DINNER TABLE SPONSOR" data-price="RM 2,500">Register Now</button>
+            </div>
+      
+          </div>
+      
+        </div>
+      </div>
+      <div class="row package py-5 gy-3">
+        <div class="col-xl-4 col-lg-12">
+          <div class="card card-body p-0 overflow-hidden package-image shadow-lg">
+            <!-- <div class="package-bg" style="background-image: url({% static 'register/images/sponsorships-img/13.jpg);"></div> -->
+             {% with img_url='register/images/sponsorships-img/13.jpg' %}
+            <div class="package-bg" style="background-image: url('{% static img_url %}');"></div>
+            {% endwith %}
+          </div>
+      
+        </div>
+        <div class="col-xl-8 col-lg-12">
+          <div class="package-details h-100 d-flex flex-column">
+            <div class="pb-3">
+              <h3 class="package-title">Golf Flight Sponsor</h3>
+              <h3 class="package-price">RM 4,000</h3>
+            </div>
+            <div class="flex-grow-1">
+              <p class="fw-semibold fs-4"> Benefits</p>
+              <ul>
+                <li>One (1) Golf Flight (4 Golfers)</li>
+                <li>Complimentary Lunch & Dinner</li>
+                <li>Exciting Goodie Bag</li>
+                <li>Green Fees</li>
+                <li>Buggy (Twin-Sharing)</li>
+                <li>Caddy</li>
+                <li>Golf Insurance</li>
+                <li>Light Refreshments Will Be Provided</li>
+              </ul>
+            </div>
+      
+      
+            <div class="d-flex justify-content-end">
+              <button type="button" class="btn btn-lg btn-golf" data-bs-toggle="modal" data-bs-target="#sponsorsipForm" data-id="P12"
+                data-package="GOLF FLIGHT SPONSOR" data-price="RM 4,000">Register Now</button>
+            </div>
+      
+          </div>
+      
+        </div>
+      </div>
+      <div class="row package py-5 gy-3">
+        <div class="col-xl-4 col-lg-12">
+          <div class="card card-body p-0 overflow-hidden package-image shadow-lg">
+            <!-- <div class="package-bg" style="background-image: url({% static 'register/images/sponsorships-img/13.jpg' %});"></div> -->
+            {% with img_url='register/images/sponsorships-img/13.jpg' %}
+            <div class="package-bg" style="background-image: url('{% static img_url %}');"></div>
+            {% endwith %}
+          </div>
+      
+        </div>
+        <div class="col-xl-8 col-lg-12">
+          <div class="package-details h-100 d-flex flex-column">
+            <div class="pb-3">
+              <h3 class="package-title">2 Golfer Sponsor</h3>
+              <h3 class="package-price">RM 2,200</h3>
+            </div>
+            <div class="flex-grow-1">
+              <p class="fw-semibold fs-4"> Benefits</p>
+              <ul>
+                <li>Two (2) Golfers</li>
+                <li>Complimentary Lunch & Dinner</li>
+                <li>Exciting Goodie Bag</li>
+                <li>Green Fees</li>
+                <li>Buggy (Twin-Sharing)</li>
+                <li>Caddy</li>
+                <li>Golf Insurance</li>
+                <li>Light Refreshments Will Be Provided</li>
+              </ul>
+            </div>
+      
+      
+            <div class="d-flex justify-content-end">
+              <button type="button" class="btn btn-lg btn-golf" data-bs-toggle="modal" data-bs-target="#sponsorsipForm" data-id="P13"
+                data-package="2 GOLFER SPONSOR" data-price="RM 2,200">Register Now</button>
+            </div>
+      
+          </div>
+      
+        </div>
+      </div>
+
+    </div>
+
+  </section>
+  <section class="hero container-xl py-5">
+    <div class="row">
+      <div class="col-12">
+        <div class="rounded-5 overflow-hidden shadow-lg">
+          <img src="{% static 'register/images/footer-Sponsorship-Deck.png' %}" class="img-fluid"  >
+        </div>
+      </div>
+    </div>
+  </section>
+  <footer class=" container-fluid bg-light color-dark p-3 shadow">
+    <div class="row">
+      <div class="col-12 d-flex justify-content-between align-items-center">
+        <p class="text-gray mb-0">Power By <a href="https://talbotiq.com" class="nav-link d-inline-block" target="_blank">Talbotiq Technologies</a> </p>
+        <a class="text-gray mb-0 nav-link fw-bold">Buy Ticket</a>
+      </div>
+    </div>
+  </footer>
+
+    <!-- Modal -->
+    <div class="modal fade" id="sponsorsipForm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+      aria-labelledby="sponsorsipFormLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable modal-fullscreen-md-down">
+        <div class="modal-content">
+          <div class="modal-header py-1 pb-0 border-bottom-0">
+            <div class="text-center">
+              <button type="button" class="btn-close btn" data-bs-dismiss="modal"
+                aria-label="Close"></button>
+              <div class="p-3">
+                <img src="{% static 'register/images/PIKOM.png' %}" class="img-fluid" width="220px" alt="">
+              </div>
+            
+              <h4 class="mb-0 text-primary fw-bold">PIKOM GOLF INVITATIONAL & CHARITY DRIVE 2024</h4>
+              <p>9th July 2025 (Wednesday), 12:30PM TEE-OFF TROPICANA GOLF & COUNTRY
+                RESORT, PETALING JAYA</p>
+            </div>
+          </div>
+          <div class="modal-body">
+            <form action="#" class="">
+              
+              <div class="row">
+                <div class="col-xl-12 col-lg-12">
+                  <div class="mb-3">
+                    <label for="package" class="form-label">Package *</label>
+                    <select name="package" id="package" class="form-select ">
+                        <option value="" selected disabled>Select Title</option>
+                        <!-- <option value="P1">PLATINUM SPONSOR (RM 50,000)</option>
+                        <option value="P2">GOLD SPONSOR (RM 35,000)</option>
+                        <option value="P3">GOLF T-SHIRT SPONSOR (RM 30,000)</option>
+                        <option value="P4">DUFFLE BAG SPONSOR (RM 25,000)</option>
+                        <option value="P5">GOLF CAP SPONSOR (RM 15,000)</option>
+                        <option value="P6">UMBRELLA SPONSOR (RM 15,000)</option>
+                        <option value="P7">GOLF SLEEVE SPONSOR (RM 10,000)</option>
+                        <option value="P8">TEE-BOX & NOVELTY SPONSOR (RM 3,500 EACH)</option>
+                        <option value="P9">GOLF GALA DINNER SPONSOR (RM 25,000)</option>
+                        <option value="P10">LUNCHEON SPONSOR (RM 10,000)</option>
+                        <option value="P11">GOLF GALA DINNER TABLE SPONSOR (RM 2,500)</option>
+                        <option value="P12">GOLF FLIGHT SPONSOR (RM 4,000)</option>
+                        <option value="P13">2 GOLFER SPONSOR (RM 2,200)</option> -->
+
+
+                    </select>
+                  </div>
+                </div>
+                <div class="col-xl-6 col-lg-12">
+                  <div class="mb-3">
+                    <label for="title1" class="form-label">Title *</label>
+                    <select name="title1" id="title1" class="form-select ">
+                      <option value="" selected disabled>Select Title</option>
+                      <option value="Mr">Mr</option>
+                      <option value="Ms">Ms</option>
+                      <option value="Mrs">Mrs</option>
+                      <option value="Dr">Dr</option>
+                      <option value="Prof">Prof</option>
+                      <option value="Sir">Sir</option>
+                      <option value="Madam">Madam</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-xl-6 col-lg-12">
+                  <div class="mb-3">
+                    <label for="contactName" class="form-label">Contact Person Name *</label>
+                    <input type="text" required class="form-control" id="contactName" placeholder="">
+                  </div>
+                </div>
+                <div class="col-xl-6 col-lg-12">
+                  <div class="mb-3">
+                    <label for="contactNumber" class="form-label">Contact Number *</label>
+                    <input type="tell" required class="form-control" id="contactNumber" placeholder="">
+                  </div>
+                </div>
+                <div class="col-xl-6 col-lg-12">
+                  <div class="mb-3">
+                    <label for="contactEmail" class="form-label">Email Address *</label>
+                    <input type="email" required class="form-control" id="contactEmail" placeholder="">
+                  </div>
+                </div>
+                <div class="col-12 d-flex align-items-center my-3">
+                  <label for="" class="form-label">Billing Information</label>
+                  <hr>
+                </div>
+                <div class="col-xl-6 col-lg-12">
+                  <div class="mb-3">
+                    <label for="contactName" class="form-label">Bill To *</label>
+                    <input type="text" required class="form-control" id="billingOrganization" placeholder="">
+                  </div>
+                </div>
+                <div class="col-xl-6 col-lg-12">
+                  <div class="mb-3">
+                    <label for="contactName" class="form-label">Name *</label>
+                    <input type="text" required class="form-control" id="billingName" placeholder="">
+                  </div>
+                </div>
+                <div class="col-xl-6 col-lg-12">
+                  <div class="mb-3">
+                    <label for="contactName" class="form-label">Billing Email *</label>
+                    <input type="tell" required class="form-control" id="billingEmail" placeholder="">
+                  </div>
+                </div>
+                <div class="col-xl-6 col-lg-12">
+                  <div class="mb-3">
+                    <label for="contactName" class="form-label">Designation *</label>
+                    <input type="text" required class="form-control" id="billingDesignation" placeholder="">
+                  </div>
+                </div>
+            
+            
+            
+            
+                <div class="col-12">
+                  <div class="mb-3">
+                    <label for="address" class="form-label">Billing Address *</label>
+                    <textarea name="billingAddress" id="billingAddress" class="form-control" rows="3" placeholder="Full Address"></textarea>
+                  </div>
+                </div>
+                <div class="col-xl-9 col-lg-12">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="terms" name="terms" value="yes">
+                    <label class="form-check-label" for="flexCheckDefault">
+                      I agree to the <a href="#">Terms and Conditions</a> and <a href="#">Privacy Policy</a>
+                    </label>
+                  </div>
+                </div>
+                <div class="col-xl-3 col-lg-12 text-center text-xl-end">                    
+                    <button type="submit" id="submitBtn" class="btn btn-lg btn-primary">
+                        <span id="submitBtnText">Register</span>
+                        <span id="submitBtnLoader" class="d-none spinner-border spinner-border-sm"></span>
+                    </button>
+
+                </div>
+
+              </div>
+              </form>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="{% static 'register/js/jquery-3.7.1.min.js' %}"></script>
+    <script src="{% static 'register/js/bootstrap.bundle.min.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const btns = document.querySelectorAll('.btn-golf');
+            const select = document.getElementById('package');
+            const packages = [];
+
+          
+
+            btns.forEach(btn => {
+            const id = btn.getAttribute('data-id');
+            const pkg = btn.getAttribute('data-package');
+            const price = btn.getAttribute('data-price');
+            // Only add if not already in packages
+            if (id && pkg && !packages.some(p => p.id === id)) {
+                packages.push({ id, pkg, price });
+               
+            }
+            });
+
+            while (select.options.length > 1) {
+            select.remove(1);
+       
+            }
+  
+            packages.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = `${p.pkg}${p.price ? ' (' + p.price + ')' : ''}`;
+            select.appendChild(opt);
+            console.log(opt);
+            });
+
+            btns.forEach(btn => {
+            btn.addEventListener('click', function () {
+                const id = this.getAttribute('data-id');
+                if (id) {
+                select.value = id;
+                }
+            });
+            });
+        });
+
+
+        //  $(document).ready(function() {
+        //     $('#p1').on('click', function() {
+        //         $('#package').val('P1').change(); // Set the value and trigger change event if needed
+        //     });
+        // });
+
+        $(document).ready(function() {
+            // Initially disable the button
+            $('#submitBtn').prop('disabled', true);
+
+            $('#terms').change(function() {
+                if ($(this).is(':checked')) {
+                    $('#submitBtn').prop('disabled', false);
+                } else {
+                    $('#submitBtn').prop('disabled', true);
+                }
+            }); 
+        });
+
+
+        $('form').submit(function(e) {
+            e.preventDefault();
+            toggleSaveBtnLoading(true);
+
+            $.ajax({
+                type: 'POST',
+                url: '{% url "save_sponsorship" %}',
+                headers: {
+                    'X-CSRFToken': getCSRFToken()
+                },
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    title: $('#title1').val(),
+                    contact_name: $('#contactName').val(),
+                    contact_number: $('#contactNumber').val(),
+                    contact_email: $('#contactEmail').val(),
+                    billing_organization: $('#billingOrganization').val(),
+                    billing_name: $('#billingName').val(),
+                    billing_email: $('#billingEmail').val(),
+                    billing_designation: $('#billingDesignation').val(),
+                    billing_address: $('#billingAddress').val(),
+                    package: $('#package').val(),
+                    
+                }),
+                success: function (response) {
+                if (response.success) {
+                    window.location.href = `/sponsorship_thankyou/${response.reg_no}/`;
+                }
+                else {
+                    alert('An error occurred during submission! Please contact the administrator. Note: ' + response.message);
+                }
+                
+                },
+                error: function () {
+                    alert('An error occurred during submission.Please contact the administrator.');
+                },
+                complete: function () {
+                    toggleSaveBtnLoading(false);
+                }
+            });
+        });
+
+        function getCSRFToken() {
+          let name = 'csrftoken';
+          let cookieValue = null;
+          if (document.cookie && document.cookie !== '') {
+              let cookies = document.cookie.split(';');
+              for (let i = 0; i < cookies.length; i++) {
+                  let cookie = cookies[i].trim();
+                  if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                      cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                      break;
+                  }
+              }
+          }
+          return cookieValue;
+      }
+      
+        function toggleSaveBtnLoading(isLoading) {
+            const saveBtn = $('#saveBtn');
+            if (isLoading) {
+                saveBtn.prop('disabled', true);
+                saveBtn.html('<i class="fa fa-spinner fa-spin"></i> Saving...');
+            } else {
+                saveBtn.prop('disabled', false);
+                saveBtn.html('Save');
+            }
+        }
+    
+    </script>
+</body>
+</html>

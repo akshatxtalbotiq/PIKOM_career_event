@@ -45,3 +45,51 @@ class Player(models.Model):
 
     def __str__(self):
         return self.name
+    
+
+class Sponsorship(models.Model):   
+    TITLE_CHOICES = [
+        ('Mr', 'Mr'),
+        ('Ms', 'Ms'),
+        ('Mrs', 'Mrs'),
+        ('Dr', 'Dr'),
+        ('Prof', 'Prof'),
+        ('Sir', 'Sir'),
+        ('Madam', 'Madam'),
+    ]
+    PACKAGE_CHOICES = [
+        ('P1', 'PLATINUM SPONSOR (RM 50,000)'),
+        ('P2', 'GOLD SPONSOR (RM 35,000)'),
+        ('P3', 'GOLF T-SHIRT SPONSOR (RM 30,000)'),
+        ('P4', 'DUFFLE BAG SPONSOR (RM 25,000)'),
+        ('P5', 'GOLF CAP SPONSOR (RM 15,000)'),
+        ('P6', 'UMBRELLA SPONSOR (RM 15,000)'),
+        ('P7', 'GOLF SLEEVE SPONSOR (RM 10,000)'),
+        ('P8', 'TEE-BOX & NOVELTY SPONSOR (RM 3,500 EACH)'),
+        ('P9', 'GOLF GALA DINNER SPONSOR (RM 25,000)'),
+        ('P10', 'LUNCHEON SPONSOR (RM 10,000)'),
+        ('P11', 'GOLF GALA DINNER TABLE SPONSOR (RM 2,500)'),
+        ('P12', 'GOLF FLIGHT SPONSOR (RM 4,000)'),
+        ('P13', '2 GOLFER SPONSOR (RM 2,200)'),
+    ]    
+
+    reg_no = models.CharField(max_length=20, unique=True)
+    title = models.CharField(max_length=10, choices=TITLE_CHOICES)
+    contact_name = models.CharField(max_length=100)
+    contact_number = models.CharField(max_length=20)
+    contact_email = models.EmailField()
+
+    billing_organization = models.CharField(max_length=100)
+    billing_name = models.CharField(max_length=100)
+    billing_email = models.EmailField()
+    billing_designation = models.CharField(max_length=100)
+    billing_address = models.TextField()
+
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+    package = models.CharField(max_length=10, choices=PACKAGE_CHOICES, db_column="package", default=None)
+
+    
+
+    def __str__(self):
+        return f"{self.contact_name} - {self.contact_email}"

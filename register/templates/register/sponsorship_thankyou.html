@@ -1,0 +1,52 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Thank You for Your Sponsorship</title>
+    <link rel="stylesheet" href="{% static 'register/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'register/css/style.css' %}">
+    <script src="{% static 'register/js/jquery-3.7.1.min.js' %}"></script>
+    <style>
+        body {
+            background: #f0f8f5;
+        }
+        .thank-you-card {
+            max-width: 720px;
+            margin: auto;
+            padding: 3rem;
+            border-radius: 1rem;
+            background-color: #ffffff;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.1);
+        }
+        .golf-image {
+            max-width: 120px;
+            margin-bottom: 1.5rem;
+        }
+        .reg-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2c7a4b;
+        }
+        .btn-home {
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body class="d-flex justify-content-center align-items-center vh-100">
+
+    <div class="thank-you-card text-center">
+        <img src="{% static 'register/images/golf.png' %}" alt="Golf Icon" class="golf-image">
+        <h1 class="text-success">Thank You for Your Generous Support!</h1>
+        <p class="lead">We are truly grateful for your sponsorship. Your commitment helps us bring this event to life and make a meaningful impact.</p>
+        <p class="mt-4">Your sponsorship registration number is:</p>
+        <p class="reg-number">{{ reg_no }}</p>
+        <p class="text-muted mt-3">Please keep this number for your records. It will be required for future correspondence and event access.</p>
+        <!-- <p class="mt-4">We look forward to partnering with you and celebrating together on the green!</p> -->
+
+        <a href="{% url 'sponsorship' %}" class="btn btn-success btn-home">Return to Main</a>
+    </div>
+
+</body>
+</html>
