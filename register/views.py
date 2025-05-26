@@ -150,3 +150,8 @@ def campaign_list(request):
     sponsorship_count = Sponsorship.objects.count()
 
     return render(request, 'register/campaign_list.html', {'user': current_user, 'registration_count': registration_count, 'sponsorship_count': sponsorship_count})
+
+@login_required
+def tnc(request):
+    current_user = request.user    
+    return render(request, 'register/tnc.html', {'user': current_user})

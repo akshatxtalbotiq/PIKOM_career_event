@@ -48,15 +48,15 @@ class Player(models.Model):
     
 
 class Sponsorship(models.Model):   
-    TITLE_CHOICES = [
-        ('Mr', 'Mr'),
-        ('Ms', 'Ms'),
-        ('Mrs', 'Mrs'),
-        ('Dr', 'Dr'),
-        ('Prof', 'Prof'),
-        ('Sir', 'Sir'),
-        ('Madam', 'Madam'),
-    ]
+    # TITLE_CHOICES = [
+    #     ('Mr', 'Mr'),
+    #     ('Ms', 'Ms'),
+    #     ('Mrs', 'Mrs'),
+    #     ('Dr', 'Dr'),
+    #     ('Prof', 'Prof'),
+    #     ('Sir', 'Sir'),
+    #     ('Madam', 'Madam'),
+    # ]
     PACKAGE_CHOICES = [
         ('P1', 'PLATINUM SPONSOR (RM 50,000)'),
         ('P2', 'GOLD SPONSOR (RM 35,000)'),
@@ -70,11 +70,12 @@ class Sponsorship(models.Model):
         ('P10', 'LUNCHEON SPONSOR (RM 10,000)'),
         ('P11', 'GOLF GALA DINNER TABLE SPONSOR (RM 2,500)'),
         ('P12', 'GOLF FLIGHT SPONSOR (RM 4,000)'),
-        ('P13', '2 GOLFER SPONSOR (RM 2,200)'),
+        ('P13', 'GOLF BALLS SPONSOR (RM 10,000)'),
     ]    
 
     reg_no = models.CharField(max_length=20, unique=True)
-    title = models.CharField(max_length=10, choices=TITLE_CHOICES)
+    # title = models.CharField(max_length=10, choices=TITLE_CHOICES)
+    title = models.CharField(max_length=10, null=True, blank=True)
     contact_name = models.CharField(max_length=100)
     contact_number = models.CharField(max_length=20)
     contact_email = models.EmailField()
