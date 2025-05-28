@@ -89,7 +89,18 @@
         text: '<i class="material-symbols-rounded">download</i> Export to Excel',           
         filename: 'registration_list',
         title: 'Registration List', 
-      }
+      },
+        {
+            text: 'Send QR',
+            action: function (e, dt, node, config) {
+                $.ajax({
+                    url: "/send_qr",
+                    cache: false,
+                    success: function(response) {
+                    }, error: commonAjaxErrorCallBack
+                });
+            }
+        }
     ],
     fixedHeader: {
       header: true,
@@ -136,6 +147,23 @@
       }
       Scrollbar.init(document.querySelector('#sidenav-scrollbar'), options);
     }
+    function commonAjaxErrorCallBack(jqXHR, ajaxOptions, thrownError) {
+    if (jqXHR.responseJSON?.error_message || jqXHR.responseJSON?.message) {
+        let message = jqXHR.responseJSON.error_message || jqXHR.responseJSON.message
+        let errorTitle = jqXHR.responseJSON.error_title || "Contact Support"
+        //AlertButton("Error", message);
+        Swal.fire({
+            title: errorTitle,
+            text: message,
+            icon: "error",
+            confirmButtonColor: "#DD6B55",
+            confirmButtonText: "OK"
+        });
+
+    } else {
+        AlertButton("Error", `Something went wrong ${jqXHR.status}, ${thrownError}, Please contact Admin`);
+    }
+}
   </script>
 {%endblock %}
 

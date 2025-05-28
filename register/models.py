@@ -1,5 +1,5 @@
 from django.db import models
-
+import uuid
 # Create your models here.
 
 class Registration(models.Model):
@@ -42,6 +42,9 @@ class Player(models.Model):
     handicap = models.CharField(max_length=10, db_column="handicap",null=True, blank=True)
     tshirt_size = models.CharField(max_length=5, choices=TSHIRT_SIZES, db_column="tsize", blank=True)
     fkregistration = models.ForeignKey(Registration, on_delete=models.CASCADE, related_name='players', db_column="fkRegistration",default=None)
+    registration_code = models.UUIDField(default=uuid.uuid4, unique=True)
+    is_checked_in = models.BooleanField(default=False)
+    qr_sent = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name

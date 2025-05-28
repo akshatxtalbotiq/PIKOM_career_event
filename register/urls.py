@@ -1,8 +1,8 @@
 # Create your url patterns here.
 from django.contrib import admin
 from django.urls import path
-from .views import index,save_registration,thankyou,sponsorship,save_sponsorship,sponsorship_thankyou, get_registration_list, get_sponsorship_list, registration_list, sponsorship_list,campaign_list,tnc
-
+from .views import index, save_registration, thankyou, sponsorship, save_sponsorship, sponsorship_thankyou, \
+    get_registration_list, get_sponsorship_list, registration_list, sponsorship_list, campaign_list, tnc, send_qr
 
 urlpatterns = [
     path('', index, name='index'),
@@ -17,4 +17,5 @@ urlpatterns = [
     path('sponsorship_list/', sponsorship_list, name='sponsorship_list'),
     path('campaign_list/', campaign_list, name='campaign_list'),
     path('tnc/', tnc, name='tnc'),
+    path('send_qr/', send_qr, name='send_qr'),
 ]

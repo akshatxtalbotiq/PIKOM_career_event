@@ -1,10 +1,15 @@
+from django.core.mail import EmailMessage
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
+
+from picom import settings
 from .models import Registration, Player, Sponsorship
 import json
 from django.db import transaction
 from django.contrib.auth.decorators import login_required
-
+import qrcode
+from io import BytesIO
+from django.core.files.base import ContentFile
 
 # Create your views here.
 def index(request):
@@ -100,7 +105,7 @@ def get_registration_list(request):
                 }
                 for player in players
             ]
-        
+
         
             return JsonResponse(data, safe=False)
     except Registration.DoesNotExist:
@@ -155,3 +160,25 @@ def campaign_list(request):
 def tnc(request):
     current_user = request.user    
     return render(request, 'register/tnc.html', {'user': current_user})
+
+def generate_qr_code(data):
+    qr = qrcode.make(data)
+    buffer = BytesIO()
+    qr.save(buffer, format='PNG')
+    return ContentFile(buffer.getvalue())
+
+def send_qr_email(player):
+    qr_image = generate_qr_code(str(player.registration_code))
+    email = EmailMessage(
+        'Your Event QR Code',
+        f'Dear {player.name}, please find your QR code attached. Use this to check in at the event.',
+        settings.DEFAULT_FROM_EMAIL,
+        [player.email]
+    )
+    email.attach(f'qr_{player.name}.png', qr_image.read(), 'image/png')
+    email.send()
+
+def send_qr(request):
+    players = Player.objects.filter(qr_sent=False)
+    for player in players:
+        send_qr_email(player)
