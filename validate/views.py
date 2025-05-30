@@ -4,7 +4,7 @@ from django.http import JsonResponse
 from register.models import Player
 
 def scan_page(request):
-    return render(request, 'scan.html')
+    return render(request, 'validate/scan.html')
 
 def validate(request, code):
     try:
