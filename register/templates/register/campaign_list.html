@@ -571,6 +571,8 @@
 
     document.getElementById('closeModalBtn').addEventListener('click', function () {
       const form = document.getElementById('campaignForm');
+
+      $('#campaignID').val('');
       
       form.reset();
       form.classList.remove('was-validated');
