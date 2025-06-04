@@ -9,6 +9,8 @@ class Registration(models.Model):
     mobile = models.CharField(max_length=20)
     created_on = models.DateTimeField(auto_now_add=True)
     lastmodified = models.DateTimeField(auto_now=True)
+    comp_reg_no = models.CharField(max_length=20, unique=True, null=True, blank=True)
+    address = models.TextField(null=True, blank=True)    
 
     def __str__(self):
         return self.name
@@ -79,15 +81,19 @@ class Sponsorship(models.Model):
     reg_no = models.CharField(max_length=20, unique=True)
     # title = models.CharField(max_length=10, choices=TITLE_CHOICES)
     title = models.CharField(max_length=10, null=True, blank=True)
-    contact_name = models.CharField(max_length=100)
-    contact_number = models.CharField(max_length=20)
-    contact_email = models.EmailField()
+    billing_name = models.CharField(max_length=100)
+    
 
     billing_organization = models.CharField(max_length=100)
-    billing_name = models.CharField(max_length=100)
-    billing_email = models.EmailField()
-    billing_designation = models.CharField(max_length=100)
+    billing_reg_no = models.CharField(max_length=20, unique=True, null=True, blank=True)    
+    billing_email = models.EmailField()    
+    billing_contact = models.CharField(max_length=20, blank=True)
     billing_address = models.TextField()
+
+    contact_number = models.CharField(max_length=20)
+    contact_email = models.EmailField()
+    contact_name = models.CharField(max_length=100)    
+    billing_designation = models.CharField(max_length=100)
 
     submitted_at = models.DateTimeField(auto_now_add=True)
 
@@ -97,3 +103,40 @@ class Sponsorship(models.Model):
 
     def __str__(self):
         return f"{self.contact_name} - {self.contact_email}"
+    
+
+
+class Campaign(models.Model):
+    campaign_code = models.UUIDField(default=uuid.uuid4, unique=True)
+    title = models.CharField(max_length=255)
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    url = models.URLField(max_length=255, null=True, blank=True)
+
+    def __str__(self):
+        return self.title
+    
+
+class Submission(models.Model):
+    reg_no = models.CharField(max_length=20, unique=True)    
+    name = models.CharField(max_length=100) 
+    email = models.EmailField()
+    mobile = models.CharField(max_length=20)
+    organization = models.CharField(max_length=100, blank=True)
+    job_title = models.CharField(max_length=100, blank=True)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    lastmodified = models.DateTimeField(auto_now=True)
+    registration_code = models.UUIDField(default=uuid.uuid4, unique=True)
+    is_checked_in = models.BooleanField(default=False)
+    qr_sent = models.BooleanField(default=False)
+    campaign_code = models.CharField(max_length=255, unique=True)    
+
+    def __str__(self):
+        return self.name
+    
+    
+    
+

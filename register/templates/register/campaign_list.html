@@ -204,74 +204,72 @@
                 <table id="campaigns" class="table align-items-center mb-0" >
                   <thead>
                     <tr>
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">ID</th>
                       <th class="text-uppercase text-secondary text-sm font-weight-bolder">Campaign Title</th>
                       <th class="text-uppercase text-secondary text-sm font-weight-bolder">Start Date</th>
                       <th class="text-uppercase text-secondary text-sm font-weight-bolder">End Date</th>
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Total Enteries</th>
+                      <!-- <th class="text-uppercase text-secondary text-sm font-weight-bolder">Total Enteries</th> -->
                       <th class="text-uppercase text-secondary text-sm font-weight-bolder">Status</th>
                       <th class="text-uppercase text-secondary text-sm font-weight-bolder"></th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
-                      <td>
-                        <div class="d-flex px-2 py-1">
-                          <div class="d-flex flex-column justify-content-center">
-                            <a href="{% url 'registration_list' %}" class="nav-link text-body p-0">
-                              <h6 class="mb-0 text-xs">PIKOM Golf Invitational & Charity Drive 2025 - REGISTRATION</h6>
-                            </a>
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <p class="text-xs font-weight-bold mb-0">9 July 2025</p>
-                      </td>
-                      <td>
-                        <p class="text-xs font-weight-bold mb-0">9 July 2025</p>
-                      </td>
-                      
-                      <td class="align-middle text-center">
-                        <span class="text-secondary text-xs font-weight-bold">{{registration_count}}</span>
-                      </td>
-                      <td class="align-middle text-center text-sm">
-                        <span class="badge badge-sm bg-gradient-success">Online</span>
-                      </td>
-                      <td class="align-middle">
-                        <a href="{% url 'registration_list' %}" class="nav-link text-body p-0">
-                          <i class="material-symbols-rounded">visibility</i>
-                        </a>
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <div class="d-flex px-2 py-1">
-                          <div class="d-flex flex-column justify-content-center">
-                            <!-- <h6 class="mb-0 text-sm">PIKOM Golf Invitational & Charity Drive 2025 - SPONSORSHIP</h6> -->
-                            <a href="{% url 'sponsorship_list' %}" class="nav-link text-body p-0">
-                              <h6 class="mb-0  text-xs">PIKOM Golf Invitational & Charity Drive 2025 - SPONSORSHIP</h6>
-                            </a>
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <p class="text-xs font-weight-bold mb-0">9 July 2025</p>
-                      </td>
-                      <td>
-                        <p class="text-xs font-weight-bold mb-0">9 July 2025</p>
-                      </td>
+                    {% if campaigns %}
+                      {% for campaign in campaigns %}
+                        <tr>
+                          <td>
+                            <div class="d-flex align-items-center">
+                              <p class="text-xs font-weight-bold mb-0 me-2">
+                                {{ campaign.campaign_code }}
+                              </p>
+                              <button class="copy-btn icon-btn" data-code="{{ campaign.campaign_code|cut:'-' }}" title="Copy">
+                                <i class="material-symbols-rounded">content_copy</i>
+                              </button>
+                            </div>
+                          </td>
+
+                          <td>
+                            <div class="d-flex px-2 py-1">
+                              <div class="d-flex flex-column justify-content-center">
+                                <a href="{{ campaign.url }}" class="nav-link text-body p-0">
+                                  <h6 class="mb-0 text-xs">{{ campaign.title }}</h6>
+                                </a>
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <p class="text-xs font-weight-bold mb-0">{{ campaign.start_date|date:"Y-m-d h:i A"  }}</p>
+                          </td>
+                          <td>
+                            <p class="text-xs font-weight-bold mb-0">{{ campaign.end_date|date:"Y-m-d h:i A"  }}</p>
+                          </td>
+                          <!-- <td class="align-middle text-center">
+                            <span class="text-secondary text-xs font-weight-bold">{{ campaign.total_entries }}</span>
+                          </td> -->
+                          <td class="align-middle text-center text-sm">
+                            {% if campaign.is_active %}
+                              <span class="badge badge-sm bg-gradient-success">Active</span>
+                            {% else %}
+                              <span class="badge badge-sm bg-gradient-danger">Inactive</span>
+                            {% endif %}                            
+                          </td>
+                          <td class="align-middle">
+                            <div class="d-flex gap-2 align-items-center">
+                              <a href="{{ campaign.url }}/{{ campaign.campaign_code }}" class="text-body p-0" title="View">
+                                <i class="material-symbols-rounded">visibility</i>
+                              </a>
+                              <a href="javascript:void(0);" class="text-body p-0 edit-campaign-btn" 
+                                data-id="{{ campaign.id }}" title="Edit">
+                                <i class="material-symbols-rounded">edit</i>
+                              </a>
+                            </div>
+                          </td>
+
+                        </tr>
+                      {% endfor %}
+                   
+                    {% endif %}
                     
-                      <td class="align-middle text-center">
-                        <span class="text-secondary text-xs font-weight-bold">{{sponsorship_count}}</span>
-                      </td>
-                      <td class="align-middle text-center text-sm">
-                        <span class="badge badge-sm bg-gradient-success">Online</span>
-                      </td>
-                      <td class="align-middle">
-                        <a href="{% url 'sponsorship_list' %}" class="nav-link text-body p-0">
-                          <i class="material-symbols-rounded">visibility</i>
-                        </a>
-                      </td>
-                    </tr>
                   </tbody>
                 </table>
               </div>
@@ -283,4 +281,309 @@
 
     </div>
   </main>
+
+   <!-- Modal -->
+  <div class="modal fade" id="addNewCampaign" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+      aria-labelledby="addNewCampaignLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <form id="campaignForm" novalidate>
+          <div class="modal-header">            
+            <input type="hidden" id="campaignID">
+            <h5 class="modal-title" id="addNewCampaignLabel">Add New Campaign</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-xl-12 col-lg-12">
+                <div class="mb-3">
+                  <label for="campTitle" class="form-label">Campaign Title</label>
+                  <input type="text" class="form-control border border-1 rounded px-2 py-2" id="campTitle" name="campTitle" placeholder="Campaign Title" required>
+                  <div class="invalid-feedback">Campaign title is required.</div>
+                </div>
+              </div>
+              <div class="col-xl-6 col-lg-12">
+                <div class="mb-3">
+                  <label for="campaignStartDate" class="form-label">Campaign Start Date</label>
+                  <input type="date" class="form-control border border-1 rounded px-2 py-2 timepicker" id="campaignStartDate" name="campaignStartDate" required>
+                  <div class="invalid-feedback">Start date is required.</div>
+                </div>
+              </div>
+              <div class="col-xl-6 col-lg-12">
+                <div class="mb-3">
+                  <label for="campaignEndDate" class="form-label">Campaign End Date</label>
+                  <input type="date" class="form-control border border-1 rounded px-2 py-2 timepicker" id="campaignEndDate" name="campaignEndDate" required>
+                  <div class="invalid-feedback">End date is required.</div>
+                </div>
+              </div>
+              <div class="col-xl-12 col-lg-12">
+                <div class="mb-3">
+                  <label for="campaignPageURL" class="form-label">Campaign Page URL</label>
+                  <input type="text" class="form-control border border-1 rounded px-2 py-2" id="campaignPageURL" name="campaignPageURL" placeholder="/campaign_page" required>
+                  <div class="invalid-feedback">Valid URL is required.</div>
+                </div>
+              </div>
+              <div class="col-xl-12 col-lg-12">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <label class="form-check-label" for="enableCampaign">Active or Inactive the Campaign</label>
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="enableCampaign" name="enableCampaign" checked>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="closeModalBtn">Close</button>
+            <button type="submit" class="btn btn-primary">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+</div>
+
+
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      
+      document.querySelectorAll('.copy-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          const code = btn.getAttribute('data-code');
+          navigator.clipboard.writeText(code).then(function () {
+            //alert("Code copied: " + code);
+          }, function (err) {
+            alert("Failed to copy: " + err);
+          });
+        });
+      });
+
+      const editButtons = document.querySelectorAll('.edit-campaign-btn');
+
+      editButtons.forEach(button => {
+        button.addEventListener('click', function () {
+          const campaignId = this.dataset.id;
+
+          // Fetch campaign data
+          fetch(`/get_campaign/${campaignId}`)
+            .then(response => response.json())
+            .then(data => {
+              // Populate the modal fields
+              document.getElementById('campTitle').value = data.title || '';
+              document.getElementById('campaignStartDate').value = data.start_date || '';
+              document.getElementById('campaignEndDate').value = data.end_date || '';
+              document.getElementById('campaignPageURL').value = data.url || '';
+              document.getElementById('enableCampaign').checked = data.active;
+              document.getElementById('campaignID').value = data.id || '';
+
+              // Open the modal
+              const modal = new bootstrap.Modal(document.getElementById('addNewCampaign'));
+              modal.show();
+            })
+            .catch(error => {
+              console.error("Error fetching campaign data:", error);
+              alert("Failed to load campaign data.");
+            });
+        });
+      });
+
+    });
+
+    $(document).ready(function () {
+      $(".timepicker").flatpickr({
+        enableTime: true,
+        dateFormat: "Y-m-d H:i",
+      });
+     
+      const datatable = new DataTable('#campaigns', {
+
+        responsive: false,
+        'paging': true,
+        "processing": true,
+        "lengthChange": true,
+        "searching": true,
+        "pageLength": 10,
+        colReorder: true,
+        layout: {
+          topStart: {
+            'search': {
+              className: 'form-control form-control-sm',
+              placeholder: 'Search...',
+              ariaLabel: 'Search'
+            },
+          },
+          topEnd: 'buttons'
+        },
+        buttons: [
+          {
+            text: '<i class="material-symbols-rounded align-middle">add</i> Add New',
+            className: 'btn btn-primary',
+            action: function () {
+              // Open the modal with id #addNewcampaign
+              const modal = new bootstrap.Modal(document.getElementById('addNewCampaign'));
+              modal.show();
+            }
+          }
+        ],
+        fixedHeader: {
+          header: true,
+          footer: true,
+          headerOffset: 50
+        },
+        autoWidth: true,
+        scrollCollapse: true,
+        //scroller: true,
+        //scrollY: c - 120,
+        language: {
+          paginate: {
+            previous: '<i class="material-symbols-rounded">chevron_left</i> ',
+            next: '<i class="material-symbols-rounded">chevron_right</i> ',
+          },
+          searchBuilder: {
+            button: 'Add filters',
+            add: '<i class="material-symbols-rounded">add</i>Add filters',
+            title: {
+              0: 'Filters',
+              _: 'Filters (%d)'
+            },
+            delete: '<i class="material-symbols-rounded">delete</i>',
+            right: '<i class="material-symbols-rounded">chevron_right</i>',
+            left: '<i class="material-symbols-rounded">chevron_left</i>',
+            clearAll: '<i class="material-symbols-rounded">x</i>Clear All'
+
+          },
+         "emptyTable": "<img src='{% static 'user/img/illustrations/notfoundImg3.png' %}' width='180px' alt='No data' /><p class='fs-5 fw-500'>No Record available in table</p>",
+          "infoEmpty": "0 Record",
+          "zeroRecords": "<img src='{% static 'user/img/illustrations/notfoundImg3.png' %}' width='180px' alt='No data' /><p class='fs-5 fw-500'>No Record to display</p>",
+        },
+        pagingTag: 'button',
+
+
+        initComplete: function (settings, json) {
+          console.log('table is ready')
+        }
+
+      });
+
+    });
+  
+    function getCSRFToken() {
+          let name = 'csrftoken';
+          let cookieValue = null;
+          if (document.cookie && document.cookie !== '') {
+              let cookies = document.cookie.split(';');
+              for (let i = 0; i < cookies.length; i++) {
+                  let cookie = cookies[i].trim();
+                  if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                      cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                      break;
+                  }
+              }
+          }
+          return cookieValue;
+      }
+
+    document.getElementById('campaignForm').addEventListener('submit', function (event) {
+      event.preventDefault(); 
+
+        const form = event.target;
+        const startInput = document.getElementById('campaignStartDate');
+        const endInput = document.getElementById('campaignEndDate');
+
+        
+        startInput.classList.remove('is-invalid');
+        endInput.classList.remove('is-invalid');
+        form.classList.remove('was-validated');
+
+       
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+            form.classList.add('was-validated');
+            return;
+        }
+      
+        const startDateValue = startInput.value;
+        const endDateValue = endInput.value;
+       
+        if (!startDateValue || !endDateValue) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (!startDateValue) {
+                startInput.classList.add('is-invalid');
+                startInput.nextElementSibling.textContent = "Start date is required.";
+            }
+            if (!endDateValue) {
+                endInput.classList.add('is-invalid');
+                endInput.nextElementSibling.textContent = "End date is required.";
+            }
+            return;
+        }
+
+        const startDate = new Date(startDateValue);
+        const endDate = new Date(endDateValue);
+      
+        if (startDate > endDate) {
+            event.preventDefault();
+            event.stopPropagation();
+            endInput.classList.add('is-invalid');
+            endInput.nextElementSibling.textContent = "End date must be after start date.";
+            return;
+        }
+
+        // when everything is valid
+        form.classList.add('was-validated');
+
+        const title = $('#campTitle').val();
+        const startDatex = $('#campaignStartDate').val();
+        const endDatex = $('#campaignEndDate').val();
+        const isActive = $('#enableCampaign').is(':checked');
+        const url = $('#campaignPageURL').val();
+        const campaignID = $('#campaignID').val();
+       
+
+        $.ajax({
+          url: '/create_campaign',
+          method: 'POST',
+          headers: {'X-CSRFToken': getCSRFToken()},
+          data: {
+            title: title,
+            start_date: startDatex,
+            end_date: endDatex,
+            is_active: isActive,
+            url: url,
+            id:campaignID,
+          },
+          success: function (response) {
+            if (response.success) {
+              //alert('Campaign saved!');
+              location.reload();  
+            } else {
+              alert('Failed to save.');
+            }
+          },
+          error: function () {
+            alert('Something went wrong!');
+          }
+        });
+      
+      });
+
+    document.getElementById('closeModalBtn').addEventListener('click', function () {
+      const form = document.getElementById('campaignForm');
+      
+      form.reset();
+      form.classList.remove('was-validated');
+      const inputs = form.querySelectorAll('.form-control, .form-check-input');
+      inputs.forEach(input => {
+        input.classList.remove('is-invalid');
+      });
+      
+      const feedbacks = form.querySelectorAll('.invalid-feedback');
+      feedbacks.forEach(fb => fb.textContent = '');
+    });   
+</script>
+
+
+  
 {% endblock %}  

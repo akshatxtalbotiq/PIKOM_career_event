@@ -9,12 +9,12 @@
         <div class="col-12">
           <div class="ms-3">
             <h3 class="mb-0 h4 font-weight-bolder opacity-7"><i class="ti ti-list"></i>
-            PIKOM Golf Invitational & Charity Drive 2025 - Registration</h3>
+            {{campaign.title}}</h3>
         
             <nav aria-label="breadcrumb m-0">
               <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
                 <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;">Campaigns</a></li>
-                <li class="breadcrumb-item text-sm text-dark active" aria-current="page">PIKOM Golf Invitational & Charity Drive 2025 - Registration</li>
+                <li class="breadcrumb-item text-sm text-dark active" aria-current="page">{{campaign.title}}</li>
               </ol>
             </nav>
           </div>
@@ -31,11 +31,9 @@
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Reg. No.</th>
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Name</th>
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Email</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Phone</th>
-                        <!-- <th class="text-uppercase text-secondary text-sm font-weight-bolder">Designation</th> -->
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder ">Organization</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">HandiCap</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Shirt Size</th>
+                        <!-- <th class="text-uppercase text-secondary text-sm font-weight-bolder">Phone</th> -->
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Designation</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder ">Organization</th>                        
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Registartion Date</th>
                     </tr>
                   </thead>
@@ -53,7 +51,26 @@
   </main>
 
   <script>
+    function getCSRFToken() {
+          let name = 'csrftoken';
+          let cookieValue = null;
+          if (document.cookie && document.cookie !== '') {
+              let cookies = document.cookie.split(';');
+              for (let i = 0; i < cookies.length; i++) {
+                  let cookie = cookies[i].trim();
+                  if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                      cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                      break;
+                  }
+              }
+          }
+          return cookieValue;
+      }
+
     $(document).ready(function () {
+
+        let campaignId = '{{campaign.campaign_code}}';  
+
       new DataTable('#entries', {
         responsive: false,
         paging: true,
@@ -63,19 +80,23 @@
         pageLength: 10,
         colReorder: true,
         ajax: {
-          url: '/get_registration_list',
-          type: 'GET',
-          dataSrc: ''
+            url: '/get_submission_list',
+            type: 'POST', 
+            data: function (d) {
+                d.id = campaignId;  
+            },
+            headers: {
+                'X-CSRFToken': getCSRFToken()  
+            },
+            dataSrc: ''
         },
         columns: [
           { data: 'reg_no' },
           { data: 'name' },
           { data: 'email' },
-          { data: 'phone' },
-        //   { data: 'designation' },
-          { data: 'organization' },
-          { data: 'handicap' },
-          { data: 'shirt_size' },
+        //   { data: 'phone' },
+          { data: 'job_title' },
+          { data: 'organization' },         
           { data: 'registration_date' }
         ],
         dom:
@@ -87,8 +108,8 @@
             extend: 'excel',
             className: 'btn btn-outline-success btn-sm', 
             text: '<i class="material-symbols-rounded">download</i> Export to Excel',           
-            filename: 'registration_list',
-            title: 'Registration List', 
+            filename: 'submission_list',
+            title: 'Submission List', 
           },
           {
             text: 'Send QR',

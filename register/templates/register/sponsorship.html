@@ -856,48 +856,54 @@
                 </div>
                 <div class="col-xl-6 col-lg-12">
                   <div class="mb-3">
-                    <label for="contactName" class="form-label">Contact Person Name *</label>
+                    <label for="contactName" class="form-label">Name *</label>
                     <input type="text" required class="form-control" id="contactName" placeholder="">
                   </div>
                 </div>
-                <div class="col-xl-6 col-lg-12">
+                <!-- <div class="col-xl-6 col-lg-12">
                   <div class="mb-3">
                     <label for="contactNumber" class="form-label">Contact Number *</label>
                     <input type="tell" required class="form-control" id="contactNumber" placeholder="">
                   </div>
-                </div>
-                <div class="col-xl-6 col-lg-12">
+                </div> -->
+                <!-- <div class="col-xl-6 col-lg-12">
                   <div class="mb-3">
                     <label for="contactEmail" class="form-label">Email Address *</label>
                     <input type="email" required class="form-control" id="contactEmail" placeholder="">
                   </div>
-                </div>
-                <div class="col-12 d-flex align-items-center my-3">
+                </div> -->
+                <div class="col-12 d-flex align-items-center my-3 fw-bold">
                   <label for="" class="form-label">Billing Information</label>
                   <hr>
                 </div>
                 <div class="col-xl-6 col-lg-12">
                   <div class="mb-3">
-                    <label for="contactName" class="form-label">Bill To *</label>
+                    <label for="billingOrganization" class="form-label">Company Full Name *</label>
                     <input type="text" required class="form-control" id="billingOrganization" placeholder="">
                   </div>
                 </div>
                 <div class="col-xl-6 col-lg-12">
                   <div class="mb-3">
-                    <label for="contactName" class="form-label">Name *</label>
-                    <input type="text" required class="form-control" id="billingName" placeholder="">
+                    <label for="billingRegNo" class="form-label">Business Reg. No. *</label>
+                    <input type="text" required class="form-control" id="billingRegNo" placeholder="">
                   </div>
                 </div>
                 <div class="col-xl-6 col-lg-12">
                   <div class="mb-3">
-                    <label for="contactName" class="form-label">Billing Email *</label>
+                    <label for="billingEmail" class="form-label">Contact Person (e-invoice) Email *</label>
                     <input type="tell" required class="form-control" id="billingEmail" placeholder="">
                   </div>
                 </div>
-                <div class="col-xl-6 col-lg-12">
+                <!-- <div class="col-xl-6 col-lg-12">
                   <div class="mb-3">
                     <label for="contactName" class="form-label">Designation *</label>
                     <input type="text" required class="form-control" id="billingDesignation" placeholder="">
+                  </div>
+                </div> -->
+                <div class="col-xl-6 col-lg-12">
+                  <div class="mb-3">
+                    <label for="contactNumber" class="form-label">Contact Number *</label>
+                    <input type="tell" required class="form-control" id="contactNumber" placeholder="">
                   </div>
                 </div>
             
@@ -906,8 +912,8 @@
             
                 <div class="col-12">
                   <div class="mb-3">
-                    <label for="address" class="form-label">Billing Address *</label>
-                    <textarea name="billingAddress" id="billingAddress" class="form-control" rows="3" placeholder="Full Address"></textarea>
+                    <label for="address" class="form-label">Company Full Address *</label>
+                    <textarea name="billingAddress" required id="billingAddress" class="form-control" rows="3" placeholder=""></textarea>
                   </div>
                 </div>
                 <div class="col-xl-9 col-lg-12">
@@ -1012,13 +1018,15 @@
                 contentType: 'application/json',
                 data: JSON.stringify({
                     title: $('#title1').val(),
-                    contact_name: $('#contactName').val(),
-                    contact_number: $('#contactNumber').val(),
-                    contact_email: $('#contactEmail').val(),
+                    billing_name: $('#contactName').val(),
+                    //contact_number: $('#contactNumber').val(),
+                    //contact_email: $('#contactEmail').val(),
                     billing_organization: $('#billingOrganization').val(),
-                    billing_name: $('#billingName').val(),
+                    //billing_name: $('#billingName').val(),
                     billing_email: $('#billingEmail').val(),
-                    billing_designation: $('#billingDesignation').val(),
+                    billing_reg_no: $('#billingRegNo').val(),
+                    billing_contact: $('#contactNumber').val(),
+                    //billing_designation: $('#billingDesignation').val(),
                     billing_address: $('#billingAddress').val(),
                     package: $('#package').val(),
                     

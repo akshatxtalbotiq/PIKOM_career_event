@@ -63,6 +63,33 @@
         </div>
 
       </div>
+
+      <div class="col-12 mt-5">
+        <div class="card card-body shadow">
+        <h3 class="mb-4 fs-4 fw-bold">Billing Information</h3>
+        <div class="row">
+          <div class="col-xl-6 col-lg-12 mb-3">
+            <label for="companyName" class="form-label">Company Full Name<span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="companyName" name="companyName" placeholder="Company Name" required>
+          </div>
+          <div class="col-xl-6 col-lg-12 mb-3">
+            <label for="businessNo" class="form-label">Business Reg No<span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="businessNo" name="businessNo" placeholder="Reg No" required>
+          </div>
+          <div class="col-xl-6 col-lg-12 mb-3">
+            <label for="companyAdress" class="form-label">Company Full Address<span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="companyAdress" name="companyAdress" placeholder="Address"   required>
+          </div>
+          <div class="col-xl-6 col-lg-12 mb-3">
+            <label for="contactPerson" class="form-label">Contact Person (e-invoice) Email<span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="contactPerson" name="contactPerson" placeholder="Email"   required>
+          </div>
+
+        </div>
+        </div>
+      </div>
+
+
       <div class="co-12 mt-5 rounded shadow bg-white p-3">
         <div class="row">
           <div class="col-xl-6 col-lg-12 text-center mb-4 mb-xl-0 text-xl-start align-items-center d-flex">
@@ -251,6 +278,12 @@
           toggleSaveBtnLoading(true);
           const playerCount = parseInt($('input[name="flight"]:checked').val());
           const players = collectPlayerData(playerCount);
+          const billing = {
+              name: $('#companyName').val(),
+              comp_reg_no: $('#businessNo').val(),
+              address: $('#companyAdress').val(),
+              email: $('#contactPerson').val()
+          };
 
       //    if(players.some(player => !player.name || !player.email || !player.mobile || !player.tshirt || !player.organization)) {
       //        alert('MANDATORY: Please fill in the name, email and mobile fields for each player.');
@@ -262,7 +295,7 @@
               url: '/save_registration',
               method: 'POST',
               contentType: 'application/json',
-              data: JSON.stringify({ players: players }),
+              data: JSON.stringify({ players: players, billing: billing }),
               headers: {
                           'X-CSRFToken': getCSRFToken()
                       },
