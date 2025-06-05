@@ -1,4 +1,5 @@
 {% load static %}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,8 +9,25 @@
   <link rel="stylesheet" href="{% static 'user/css/bootstrap.min.css' %}">
   <link rel="stylesheet" href="{% static 'user/css/style.css' %}">
 
-  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    #reader {
+      width: 300px;
+      height: 300px;
+      aspect-ratio: 1/1;
+      margin-inline: auto;
+      margin-bottom: 2rem;
+      border-radius: .75rem;
+      overflow: hidden;
+      box-shadow: 0 4px 10px 0 rgba(0, 0, 0, 0.1);
+      >video{
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        
+      }
+    }
 
+  </style>
 </head>
 <body class="bg-body-tertiary">
   
@@ -18,8 +36,8 @@
       <div class="col-xl-6 col-lg-12 mx-auto ">
         <h1 class="mb-3 text-center">{{name}}</h1>
 
-        <div class="card card-body p-0 rounded-4 shadow-lg overflow-hidden mb-5">
-          <div id="reader" class="ratio ratio-1x1" style=" background-color: aquamarine;"></div>
+        <div id="reader" class="ratio ratio-1x1" style=" background-color: aquamarine;">
+          <video id="camerarole"></video>
         </div>
         
         <div class="card card-body p-4 rounded-4 mb-3" id="result">
@@ -50,10 +68,27 @@
 
       
 
-
     <script src="{% static 'user/js/jquery-3.7.1.min.js' %}"></script>
     <script src="{% static 'user/js/bootstrap.bundle.min.js' %}"></script>
-    <script>
+   
+    <script>        
+      // Select the video element
+        const video = document.getElementById('camerarole');
+
+        // Ask for camera access and stream to the video element
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+            .then(function (stream) {
+              video.srcObject = stream;
+              video.play();
+            })
+            .catch(function (err) {
+              alert('Camera access denied or not available: ' + err);
+            });
+        } else {
+          alert('getUserMedia not supported in this browser.');
+        }
+
         function onScanSuccess(decodedText, decodedResult) {
             fetch(`/validate/${decodedText}`)
                 .then(response => response.json())
@@ -70,43 +105,7 @@
                     }
                 });
         }
-
-        const html5QrCode = new Html5Qrcode("reader");
-        html5QrCode.start({ facingMode: "environment" }, {
-            fps: 10,
-            qrbox: 350
-        }, onScanSuccess);
-    </script>
+    
+     </script>
 </body>
 </html>
-
-
-
-<!-- <!DOCTYPE html>
-<html>
-<head>
-    <title>Scan QR Code</title>
-    <script src="https://unpkg.com/html5-qrcode"></script>
-</head>
-<body>
-    <h1>Scan QR Code</h1>
-    <div id="reader" style="width: 300px;"></div>
-    <div id="result"></div>
-
-    <script>
-        function onScanSuccess(decodedText, decodedResult) {
-            fetch(`/validate/${decodedText}/`)
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById("result").innerText = data.message;
-                });
-        }
-
-        const html5QrCode = new Html5Qrcode("reader");
-        html5QrCode.start({ facingMode: "environment" }, {
-            fps: 10,
-            qrbox: 250
-        }, onScanSuccess);
-    </script>
-</body>
-</html> -->

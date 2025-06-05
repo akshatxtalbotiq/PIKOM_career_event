@@ -50,8 +50,8 @@ def validategolf(request,code):
         if not participant.is_checked_in:
             participant.is_checked_in = True
             participant.save()
-            return JsonResponse({'message': f'Participant checked in successfully!', 'participant': participant})
+            return JsonResponse({'message': '{0} checked in successfully!'.format(participant.name), 'remarks': participant.remarks})
         else:
-            return JsonResponse({'message': f'Participant already checked in!', 'participant': participant})
+            return JsonResponse({'message': '{0} checked in successfully!'.format(participant.name), 'remarks': participant.remarks})
     except Player.DoesNotExist:
         return JsonResponse({'message': 'Invalid QR code.'})
