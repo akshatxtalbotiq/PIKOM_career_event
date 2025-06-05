@@ -55,7 +55,7 @@
     <script src="{% static 'user/js/bootstrap.bundle.min.js' %}"></script>
     <script>
         function onScanSuccess(decodedText, decodedResult) {
-            fetch(`/validate/${decodedText}/`)
+            fetch(`/validate/${decodedText}`)
                 .then(response => response.json())
                 .then(data => {
                     
