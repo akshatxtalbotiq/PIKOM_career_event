@@ -1,9 +1,11 @@
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.http import JsonResponse
 
 from register.models import Player, Submission, Campaign
 import uuid
 
+@login_required
 def scan_page(request, id):
     id = id.strip()
     id = id.replace("-", "")
@@ -16,6 +18,7 @@ def scan_page(request, id):
 
     return render(request, 'validate/scan.html', {'name': campaign.title})
 
+@login_required
 def scan_page_golf(request):
     return render(request, 'validate/scangolf.html')
 
