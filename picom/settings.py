@@ -139,10 +139,10 @@ LOGOUT_URL = 'logout'  # URL to redirect to for logout
 
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'mail.tmsolutions.com.my'          # e.g., smtp.gmail.com, smtp.mailgun.org
-EMAIL_PORT = 465                               # or 465 for SSL
-EMAIL_HOST_USER = 'niva@tmsolutions.com.my'
-EMAIL_HOST_PASSWORD = '8QH-G_+{oV4O'
-EMAIL_USE_TLS = False                           # or EMAIL_USE_SSL = True (depending on port)
-DEFAULT_FROM_EMAIL = 'niva@tmsolutions.com.my'
+EMAIL_HOST = ''        
+EMAIL_PORT = 465                           
+EMAIL_HOST_USER = ''
+EMAIL_HOST_PASSWORD = ''
+EMAIL_USE_TLS = False                          
+DEFAULT_FROM_EMAIL = ''
 
