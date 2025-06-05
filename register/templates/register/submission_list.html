@@ -35,6 +35,8 @@
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Designation</th>
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder ">Organization</th>                        
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Registartion Date</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Remarks</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder"></th>
                     </tr>
                   </thead>
                   <tbody id="registration-body">
@@ -49,6 +51,38 @@
 
     </div>
   </main>
+
+  <!-- modal for remarks -->
+  <div class="modal fade" id="noteModal" tabindex="-1" aria-labelledby="noteModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-sm" style="max-width: 500px;">
+    <div class="modal-content border shadow-sm rounded-3">
+
+      <div class="modal-header bg-light border-bottom rounded-top">
+        <h5 class="modal-title" id="noteModalLabel">Edit Remarks</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <label for="modal-remarks" class="form-label fw-semibold">Remarks</label>
+        <textarea id="modal-remarks" class="form-control border rounded-2 shadow-sm p-2" rows="4" placeholder="Enter remarks..."></textarea>
+
+        <input type="hidden" id="modal-regno">
+      </div>
+
+      <div class="modal-footer rounded-bottom">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+          <i class="material-symbols-rounded align-middle">close</i> Close
+        </button>
+        <button type="button" class="btn btn-primary btn-sm" id="save-remarks-btn">
+          <i class="material-symbols-rounded align-middle">save</i> Save
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
 
   <script>
     function getCSRFToken() {
@@ -67,101 +101,150 @@
           return cookieValue;
       }
 
-    $(document).ready(function () {
+    $(document).on('click', '.note-btn', function () {
+      const regno = $(this).data('regno');
+      const remarks = $(this).data('remarks');
+      $('#modal-regno').val(regno);
+      $('#modal-remarks').val(remarks);
+      $('#noteModal').modal('show');
+    });
 
-        let campaignId = '{{campaign.campaign_code}}';  
+    $('#save-remarks-btn').on('click', function () {
+      const regno = $('#modal-regno').val();
+      const remarks = $('#modal-remarks').val();
 
-      new DataTable('#entries', {
-        responsive: false,
-        paging: true,
-        processing: true,
-        lengthChange: true,
-        searching: true,
-        pageLength: 10,
-        colReorder: true,
-        ajax: {
-            url: '/get_submission_list',
-            type: 'POST', 
-            data: function (d) {
-                d.id = campaignId;  
-            },
-            headers: {
-                'X-CSRFToken': getCSRFToken()  
-            },
-            dataSrc: ''
+      $.ajax({
+        url: '/update_remarks',
+        type: 'POST',
+        data: {
+          reg_no: regno,
+          remarks: remarks,
+          csrfmiddlewaretoken: getCSRFToken()
         },
-        columns: [
-          { data: 'reg_no' },
-          { data: 'name' },
-          { data: 'email' },
-        //   { data: 'phone' },
-          { data: 'job_title' },
-          { data: 'organization' },         
-          { data: 'registration_date' }
-        ],
-        dom:
-          "<'row mb-3'<'col-sm-6 text-start px-2'f><'col-sm-6 text-end px-2'B>>" +
-          "<'row'<'col-12'tr>>" +
-          "<'row'<'col-sm-6'i><'col-sm-6'p>>",
-        buttons: [
-          {
-            extend: 'excel',
-            className: 'btn btn-outline-success btn-sm', 
-            text: '<i class="material-symbols-rounded">download</i> Export to Excel',           
-            filename: 'submission_list',
-            title: 'Submission List', 
-          },
-          {
-            text: 'Send QR',
-            className: 'btn btn-outline-success btn-sm', 
-            action: function (e, dt, node, config) {
-                $.ajax({
-                    url: "/send_qr",
-                    cache: false,
-                    success: function(response) {
-                    }, error: commonAjaxErrorCallBack
-                });
-            }
+        success: function (response) {
+          if (response.status === 'success') {
+            $('#noteModal').modal('hide');
+            $('#entries').DataTable().ajax.reload(null, false); // reload only current page
+          } else {
+            alert('Failed to update remarks: ' + response.message);
           }
-        ],
-        fixedHeader: {
-          header: true,
-          footer: true,
-          headerOffset: 50
         },
-        autoWidth: true,
-        scrollCollapse: true,
-        language: {
-          paginate: {
-            previous: '<i class="material-symbols-rounded">chevron_left</i>',
-            next: '<i class="material-symbols-rounded">chevron_right</i>'
-          },
-          searchBuilder: {
-            button: 'Add filters',
-            add: '<i class="material-symbols-rounded">add</i>Add filters',
-            title: {
-              0: 'Filters',
-              _: 'Filters (%d)'
-            },
-            delete: '<i class="material-symbols-rounded">delete</i>',
-            right: '<i class="material-symbols-rounded">chevron_right</i>',
-            left: '<i class="material-symbols-rounded">chevron_left</i>',
-            clearAll: '<i class="material-symbols-rounded">x</i>Clear All'
-          },
-          emptyTable:
-            "<img src='{% static 'user/img/illustrations/notfoundImg3.png' %}' width='180px' alt='No data' /><p class='fs-5 fw-500'>No Record available in table</p>",
-          infoEmpty: "0 Record",
-          zeroRecords:
-            "<img src='{% static 'user/img/illustrations/notfoundImg3.png' %}' width='180px' alt='No data' /><p class='fs-5 fw-500'>No Record to display</p>"
-        },
-        order: [[0, 'desc']],
-        initComplete: function () {
-          console.log('DataTable initialized and loaded via AJAX');
+        error: function () {
+          alert('An error occurred while updating remarks.');
         }
       });
     });
-
     
+    $(document).ready(function () {
+
+      let campaignId = '{{campaign.campaign_code}}';  
+
+    new DataTable('#entries', {
+      responsive: false,
+      paging: true,
+      processing: true,
+      lengthChange: true,
+      searching: true,
+      pageLength: 10,
+      colReorder: true,
+      ajax: {
+          url: '/get_submission_list',
+          type: 'POST', 
+          data: function (d) {
+              d.id = campaignId;  
+          },
+          headers: {
+              'X-CSRFToken': getCSRFToken()  
+          },
+          dataSrc: ''
+      },
+      columns: [
+        { data: 'reg_no' },
+        { data: 'name' },
+        { data: 'email' },
+      //   { data: 'phone' },
+        { data: 'job_title' },
+        { data: 'organization' },         
+        { data: 'registration_date' },
+        { data: 'remarks' },
+        {
+          data: null,
+          render: function (data, type, row) {
+            return `
+              <button class="note-btn border-0 bg-transparent p-0" 
+                      style="font-size: 24px; color: #0d6efd;"
+                      data-regno="${row.reg_no}" 
+                      data-remarks="${row.remarks || ''}">
+                <i class="material-symbols-rounded">note</i>
+              </button>`;
+          },
+          orderable: false,
+          searchable: false
+        }
+      ],
+      dom:
+        "<'row mb-3'<'col-sm-6 text-start px-2'f><'col-sm-6 text-end px-2'B>>" +
+        "<'row'<'col-12'tr>>" +
+        "<'row'<'col-sm-6'i><'col-sm-6'p>>",
+      buttons: [
+        {
+          extend: 'excel',
+          className: 'btn btn-outline-success btn-sm', 
+          text: '<i class="material-symbols-rounded">download</i> Export to Excel',           
+          filename: 'submission_list',
+          title: 'Submission List', 
+        },
+        {
+          text: 'Send QR',
+          className: 'btn btn-outline-success btn-sm', 
+          action: function (e, dt, node, config) {
+              $.ajax({
+                  url: "/send_qr/" + campaignId,
+                  cache: false,
+                  success: function(response) {
+                  }, error: commonAjaxErrorCallBack
+              });
+          }
+        }
+      ],
+      fixedHeader: {
+        header: true,
+        footer: true,
+        headerOffset: 50
+      },
+      autoWidth: true,
+      scrollCollapse: true,
+      language: {
+        paginate: {
+          previous: '<i class="material-symbols-rounded">chevron_left</i>',
+          next: '<i class="material-symbols-rounded">chevron_right</i>'
+        },
+        searchBuilder: {
+          button: 'Add filters',
+          add: '<i class="material-symbols-rounded">add</i>Add filters',
+          title: {
+            0: 'Filters',
+            _: 'Filters (%d)'
+          },
+          delete: '<i class="material-symbols-rounded">delete</i>',
+          right: '<i class="material-symbols-rounded">chevron_right</i>',
+          left: '<i class="material-symbols-rounded">chevron_left</i>',
+          clearAll: '<i class="material-symbols-rounded">x</i>Clear All'
+        },
+        emptyTable:
+          "<img src='{% static 'user/img/illustrations/notfoundImg3.png' %}' width='180px' alt='No data' /><p class='fs-5 fw-500'>No Record available in table</p>",
+        infoEmpty: "0 Record",
+        zeroRecords:
+          "<img src='{% static 'user/img/illustrations/notfoundImg3.png' %}' width='180px' alt='No data' /><p class='fs-5 fw-500'>No Record to display</p>"
+      },
+      order: [[0, 'desc']],
+      initComplete: function () {
+        console.log('DataTable initialized and loaded via AJAX');
+      }
+    });
+  });
+
+  
     var win = navigator.platform.indexOf('Win') > -1;
     if (win && document.querySelector('#sidenav-scrollbar')) {
       var options = {

@@ -231,7 +231,7 @@
                           <td>
                             <div class="d-flex px-2 py-1">
                               <div class="d-flex flex-column justify-content-center">
-                                <a href="{{ campaign.url }}" class="nav-link text-body p-0">
+                                <a href="{{ campaign.url }}/{{ campaign.campaign_code }}" class="nav-link text-body p-0">
                                   <h6 class="mb-0 text-xs">{{ campaign.title }}</h6>
                                 </a>
                               </div>
@@ -262,6 +262,11 @@
                                 data-id="{{ campaign.id }}" title="Edit">
                                 <i class="material-symbols-rounded">edit</i>
                               </a>
+                              {% if campaign.need_qr and campaign.is_active %}
+                                <a href="{% url 'scan' campaign.campaign_code %}" target="_blank" class="text-body p-0" title="QR Code">
+                                  <i class="material-symbols-rounded">qr_code</i>
+                                </a>
+                              {% endif %}
                             </div>
                           </td>
 
@@ -325,6 +330,14 @@
               </div>
               <div class="col-xl-12 col-lg-12">
                 <div class="d-flex justify-content-between align-items-center mb-3">
+                  <label class="form-check-label" for="enableCampaign">Enable or Disable QR Scanning Page</label>
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="enableQR" name="enableQR">
+                  </div>
+                </div>
+              </div>
+              <div class="col-xl-12 col-lg-12">
+                <div class="d-flex justify-content-between align-items-center mb-3">
                   <label class="form-check-label" for="enableCampaign">Active or Inactive the Campaign</label>
                   <div class="form-check form-switch">
                     <input class="form-check-input" type="checkbox" role="switch" id="enableCampaign" name="enableCampaign" checked>
@@ -375,6 +388,7 @@
               document.getElementById('campaignPageURL').value = data.url || '';
               document.getElementById('enableCampaign').checked = data.active;
               document.getElementById('campaignID').value = data.id || '';
+              document.getElementById('enableQR').checked = data.need_qr;
 
               // Open the modal
               const modal = new bootstrap.Modal(document.getElementById('addNewCampaign'));
@@ -540,6 +554,7 @@
         const isActive = $('#enableCampaign').is(':checked');
         const url = $('#campaignPageURL').val();
         const campaignID = $('#campaignID').val();
+        const need_qr = $('#enableQR').is(':checked');
        
 
         $.ajax({
@@ -553,6 +568,7 @@
             is_active: isActive,
             url: url,
             id:campaignID,
+            need_qr: need_qr
           },
           success: function (response) {
             if (response.success) {

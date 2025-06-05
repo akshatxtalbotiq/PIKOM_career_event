@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{{name}} Registration</title>
+  <title>PIKOM Golf Registration</title>
   <link rel="stylesheet" href="{% static 'user/css/bootstrap.min.css' %}">
   <link rel="stylesheet" href="{% static 'user/css/style.css' %}">
 
@@ -16,30 +16,30 @@
   <div class="container-xl py-5">
     <div class="row mt-3">
       <div class="col-xl-6 col-lg-12 mx-auto ">
-        <h1 class="mb-3 text-center">{{name}}</h1>
+        <h1 class="mb-3 text-center">PIKOM Golf Invitational & Charity Drive 2025</h1>
 
         <div class="card card-body p-0 rounded-4 shadow-lg overflow-hidden mb-5">
           <div id="reader" class="ratio ratio-1x1" style=" background-color: aquamarine;"></div>
         </div>
         
         <div class="card card-body p-4 rounded-4 mb-3" id="result">
-          <h5>{{ partictpant.name }}</h5>
-          <p>{{ message }}</p>
-          <!-- <ul>
+          <h5>Name come here</h5>
+          <p>any other info if you want to show come here</p>
+          <ul>
             <li><span>also can shw list</span></li>
             <li><span>also can shw list</span></li>
             <li><span>also can shw list</span></li>
             <li><span>also can shw list</span></li>
             <li><span>also can shw list</span></li>
             <li><span>also can shw list</span></li>
-          </ul> -->
+          </ul>
         </div>
         <div class="">
           <div class="nb-3">
             <label for="remark" class="form-label">Remark (Optional)</label>
-            <textarea name="remark" id="remark" class="form-control" placeholder="" rows="5">{{ participant.remarks }}</textarea>
+            <textarea name="remark" id="remark" class="form-control" placeholder="Remark (Optional)" rows="5"></textarea>
           </div>
-          <!-- <button class="btn btn-primary btn-lg mt-3" onclick="window.location.reload();">Action text</button> -->
+          <button class="btn btn-primary btn-lg mt-3" onclick="window.location.reload();">Action text</button>
         </div>
       </div>
     </div>
@@ -55,7 +55,7 @@
     <script src="{% static 'user/js/bootstrap.bundle.min.js' %}"></script>
     <script>
         function onScanSuccess(decodedText, decodedResult) {
-            fetch(`/validate/${decodedText}/`)
+            fetch(`/validategolf/${decodedText}/`)
                 .then(response => response.json())
                 .then(data => {
                     document.getElementById("result").innerText = data.message;
@@ -70,34 +70,3 @@
     </script>
 </body>
 </html>
-
-
-
-<!-- <!DOCTYPE html>
-<html>
-<head>
-    <title>Scan QR Code</title>
-    <script src="https://unpkg.com/html5-qrcode"></script>
-</head>
-<body>
-    <h1>Scan QR Code</h1>
-    <div id="reader" style="width: 300px;"></div>
-    <div id="result"></div>
-
-    <script>
-        function onScanSuccess(decodedText, decodedResult) {
-            fetch(`/validate/${decodedText}/`)
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById("result").innerText = data.message;
-                });
-        }
-
-        const html5QrCode = new Html5Qrcode("reader");
-        html5QrCode.start({ facingMode: "environment" }, {
-            fps: 10,
-            qrbox: 250
-        }, onScanSuccess);
-    </script>
-</body>
-</html> -->

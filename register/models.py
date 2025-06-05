@@ -9,8 +9,9 @@ class Registration(models.Model):
     mobile = models.CharField(max_length=20)
     created_on = models.DateTimeField(auto_now_add=True)
     lastmodified = models.DateTimeField(auto_now=True)
-    comp_reg_no = models.CharField(max_length=20, unique=True, null=True, blank=True)
-    address = models.TextField(null=True, blank=True)    
+    comp_reg_no = models.CharField(max_length=20, null=True, blank=True)
+    address = models.TextField(null=True, blank=True)   
+    campaign_code = models.CharField(max_length=255, null=True, blank=True)     
 
     def __str__(self):
         return self.name
@@ -47,6 +48,7 @@ class Player(models.Model):
     registration_code = models.UUIDField(default=uuid.uuid4, unique=True)
     is_checked_in = models.BooleanField(default=False)
     qr_sent = models.BooleanField(default=False)
+    remarks = models.TextField(null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -85,7 +87,7 @@ class Sponsorship(models.Model):
     
 
     billing_organization = models.CharField(max_length=100)
-    billing_reg_no = models.CharField(max_length=20, unique=True, null=True, blank=True)    
+    billing_reg_no = models.CharField(max_length=20, null=True, blank=True)    
     billing_email = models.EmailField()    
     billing_contact = models.CharField(max_length=20, blank=True)
     billing_address = models.TextField()
@@ -98,6 +100,7 @@ class Sponsorship(models.Model):
     submitted_at = models.DateTimeField(auto_now_add=True)
 
     package = models.CharField(max_length=10, choices=PACKAGE_CHOICES, db_column="package", default=None)
+    campaign_code = models.CharField(max_length=255, null=True, blank=True)    
 
     
 
@@ -115,6 +118,7 @@ class Campaign(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     url = models.URLField(max_length=255, null=True, blank=True)
+    need_qr = models.BooleanField(default=False)
 
     def __str__(self):
         return self.title
@@ -132,7 +136,8 @@ class Submission(models.Model):
     registration_code = models.UUIDField(default=uuid.uuid4, unique=True)
     is_checked_in = models.BooleanField(default=False)
     qr_sent = models.BooleanField(default=False)
-    campaign_code = models.CharField(max_length=255, unique=True)    
+    campaign_code = models.CharField(max_length=255)    
+    remarks = models.TextField(null=True, blank=True)
 
     def __str__(self):
         return self.name

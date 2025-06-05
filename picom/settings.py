@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-lt6fy$yy%2qlce!qr=k7!)lhzk&)hsytq3!ucofc=(u)ewvwlv
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -136,3 +136,13 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 
 LOGIN_URL ='login'  # URL to redirect to for login4
 LOGOUT_URL = 'logout'  # URL to redirect to for logout
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'mail.tmsolutions.com.my'          # e.g., smtp.gmail.com, smtp.mailgun.org
+EMAIL_PORT = 465                               # or 465 for SSL
+EMAIL_HOST_USER = 'niva@tmsolutions.com.my'
+EMAIL_HOST_PASSWORD = '8QH-G_+{oV4O'
+EMAIL_USE_TLS = False                           # or EMAIL_USE_SSL = True (depending on port)
+DEFAULT_FROM_EMAIL = 'niva@tmsolutions.com.my'
+

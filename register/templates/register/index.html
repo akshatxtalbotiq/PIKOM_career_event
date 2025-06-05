@@ -84,7 +84,7 @@
             <label for="contactPerson" class="form-label">Contact Person (e-invoice) Email<span class="text-danger">*</span></label>
             <input type="text" class="form-control" id="contactPerson" name="contactPerson" placeholder="Email"   required>
           </div>
-
+          <input type="hidden" id="campaignID" name="campaignID" value="1279aab2761d4061a3aa350470cbff63">
         </div>
         </div>
       </div>
@@ -282,8 +282,12 @@
               name: $('#companyName').val(),
               comp_reg_no: $('#businessNo').val(),
               address: $('#companyAdress').val(),
-              email: $('#contactPerson').val()
+              email: $('#contactPerson').val(),
+              campaign_id: $('#campaignID').val()
           };
+
+          //alert($('#campaignID').val());
+          //return;
 
       //    if(players.some(player => !player.name || !player.email || !player.mobile || !player.tshirt || !player.organization)) {
       //        alert('MANDATORY: Please fill in the name, email and mobile fields for each player.');

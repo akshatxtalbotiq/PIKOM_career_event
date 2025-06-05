@@ -1,17 +1,20 @@
 from django.core.mail import EmailMessage
 from django.shortcuts import render,get_object_or_404
 from django.http import HttpResponse, JsonResponse
-
-from picom import settings
-from .models import Registration, Player, Sponsorship,Campaign, Submission
-import json
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.contrib.auth.decorators import login_required
-import qrcode
-from io import BytesIO
 from django.core.files.base import ContentFile
 from django.utils.dateparse import parse_datetime
+from django.utils import timezone
+from django.template.loader import render_to_string
 
+from io import BytesIO
+from picom import settings
+from .models import Registration, Player, Sponsorship,Campaign, Submission
+
+import uuid
+import json
+import qrcode
 
 # Create your views here.
 def index(request):
@@ -32,6 +35,7 @@ def save_registration(request):
                     email=billing.get('email', ''),                   
                     address=billing.get('address', ''),
                     comp_reg_no=billing.get('comp_reg_no', ''),
+                    campaign_code=billing.get('campaign_id', ''),
                 )
 
                 # Save all players
@@ -53,6 +57,35 @@ def save_registration(request):
             return JsonResponse({'success': False, 'message': str(e)})
 
     return JsonResponse({'success': False, 'message': 'Invalid request method'})
+
+@login_required
+def update_registration_remarks(request):
+    if request.method == 'POST':
+        print("Updating remarks for registration")
+        print(request.POST.get('registration_code'))
+        registration_code = request.POST.get('registration_code')
+        remarks = request.POST.get('remarks')
+
+        try:           
+            registration_uuid = uuid.UUID(registration_code)
+        except ValueError:
+            return JsonResponse({'status': 'error', 'message': 'Invalid UUID format'})
+
+        try:
+            player = Player.objects.get(registration_code=registration_uuid)
+            player.remarks = remarks
+           
+            player.save()
+            return JsonResponse({'status': 'success'})
+        except Player.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Player not found'})
+        except IntegrityError as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': f'Integrity error: {str(e)}'
+            })
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid request'})
 
 def thankyou(request, reg_no):
     return render(request, 'register/thankyou.html', {'reg_no': reg_no})
@@ -79,6 +112,7 @@ def save_sponsorship(request):
                 #billing_designation=data['billing_designation'],
                 billing_address=data['billing_address'],                
                 package=data['package'],  
+                campaign_code=data.get('campaign_id', ''),
             )
 
             return JsonResponse({'success': True, 'message': 'Sponsorship saved successfully', 'reg_no': sponsor.reg_no})
@@ -94,7 +128,11 @@ def sponsorship_thankyou(request, reg_no):
 def get_registration_list(request):   
 
     try:
-        if request.method == 'GET':
+        if request.method == 'POST':
+
+            campaign_code = request.POST.get('id')  
+            campaign_code = campaign_code.replace("-", "")  
+
             players = Player.objects.select_related('fkregistration').all()
             data = [
                 {
@@ -107,6 +145,8 @@ def get_registration_list(request):
                     'handicap': player.handicap,
                     'shirt_size': player.tshirt_size,
                     'registration_date': player.fkregistration.created_on.strftime('%Y-%m-%d %H:%M %p'),
+                    'remarks': player.remarks if player.remarks else '',
+                    'registration_code': str(player.registration_code),
                 }
                 for player in players
             ]
@@ -122,7 +162,11 @@ def get_registration_list(request):
 def get_sponsorship_list(request):   
 
     try:
-        if request.method == 'GET':
+        if request.method == 'POST':
+
+            campaign_code = request.POST.get('id')  
+            campaign_code = campaign_code.replace("-", "")  
+
             sponsorships = Sponsorship.objects.all().order_by('-submitted_at')
             data = []
             for s in sponsorships:
@@ -145,12 +189,14 @@ def get_sponsorship_list(request):
 @login_required 
 def registration_list(request, id=None):
     current_user = request.user    
-    return render(request, 'register/registration_list.html', {'user': current_user})
+    campaign = Campaign.objects.get(campaign_code=id)
+    return render(request, 'register/registration_list.html', {'user': current_user, 'campaign': campaign})
 
 @login_required 
 def sponsorship_list(request, id=None):
     current_user = request.user    
-    return render(request, 'register/sponsorship_list.html', {'user': current_user})
+    campaign = Campaign.objects.get(campaign_code=id)
+    return render(request, 'register/sponsorship_list.html', {'user': current_user, 'campaign': campaign})
 
 @login_required
 def campaign_list(request):    
@@ -172,6 +218,7 @@ def create_campaign(request):
         end_date = parse_datetime(request.POST.get('end_date'))
         is_active = request.POST.get('is_active') == 'true'
         url = request.POST.get('url')
+        need_qr = request.POST.get('need_qr') == 'true'
 
         if id:
             print(f"Updating campaign with ID: {id}")
@@ -181,6 +228,7 @@ def create_campaign(request):
             campaign.end_date = end_date
             campaign.is_active = is_active
             campaign.url = url
+            campaign.need_qr = need_qr
             campaign.save()
         else:
             print("Creating a new campaign")
@@ -189,7 +237,8 @@ def create_campaign(request):
                 start_date=start_date,
                 end_date=end_date,
                 is_active=is_active,
-                url=url
+                url=url,
+                need_qr=need_qr
             )
         return JsonResponse({'success': True, 'id': campaign.id})
     return JsonResponse({'success': False, 'error': 'Invalid request'}, status=400)
@@ -204,7 +253,8 @@ def get_campaign(request, id):
         "end_date": campaign.end_date.isoformat() if campaign.end_date else "",
         "url": campaign.url,
         "active": campaign.is_active,
-        "id": campaign.id
+        "id": campaign.id,
+        "need_qr": campaign.need_qr,
     }
     return JsonResponse(data)
 
@@ -231,6 +281,7 @@ def get_submission_list(request):
                     'job_title': s.job_title,
                     'organization': s.organization,
                     'registration_date': s.submitted_at.strftime('%Y-%m-%d %I:%M %p') if s.submitted_at else '',
+                    'remarks': s.remarks if s.remarks else '',
                 })
 
             return JsonResponse(data, safe=False)
@@ -238,6 +289,33 @@ def get_submission_list(request):
             return JsonResponse({'error': 'Invalid request method'}, status=400)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+def update_remarks(request):
+    if request.method == 'POST':
+        print("Updating remarks for submission")
+        reg_no = request.POST.get('reg_no')
+        remarks = request.POST.get('remarks')
+
+        try:
+            submission = Submission.objects.get(reg_no=reg_no)
+            submission.remarks = remarks
+
+            # to ensure submitted_at is not None
+            if submission.submitted_at is None:
+                submission.submitted_at = timezone.now()
+
+            submission.save()
+            return JsonResponse({'status': 'success'})
+        except Submission.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Submission not found'})
+        except IntegrityError as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': f'Integrity error: {str(e)}'
+            })
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid request'})
 
 
 def tnc(request):
@@ -250,16 +328,36 @@ def generate_qr_code(data):
     qr.save(buffer, format='PNG')
     return ContentFile(buffer.getvalue())
 
-def send_qr_email(player):
-    qr_image = generate_qr_code(str(player.registration_code))
+def send_qr_email(player, id):
+    qr_image = generate_qr_code(str(player.registration_code))   
 
+    if id == "0":
+        template_name = 'email_registration.html'
+    else:
+        template_name = f'email_{id}.html'
+
+    html_content = render_to_string(f'register/email/{template_name}', {'name': player.name})
+   
+    try:           
+        registration_uuid = uuid.UUID(id)
+    except ValueError:
+        return JsonResponse({'status': 'error', 'message': 'Invalid UUID format'})
+    
+    campaign = get_object_or_404(Campaign, campaign_code=registration_uuid)
+
+   
+    if not player.email:
+        return False
+    
     email = EmailMessage(
-        'Your Event QR Code',
-        f'Dear {player.name}, please find your QR code attached. Use this to check in at the event.',
-        settings.DEFAULT_FROM_EMAIL,
-        [player.email]
+        subject='Your Admission QR Code for ' + campaign.title,
+        body=html_content,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[player.email],
     )
+    email.content_subtype = 'html'
     email.attach(f'qr_{player.name}.png', qr_image.read(), 'image/png')
+   
     try:
         email.send()
         player.qr_sent = True
@@ -268,7 +366,12 @@ def send_qr_email(player):
     except Exception as e:        
         return False    
 
-def send_qr(request):
-    players = Player.objects.filter(qr_sent=False)
+def send_qr(request, id):
+    if id == "0":
+        players = Player.objects.filter(qr_sent=False)
+    else:
+        id = id.replace("-", "")
+        players = Submission.objects.filter(qr_sent=False, campaign_code=id)
+
     for player in players:
-        send_qr_email(player)
+        send_qr_email(player,id)

@@ -37,6 +37,8 @@
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">HandiCap</th>
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Shirt Size</th>
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Registartion Date</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Remarks</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder"></th>
                     </tr>
                   </thead>
                   <tbody id="registration-body">
@@ -52,8 +54,94 @@
     </div>
   </main>
 
+  <!-- modal for remarks -->
+  <div class="modal fade" id="noteModal" tabindex="-1" aria-labelledby="noteModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-sm" style="max-width: 500px;">
+    <div class="modal-content border shadow-sm rounded-3">
+
+      <div class="modal-header bg-light border-bottom rounded-top">
+        <h5 class="modal-title" id="noteModalLabel">Edit Remarks</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <label for="modal-remarks" class="form-label fw-semibold">Remarks</label>
+        <textarea id="modal-remarks" class="form-control border rounded-2 shadow-sm p-2" rows="4" placeholder="Enter remarks..."></textarea>
+
+        <input type="hidden" id="modal-regno">
+      </div>
+
+      <div class="modal-footer rounded-bottom">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+          <i class="material-symbols-rounded align-middle">close</i> Close
+        </button>
+        <button type="button" class="btn btn-primary btn-sm" id="save-remarks-btn">
+          <i class="material-symbols-rounded align-middle">save</i> Save
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
   <script>
+    function getCSRFToken() {
+          let name = 'csrftoken';
+          let cookieValue = null;
+          if (document.cookie && document.cookie !== '') {
+              let cookies = document.cookie.split(';');
+              for (let i = 0; i < cookies.length; i++) {
+                  let cookie = cookies[i].trim();
+                  if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                      cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                      break;
+                  }
+              }
+          }
+          return cookieValue;
+      }
+
+      $(document).on('click', '.note-btn', function () {
+      const regno = $(this).data('regno');
+      const remarks = $(this).data('remarks');
+      $('#modal-regno').val(regno);
+      $('#modal-remarks').val(remarks);
+      $('#noteModal').modal('show');
+
+    });
+
+    $('#save-remarks-btn').on('click', function () {
+      const regno = $('#modal-regno').val();
+      const remarks = $('#modal-remarks').val();
+
+      $.ajax({
+        url: '/update_registration_remarks',
+        type: 'POST',
+        data: {
+          registration_code: regno,
+          remarks: remarks,
+          csrfmiddlewaretoken: getCSRFToken()
+        },
+        success: function (response) {
+          if (response.status === 'success') {
+            $('#noteModal').modal('hide');
+            $('#entries').DataTable().ajax.reload(null, false); // reload only current page
+          } else {
+            alert('Failed to update remarks: ' + response.message);
+          }
+        },
+        error: function () {
+          alert('An error occurred while updating remarks.');
+        }
+      });
+    });
+    
+    
+      
     $(document).ready(function () {
+
+      let campaignId = '{{campaign.campaign_code}}';  
+
       new DataTable('#entries', {
         responsive: false,
         paging: true,
@@ -64,7 +152,13 @@
         colReorder: true,
         ajax: {
           url: '/get_registration_list',
-          type: 'GET',
+          type: 'POST', 
+          data: function (d) {
+              d.id = campaignId;  
+          },
+          headers: {
+              'X-CSRFToken': getCSRFToken()  
+          },
           dataSrc: ''
         },
         columns: [
@@ -76,7 +170,22 @@
           { data: 'organization' },
           { data: 'handicap' },
           { data: 'shirt_size' },
-          { data: 'registration_date' }
+          { data: 'registration_date' },
+          { data: 'remarks' },
+          {
+            data: null,
+            render: function (data, type, row) {
+              return `
+                <button class="note-btn border-0 bg-transparent p-0" 
+                        style="font-size: 24px; color: #0d6efd;"
+                        data-regno="${row.registration_code}" 
+                        data-remarks="${row.remarks || ''}">
+                  <i class="material-symbols-rounded">note</i>
+                </button>`;
+            },
+            orderable: false,
+            searchable: false
+          }
         ],
         dom:
           "<'row mb-3'<'col-sm-6 text-start px-2'f><'col-sm-6 text-end px-2'B>>" +
@@ -95,7 +204,7 @@
             className: 'btn btn-outline-success btn-sm', 
             action: function (e, dt, node, config) {
                 $.ajax({
-                    url: "/send_qr",
+                    url: "/send_qr/0",
                     cache: false,
                     success: function(response) {
                     }, error: commonAjaxErrorCallBack
