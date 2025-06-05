@@ -24,15 +24,7 @@ def scan_page_golf(request):
 
 def validate(request, code):
     try:
-        code = code.strip()
-        code = code.replace("-", "")
-
-        try:           
-            registration_uuid = uuid.UUID(id)
-        except ValueError:
-            return JsonResponse({'status': 'error', 'message': 'Invalid UUID format'})
-
-        participant = Submission.objects.get(registration_code=registration_uuid)
+        participant = Submission.objects.get(registration_code=code)
 
         if participant is None:
             return JsonResponse({'status': 'error', 'message': 'Participant not found'})
@@ -49,15 +41,7 @@ def validate(request, code):
     
 def validategolf(request,code):
     try:
-        code = code.strip()
-        code = code.replace("-", "")
-
-        try:           
-            registration_uuid = uuid.UUID(id)
-        except ValueError:
-            return JsonResponse({'status': 'error', 'message': 'Invalid UUID format'})
-
-        participant = Player.objects.get(registration_code=registration_uuid)        
+        participant = Player.objects.get(registration_code=code)        
 
         if participant is None:
             return JsonResponse({'status': 'error', 'message': 'Participant not found'})

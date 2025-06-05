@@ -35,6 +35,7 @@
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Designation</th>
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder ">Organization</th>                        
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Registartion Date</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Checked-In</th>
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Remarks</th>
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder"></th>
                     </tr>
@@ -166,6 +167,12 @@
         { data: 'job_title' },
         { data: 'organization' },         
         { data: 'registration_date' },
+        {
+          data: 'is_checked_in',
+          render: function (data, type, row) {           
+            return `<span class="material-symbols-rounded ${data === true ? 'text-success' : 'text-danger'}">${data === true ? 'check_circle' : 'cancel'}</span>`;
+          }
+        },
         { data: 'remarks' },
         {
           data: null,

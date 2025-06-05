@@ -1,6 +1,11 @@
 from django.db import models
 import uuid
-# Create your models here.
+from datetime import datetime
+
+# def upload_sponsor_attachment(instance, filename):
+#     year = datetime.now().year
+#     return f"sponsors/{year}/{filename}"
+
 
 class Registration(models.Model):
     reg_no = models.CharField(max_length=20, unique=True)
@@ -101,6 +106,7 @@ class Sponsorship(models.Model):
 
     package = models.CharField(max_length=10, choices=PACKAGE_CHOICES, db_column="package", default=None)
     campaign_code = models.CharField(max_length=255, null=True, blank=True)    
+    #logo = models.ImageField(upload_to=upload_sponsor_attachment, blank=True, null=True)
 
     
 

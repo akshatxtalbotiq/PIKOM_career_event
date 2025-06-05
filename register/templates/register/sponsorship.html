@@ -116,7 +116,25 @@
       background-color: #fafafac7;
       border: none;
     }
+    .conformed_sponsor{
+      position: absolute;
+      top: 0;
+      right: 0;
+      >img{
+          width: 200px;
+        }  
+    }
     @media (max-width: 768px){
+      .conformed_sponsor{
+        position: relative;
+        margin-top: 1rem;    
+        width: 100%;
+        margin-inline: auto;
+        text-align: center;
+        >img{
+          width: 200px;
+        }
+      }
       .package {
         .package-title {
           font-size: 2rem;
@@ -236,9 +254,12 @@
         </div>
         <div class="col-xl-8 col-lg-12">
           <div class="package-details h-100 d-flex flex-column">
-            <div class="pb-3">
+            <div class="pb-3 position-relative">
               <h3 class="package-title">Platinum Sponsor</h3>
               <h3 class="package-price">RM 50,000</h3>
+              <div class="conformed_sponsor">
+                <img src="{% static 'register/images/sponsorships-img/1_logo.png' %}" class="img-fluid" width="120px" alt="">
+              </div>
             </div>
             <div class="flex-grow-1">
               <p class="fw-semibold fs-4"> Benefits</p>
@@ -280,9 +301,12 @@
         </div>
         <div class="col-xl-8 col-lg-12">
           <div class="package-details h-100 d-flex flex-column">
-            <div class="pb-3">
+            <div class="pb-3 position-relative">
               <h3 class="package-title">Gold Sponsor</h3>
               <h3 class="package-price">RM 35,000</h3>
+              <div class="conformed_sponsor">
+                <img src="{% static 'register/images/sponsorships-img/2_logo.png' %}" class="img-fluid" width="120px" alt="">
+              </div>
             </div>
             <div class="flex-grow-1">
               <p class="fw-semibold fs-4"> Benefits</p>
@@ -318,9 +342,12 @@
         </div>
         <div class="col-xl-8 col-lg-12">
           <div class="package-details h-100 d-flex flex-column">
-            <div class="pb-3">
+            <div class="pb-3 position-relative">
               <h3 class="package-title">Golf T-shirt Sponsor</h3>
               <h3 class="package-price">RM 30,000</h3>
+              <div class="conformed_sponsor">
+                <img src="{% static 'register/images/sponsorships-img/4_logo.png' %}" class="img-fluid" width="120px" alt="">
+              </div>
             </div>
             <div class="flex-grow-1">
               <p class="fw-semibold fs-4"> Benefits</p>
@@ -356,9 +383,12 @@
         </div>
         <div class="col-xl-8 col-lg-12">
           <div class="package-details h-100 d-flex flex-column">
-            <div class="pb-3">
+            <div class="pb-3 position-relative">
               <h3 class="package-title">Duffle Bag Sponsor</h3>
               <h3 class="package-price">RM 25,000</h3>
+              <div class="conformed_sponsor">
+                <img src="{% static 'register/images/sponsorships-img/5_logo.png' %}" class="img-fluid" width="120px" alt="">
+              </div>
             </div>
             <div class="flex-grow-1">
               <p class="fw-semibold fs-4"> Benefits</p>
@@ -394,9 +424,12 @@
         </div>
         <div class="col-xl-8 col-lg-12">
           <div class="package-details h-100 d-flex flex-column">
-            <div class="pb-3">
+            <div class="pb-3 position-relative">
               <h3 class="package-title">Golf Cap Sponsor</h3>
               <h3 class="package-price">RM 15,000</h3>
+              <div class="conformed_sponsor">
+                <img src="{% static 'register/images/sponsorships-img/6_logo.png' %}" class="img-fluid" width="120px" alt="">
+              </div>
             </div>
             <div class="flex-grow-1">
               <p class="fw-semibold fs-4"> Benefits</p>
@@ -431,9 +464,12 @@
         </div>
         <div class="col-xl-8 col-lg-12">
           <div class="package-details h-100 d-flex flex-column">
-            <div class="pb-3">
+            <div class="pb-3 position-relative">
               <h3 class="package-title">Umbrella Sponsor</h3>
               <h3 class="package-price">RM 15,000</h3>
+              <div class="conformed_sponsor">
+                <img src="{% static 'register/images/sponsorships-img/7_logo.png' %}" class="img-fluid" width="120px" alt="">
+              </div>
             </div>
             <div class="flex-grow-1">
               <p class="fw-semibold fs-4"> Benefits</p>
@@ -468,9 +504,12 @@
         </div>
         <div class="col-xl-8 col-lg-12">
           <div class="package-details h-100 d-flex flex-column">
-            <div class="pb-3">
+            <div class="pb-3 position-relative">
               <h3 class="package-title">Golf Balls Sponsor</h3>
               <h3 class="package-price">RM 10,000</h3>
+              <div class="conformed_sponsor">
+                <img src="{% static 'register/images/sponsorships-img/golf_logo.png' %}" class="img-fluid" width="120px" alt="">
+              </div>
             </div>
             <div class="flex-grow-1">
               <p class="fw-semibold fs-4"> Benefits</p>
@@ -505,9 +544,12 @@
         </div>
         <div class="col-xl-8 col-lg-12">
           <div class="package-details h-100 d-flex flex-column">
-            <div class="pb-3">
+            <div class="pb-3 position-relative">
               <h3 class="package-title">Golf Sleeve Sponsor</h3>
               <h3 class="package-price">RM 10,000</h3>
+              <div class="conformed_sponsor">
+                <img src="{% static 'register/images/sponsorships-img/8_logo.png' %}" class="img-fluid" width="120px" alt="">
+              </div>
             </div>
             <div class="flex-grow-1">
               <p class="fw-semibold fs-4"> Benefits</p>
@@ -542,9 +584,12 @@
         </div>
         <div class="col-xl-8 col-lg-12">
           <div class="package-details h-100 d-flex flex-column">
-            <div class="pb-3">
+            <div class="pb-3 position-relative">
               <h3 class="package-title">Tee-Box & Novelty Sponsor</h3>
               <h3 class="package-price">RM 3,500 each</h3>
+              <div class="conformed_sponsor">
+                <img src="{% static 'register/images/sponsorships-img/9_logo.png' %}" class="img-fluid" width="120px" alt="">
+              </div>
             </div>
             <div class="flex-grow-1">
               <p class="fw-semibold fs-4"> Benefits</p>
@@ -594,9 +639,12 @@
         </div>
         <div class="col-xl-8 col-lg-12">
           <div class="package-details h-100 d-flex flex-column">
-            <div class="pb-3">
+            <div class="pb-3 position-relative">
               <h3 class="package-title">Golf Gala Dinner Sponsor</h3>
               <h3 class="package-price">RM 25,000</h3>
+              <div class="conformed_sponsor">
+                <img src="{% static 'register/images/sponsorships-img/10_logo.png' %}" class="img-fluid" width="120px" alt="">
+              </div>
             </div>
             <div class="flex-grow-1">
               <p class="fw-semibold fs-4"> Benefits</p>
@@ -632,9 +680,12 @@
         </div>
         <div class="col-xl-8 col-lg-12">
           <div class="package-details h-100 d-flex flex-column">
-            <div class="pb-3">
+            <div class="pb-3 position-relative">
               <h3 class="package-title">Luncheon Sponsor</h3>
               <h3 class="package-price">RM 10,000</h3>
+              <div class="conformed_sponsor">
+                <img src="{% static 'register/images/sponsorships-img/11_logo.png' %}" class="img-fluid" width="120px" alt="">
+              </div>
             </div>
             <div class="flex-grow-1">
               <p class="fw-semibold fs-4"> Benefits</p>
@@ -669,9 +720,12 @@
         </div>
         <div class="col-xl-8 col-lg-12">
           <div class="package-details h-100 d-flex flex-column">
-            <div class="pb-3">
+            <div class="pb-3 position-relative">
               <h3 class="package-title">Golf Gala Dinner Table Sponsor</h3>
               <h3 class="package-price">RM 2,500</h3>
+              <div class="conformed_sponsor">
+                <img src="{% static 'register/images/sponsorships-img/12_logo.png' %}" class="img-fluid" width="120px" alt="">
+              </div>
             </div>
             <div class="flex-grow-1">
               <p class="fw-semibold fs-4"> Benefits</p>
@@ -703,9 +757,12 @@
         </div>
         <div class="col-xl-8 col-lg-12">
           <div class="package-details h-100 d-flex flex-column">
-            <div class="pb-3">
+            <div class="pb-3 position-relative">
               <h3 class="package-title">Golf Flight Sponsor</h3>
               <h3 class="package-price">RM 4,000</h3>
+              <div class="conformed_sponsor">
+                <img src="{% static 'register/images/sponsorships-img/13_logo.png' %}" class="img-fluid" width="120px" alt="">
+              </div>
             </div>
             <div class="flex-grow-1">
               <p class="fw-semibold fs-4"> Benefits</p>
@@ -818,22 +875,7 @@
                 <div class="col-xl-12 col-lg-12">
                   <div class="mb-3">
                     <label for="package" class="form-label">Package *</label>
-                    <select name="package" id="package" class="form-select ">
-                        <option value="" selected disabled>Select Title</option>
-                        <!-- <option value="P1">PLATINUM SPONSOR (RM 50,000)</option>
-                        <option value="P2">GOLD SPONSOR (RM 35,000)</option>
-                        <option value="P3">GOLF T-SHIRT SPONSOR (RM 30,000)</option>
-                        <option value="P4">DUFFLE BAG SPONSOR (RM 25,000)</option>
-                        <option value="P5">GOLF CAP SPONSOR (RM 15,000)</option>
-                        <option value="P6">UMBRELLA SPONSOR (RM 15,000)</option>
-                        <option value="P7">GOLF SLEEVE SPONSOR (RM 10,000)</option>
-                        <option value="P8">TEE-BOX & NOVELTY SPONSOR (RM 3,500 EACH)</option>
-                        <option value="P9">GOLF GALA DINNER SPONSOR (RM 25,000)</option>
-                        <option value="P10">LUNCHEON SPONSOR (RM 10,000)</option>
-                        <option value="P11">GOLF GALA DINNER TABLE SPONSOR (RM 2,500)</option>
-                        <option value="P12">GOLF FLIGHT SPONSOR (RM 4,000)</option>
-                        <option value="P13">2 GOLFER SPONSOR (RM 2,200)</option> -->
-
+                    <select name="package" id="package" class="form-select " disabled>                                           
 
                     </select>
                   </div>
@@ -942,46 +984,101 @@
     <script src="{% static 'register/js/jquery-3.7.1.min.js' %}"></script>
     <script src="{% static 'register/js/bootstrap.bundle.min.js' %}"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const btns = document.querySelectorAll('.btn-golf');
-            const select = document.getElementById('package');
-            const packages = [];
+        // window.onload = function () {
+        //       fetch('/check_taken_packages')
+        //           .then(response => response.json())
+        //           .then(data => {
+        //               const taken = data.taken_packages;
+        //               document.querySelectorAll('.sponsorship-btn').forEach(button => {
+        //                   const btnPackageId = button.getAttribute('data-id');
+        //                   if (taken.includes(btnPackageId)) {
+        //                       button.disabled = true;
+        //                       button.textContent = 'Taken';
+        //                       button.classList.add('btn-secondary');
+        //                   }
+        //               });
+        //           })
+        //           .catch(error => console.error('Error fetching package data:', error));
+        //   };
 
-          
 
-            btns.forEach(btn => {
-            const id = btn.getAttribute('data-id');
-            const pkg = btn.getAttribute('data-package');
-            const price = btn.getAttribute('data-price');
-            // Only add if not already in packages
-            if (id && pkg && !packages.some(p => p.id === id)) {
-                packages.push({ id, pkg, price });
-               
-            }
-            });
 
-            while (select.options.length > 1) {
-            select.remove(1);
-       
-            }
-  
-            packages.forEach(p => {
-            const opt = document.createElement('option');
-            opt.value = p.id;
-            opt.textContent = `${p.pkg}${p.price ? ' (' + p.price + ')' : ''}`;
-            select.appendChild(opt);
-            console.log(opt);
-            });
+document.addEventListener('DOMContentLoaded', function () {
+    const btns = document.querySelectorAll('.btn-golf');
+    const select = document.getElementById('package');
+    const packages = [];
 
-            btns.forEach(btn => {
-            btn.addEventListener('click', function () {
-                const id = this.getAttribute('data-id');
-                if (id) {
+    // Collect button data for dropdown
+    btns.forEach(btn => {
+        const id = btn.getAttribute('data-id');
+        const pkg = btn.getAttribute('data-package');
+        const price = btn.getAttribute('data-price');
+
+        if (id && pkg && !packages.some(p => p.id === id)) {
+            packages.push({ id, pkg, price });
+        }
+    });
+
+    // Reset dropdown (keep first option only)
+    while (select.options.length > 1) {
+        select.remove(1);
+    }
+
+    // Populate dropdown
+    packages.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = `${p.pkg}${p.price ? ' (' + p.price + ')' : ''}`;
+        select.appendChild(opt);
+    });
+
+    // Set dropdown value when button clicked
+    btns.forEach(btn => {
+        btn.addEventListener('click', function () {
+            const id = this.getAttribute('data-id');
+            if (id) {
                 select.value = id;
+            }
+        });
+    });
+
+    // 🔄 Fetch taken packages from API and disable buttons
+    fetch('/check_taken_packages')
+        .then(response => response.json())
+        .then(data => {
+            const taken = data.taken_packages;
+            btns.forEach(button => {
+                const btnPackageId = button.getAttribute('data-id');
+                if (taken.includes(btnPackageId)) {
+                    button.disabled = true;
+                    button.textContent = 'Taken';
+                    button.classList.add('btn-secondary');
                 }
             });
-            });
-        });
+        })
+        .catch(error => console.error('Error fetching package data:', error));
+});
+
+
+
+        // document.addEventListener('DOMContentLoaded', function () {
+        //   alert('Please select a package to register.');
+        //     fetch('/check_taken_packages')
+        //         .then(response => response.json())
+        //         .then(data => {
+        //             const taken = data.taken_packages;
+        //             alert('Taken Packages: ' + taken.join(', '));
+        //             document.querySelectorAll('.sponsorship-btn').forEach(button => {
+        //                 const btnPackageId = button.getAttribute('data-id');
+        //                 if (taken.includes(btnPackageId)) {
+        //                     button.disabled = true;
+        //                     button.textContent = 'Taken';
+        //                     button.classList.add('btn-secondary');  // Optional: change style
+        //                 }
+        //             });
+        //         })
+        //         .catch(error => console.error('Error fetching package data:', error));
+        // });
 
 
         //  $(document).ready(function() {

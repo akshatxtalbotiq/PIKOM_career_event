@@ -282,6 +282,7 @@ def get_submission_list(request):
                     'organization': s.organization,
                     'registration_date': s.submitted_at.strftime('%Y-%m-%d %I:%M %p') if s.submitted_at else '',
                     'remarks': s.remarks if s.remarks else '',
+                    'is_checked_in': s.is_checked_in,
                 })
 
             return JsonResponse(data, safe=False)
@@ -317,6 +318,10 @@ def update_remarks(request):
 
     return JsonResponse({'status': 'error', 'message': 'Invalid request'})
 
+
+def check_taken_packages(request):   
+    taken_packages = list(Sponsorship.objects.values_list('package', flat=True))
+    return JsonResponse({'taken_packages': taken_packages})
 
 def tnc(request):
     current_user = request.user    
