@@ -23,8 +23,8 @@
         </div>
         
         <div class="card card-body p-4 rounded-4 mb-3" id="result">
-          <h5>{{ partictpant.name }}</h5>
-          <p>{{ message }}</p>
+          <h5 id="name"></h5>
+          <p id="message"></p>
           <!-- <ul>
             <li><span>also can shw list</span></li>
             <li><span>also can shw list</span></li>
@@ -37,7 +37,7 @@
         <div class="">
           <div class="nb-3">
             <label for="remark" class="form-label">Remark (Optional)</label>
-            <textarea name="remark" id="remark" class="form-control" placeholder="" rows="5">{{ participant.remarks }}</textarea>
+            <textarea name="remark" id="remark" class="form-control" placeholder="" rows="5"></textarea>
           </div>
           <!-- <button class="btn btn-primary btn-lg mt-3" onclick="window.location.reload();">Action text</button> -->
         </div>
@@ -58,7 +58,16 @@
             fetch(`/validate/${decodedText}/`)
                 .then(response => response.json())
                 .then(data => {
-                    document.getElementById("result").innerText = data.message;
+                    
+                    document.getElementById("message").innerText = data.message;
+                   
+                    if (data.participant && data.participant.name) {
+                        document.getElementById("name").innerText = data.participant.name;
+                    }
+                   
+                    if (data.participant && data.participant.remarks) {
+                        document.getElementById("remark").value = data.participant.remarks;
+                    }
                 });
         }
 
