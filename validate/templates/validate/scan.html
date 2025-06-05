@@ -65,8 +65,8 @@
                         document.getElementById("name").innerText = data.participant.name;
                     }
                    
-                    if (data.participant && data.participant.remarks) {
-                        document.getElementById("remark").value = data.participant.remarks;
+                    if (data.remarks) {
+                        document.getElementById("remark").innerText = data.remarks;
                     }
                 });
         }
