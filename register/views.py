@@ -378,5 +378,14 @@ def send_qr(request, id):
         id = id.replace("-", "")
         players = Submission.objects.filter(qr_sent=False, campaign_code=id)
 
+    total_sent = 0
+    total_players = players.count()
     for player in players:
-        send_qr_email(player,id)
+        if send_qr_email(player, id):
+            total_sent += 1
+
+    return HttpResponse(f"QR codes sent successfully to {total_sent} out of {total_players} players.")
+
+    
+
+       
