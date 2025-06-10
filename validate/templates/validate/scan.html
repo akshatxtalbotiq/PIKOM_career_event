@@ -10,6 +10,33 @@
 
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
+      #start-scan-btn {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      padding: 1.2rem;
+      font-size: 1.25rem;
+      border-radius: 0.75rem;
+      width: 100%;
+      max-width: 300px;
+      height: 300px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: bold;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+      transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+
+    #start-scan-btn:hover {
+      background-color: #218838;
+      transform: scale(1.03);
+    }
+
+    #start-scan-btn:active {
+      background-color: #1e7e34;
+      transform: scale(0.97);
+    }
     #reader {
       width: 300px;
       height: 300px;
@@ -36,19 +63,14 @@
       <div class="col-xl-6 col-lg-12 mx-auto ">
         <h1 class="mb-3 text-center">{{name}}</h1>
 
-        <div id="reader" class="ratio ratio-1x1" style=" background-color: aquamarine;"></div>
+          <div class="d-flex justify-content-center align-items-center mb-3">
+        <button id="start-scan-btn">Scan QR Code</button>
+          </div>
+        <div id="reader" class="ratio ratio-1x1" style=" background-color: aquamarine;display: none" ></div>
 
         <div class="card card-body p-4 rounded-4 mb-3" id="result">
           <h5 id="name"></h5>
           <p id="message"></p>
-          <!-- <ul>
-            <li><span>also can shw list</span></li>
-            <li><span>also can shw list</span></li>
-            <li><span>also can shw list</span></li>
-            <li><span>also can shw list</span></li>
-            <li><span>also can shw list</span></li>
-            <li><span>also can shw list</span></li>
-          </ul> -->
         </div>
         <div class="">
           <div class="nb-3">
@@ -64,28 +86,61 @@
     <script src="{% static 'user/js/jquery-3.7.1.min.js' %}"></script>
     <script src="{% static 'user/js/bootstrap.bundle.min.js' %}"></script>
     <script>
-        function onScanSuccess(decodedText, decodedResult) {
-            fetch(`/validate/${decodedText}`)
-                .then(response => response.json())
-                .then(data => {
-
-                    document.getElementById("message").innerText = data.message;
-
-                    if (data.participant && data.participant.name) {
-                        document.getElementById("name").innerText = data.participant.name;
-                    }
-
-                    if (data.remarks) {
-                        document.getElementById("remark").innerText = data.remarks;
-                    }
-                });
-        }
-
+        const startScanBtn = document.getElementById("start-scan-btn");
+        const reader = document.getElementById("reader");
+        const message = document.getElementById("message");
+        const result = document.getElementById("remark");
         const html5QrCode = new Html5Qrcode("reader");
-        html5QrCode.start({ facingMode: "environment" }, {
-            fps: 10,
-            qrbox: 350
-        }, onScanSuccess);
+
+        let isScanning = false;
+
+        startScanBtn.addEventListener("click", () => {
+            result.innerText = "";
+            reader.style.display = "block";
+            startScanBtn.style.display = "none";
+            isScanning = true;
+
+            html5QrCode.start(
+                { facingMode: "environment" },
+                {
+                    fps: 10,
+                    qrbox: 250
+                },
+                (decodedText) => {
+                    if (!isScanning) return;
+
+                    isScanning = false;
+                    html5QrCode.stop().then(() => {
+                        reader.style.display = "none";
+                        startScanBtn.style.display = "inline-block";
+
+                        fetch(`/validate/${decodedText}`)
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.message)
+                                    message.innerText = data.message;
+                                if (data.remarks)
+                                    result.innerText = data.remarks;
+                            })
+                            .catch(err => {
+                                result.innerText = "Error validating QR code.";
+                                console.error(err);
+                            });
+
+                    }).catch(err => {
+                        console.error("Failed to stop camera:", err);
+                    });
+                },
+                (errorMsg) => {
+                    // Ignore scan failures silently
+                }
+            ).catch(err => {
+                console.error("Unable to start scanning:", err);
+                result.innerText = "Camera error. Please try again.";
+                reader.style.display = "none";
+                startScanBtn.style.display = "inline-block";
+            });
+        });
     </script>
 </body>
 </html>
