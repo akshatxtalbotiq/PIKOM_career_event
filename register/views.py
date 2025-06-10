@@ -7,6 +7,7 @@ from django.core.files.base import ContentFile
 from django.utils.dateparse import parse_datetime
 from django.utils import timezone
 from django.template.loader import render_to_string
+from django.core.validators import validate_email, ValidationError
 
 from io import BytesIO
 from picom import settings
@@ -51,6 +52,36 @@ def save_registration(request):
                         handicap=player.get('handicap', ''),
                         tshirt_size=player['tshirt']
                     )
+
+                try:
+                    campaign_code = uuid.UUID(billing.get('campaign_id', ''))
+
+                    campaign = Campaign.objects.filter(campaign_code=campaign_code).first()
+                    if campaign and campaign.pic_email:
+                        
+                        html_content = render_to_string('register/email/submission_notification.html', {'title': campaign.title})
+                        valid_emails = []
+                        for email in campaign.pic_email.split(','):
+                            email = email.strip()
+                            try:
+                                validate_email(email)
+                                valid_emails.append(email)
+                            except ValidationError:                            
+                                pass
+                                       
+                        email = EmailMessage(
+                            subject='Your day just got better - New Flight Registration!',
+                            body=html_content,
+                            from_email=settings.DEFAULT_FROM_EMAIL,
+                            to=valid_emails,
+                        )
+                        email.content_subtype = 'html'
+                        email.send()
+
+                except ValueError:
+                    pass
+                
+                
 
             return JsonResponse({'success': True, 'message': 'Registration successful', 'reg_no': reg.reg_no})
         except Exception as e:
@@ -114,6 +145,34 @@ def save_sponsorship(request):
                 package=data['package'],  
                 campaign_code=data.get('campaign_id', ''),
             )
+
+            try:
+                campaign_code = uuid.UUID(data.get('campaign_id', ''))
+
+                campaign = Campaign.objects.filter(campaign_code=campaign_code).first()
+                if campaign and campaign.pic_email:
+                   
+                    html_content = render_to_string('register/email/sponsorship_notification.html', {'title': campaign.title})
+                    valid_emails = []
+                    for email in campaign.pic_email.split(','):
+                        email = email.strip()
+                        try:
+                            validate_email(email)
+                            valid_emails.append(email)
+                        except ValidationError:                            
+                            pass                    
+                    
+                    email = EmailMessage(
+                        subject='Good news - A New Sponsorship Just Landed!',
+                        body=html_content,
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        to=valid_emails,
+                    )
+                    email.content_subtype = 'html'
+                    email.send()
+
+            except ValueError:
+                pass
 
             return JsonResponse({'success': True, 'message': 'Sponsorship saved successfully', 'reg_no': sponsor.reg_no})
         except Exception as e:
@@ -219,9 +278,10 @@ def create_campaign(request):
         is_active = request.POST.get('is_active') == 'true'
         url = request.POST.get('url')
         need_qr = request.POST.get('need_qr') == 'true'
+        pic_email = request.POST.get('pic_email', '')
 
         if id:
-            print(f"Updating campaign with ID: {id}")
+            #print(f"Updating campaign with ID: {id}")
             campaign = get_object_or_404(Campaign, id=id)
             campaign.title = title
             campaign.start_date = start_date
@@ -229,16 +289,18 @@ def create_campaign(request):
             campaign.is_active = is_active
             campaign.url = url
             campaign.need_qr = need_qr
+            campaign.pic_email = pic_email
             campaign.save()
         else:
-            print("Creating a new campaign")
+            #print("Creating a new campaign")
             campaign = Campaign.objects.create(
                 title=title,
                 start_date=start_date,
                 end_date=end_date,
                 is_active=is_active,
                 url=url,
-                need_qr=need_qr
+                need_qr=need_qr,
+                pic_email=pic_email
             )
         return JsonResponse({'success': True, 'id': campaign.id})
     return JsonResponse({'success': False, 'error': 'Invalid request'}, status=400)
@@ -255,6 +317,7 @@ def get_campaign(request, id):
         "active": campaign.is_active,
         "id": campaign.id,
         "need_qr": campaign.need_qr,
+        "pic_email": campaign.pic_email,
     }
     return JsonResponse(data)
 

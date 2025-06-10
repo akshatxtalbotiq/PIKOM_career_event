@@ -329,6 +329,13 @@
                 </div>
               </div>
               <div class="col-xl-12 col-lg-12">
+                <div class="mb-3">
+                  <label for="campaignPICEmail" class="form-label">PIC Email</label>
+                  <input type="text" class="form-control border border-1 rounded px-2 py-2" id="campaignPICEmail" name="campaignPICEmail" placeholder="pic1@mail.com,pic2@mail.com" required>
+                  <div class="invalid-feedback">Please enter valid email addresses, separated by commas.</div>
+                </div>
+              </div>
+              <div class="col-xl-12 col-lg-12">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                   <label class="form-check-label" for="enableCampaign">Enable or Disable QR Scanning Page</label>
                   <div class="form-check form-switch">
@@ -358,6 +365,35 @@
 
 
   <script>
+   
+
+    function validateEmailList(emailString) {      
+      if (emailString.includes(';') || emailString.includes(' ')) {
+        return false;
+      }
+
+      const emails = emailString.split(',').map(email => email.trim());
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return emails.every(email => emailRegex.test(email));
+    }
+
+    // function updateEmailValidation() {
+    //   const isValid = validateEmailList(emailInput.value);
+
+    //   if (isValid || emailInput.value.trim() === '') {
+    //     emailInput.classList.remove('is-invalid');
+    //     emailInput.classList.add('is-valid');
+    //   } else {
+    //     emailInput.classList.remove('is-valid');
+    //     emailInput.classList.add('is-invalid');
+    //   }
+
+    //   return isValid;
+    // }
+
+    // Revalidate on typing    
+    //emailInput.addEventListener('input', updateEmailValidation);
+
     document.addEventListener('DOMContentLoaded', function () {
       
       document.querySelectorAll('.copy-btn').forEach(function (btn) {
@@ -389,6 +425,7 @@
               document.getElementById('enableCampaign').checked = data.active;
               document.getElementById('campaignID').value = data.id || '';
               document.getElementById('enableQR').checked = data.need_qr;
+              document.getElementById('campaignPICEmail').value = data.pic_email || '';
 
               // Open the modal
               const modal = new bootstrap.Modal(document.getElementById('addNewCampaign'));
@@ -503,6 +540,8 @@
         const form = event.target;
         const startInput = document.getElementById('campaignStartDate');
         const endInput = document.getElementById('campaignEndDate');
+        const emailInput = document.getElementById('campaignPICEmail');
+
 
         
         startInput.classList.remove('is-invalid');
@@ -545,6 +584,18 @@
             return;
         }
 
+        const isValid = validateEmailList(emailInput.value);
+
+        if (!isValid || emailInput.value.trim() === '') {
+          emailInput.classList.remove('is-valid');
+          emailInput.classList.add('is-invalid');
+
+          event.preventDefault(); 
+          event.stopPropagation();
+
+           return;
+        }     
+
         // when everything is valid
         form.classList.add('was-validated');
 
@@ -555,6 +606,7 @@
         const url = $('#campaignPageURL').val();
         const campaignID = $('#campaignID').val();
         const need_qr = $('#enableQR').is(':checked');
+        const picEmail = $('#campaignPICEmail').val();
        
 
         $.ajax({
@@ -568,7 +620,8 @@
             is_active: isActive,
             url: url,
             id:campaignID,
-            need_qr: need_qr
+            need_qr: need_qr,
+            pic_email: picEmail
           },
           success: function (response) {
             if (response.success) {

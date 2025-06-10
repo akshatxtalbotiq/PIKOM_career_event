@@ -125,6 +125,7 @@ class Campaign(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     url = models.URLField(max_length=255, null=True, blank=True)
     need_qr = models.BooleanField(default=False)
+    pic_email = models.TextField(null=True, blank=True)   
 
     def __str__(self):
         return self.title
