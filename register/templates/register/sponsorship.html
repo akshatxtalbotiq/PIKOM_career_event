@@ -1163,14 +1163,22 @@ document.addEventListener('DOMContentLoaded', function () {
       }
       
         function toggleSaveBtnLoading(isLoading) {
-            const saveBtn = $('#saveBtn');
-            if (isLoading) {
-                saveBtn.prop('disabled', true);
-                saveBtn.html('<i class="fa fa-spinner fa-spin"></i> Saving...');
-            } else {
-                saveBtn.prop('disabled', false);
-                saveBtn.html('Save');
-            }
+            // const saveBtn = $('#saveBtn');
+            // if (isLoading) {
+            //     saveBtn.prop('disabled', true);
+            //     saveBtn.html('<i class="fa fa-spinner fa-spin"></i> Saving...');
+            // } else {
+            //     saveBtn.prop('disabled', false);
+            //     saveBtn.html('Save');
+            // }
+
+             if (isLoading) {
+                  $('#submitBtnText').addClass('d-none');
+                  $('#submitBtnLoader').removeClass('d-none');
+              } else {
+                  $('#submitBtnText').removeClass('d-none');
+                  $('#submitBtnLoader').addClass('d-none');
+              }
         }
     
     </script>

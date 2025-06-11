@@ -139,10 +139,12 @@ LOGOUT_URL = 'logout'  # URL to redirect to for logout
 
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = ''        
-EMAIL_PORT = 465                           
-EMAIL_HOST_USER = ''
-EMAIL_HOST_PASSWORD = ''
-EMAIL_USE_TLS = False                          
-DEFAULT_FROM_EMAIL = ''
+
+EMAIL_HOST = 'smtp.office365.com'
+EMAIL_HOST_USER = 'team@talbotiq.com'
+EMAIL_HOST_PASSWORD = 'tt@Tal2022'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+SERVER_EMAIL = EMAIL_HOST_USER
 
