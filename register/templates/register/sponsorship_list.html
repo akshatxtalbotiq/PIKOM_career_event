@@ -30,12 +30,19 @@
                     <tr>
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Reg. No.</th>
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Package</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Salutation</th>
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Name</th>
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Email</th>
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Phone</th>
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Designation</th>
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder ">Organization</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder ">Address</th>
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Registartion Date</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Submitted By</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">SB Email</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">SB Contact Number</th>
+
+                        
                     </tr>
                   </thead>
                   <tbody id="registration-body">
@@ -94,12 +101,17 @@
     columns: [
       { data: 'reg_no' },
       { data: 'package' },
+      { data: 'title' },
       { data: 'name' },
       { data: 'email' },
       { data: 'phone' },
       { data: 'reg_no' },
       { data: 'organization' },
-      { data: 'registration_date' }
+      { data: 'address' },
+      { data: 'registration_date' },
+      { data: 'submitted_by' },
+      { data: 'submitted_by_email' },
+      { data: 'submitted_by_mobile' },
     ],
     dom:
       "<'row mb-3'<'col-sm-6 text-start px-2'f><'col-sm-6 text-end px-2'B>>" +

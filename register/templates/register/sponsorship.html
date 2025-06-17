@@ -955,6 +955,30 @@
                   </div>
                 </div>
 
+                <div class="col-12 d-flex align-items-center my-3 fw-bold">
+                  <label for="" class="form-label">Submitted By</label>
+                  <hr>
+                </div>
+                <div class="col-xl-6 col-lg-12">
+                  <div class="mb-3">
+                    <label for="submittedName" class="form-label">Name<span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="submittedName" name="submittedName" placeholder="Name" required>
+                  </div>
+                </div>
+                <div class="col-xl-6 col-lg-12">
+                  <div class="mb-3">
+                    <label for="submittedEmail" class="form-label">Email<span class="text-danger">*</span></label>
+                    <input type="email" class="form-control" id="submittedEmail" name="submittedEmail" placeholder="Email" required>
+                  </div>
+                </div>
+                <div class="col-xl-6 col-lg-12">
+                  <div class="mb-3">
+                    <label for="submittedNo" class="form-label">Contact No.<span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="submittedNo" name="submittedNo" placeholder="Contact No."   required>
+                  </div>
+                </div>
+
+
                 <input type="hidden" id="campaignID" name="campaignID" value="4044cfa5a85b4eba8fecf6bd5cc0d7cc">
 
                 <div class="col-xl-9 col-lg-12">
@@ -1126,6 +1150,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     billing_address: $('#billingAddress').val(),
                     package: $('#package').val(),
                     campaign_id: $('#campaignID').val(),
+                    submitted_name: $('#submittedName').val(),
+                    submitted_email: $('#submittedEmail').val(),
+                    submitted_mobile: $('#submittedNo').val(),
                     
                 }),
                 success: function (response) {

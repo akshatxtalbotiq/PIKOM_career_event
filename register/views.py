@@ -25,7 +25,8 @@ def save_registration(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)   
-            billing = data.get('billing', {})        
+            billing = data.get('billing', {})       
+            submitted = data.get('submitted', {}) 
 
             # Get player 1 info for Registeration
             with transaction.atomic():
@@ -37,6 +38,9 @@ def save_registration(request):
                     address=billing.get('address', ''),
                     comp_reg_no=billing.get('comp_reg_no', ''),
                     campaign_code=billing.get('campaign_id', ''),
+                    submitted_by=submitted.get('name', ''),
+                    submitted_by_email=submitted.get('email', ''),
+                    submitted_by_mobile=submitted.get('mobile', ''),
                 )
 
                 # Save all players
@@ -144,6 +148,9 @@ def save_sponsorship(request):
                 billing_address=data['billing_address'],                
                 package=data['package'],  
                 campaign_code=data.get('campaign_id', ''),
+                submitted_by=data.get('submitted_name', ''),
+                submitted_by_email=data.get('submitted_email', ''),
+                submitted_by_mobile=data.get('submitted_mobile', ''),
             )
 
             try:
@@ -196,7 +203,8 @@ def get_registration_list(request):
             data = [
                 {
                     'reg_no': player.fkregistration.reg_no,
-                    'name': f"{player.title} {player.name}",
+                    'title': player.title,
+                    'name': player.name,
                     'email': player.email,
                     'phone': player.mobile,
                     'designation': player.designation,
@@ -206,6 +214,13 @@ def get_registration_list(request):
                     'registration_date': player.fkregistration.created_on.strftime('%Y-%m-%d %H:%M %p'),
                     'remarks': player.remarks if player.remarks else '',
                     'registration_code': str(player.registration_code),
+                    'billing_address': player.fkregistration.address,
+                    'billing_reg_no': player.fkregistration.comp_reg_no,
+                    'billing_email': player.fkregistration.email,
+                    'billing_name': player.fkregistration.name,
+                    'submitted_by': player.fkregistration.submitted_by,
+                    'submitted_by_email': player.fkregistration.submitted_by_email,
+                    'submitted_by_mobile': player.fkregistration.submitted_by_mobile,
                 }
                 for player in players
             ]
@@ -232,12 +247,17 @@ def get_sponsorship_list(request):
                 data.append({
                     'reg_no': s.reg_no,
                     'package': dict(Sponsorship.PACKAGE_CHOICES).get(s.package, s.package),
-                    'name': f"{s.title} {s.billing_name}",
+                    'title': s.title,
+                    'name': s.billing_name,
                     'email': s.billing_email,
                     'phone': s.billing_contact,
                     'reg_no': s.billing_reg_no,
                     'organization': s.billing_organization,
+                    'address': s.billing_address,
                     'registration_date': s.submitted_at.strftime('%Y-%m-%d %H:%M %p'),
+                    'submitted_by': s.submitted_by,
+                    'submitted_by_email': s.submitted_by_email,
+                    'submitted_by_mobile': s.submitted_by_mobile,
                 })
             return JsonResponse(data, safe=False)
     except Sponsorship.DoesNotExist:

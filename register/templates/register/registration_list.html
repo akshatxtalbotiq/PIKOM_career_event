@@ -29,6 +29,7 @@
                   <thead>
                     <tr>
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Reg. No.</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Salutation</th>
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Name</th>
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Email</th>
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Phone</th>
@@ -36,9 +37,17 @@
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder ">Organization</th>
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">HandiCap</th>
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Shirt Size</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Registartion Date</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Registration Date</th>
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Remarks</th>
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder"></th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Company Full Name</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Business Reg. No</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Company Full Address</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Email (e-Invoice)</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Submitted By</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">SB Email</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">SB Contact Number</th>
+                        
                     </tr>
                   </thead>
                   <tbody id="registration-body">
@@ -163,6 +172,7 @@
         },
         columns: [
           { data: 'reg_no' },
+          { data: 'title' },
           { data: 'name' },
           { data: 'email' },
           { data: 'phone' },
@@ -177,15 +187,23 @@
             render: function (data, type, row) {
               return `
                 <button class="note-btn border-0 bg-transparent p-0" 
-                        style="font-size: 24px; color: #0d6efd;"
+                        style="font-size: 12px; color: #0d6efd;"
                         data-regno="${row.registration_code}" 
                         data-remarks="${row.remarks || ''}">
-                  <i class="material-symbols-rounded">note</i>
+                  <i class="material-symbols-rounded">note</i>Add Remarks
                 </button>`;
             },
             orderable: false,
             searchable: false
-          }
+          },
+          { data: 'billing_name' },
+          { data: 'billing_reg_no' },
+          { data: 'billing_address' },
+          { data: 'billing_email' },
+          { data: 'submitted_by' },
+          { data: 'submitted_by_email' },
+          { data: 'submitted_by_mobile' },        
+          
         ],
         dom:
           "<'row mb-3'<'col-sm-6 text-start px-2'f><'col-sm-6 text-end px-2'B>>" +
@@ -194,7 +212,7 @@
         buttons: [
           {
             extend: 'excel',
-            className: 'btn btn-outline-success btn-sm', 
+            className: 'btn btn-outline-success btn-sm export-btn-fixed', 
             text: '<i class="material-symbols-rounded">download</i> Export to Excel',           
             filename: 'registration_list',
             title: 'Registration List', 
@@ -275,5 +293,10 @@
     }
 }
   </script>
+
+  <style>
+    
+  </style>
+
 {%endblock %}
 
