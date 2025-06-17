@@ -1073,7 +1073,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const taken = data.taken_packages;
             btns.forEach(button => {
                 const btnPackageId = button.getAttribute('data-id');
-                if (taken.includes(btnPackageId)) {
+                if (taken.includes(btnPackageId) && btnPackageId !== 'P12') { // Exclude P12 from being disabled
                     button.disabled = true;
                     button.textContent = 'Taken';
                     button.classList.add('btn-secondary');
