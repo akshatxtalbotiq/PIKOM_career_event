@@ -44,7 +44,7 @@ class Player(models.Model):
         ('XXL', 'XXL'),
     ]
 
-    title = models.CharField(max_length=10, choices=TITLE_CHOICES,null=True, blank=True)
+    title = models.CharField(max_length=100, choices=TITLE_CHOICES,null=True, blank=True)
     name = models.CharField(max_length=100)
     email = models.EmailField()
     mobile = models.CharField(max_length=20, blank=True, db_column="mobile")
@@ -90,7 +90,7 @@ class Sponsorship(models.Model):
 
     reg_no = models.CharField(max_length=20, unique=True)
     # title = models.CharField(max_length=10, choices=TITLE_CHOICES)
-    title = models.CharField(max_length=10, null=True, blank=True)
+    title = models.CharField(max_length=100, null=True, blank=True)
     billing_name = models.CharField(max_length=100)
     
 
