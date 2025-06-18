@@ -1164,7 +1164,15 @@ document.addEventListener('DOMContentLoaded', function () {
                     window.location.href = `/sponsorship_thankyou/${response.reg_no}/`;
                 }
                 else {
-                    alert('An error occurred during submission! Please contact the administrator. Note: ' + response.message);
+                    if(response.code === '1')
+                    {
+                      alert('Sorry, the package you selected is already taken. Please select another package.');                      
+                      location.reload();
+                    }
+                    else
+                    {
+                      alert('An error occurred during submission! Please contact the administrator. Note: ' + response.message);
+                    } 
                 }
                 
                 },

@@ -132,6 +132,12 @@ def save_sponsorship(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body) 
+
+            package = data.get('package', None)
+
+            #check if package is already taken
+            if package and Sponsorship.objects.filter(package=package).exists():
+                return JsonResponse({'success': False, 'code':'1', 'message': 'Package already taken'})
             
             sponsor = Sponsorship.objects.create(
                 reg_no=f"SPN{Sponsorship.objects.count() + 1:04d}",
@@ -181,11 +187,11 @@ def save_sponsorship(request):
             except ValueError:
                 pass
 
-            return JsonResponse({'success': True, 'message': 'Sponsorship saved successfully', 'reg_no': sponsor.reg_no})
+            return JsonResponse({'success': True, 'code':'0', 'message': 'Sponsorship saved successfully', 'reg_no': sponsor.reg_no})
         except Exception as e:
-            return JsonResponse({'success': False, 'message': str(e)})
+            return JsonResponse({'success': False, 'code':'2', 'message': str(e)})
 
-    return JsonResponse({'success': False, 'message': 'Invalid request method'})
+    return JsonResponse({'success': False, 'code':'3', 'message': 'Invalid request method'})
 
 def sponsorship_thankyou(request, reg_no):
     return render(request, 'register/sponsorship_thankyou.html', {'reg_no': reg_no})
