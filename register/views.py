@@ -30,9 +30,10 @@ def save_registration(request):
 
             # Get player 1 info for Registeration
             with transaction.atomic():
-                #first_player = data['players'][0]
+                #first_player = data['players'][0]                
+                
                 reg = Registration.objects.create(
-                    reg_no=f"REG{Registration.objects.count() + 1:04d}",
+                    #reg_no=f"REG{Registration.objects.count() + 1:04d},
                     name=billing.get('name', ''),
                     email=billing.get('email', ''),                   
                     address=billing.get('address', ''),
@@ -42,6 +43,10 @@ def save_registration(request):
                     submitted_by_email=submitted.get('email', ''),
                     submitted_by_mobile=submitted.get('mobile', ''),
                 )
+
+                #update registrationno
+                reg.reg_no = f"REG{reg.id:04d}"                
+                reg.save()
 
                 # Save all players
                 for player in data['players']:
@@ -140,7 +145,7 @@ def save_sponsorship(request):
                 return JsonResponse({'success': False, 'code':'1', 'message': 'Package already taken'})
             
             sponsor = Sponsorship.objects.create(
-                reg_no=f"SPN{Sponsorship.objects.count() + 1:04d}",
+                #reg_no=f"SPN{Sponsorship.objects.count() + 1:04d}",
                 title=data['title'],
                 #contact_name=data['contact_name'],
                 #contact_number=data['contact_number'],
@@ -158,6 +163,10 @@ def save_sponsorship(request):
                 submitted_by_email=data.get('submitted_email', ''),
                 submitted_by_mobile=data.get('submitted_mobile', ''),
             )
+
+            #update sponsorship reg_no
+            sponsor.reg_no = f"SPN{sponsor.id:04d}"
+            sponsor.save()
 
             try:
                 campaign_code = uuid.UUID(data.get('campaign_id', ''))
