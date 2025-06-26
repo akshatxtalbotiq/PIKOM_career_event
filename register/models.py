@@ -8,18 +8,18 @@ from datetime import datetime
 
 
 class Registration(models.Model):
-    reg_no = models.CharField(max_length=20, unique=True)
+    reg_no = models.CharField(max_length=100, unique=True)
     name = models.CharField(max_length=100) 
     email = models.EmailField()
-    mobile = models.CharField(max_length=20)
+    mobile = models.CharField(max_length=100)
     created_on = models.DateTimeField(auto_now_add=True)
     lastmodified = models.DateTimeField(auto_now=True)
-    comp_reg_no = models.CharField(max_length=20, null=True, blank=True)
+    comp_reg_no = models.CharField(max_length=100, null=True, blank=True)
     address = models.TextField(null=True, blank=True)   
     campaign_code = models.CharField(max_length=255, null=True, blank=True)   
     submitted_by= models.CharField(max_length=100, null=True, blank=True)
     submitted_by_email = models.EmailField(null=True, blank=True)
-    submitted_by_mobile = models.CharField(max_length=20, null=True, blank=True)
+    submitted_by_mobile = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -47,10 +47,10 @@ class Player(models.Model):
     title = models.CharField(max_length=100, choices=TITLE_CHOICES,null=True, blank=True)
     name = models.CharField(max_length=100)
     email = models.EmailField()
-    mobile = models.CharField(max_length=20, blank=True, db_column="mobile")
+    mobile = models.CharField(max_length=100, blank=True, db_column="mobile")
     designation = models.CharField(max_length=100, db_column="designation",null=True, blank=True)
     organization = models.CharField(max_length=100, blank=True, db_column="organization")
-    handicap = models.CharField(max_length=10, db_column="handicap",null=True, blank=True)
+    handicap = models.CharField(max_length=100, db_column="handicap",null=True, blank=True)
     tshirt_size = models.CharField(max_length=5, choices=TSHIRT_SIZES, db_column="tsize", blank=True)
     fkregistration = models.ForeignKey(Registration, on_delete=models.CASCADE, related_name='players', db_column="fkRegistration",default=None)
     registration_code = models.UUIDField(default=uuid.uuid4, unique=True)
@@ -88,32 +88,32 @@ class Sponsorship(models.Model):
         ('P13', 'GOLF BALLS SPONSOR (RM 10,000)'),
     ]    
 
-    reg_no = models.CharField(max_length=20, unique=True)
+    reg_no = models.CharField(max_length=100, unique=True)
     # title = models.CharField(max_length=10, choices=TITLE_CHOICES)
     title = models.CharField(max_length=100, null=True, blank=True)
     billing_name = models.CharField(max_length=100)
     
 
     billing_organization = models.CharField(max_length=100)
-    billing_reg_no = models.CharField(max_length=20, null=True, blank=True)    
+    billing_reg_no = models.CharField(max_length=100, null=True, blank=True)    
     billing_email = models.EmailField()    
-    billing_contact = models.CharField(max_length=20, blank=True)
+    billing_contact = models.CharField(max_length=100, blank=True)
     billing_address = models.TextField()
 
-    contact_number = models.CharField(max_length=20)
+    contact_number = models.CharField(max_length=100)
     contact_email = models.EmailField()
     contact_name = models.CharField(max_length=100)    
     billing_designation = models.CharField(max_length=100)
 
     submitted_at = models.DateTimeField(auto_now_add=True)
 
-    package = models.CharField(max_length=10, choices=PACKAGE_CHOICES, db_column="package", default=None)
+    package = models.CharField(max_length=100, choices=PACKAGE_CHOICES, db_column="package", default=None)
     campaign_code = models.CharField(max_length=255, null=True, blank=True)    
     #logo = models.ImageField(upload_to=upload_sponsor_attachment, blank=True, null=True)
 
     submitted_by= models.CharField(max_length=100, null=True, blank=True)
     submitted_by_email = models.EmailField(null=True, blank=True)
-    submitted_by_mobile = models.CharField(max_length=20, null=True, blank=True)
+    submitted_by_mobile = models.CharField(max_length=100, null=True, blank=True)
 
     
 
@@ -139,10 +139,10 @@ class Campaign(models.Model):
     
 
 class Submission(models.Model):
-    reg_no = models.CharField(max_length=20, unique=True)    
+    reg_no = models.CharField(max_length=100, unique=True)    
     name = models.CharField(max_length=100) 
     email = models.EmailField()
-    mobile = models.CharField(max_length=20, blank=True, null=True)
+    mobile = models.CharField(max_length=100, blank=True, null=True)
     organization = models.CharField(max_length=100, blank=True, null=True)
     job_title = models.CharField(max_length=100, blank=True, null=True)
     submitted_at = models.DateTimeField(auto_now_add=True)
