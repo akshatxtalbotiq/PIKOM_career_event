@@ -68,17 +68,14 @@
           </div>
         <div id="reader" class="ratio ratio-1x1" style=" background-color: aquamarine;display: none" ></div>
 
-        <div class="card card-body p-4 rounded-4 mb-3" id="result">
-          <h5 id="name"></h5>
-          <p id="message"></p>
-        </div>
-        <div class="">
-          <div class="nb-3">
+        <div class="nb-3">
+            <label for="Code" class="form-label">Code</label>
+            <input name="code" id="code" class="form-control" placeholder="Code" autofocus />
+          </div>
+        <div class="nb-3">
             <label for="remark" class="form-label">Remark (Optional)</label>
             <textarea name="remark" id="remark" class="form-control" placeholder="" rows="5"></textarea>
           </div>
-          <!-- <button class="btn btn-primary btn-lg mt-3" onclick="window.location.reload();">Action text</button> -->
-        </div>
       </div>
     </div>
   </div>
@@ -114,18 +111,7 @@
                         reader.style.display = "none";
                         startScanBtn.style.display = "inline-block";
 
-                        fetch(`/validate/${decodedText}`)
-                            .then(res => res.json())
-                            .then(data => {
-                                if (data.message)
-                                    message.innerText = data.message;
-                                if (data.remarks)
-                                    result.innerText = data.remarks;
-                            })
-                            .catch(err => {
-                                result.innerText = "Error validating QR code.";
-                                console.error(err);
-                            });
+                        $('#code').val(decodedText);
 
                     }).catch(err => {
                         console.error("Failed to stop camera:", err);
@@ -140,6 +126,25 @@
                 reader.style.display = "none";
                 startScanBtn.style.display = "inline-block";
             });
+        });
+
+        function validate(decodedText){
+            fetch(`/validate/${decodedText}`)
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.remarks)
+                                    result.innerText = data.message;
+                            })
+                            .catch(err => {
+                                result.innerText = "Error validating QR code.";
+                                console.error(err);
+                            });
+        }
+        const codeinput = document.getElementById('code');
+
+        codeinput.addEventListener('change', function() {
+            console.log('Value committed:', codeinput.value);
+            validate(codeinput.value)
         });
     </script>
 </body>
