@@ -539,33 +539,33 @@ def save_submission(request):
             reg.save()
 
             
-            #try:
-            # campaign_code = uuid.UUID(billing.get('campaign_id', ''))
+            try:
+                #campaign_code = c_id
 
-            # campaign = Campaign.objects.filter(campaign_code=campaign_code).first()
-            # if campaign and campaign.pic_email:
-                
-            #     html_content = render_to_string('register/email/submission_notification.html', {'title': campaign.title, 'url': 'https://pikomgolf.talxone.com/registration_list/89c0dfc3-3d62-49bb-a706-bcbfa6a93cb3/'})
-            #     valid_emails = []
-            #     for email in campaign.pic_email.split(','):
-            #         email = email.strip()
-            #         try:
-            #             validate_email(email)
-            #             valid_emails.append(email)
-            #         except ValidationError:                            
-            #             pass
-                                
-            #     email = EmailMessage(
-            #         subject='Your day just got better - New Flight Registration!',
-            #         body=html_content,
-            #         from_email=settings.DEFAULT_FROM_EMAIL,
-            #         to=valid_emails,
-            #     )
-            #     email.content_subtype = 'html'
-            #     email.send()
+                #campaign = Campaign.objects.filter(campaign_code=campaign_code).first()
+                if campaign and campaign.pic_email:
+                    
+                    html_content = render_to_string('register/email/submission_notification.html', {'title': campaign.title, 'url': 'https://pikomgolf.talxone.com/submission_list/' + c_id.replace("-", "") + '/'})
+                    valid_emails = []
+                    for email in campaign.pic_email.split(','):
+                        email = email.strip()
+                        try:
+                            validate_email(email)
+                            valid_emails.append(email)
+                        except ValidationError:                            
+                            pass
+                                    
+                    email = EmailMessage(
+                        subject='Your day just got better - New Flight Registration!',
+                        body=html_content,
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        to=valid_emails,
+                    )
+                    email.content_subtype = 'html'
+                    email.send()
 
-            #except ValueError:
-                #pass
+            except ValueError:
+                pass
             
                 
 
