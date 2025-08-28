@@ -101,8 +101,8 @@ def save_registration(request):
 @login_required
 def update_registration_remarks(request):
     if request.method == 'POST':
-        print("Updating remarks for registration")
-        print(request.POST.get('registration_code'))
+        #print("Updating remarks for registration")
+        #print(request.POST.get('registration_code'))
         registration_code = request.POST.get('registration_code')
         remarks = request.POST.get('remarks')
 
@@ -306,7 +306,7 @@ def campaign_list(request):
 @login_required
 def create_campaign(request):
 
-    print("Creating or updating campaign")
+    #print("Creating or updating campaign")
 
     if request.method == 'POST':
         id = request.POST.get('id')
@@ -351,7 +351,7 @@ def create_campaign(request):
 
 @login_required
 def get_campaign(request, id):
-    print(f"Fetching campaign data for ID: {id}")
+    #print(f"Fetching campaign data for ID: {id}")
     campaign = get_object_or_404(Campaign, id=id)
     data = {
         "title": campaign.title,
@@ -369,9 +369,9 @@ def get_campaign(request, id):
 
 @login_required 
 def submission_list(request, id=None):
-    print("Fetching submission list")
+    #print("Fetching submission list")
     current_user = request.user    
-    print("Campaign ID:", id)
+ 
     campaign = Campaign.objects.get(campaign_code=id)
     return render(request, 'register/submission_list.html', {'user': current_user, 'campaign': campaign})
 
@@ -382,9 +382,7 @@ def get_submission_list(request):
             campaign_code = request.POST.get('id')  
             campaign_code = campaign_code.replace("-", "")  
             submissions = Submission.objects.filter(campaign_code=campaign_code).order_by('-submitted_at')
-
-            print("Campaign code:", campaign_code)
-            print("Submissions found:", submissions.count())
+          
 
             data = []
             for s in submissions:
@@ -408,7 +406,7 @@ def get_submission_list(request):
 @login_required
 def update_remarks(request):
     if request.method == 'POST':
-        print("Updating remarks for submission")
+        #print("Updating remarks for submission")
         reg_no = request.POST.get('reg_no')
         remarks = request.POST.get('remarks')
 
@@ -511,12 +509,10 @@ def save_submission(request):
             keyword = data.get('keyword', '').strip()
 
             campaign = Campaign.objects.filter(entry_keyword__iexact=keyword, is_active=True).first()
-            c_id = campaign.campaign_code if campaign else None
-            if campaign:
-                print(campaign.pic_email)
+            c_id = campaign.campaign_code if campaign else None            
 
             member = data.get('is_member')
-            print("Is member:", member)
+           
             if member and member == 'Yes':
                 is_member = True
             else:
