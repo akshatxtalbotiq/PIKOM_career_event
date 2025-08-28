@@ -1,0 +1,60 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Successful form submission message</title>
+  <meta name="description" content="PIKOM - submission-message" />
+  <meta name="keywords" content="PIKOM, Golf, Sponsorship, Program" />
+  <meta name="author" content="PIKOM" />
+  <link rel="icon" href="{% static 'register/images/favicon.png' %}" type="image/png" />
+  <link rel="apple-touch-icon" href="{% static 'register/images/favicon.png' %}" type="image/png" />
+
+
+  <link rel="stylesheet" href="{% static 'register/css/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'register/css/style.css' %}">
+  <style>
+    body {
+      background: url("{% static 'register/images/bg.jpg' %}") no-repeat center center fixed;
+      background-size: cover;
+    }
+    .terms-conditions-list{
+      li{
+        line-height: 1.5;
+        margin-bottom: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  
+<section class="container-xl">
+  <div class="row" style="height: 100dvh;">
+    <div class="d-flex justify-content-center align-items-center text-center" >
+      <div class="container bg-white bg-opacity-75 p-5 rounded shadow">
+      <img src="{% static 'register/images/PIKOM.png' %}" class="img-fluid" width="250px" alt="">
+      <h1 class="golf-time fw-bold my-4">Thank You!</h1>
+      <p class="text-center">Your submission has been successfully received.</p>
+      
+      <p class="mb-2">Your unique registration number is:</p>
+      <h4 class="fw-bold mb-3">{{ reg_no }}</h4>
+                       
+      <p class="mb-0">You can use this registration number for event check-in or any related inquiries.</p>
+
+      <p class="text-center">If you have any questions or need further assistance, feel free to contact Grace Lee at 
+        <a href="email">grace@pikom.org.my</a>.
+      </p>
+    
+    </div>
+    </div>
+  </div>
+</section>
+
+    <script src="{% static 'register/js/jquery-3.7.1.min.js' %}"></script>
+    <script src="{% static 'register/js/bootstrap.bundle.min.js' %}"></script>
+
+
+</body>
+</html>

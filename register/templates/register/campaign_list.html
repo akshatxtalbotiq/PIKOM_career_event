@@ -183,6 +183,9 @@
     </nav> -->
     <!-- End Navbar -->
     <div class="container-fluid py-2">
+
+      <input type="hidden" id="perm" value="{{ perms.register.add_campaign }}">
+
       <div class="row">
         <div class="col-12">
           <div class="ms-3">
@@ -258,13 +261,22 @@
                               <a href="{{ campaign.url }}/{{ campaign.campaign_code }}" class="text-body p-0" title="View">
                                 <i class="material-symbols-rounded">visibility</i>
                               </a>
-                              <a href="javascript:void(0);" class="text-body p-0 edit-campaign-btn" 
+
+                              {% if perms.register.change_campaign %}
+                                <a href="javascript:void(0);" class="text-body p-0 edit-campaign-btn" 
                                 data-id="{{ campaign.id }}" title="Edit">
                                 <i class="material-symbols-rounded">edit</i>
                               </a>
+                              {% endif %}
+                              
                               {% if campaign.need_qr and campaign.is_active %}
                                 <a href="{% url 'scan' campaign.campaign_code %}" target="_blank" class="text-body p-0" title="QR Code">
                                   <i class="material-symbols-rounded">qr_code</i>
+                                </a>
+                              {% endif %}
+                              {% if campaign.entry_url %}
+                                <a href="{{ campaign.entry_url }}" target="_blank" class="text-body p-0" title="View Entry Form">
+                                  <i class="material-symbols-rounded">public</i>
                                 </a>
                               {% endif %}
                             </div>
@@ -321,13 +333,22 @@
                   <div class="invalid-feedback">End date is required.</div>
                 </div>
               </div>
-              <div class="col-xl-12 col-lg-12">
+              <div class="col-xl-6 col-lg-6">
                 <div class="mb-3">
                   <label for="campaignPageURL" class="form-label">Campaign Page URL</label>
                   <input type="text" class="form-control border border-1 rounded px-2 py-2" id="campaignPageURL" name="campaignPageURL" placeholder="/campaign_page" required>
                   <div class="invalid-feedback">Valid URL is required.</div>
                 </div>
               </div>
+              <div class="col-xl-6 col-lg-6">
+                <div class="mb-3">
+                  <label for="campaignEntryURL" class="form-label">Entry Page URL</label>
+                  <input type="text" class="form-control border border-1 rounded px-2 py-2" id="campaignEntryURL" name="campaignEntryURL" placeholder="/entry_page" onchange="removeSlashAndSetHidden()">
+                  <div class="invalid-feedback">Valid URL is required.</div>
+
+                  <input type="hidden" id="campaignEntryKeyword" name="campaignEntryKeyword" placeholder="pikomgolf2025">
+                </div>
+              </div>              
               <div class="col-xl-12 col-lg-12">
                 <div class="mb-3">
                   <label for="campaignPICEmail" class="form-label">PIC Email</label>
@@ -426,6 +447,8 @@
               document.getElementById('campaignID').value = data.id || '';
               document.getElementById('enableQR').checked = data.need_qr;
               document.getElementById('campaignPICEmail').value = data.pic_email || '';
+              document.getElementById('campaignEntryURL').value = data.entry_url || '';
+              document.getElementById('campaignEntryKeyword').value = data.entry_keyword || '';
 
               // Open the modal
               const modal = new bootstrap.Modal(document.getElementById('addNewCampaign'));
@@ -445,6 +468,22 @@
         enableTime: true,
         dateFormat: "Y-m-d H:i",
       });
+
+
+      let permValue = document.getElementById('perm').value;
+      let buttonsConfig = [];
+
+      if (permValue === "True") {
+          buttonsConfig.push({
+              text: '<i class="material-symbols-rounded align-middle">add</i> Add New',
+              className: 'btn btn-primary',
+              action: function () {
+                  // Open the modal with id #addNewCampaign
+                  const modal = new bootstrap.Modal(document.getElementById('addNewCampaign'));
+                  modal.show();
+              }
+          });
+      }
      
       const datatable = new DataTable('#campaigns', {
 
@@ -465,17 +504,7 @@
           },
           topEnd: 'buttons'
         },
-        buttons: [
-          {
-            text: '<i class="material-symbols-rounded align-middle">add</i> Add New',
-            className: 'btn btn-primary',
-            action: function () {
-              // Open the modal with id #addNewcampaign
-              const modal = new bootstrap.Modal(document.getElementById('addNewCampaign'));
-              modal.show();
-            }
-          }
-        ],
+        buttons: buttonsConfig,
         fixedHeader: {
           header: true,
           footer: true,
@@ -607,7 +636,8 @@
         const campaignID = $('#campaignID').val();
         const need_qr = $('#enableQR').is(':checked');
         const picEmail = $('#campaignPICEmail').val();
-       
+        const entry_url = $('#campaignEntryURL').val();
+        const entry_keyword = $('#campaignEntryKeyword').val();
 
         $.ajax({
           url: '/create_campaign',
@@ -621,7 +651,9 @@
             url: url,
             id:campaignID,
             need_qr: need_qr,
-            pic_email: picEmail
+            pic_email: picEmail,
+            entry_url: entry_url,
+            entry_keyword: entry_keyword
           },
           success: function (response) {
             if (response.success) {
@@ -653,6 +685,16 @@
       const feedbacks = form.querySelectorAll('.invalid-feedback');
       feedbacks.forEach(fb => fb.textContent = '');
     });   
+
+    
+    function removeSlashAndSetHidden() {      
+      const input = document.getElementById("campaignEntryURL").value;
+      const cleaned = input.replace(/\//g, ""); // Remove all slashes
+      document.getElementById("campaignEntryKeyword").value = cleaned;
+    }
+
+
+
 </script>
 
 

@@ -61,7 +61,6 @@ class Player(models.Model):
     def __str__(self):
         return self.name
     
-
 class Sponsorship(models.Model):   
     # TITLE_CHOICES = [
     #     ('Mr', 'Mr'),
@@ -120,9 +119,8 @@ class Sponsorship(models.Model):
     def __str__(self):
         return f"{self.contact_name} - {self.contact_email}"
     
-
-
 class Campaign(models.Model):
+    id = models.AutoField(primary_key=True)
     campaign_code = models.UUIDField(default=uuid.uuid4, unique=True)
     title = models.CharField(max_length=255)
     start_date = models.DateTimeField()
@@ -130,15 +128,17 @@ class Campaign(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    url = models.URLField(max_length=255, null=True, blank=True)
+    url = models.URLField(max_length=500, null=True, blank=True)
+    entry_url = models.URLField(max_length=500, null=True, blank=True)
+    entry_keyword = models.CharField(max_length=100, null=True, blank=True)
     need_qr = models.BooleanField(default=False)
     pic_email = models.TextField(null=True, blank=True)   
 
     def __str__(self):
         return self.title
     
-
-class Submission(models.Model):
+class Submission(models.Model):    
+    id = models.AutoField(primary_key=True)
     reg_no = models.CharField(max_length=100, unique=True)    
     name = models.CharField(max_length=100) 
     email = models.EmailField()
@@ -150,12 +150,12 @@ class Submission(models.Model):
     registration_code = models.UUIDField(default=uuid.uuid4, unique=True)
     is_checked_in = models.BooleanField(default=False)
     qr_sent = models.BooleanField(default=False)
-    campaign_code = models.CharField(max_length=255)    
+    campaign_code = models.CharField(max_length=255)    #uuid of campaign
     remarks = models.TextField(null=True, blank=True)
+    is_member = models.BooleanField(default=False)
+    member_code = models.CharField(max_length=100, blank=True, null=True)
+    fkcampaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, null=True, blank=True, related_name='submissions', db_column="fkcampaign",default=None)
 
     def __str__(self):
         return self.name
     
-    
-    
-

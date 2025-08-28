@@ -1,0 +1,476 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PIKOM - Talent Gap Intervention 2025</title>
+  <meta name="description" content="PIKOM - Talent Gap Intervention 2025" />
+  <meta name="keywords" content="PIKOM, Talent, Gap, Intervention, 2025" />
+  <meta name="author" content="PIKOM" />
+  <link rel="icon" href="{% static 'register/images/favicon.png' %}" type="image/png" />
+  <link rel="apple-touch-icon" href="{% static 'register/images/favicon.png' %}" type="image/png" />
+
+
+  <link rel="stylesheet" href="{% static 'register/css/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'register/css/style.css' %}">
+  <style>
+    :root{
+      --bs-primary: #2e923d;
+      --bs-primary-rgb: 46, 146, 61;
+      --bs-primary-hover: #2e923d;
+    }
+    .bg-primary{
+      background-color: var(--bs-primary) !important;
+    }
+    /*.hero{
+      background: url('assets/images/Golf-PIKOM-Invitational-&-Charity-2025-V1.1---Sponsorship-Deck.jpg') no-repeat center center;
+      background-size: cover;
+    }
+*/
+    .registeration {
+
+      display: flex;
+      align-items: stretch;
+      background: url('static/register/images/footer-Sponsorship-Deck.png') no-repeat center center;
+      background-size: contain;
+
+      .card{
+        background-color: #12273d44;
+        border-radius: .75rem .75rem 0 0 ;
+        min-height: calc(100% - 4rem);
+        border: none;
+        &card-body{
+          padding: 1.5rem;
+
+          
+        }
+        label.form-label{
+          color: #fff !important;
+        }
+      }
+    
+    }
+
+    #sponsorsipForm .btn-close{
+      width: 2rem;
+      height: 2rem;
+      border-radius: 4px;
+      background-color: #cacaca;
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      z-index: 999;
+    }
+    .package{
+      .package-image{
+        min-height: 500px;height: 100%;
+        border-radius: 1rem;
+
+        >.package-bg{
+          position: absolute;
+          top: 0;
+          left: 0;
+          background-position: center center;
+          background-size: cover;
+          width: 100%;
+          height: 100%;
+          background-repeat: no-repeat;
+          display: block;
+        }
+      }
+
+      .package-title{
+        font-size: 2.75rem;
+        color: var(--bs-secondary);
+        font-weight: bold;
+        text-transform: uppercase;
+      }
+      .package-price{
+        font-size: 2rem;
+        color: var(--bs-primary);
+        font-weight: bold;
+        text-transform: capitalize;
+      }
+    }
+
+    .btn-golf{
+      background: #51dda7;
+      color: #000000;
+      &:hover{
+        background: #2e923d;
+        color: #fafafa;
+        box-shadow: 0 0 10px #2e923d;
+      }
+    }
+    .fullbg{
+      background: url('static/register/images/tropicana-esort-washed.jpg') no-repeat center center;
+      background-size: cover;
+      background-attachment: fixed;
+      padding: 2rem 0;
+    }
+    .card.why{
+      border-radius: 1rem;
+      padding: 2rem;
+      background-color: #fafafac7;
+      border: none;
+    }
+    .conformed_sponsor{
+      position: absolute;
+      top: 0;
+      right: 0;
+      >img{
+          width: 200px;
+        }  
+    }
+    @media (max-width: 768px){
+      .conformed_sponsor{
+        position: relative;
+        margin-top: 1rem;    
+        width: 100%;
+        margin-inline: auto;
+        text-align: center;
+        >img{
+          width: 200px;
+        }
+      }
+      .package {
+        .package-title {
+          font-size: 2rem;
+          color: var(--bs-secondary);
+          font-weight: bold;
+          text-align: center;
+        }
+        .package-price{
+          text-align: center;
+        }
+      }
+      .package-details{
+        div.w-5{
+          width: 100% !important;
+
+          .btn{
+            white-space: nowrap;
+          }
+        }
+      }
+    }
+
+    .form-container {
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 25px;
+      border: 1px solid #dee2e6;
+      border-radius: 12px;
+      background: #fff;
+    }
+  </style>
+</head>
+<body>
+  
+  <header class="header container-fluid bg-light color-dark p-3 shadow">
+    <div class="row">
+      <div class="col-12 d-flex justify-content-between align-items-center">
+          <p class="text-gray mb-0">Talent Gap Intervention 2025</p>
+          <!-- <a href="{% url 'index' %}" class="text-gray mb-0 nav-link fw-bold">Buy Ticket</a> -->
+      </div>
+    </div>
+  </header>
+
+  <section class="container-xl py-5">
+    <div class="row">
+      <div class="col-12">
+        <div class="rounded-5 overflow-hidden shadow-lg">
+          <img src="{% static 'register/images/Talent Gap Intervention - Landscape.jpg' %}" class="img-fluid d-none d-xl-block" style="object-fit: cover;" alt="">
+          <img src="{% static 'register/images/Talent Gap Intervention - Portrait.jpg' %}" class="img-fluid  d-block d-xl-none" style="object-fit:cover;" alt="">
+        </div>
+      </div>
+    </div>
+    
+  </section>
+  <!-- <section class="fullbg py-4">
+    <div class="container">
+      <div class="row py-3 gy-3">
+        <div class="col-xl-6 col-lg-12">
+          <div class="card card-body why h-100 shadow-lg">
+           
+          </div>
+        </div>
+        <div class="col-xl-6 col-lg-12">
+          <div class="card card-body why h-100 shadow-lg">
+            
+          </div>
+        </div>
+      </div>
+    </div>
+  </section> -->
+  <section class="packages">
+    <div class="container">
+      <div class="form-container shadow-sm">
+        <h4 class="mb-4 text-center">Entry Form</h4>
+        <form id="entryForm" novalidate>
+
+          <input type="hidden" id="campaignID" name="campaignID" value="">
+          
+          <!-- Name -->
+          <div class="mb-3">
+            <label for="name" class="form-label">Full Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="name" required>
+            <div class="invalid-feedback">Please enter your full name.</div>
+          </div>
+          
+          <!-- Company -->
+          <div class="mb-3">
+            <label for="company" class="form-label">Company / Organization <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="company" required>
+            <div class="invalid-feedback">Please enter your company or organization.</div>
+          </div>
+          
+          <!-- Designation -->
+          <div class="mb-3">
+            <label for="designation" class="form-label">Designation <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="designation" required>
+            <div class="invalid-feedback">Please enter your designation.</div>
+          </div>
+          
+          <!-- Phone -->
+          <div class="mb-3">
+            <label for="phone" class="form-label">Phone <span class="text-danger">*</span></label>
+            <input type="tel" class="form-control" id="phone" required>
+            <div class="invalid-feedback">Please enter your phone number.</div>
+          </div>
+          
+          <!-- Email -->
+          <div class="mb-3">
+            <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+            <input type="email" class="form-control" id="email" required>
+            <div class="invalid-feedback">Please enter a valid email address.</div>
+          </div>
+          
+          <!-- Pikom Member -->
+          <div class="mb-3">
+            <label class="form-label d-block">Is Pikom Member? <span class="text-danger">*</span></label>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="pikomMember" id="memberYes" value="Yes" required>
+              <label class="form-check-label" for="memberYes">Yes</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="pikomMember" id="memberNo" value="No" required>
+              <label class="form-check-label" for="memberNo">No</label>
+            </div>
+            <div class="invalid-feedback d-block">Please select an option.</div>
+          </div>
+          
+          <!-- Submit -->
+          <div class="d-grid">
+            <button type="submit" class="btn btn-success">Submit</button>
+          </div>
+        </form>
+      </div>
+  
+      <script>
+        (() => {
+          'use strict'
+          const form = document.getElementById('entryForm');
+          
+          form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+              event.preventDefault();
+              event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+          }, false);
+        })();
+      </script>
+    </div>
+  </section>
+  <!-- <section class="container-xl py-5">
+    <div class="row">
+      <div class="col-12">
+        
+      </div>
+    </div>
+  </section> -->
+  <footer class=" container-fluid bg-light color-dark p-3 shadow">
+    <div class="row">
+      <div class="col-12 d-flex justify-content-between align-items-center">
+        <p class="text-gray mb-0">Power By <a href="https://talbotiq.com" class="nav-link d-inline-block" target="_blank">Talbotiq Technologies</a> </p>
+        <!-- <a href="{% url 'index' %}" class="text-gray mb-0 nav-link fw-bold">Buy Ticket</a> -->
+      </div>
+    </div>
+  </footer>
+
+
+    <script src="{% static 'register/js/jquery-3.7.1.min.js' %}"></script>
+    <script src="{% static 'register/js/bootstrap.bundle.min.js' %}"></script>
+    <script>
+       
+
+
+      document.addEventListener("DOMContentLoaded", function() {
+          let currentURL = window.location.href;
+          //remove the last '/' if exist
+          if (currentURL.endsWith("/")) {
+              currentURL = currentURL.slice(0, -1);
+          }
+          const campaign = currentURL.substring(currentURL.lastIndexOf("/") + 1);
+          document.getElementById("campaignID").value = campaign;
+        });
+
+
+      document.addEventListener('DOMContentLoaded', function () {
+          const btns = document.querySelectorAll('.btn-golf');
+          const select = document.getElementById('package');
+          const packages = [];
+
+          // Collect button data for dropdown
+          btns.forEach(btn => {
+              const id = btn.getAttribute('data-id');
+              const pkg = btn.getAttribute('data-package');
+              const price = btn.getAttribute('data-price');
+
+              if (id && pkg && !packages.some(p => p.id === id)) {
+                  packages.push({ id, pkg, price });
+              }
+          });
+
+          // Reset dropdown (keep first option only)
+          while (select.options.length > 1) {
+              select.remove(1);
+          }
+
+          // Populate dropdown
+          packages.forEach(p => {
+              const opt = document.createElement('option');
+              opt.value = p.id;
+              opt.textContent = `${p.pkg}${p.price ? ' (' + p.price + ')' : ''}`;
+              select.appendChild(opt);
+          });
+
+          // Set dropdown value when button clicked
+          btns.forEach(btn => {
+              btn.addEventListener('click', function () {
+                  const id = this.getAttribute('data-id');
+                  if (id) {
+                      select.value = id;
+                  }
+              });
+          });
+
+          // 🔄 Fetch taken packages from API and disable buttons
+          fetch('/check_taken_packages')
+              .then(response => response.json())
+              .then(data => {
+                  const taken = data.taken_packages;
+                  btns.forEach(button => {
+                      const btnPackageId = button.getAttribute('data-id');
+                      if (taken.includes(btnPackageId) && btnPackageId !== 'P12') { // Exclude P12 from being disabled
+                          button.disabled = true;
+                          button.textContent = 'Taken';
+                          button.classList.add('btn-secondary');
+                      }
+                  });
+              })
+              .catch(error => console.error('Error fetching package data:', error));
+      });
+
+
+      $(document).ready(function() {
+          // Initially disable the button
+          $('#submitBtn').prop('disabled', true);
+
+          $('#terms').change(function() {
+              if ($(this).is(':checked')) {
+                  $('#submitBtn').prop('disabled', false);
+              } else {
+                  $('#submitBtn').prop('disabled', true);
+              }
+          }); 
+      });
+
+
+      $('form').submit(function(e) {
+          e.preventDefault();
+          toggleSaveBtnLoading(true);
+
+          //check required by checking the form
+          if (!this.checkValidity()) {
+              this.classList.add('was-validated');
+              toggleSaveBtnLoading(false);
+              return;
+          } 
+
+         
+          $.ajax({
+              type: 'POST',
+              url: '{% url "save_submission" %}',
+              headers: {
+                  'X-CSRFToken': getCSRFToken()
+              },
+              contentType: 'application/json',
+              data: JSON.stringify({
+                  keyword: $('#campaignID').val(),
+                  name: $('#name').val(),
+                  organization: $('#company').val(),
+                  designation: $('#designation').val(),
+                  phone: $('#phone').val(),
+                  email: $('#email').val(),
+                  is_member: $('input[name="pikomMember"]:checked').val()                  
+              }),
+              success: function (response) {
+              if (response.success) {
+                  window.location.href = `/submission_thankyou/${response.reg_no}/`;
+              }
+              else {
+                   alert('An error occurred during submission! Please contact the administrator. Note: ' + response.message);
+              }
+              
+              },
+              error: function () {
+                  alert('An error occurred during submission.Please contact the administrator.');
+              },
+              complete: function () {
+                  toggleSaveBtnLoading(false);
+              }
+          });
+      });
+
+      function getCSRFToken() {
+        let name = 'csrftoken';
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            let cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                let cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+      function toggleSaveBtnLoading(isLoading) {
+          // const saveBtn = $('#saveBtn');
+          // if (isLoading) {
+          //     saveBtn.prop('disabled', true);
+          //     saveBtn.html('<i class="fa fa-spinner fa-spin"></i> Saving...');
+          // } else {
+          //     saveBtn.prop('disabled', false);
+          //     saveBtn.html('Save');
+          // }
+
+            if (isLoading) {
+                $('#submitBtnText').addClass('d-none');
+                $('#submitBtnLoader').removeClass('d-none');
+            } else {
+                $('#submitBtnText').removeClass('d-none');
+                $('#submitBtnLoader').addClass('d-none');
+            }
+      }
+  
+    </script>
+</body>
+</html>

@@ -305,6 +305,9 @@ def campaign_list(request):
 
 @login_required
 def create_campaign(request):
+
+    print("Creating or updating campaign")
+
     if request.method == 'POST':
         id = request.POST.get('id')
         title = request.POST.get('title')
@@ -314,6 +317,8 @@ def create_campaign(request):
         url = request.POST.get('url')
         need_qr = request.POST.get('need_qr') == 'true'
         pic_email = request.POST.get('pic_email', '')
+        entry_url = request.POST.get('entry_url', '')
+        entry_keyword = request.POST.get('entry_keyword', '')
 
         if id:
             #print(f"Updating campaign with ID: {id}")
@@ -323,6 +328,8 @@ def create_campaign(request):
             campaign.end_date = end_date
             campaign.is_active = is_active
             campaign.url = url
+            campaign.entry_url = entry_url
+            campaign.entry_keyword = entry_keyword
             campaign.need_qr = need_qr
             campaign.pic_email = pic_email
             campaign.save()
@@ -335,7 +342,9 @@ def create_campaign(request):
                 is_active=is_active,
                 url=url,
                 need_qr=need_qr,
-                pic_email=pic_email
+                pic_email=pic_email,
+                entry_url=entry_url,
+                entry_keyword=entry_keyword
             )
         return JsonResponse({'success': True, 'id': campaign.id})
     return JsonResponse({'success': False, 'error': 'Invalid request'}, status=400)
@@ -353,12 +362,16 @@ def get_campaign(request, id):
         "id": campaign.id,
         "need_qr": campaign.need_qr,
         "pic_email": campaign.pic_email,
+        "entry_url": campaign.entry_url,
+        "entry_keyword": campaign.entry_keyword,
     }
     return JsonResponse(data)
 
 @login_required 
 def submission_list(request, id=None):
+    print("Fetching submission list")
     current_user = request.user    
+    print("Campaign ID:", id)
     campaign = Campaign.objects.get(campaign_code=id)
     return render(request, 'register/submission_list.html', {'user': current_user, 'campaign': campaign})
 
@@ -369,7 +382,10 @@ def get_submission_list(request):
             campaign_code = request.POST.get('id')  
             campaign_code = campaign_code.replace("-", "")  
             submissions = Submission.objects.filter(campaign_code=campaign_code).order_by('-submitted_at')
-            
+
+            print("Campaign code:", campaign_code)
+            print("Submissions found:", submissions.count())
+
             data = []
             for s in submissions:
                 data.append({
@@ -484,6 +500,84 @@ def send_qr(request, id):
 
     return HttpResponse(f"QR codes sent successfully to {total_sent} out of {total_players} players.")
 
-    
+def talentgap2025_form(request):
+    return render(request, 'register/talentgap2025.html')
 
-       
+def save_submission(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)   
+
+            keyword = data.get('keyword', '').strip()
+
+            campaign = Campaign.objects.filter(entry_keyword__iexact=keyword, is_active=True).first()
+            c_id = campaign.campaign_code if campaign else None
+            if campaign:
+                print(campaign.pic_email)
+
+            member = data.get('is_member')
+            print("Is member:", member)
+            if member and member == 'Yes':
+                is_member = True
+            else:
+                is_member = False
+
+            #convert uuid to string
+            c_id = str(c_id)
+
+            reg = Submission.objects.create(
+                
+                name=data.get('name', ''),
+                organization=data.get('organization', ''),
+                email=data.get('email', ''),
+                mobile=data.get('phone', ''),
+                job_title=data.get('designation', ''),
+                is_member=is_member,
+                campaign_code=c_id.replace("-", "")  ,
+                fkcampaign=campaign
+
+            )
+
+            #update registrationno
+            reg.reg_no = f"REG{reg.id:06d}"                
+            reg.save()
+
+            
+            #try:
+            # campaign_code = uuid.UUID(billing.get('campaign_id', ''))
+
+            # campaign = Campaign.objects.filter(campaign_code=campaign_code).first()
+            # if campaign and campaign.pic_email:
+                
+            #     html_content = render_to_string('register/email/submission_notification.html', {'title': campaign.title, 'url': 'https://pikomgolf.talxone.com/registration_list/89c0dfc3-3d62-49bb-a706-bcbfa6a93cb3/'})
+            #     valid_emails = []
+            #     for email in campaign.pic_email.split(','):
+            #         email = email.strip()
+            #         try:
+            #             validate_email(email)
+            #             valid_emails.append(email)
+            #         except ValidationError:                            
+            #             pass
+                                
+            #     email = EmailMessage(
+            #         subject='Your day just got better - New Flight Registration!',
+            #         body=html_content,
+            #         from_email=settings.DEFAULT_FROM_EMAIL,
+            #         to=valid_emails,
+            #     )
+            #     email.content_subtype = 'html'
+            #     email.send()
+
+            #except ValueError:
+                #pass
+            
+                
+
+            return JsonResponse({'success': True, 'message': 'Registration successful', 'reg_no': reg.reg_no})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+
+    return JsonResponse({'success': False, 'message': 'Invalid request method'})
+
+def submission_thankyou(request, reg_no):
+    return render(request, 'register/submission_thankyou.html', {'reg_no': reg_no})

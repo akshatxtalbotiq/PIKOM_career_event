@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.urls import path
 from .views import index, save_registration, thankyou, sponsorship, save_sponsorship, sponsorship_thankyou, \
     get_registration_list, get_sponsorship_list, registration_list, sponsorship_list, campaign_list, tnc, send_qr,create_campaign,submission_list, get_submission_list,get_campaign, update_remarks, update_registration_remarks, \
-    check_taken_packages
+    check_taken_packages,talentgap2025_form, save_submission,submission_thankyou
 
 urlpatterns = [
     path('', index, name='index'),
@@ -27,4 +27,8 @@ urlpatterns = [
     path('tnc/', tnc, name='tnc'),
     path('send_qr/<str:id>', send_qr, name='send_qr'),
     path('create_campaign', create_campaign, name='create_campaign'),
+
+    path('talentgap2025/', talentgap2025_form , name='talentgap2025'),
+    path('save_submission', save_submission, name='save_submission'),
+    path('submission_thankyou/<str:reg_no>/', submission_thankyou, name='submission_thankyou'),
 ]
