@@ -11,7 +11,7 @@ from django.core.validators import validate_email, ValidationError
 
 from io import BytesIO
 from picom import settings
-from .models import Registration, Player, Sponsorship,Campaign, Submission
+from .models import Registration, Player, Sponsorship,Campaign, Submission, Team
 
 import uuid
 import json
@@ -296,14 +296,22 @@ def sponsorship_list(request, id=None):
 
 @login_required
 def campaign_list(request):    
-    current_user = request.user    
+    current_user = request.user 
+
+    if current_user.is_superuser == True:
+        campaigns = Campaign.objects.all()
+    else:
+        campaigns = Campaign.objects.filter(team=current_user.profile.team)
+
+    teams = Team.objects.all()
+
     #get registration and sponsorship count
     #registration_count = Registration.objects.count()
     #sponsorship_count = Sponsorship.objects.count()
 
-    campaigns = Campaign.objects.all()
+    
 
-    return render(request, 'register/campaign_list.html', {'user': current_user, 'campaigns': campaigns})
+    return render(request, 'register/campaign_list.html', {'user': current_user, 'campaigns': campaigns, 'teams': teams})
 
 @login_required
 def create_campaign(request):
@@ -321,6 +329,9 @@ def create_campaign(request):
         pic_email = request.POST.get('pic_email', '')
         entry_url = request.POST.get('entry_url', '')
         entry_keyword = request.POST.get('entry_keyword', '')
+        team_id = request.POST.get('team_id', None)
+
+        #print(f"Received data: id={id}, title={title}, start_date={start_date}, end_date={end_date}, is_active={is_active}, url={url}, need_qr={need_qr}, pic_email={pic_email}, entry_url={entry_url}, entry_keyword={entry_keyword}, team_id={team_id}"   )
 
         if id:
             #print(f"Updating campaign with ID: {id}")
@@ -333,9 +344,10 @@ def create_campaign(request):
             campaign.entry_url = entry_url
             campaign.entry_keyword = entry_keyword
             campaign.need_qr = need_qr
-            campaign.pic_email = pic_email
+            campaign.pic_email = pic_email            
             campaign.save()
         else:
+            team = Team.objects.get(id=team_id)
             #print("Creating a new campaign")
             campaign = Campaign.objects.create(
                 title=title,
@@ -346,7 +358,8 @@ def create_campaign(request):
                 need_qr=need_qr,
                 pic_email=pic_email,
                 entry_url=entry_url,
-                entry_keyword=entry_keyword
+                entry_keyword=entry_keyword,
+                team=team
             )
         return JsonResponse({'success': True, 'id': campaign.id})
     return JsonResponse({'success': False, 'error': 'Invalid request'}, status=400)
@@ -354,7 +367,7 @@ def create_campaign(request):
 @login_required
 def get_campaign(request, id):
     #print(f"Fetching campaign data for ID: {id}")
-    campaign = get_object_or_404(Campaign, id=id)
+    campaign = get_object_or_404(Campaign, id=id)    
     data = {
         "title": campaign.title,
         "start_date": campaign.start_date.isoformat() if campaign.start_date else "",
@@ -549,7 +562,7 @@ def save_submission(request):
                 #campaign = Campaign.objects.filter(campaign_code=campaign_code).first()
                 if campaign and campaign.pic_email:
                     
-                    html_content = render_to_string('register/email/submission_notification.html', {'title': campaign.title, 'url': 'https://pikomgolf.talxone.com/submission_list/' + c_id.replace("-", "") + '/'})
+                    html_content = render_to_string('register/email/submission_notification.html', {'title': campaign.title, 'url': 'https://pikom.talxone.com/submission_list/' + c_id.replace("-", "") + '/'})
                     valid_emails = []
                     for email in campaign.pic_email.split(','):
                         email = email.strip()
@@ -560,7 +573,7 @@ def save_submission(request):
                             pass
                                     
                     email = EmailMessage(
-                        subject='Your day just got better - New Flight Registration!',
+                        subject='New Registration for ' + campaign.title,
                         body=html_content,
                         from_email=settings.DEFAULT_FROM_EMAIL,
                         to=valid_emails,
