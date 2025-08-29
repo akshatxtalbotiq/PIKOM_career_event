@@ -264,7 +264,11 @@
           
           <!-- Submit -->
           <div class="d-grid">
-            <button type="submit" class="btn btn-success">Submit</button>
+            <!-- <button type="submit" class="btn btn-success">Submit</button> -->
+            <button type="submit" id="submitBtn" class="btn btn-lg btn-primary">
+                <span id="submitBtnText">Submit</span>
+                <span id="submitBtnLoader" class="d-none spinner-border spinner-border-sm"></span>
+            </button>
           </div>
         </form>
       </div>
@@ -376,18 +380,18 @@
       });
 
 
-      $(document).ready(function() {
-          // Initially disable the button
-          $('#submitBtn').prop('disabled', true);
+      // $(document).ready(function() {
+      //     // Initially disable the button
+      //     $('#submitBtn').prop('disabled', true);
 
-          $('#terms').change(function() {
-              if ($(this).is(':checked')) {
-                  $('#submitBtn').prop('disabled', false);
-              } else {
-                  $('#submitBtn').prop('disabled', true);
-              }
-          }); 
-      });
+      //     $('#terms').change(function() {
+      //         if ($(this).is(':checked')) {
+      //             $('#submitBtn').prop('disabled', false);
+      //         } else {
+      //             $('#submitBtn').prop('disabled', true);
+      //         }
+      //     }); 
+      // });
 
 
       $('form').submit(function(e) {

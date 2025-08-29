@@ -17,6 +17,8 @@ import uuid
 import json
 import qrcode
 
+from django.views.decorators.csrf import csrf_exempt
+
 # Create your views here.
 def index(request):
     return render(request, 'register/index.html')
@@ -498,9 +500,11 @@ def send_qr(request, id):
 
     return HttpResponse(f"QR codes sent successfully to {total_sent} out of {total_players} players.")
 
+@csrf_exempt
 def talentgap2025_form(request):
     return render(request, 'register/talentgap2025.html')
 
+@csrf_exempt
 def save_submission(request):
     if request.method == 'POST':
         try:
@@ -575,5 +579,6 @@ def save_submission(request):
 
     return JsonResponse({'success': False, 'message': 'Invalid request method'})
 
+@csrf_exempt
 def submission_thankyou(request, reg_no):
     return render(request, 'register/submission_thankyou.html', {'reg_no': reg_no})
