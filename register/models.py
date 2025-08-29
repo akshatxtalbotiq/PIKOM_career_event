@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 import uuid
 from datetime import datetime
 
@@ -6,12 +7,12 @@ from datetime import datetime
 #     year = datetime.now().year
 #     return f"sponsors/{year}/{filename}"
 
-class Team(models.Model):
-    id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=255)    
+# class Team(models.Model):
+#     id = models.AutoField(primary_key=True)
+#     name = models.CharField(max_length=255)    
 
-    def __str__(self):
-        return self.name
+#     def __str__(self):
+#         return self.name
 
 class Registration(models.Model):
     reg_no = models.CharField(max_length=100, unique=True)
@@ -139,7 +140,7 @@ class Campaign(models.Model):
     entry_keyword = models.CharField(max_length=100, null=True, blank=True)
     need_qr = models.BooleanField(default=False)
     pic_email = models.TextField(null=True, blank=True)   
-    team = models.ForeignKey(Team, on_delete=models.SET_NULL, null=True, blank=True, related_name='campaigns_team', db_column="team",default=None)
+    
     def __str__(self):
         return self.title
     
@@ -165,3 +166,10 @@ class Submission(models.Model):
     def __str__(self):
         return self.name
 
+class CampaignTeam(models.Model):
+    id = models.AutoField(primary_key=True)
+    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name='campaign_teams')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='campaign_user')
+
+    def __str__(self):
+        return f"Team for {self.campaign.title} - {self.user.username}"

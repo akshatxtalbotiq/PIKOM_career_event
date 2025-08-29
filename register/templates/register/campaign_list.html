@@ -343,7 +343,7 @@
               <div class="col-xl-6 col-lg-6">
                 <div class="mb-3">
                   <label for="campaignEntryURL" class="form-label">Entry Page URL</label>
-                  <input type="text" class="form-control border border-1 rounded px-2 py-2" id="campaignEntryURL" name="campaignEntryURL" placeholder="/entry_page" onchange="removeSlashAndSetHidden()" required>
+                  <input type="text" class="form-control border border-1 rounded px-2 py-2" id="campaignEntryURL" name="campaignEntryURL" placeholder="/entry_page" onchange="removeSlashAndSetHidden()">
                   <div class="invalid-feedback">Valid URL is required.</div>
 
                   <input type="hidden" id="campaignEntryKeyword" name="campaignEntryKeyword" placeholder="pikomgolf2025">
@@ -357,14 +357,17 @@
                 </div>
               </div>
               <div class="col-xl-6 col-lg-6">
-                <div class="mb-3" id="campaignTeamContainer">
-                  <label for="campaignTeam" class="form-label">Team</label>
-                  <select class="form-select border border-1 rounded px-2 py-2" id="campaignTeam" name="campaignTeam" required>
-                    <option value="" selected disabled>Select Team</option>
-                    {% for team in teams %}
-                      <option value="{{ team.id }}">{{ team.name }}</option>
+                <div class="mb-3">
+                  <label for="campaignTeam" class="form-label">Campaign Team</label>                  
+                  <select id="campaignTeam" name="campaignTeam" class="form-select" multiple>
+                    <option value=""></option> <!-- placeholder option for allowClear -->
+                    {% for user in users %}
+                      <option value="{{ user.id }}">
+                        {{ user.name }}
+                      </option>
                     {% endfor %}
                   </select>
+                  <div class="invalid-feedback">Please enter valid user.</div>
                 </div>
               </div>
               <div class="col-xl-12 col-lg-12">
@@ -397,6 +400,40 @@
 
 
   <script>
+
+    $(function () {
+  // cache selector
+  var $userSelect = $('#campaignTeam');
+
+  // init function (safe if re-opening modal)
+  function initUserSelect2() {
+    // destroy if already initialized (avoids double-init errors)
+    if ($userSelect.data('select2')) {
+      $userSelect.select2('destroy');
+    }
+
+    $userSelect.select2({
+      placeholder: 'Select a user',
+      allowClear: true,
+      width: '100%',
+      dropdownParent: $('#addNewCampaign') // IMPORTANT for modal
+    });
+  }
+
+  // initialize when modal opens
+  $('#addNewCampaign').on('shown.bs.modal', function () {
+    initUserSelect2();
+    // optionally set focus on select2 input
+    // $userSelect.select2('open');
+  });
+
+  // optional: destroy when modal hidden (cleanup)
+  $('#addNewCampaign').on('hidden.bs.modal', function () {
+    if ($userSelect.data('select2')) {
+      $userSelect.select2('destroy');
+    }
+  });
+});
    
 
     function validateEmailList(emailString) {      
@@ -461,11 +498,18 @@
               document.getElementById('campaignEntryURL').value = data.entry_url || '';
               document.getElementById('campaignEntryKeyword').value = data.entry_keyword || '';
 
-              //make id="campaignTeam" select control remove required
-              document.getElementById('campaignTeam').removeAttribute('required');
               
-              //make id="campaignTeamContainer" div invisible
-              document.getElementById('campaignTeamContainer').style.display = 'none';              
+
+              // Populate the user select2 using data.users
+              const $userSelect = $('#campaignTeam');
+              $userSelect.empty();
+              data.users.forEach(function (user) {
+                const option = new Option(user.name, user.id, false, data.selected_users.includes(user.id));
+                $userSelect.append(option);
+              });
+              $userSelect.trigger('change');
+
+              $('#campaignTeam').val(data.selected_users).trigger('change');
 
               // Open the modal
               const modal = new bootstrap.Modal(document.getElementById('addNewCampaign'));
@@ -655,9 +699,7 @@
         const picEmail = $('#campaignPICEmail').val();
         const entry_url = $('#campaignEntryURL').val();
         const entry_keyword = $('#campaignEntryKeyword').val();
-        const team_id = $('#campaignTeam').val();
-
-       
+        const selectedUsers = $('#campaignTeam').val(); 
 
         $.ajax({
           url: '/create_campaign',
@@ -674,7 +716,7 @@
             pic_email: picEmail,
             entry_url: entry_url,
             entry_keyword: entry_keyword,
-            team_id: team_id
+            users: selectedUsers
           },
           success: function (response) {
             if (response.success) {
@@ -702,17 +744,7 @@
       inputs.forEach(input => {
         input.classList.remove('is-invalid');
       });
-
-      //make id="campaignTeamContainer" div visible if invisible
-      if (document.getElementById('campaignTeamContainer').style.display === 'none') {
-          document.getElementById('campaignTeamContainer').style.display = 'block';
-      }
-
-      //add required attribute to id="campaignTeam" select control if not exists
-      if (!document.getElementById('campaignTeam').hasAttribute('required')) {
-          document.getElementById('campaignTeam').setAttribute('required', 'required');
-      }
-
+      
       const feedbacks = form.querySelectorAll('.invalid-feedback');
       feedbacks.forEach(fb => fb.textContent = '');
     });   

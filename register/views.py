@@ -9,9 +9,10 @@ from django.utils import timezone
 from django.template.loader import render_to_string
 from django.core.validators import validate_email, ValidationError
 
+from django.contrib.auth.models import User
 from io import BytesIO
 from picom import settings
-from .models import Registration, Player, Sponsorship,Campaign, Submission, Team
+from .models import Registration, Player, Sponsorship,Campaign, Submission,CampaignTeam
 
 import uuid
 import json
@@ -296,22 +297,22 @@ def sponsorship_list(request, id=None):
 
 @login_required
 def campaign_list(request):    
-    current_user = request.user 
-
-    if current_user.is_superuser == True:
-        campaigns = Campaign.objects.all()
-    else:
-        campaigns = Campaign.objects.filter(team=current_user.profile.team)
-
-    teams = Team.objects.all()
-
+    current_user = request.user    
     #get registration and sponsorship count
     #registration_count = Registration.objects.count()
     #sponsorship_count = Sponsorship.objects.count()
 
-    
+    users = User.objects.all()
+    user_data = [{"id": user.id, "email": user.email, "name": user.get_full_name()} for user in users]
 
-    return render(request, 'register/campaign_list.html', {'user': current_user, 'campaigns': campaigns, 'teams': teams})
+    if current_user.is_superuser:
+        # Show all campaigns
+        campaigns = Campaign.objects.all()
+    else:
+        # get list of campign id that has user id in CampaignTeam model
+        campaigns = Campaign.objects.filter(campaign_teams__user=current_user).distinct()
+
+    return render(request, 'register/campaign_list.html', {'user': current_user, 'campaigns': campaigns, 'users': user_data})
 
 @login_required
 def create_campaign(request):
@@ -329,9 +330,7 @@ def create_campaign(request):
         pic_email = request.POST.get('pic_email', '')
         entry_url = request.POST.get('entry_url', '')
         entry_keyword = request.POST.get('entry_keyword', '')
-        team_id = request.POST.get('team_id', None)
-
-        #print(f"Received data: id={id}, title={title}, start_date={start_date}, end_date={end_date}, is_active={is_active}, url={url}, need_qr={need_qr}, pic_email={pic_email}, entry_url={entry_url}, entry_keyword={entry_keyword}, team_id={team_id}"   )
+        selected_users = request.POST.getlist("users[]")
 
         if id:
             #print(f"Updating campaign with ID: {id}")
@@ -344,10 +343,9 @@ def create_campaign(request):
             campaign.entry_url = entry_url
             campaign.entry_keyword = entry_keyword
             campaign.need_qr = need_qr
-            campaign.pic_email = pic_email            
+            campaign.pic_email = pic_email
             campaign.save()
         else:
-            team = Team.objects.get(id=team_id)
             #print("Creating a new campaign")
             campaign = Campaign.objects.create(
                 title=title,
@@ -358,16 +356,34 @@ def create_campaign(request):
                 need_qr=need_qr,
                 pic_email=pic_email,
                 entry_url=entry_url,
-                entry_keyword=entry_keyword,
-                team=team
+                entry_keyword=entry_keyword
             )
+
+        #delete the rows for CampaignTeam model
+        CampaignTeam.objects.filter(campaign=campaign).delete()
+
+        #save the users in CampaignTeam model
+        for user_id in selected_users:
+            user = get_object_or_404(User, id=user_id)
+            CampaignTeam.objects.create(campaign=campaign, user=user)
+
         return JsonResponse({'success': True, 'id': campaign.id})
     return JsonResponse({'success': False, 'error': 'Invalid request'}, status=400)
 
 @login_required
 def get_campaign(request, id):
     #print(f"Fetching campaign data for ID: {id}")
-    campaign = get_object_or_404(Campaign, id=id)    
+    campaign = get_object_or_404(Campaign, id=id)
+
+    user = request.user
+    
+    #get the list of users in auth_user table
+    users = User.objects.all()
+    user_data = [{"id": user.id, "email": user.email, "name": user.get_full_name()} for user in users] 
+
+    #for the campaign, get the data from CampaignTeam
+    selected_users = [team.user.id for team in campaign.campaign_teams.all()]
+
     data = {
         "title": campaign.title,
         "start_date": campaign.start_date.isoformat() if campaign.start_date else "",
@@ -379,6 +395,8 @@ def get_campaign(request, id):
         "pic_email": campaign.pic_email,
         "entry_url": campaign.entry_url,
         "entry_keyword": campaign.entry_keyword,
+        "users": user_data,
+        "selected_users": selected_users
     }
     return JsonResponse(data)
 
