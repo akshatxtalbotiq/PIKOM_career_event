@@ -1,5 +1,5 @@
 from django.core.mail import EmailMessage
-from django.shortcuts import render,get_object_or_404
+from django.shortcuts import render,get_object_or_404,redirect
 from django.http import HttpResponse, JsonResponse
 from django.db import transaction, IntegrityError
 from django.contrib.auth.decorators import login_required
@@ -12,7 +12,7 @@ from django.core.validators import validate_email, ValidationError
 from django.contrib.auth.models import User
 from io import BytesIO
 from picom import settings
-from .models import Registration, Player, Sponsorship,Campaign, Submission,CampaignTeam
+from .models import Registration, Player, Sponsorship,Campaign, Submission,CampaignTeam, Survey, Question, Answer, SurveyUser
 
 import uuid
 import json
@@ -613,3 +613,244 @@ def save_submission(request):
 @csrf_exempt
 def submission_thankyou(request, reg_no):
     return render(request, 'register/submission_thankyou.html', {'reg_no': reg_no})
+
+@csrf_exempt
+def survey(request, survey_id):
+
+    survey = get_object_or_404(Survey, survey_code=survey_id)
+
+    return render(
+        request,
+        "register/survey.html",
+        {"survey": survey},
+    )
+
+@csrf_exempt
+def survey_detail(request, survey_id, user_id):    
+
+    survey = get_object_or_404(Survey, survey_code=survey_id)
+    role_categories = [
+        "Software Development",
+        "Data & AI",
+        "Cloud & DevOps",
+        "Cybersecurity",
+        "UI/UX & Product",
+        "IT Infrastructure",
+    ]
+
+    #user_id = 1 if request.user.is_authenticated else None
+
+    return render(
+        request,
+        "register/survey_detail.html",
+        {"survey": survey, "role_categories": role_categories, "user_id":user_id},
+    )
+
+@csrf_exempt
+def survey_initial_submit(request, survey_id):
+    survey = get_object_or_404(Survey, pk=survey_id)
+    if request.method != "POST":
+        return redirect("survey", survey_id=survey.survey_code)
+    
+    # Create a new survey user entry
+    survey_user = SurveyUser.objects.create(
+        survey=survey,
+        name=request.POST.get("name"),
+        email=request.POST.get("email"),
+        phone=request.POST.get("phone"),
+        organization=request.POST.get("organization"),
+    )
+
+    return redirect("survey_detail", survey_id=survey.survey_code, user_id=survey_user.id)
+
+@csrf_exempt
+def survey_submit(request, survey_id):
+    survey = get_object_or_404(Survey, pk=survey_id)
+    if request.method != "POST":
+        return redirect("survey_detail", survey_id=survey.id)
+    
+    user_id = request.POST.get("user_id")
+    survey_user = get_object_or_404(SurveyUser, pk=user_id, survey=survey)
+
+    campaign = Campaign.objects.filter(campaign_code=survey.fkcampaign.campaign_code).first()
+
+    # Iterate all questions and read values from POST
+    for q in survey.questions.all():
+        field = f"q_{q.id}"
+
+        if q.question_type in (Question.TYPE_TEXT, Question.TYPE_TEXTAREA):
+            val = request.POST.get(field, "").strip()
+            if val:
+                Answer.objects.create(
+                    survey=survey, question=q, user=survey_user,
+                    answer_text=val
+                )
+
+        elif q.question_type in (Question.TYPE_RADIO, Question.TYPE_SELECT):
+            picked = request.POST.get(field, "")
+            other = request.POST.get(f"{field}_other", "").strip() if q.allow_other else ""
+            if picked:
+                # picked is one of the provided options; if "Other", also save other text if present
+                data = [picked]
+                Answer.objects.create(
+                    survey=survey, question=q, user=survey_user,
+                    selected_options=data, answer_text=other if picked == "Other" and other else None
+                )
+            elif q.allow_other and other:
+                # no radio chosen but "Other" text provided (e.g. user typed without ticking)
+                Answer.objects.create(
+                    survey=survey, question=q, user=survey_user,
+                    selected_options=["Other"], answer_text=other
+                )
+
+        elif q.question_type == Question.TYPE_CHECKBOX:
+            picked = request.POST.getlist(field)
+            other = request.POST.get(f"{field}_other", "").strip() if q.allow_other else ""
+            # enforce max_checks server-side if set
+            if q.max_checks and len(picked) > q.max_checks:
+                picked = picked[: q.max_checks]
+            if picked or other:
+                if other and "Other" not in picked:
+                    picked.append("Other")
+                Answer.objects.create(
+                    survey=survey, question=q, user=survey_user,
+                    selected_options=picked, answer_text=other if other else None
+                )
+
+        elif q.question_type == Question.TYPE_MATRIX_ROLES:
+            # Collect the 6 rows as per UI
+            # Each row has: role_example, openings, urgency, difficulty
+            categories = [
+                "Software Development",
+                "Data & AI",
+                "Cloud & DevOps",
+                "Cybersecurity",
+                "UI/UX & Product",
+                "IT Infrastructure",
+            ]
+            rows = []
+            for idx, cat in enumerate(categories, start=1):
+                prefix = f"{field}_row{idx}_"
+                rows.append({
+                    "category": cat,
+                    "role_example": request.POST.get(prefix + "role", "").strip(),
+                    "openings": request.POST.get(prefix + "openings", "").strip(),
+                    "urgency": request.POST.get(prefix + "urgency", "").strip(),
+                    "difficulty": request.POST.get(prefix + "difficulty", "").strip(),
+                })
+            # Save as JSON in answer_text
+            Answer.objects.create(
+                survey=survey, question=q, user=survey_user,
+                answer_text=json.dumps(rows, ensure_ascii=False)
+            )
+
+    # try:
+        
+    #     if campaign and campaign.pic_email:
+    #         c_id = str(campaign.campaign_code)
+            
+    #         html_content = render_to_string('register/email/submission_notification.html', {'title': campaign.title, 'url': 'https://pikom.talxone.com/submission_list/' + c_id.replace("-", "") + '/'})
+    #         valid_emails = []
+    #         for email in campaign.pic_email.split(','):
+    #             email = email.strip()
+    #             try:
+    #                 validate_email(email)
+    #                 valid_emails.append(email)
+    #             except ValidationError:                            
+    #                 pass
+                            
+    #         email = EmailMessage(
+    #             subject='New Registration for ' + campaign.title,
+    #             body=html_content,
+    #             from_email=settings.DEFAULT_FROM_EMAIL,
+    #             to=valid_emails,
+    #         )
+    #         email.content_subtype = 'html'
+    #         email.send()
+
+    # except ValueError:
+    #     pass
+
+    return redirect("survey_thankyou", survey_id=survey.survey_code)
+
+@csrf_exempt
+def survey_thankyou(request, survey_id):
+    return render(request, "register/survey_thankyou.html", {"survey_id": survey_id})
+
+@login_required
+def survey_list(request):    
+    current_user = request.user    
+
+    #get all active campaigns
+    campaigns = Campaign.objects.filter(is_active=True).order_by('-start_date')
+    campaign_list = [{"id": str(c.id), "title": c.title} for c in campaigns]
+    
+    users = User.objects.all()
+    user_data = [{"id": user.id, "email": user.email, "name": user.get_full_name()} for user in users]
+
+    if current_user.is_superuser:
+        # Show all surveys
+        surveys = Survey.objects.all()
+    else:
+        # get list of survey id that has user id in SurveyTeam model
+        surveys = Survey.objects.filter(fkcampaign__campaign_teams__user=current_user).distinct()
+
+    return render(request, 'register/survey_list.html', {'user': current_user, 'surveys': surveys, 'users': user_data, 'campaigns': campaign_list})
+
+@login_required
+def create_survey(request):
+
+    print("Creating or updating survey")
+
+    if request.method == 'POST':
+        id = request.POST.get('id')
+        title = request.POST.get('title')
+        start_date = parse_datetime(request.POST.get('start_date'))
+        end_date = parse_datetime(request.POST.get('end_date'))
+        is_active = request.POST.get('is_active') == 'true'
+        description = request.POST.get("description")
+        campaign_id = request.POST.get('campaign_id')
+        campaign = get_object_or_404(Campaign, id=campaign_id) if campaign_id else None
+        
+
+        if id:
+            #print(f"Updating survey with ID: {id}")
+            survey = get_object_or_404(Survey, id=id)
+            survey.title = title
+            survey.start_date = start_date
+            survey.end_date = end_date
+            survey.is_active = is_active
+            survey.description = description
+            survey.fkcampaign = campaign
+            survey.save()
+        else:
+            #print("Creating a new survey")
+            survey = Survey.objects.create(
+                title=title,
+                start_date=start_date,
+                end_date=end_date,
+                is_active=is_active,
+                description=description,
+                fkcampaign=campaign
+            )       
+
+        return JsonResponse({'success': True, 'id': survey.id})
+    return JsonResponse({'success': False, 'error': 'Invalid request'}, status=400)
+
+@login_required
+def get_survey(request, id):
+    #print(f"Fetching survey data for ID: {id}")
+    survey = get_object_or_404(Survey, id=id)  
+  
+    data = {
+        "title": survey.title,
+        "start_date": survey.start_date.isoformat() if survey.start_date else "",
+        "end_date": survey.end_date.isoformat() if survey.end_date else "",       
+        "active": survey.is_active,
+        "id": survey.id,        
+        "description": survey.description,
+        "campaign_id": str(survey.fkcampaign.id) if survey.fkcampaign else None,
+    }
+    return JsonResponse(data)
+
+

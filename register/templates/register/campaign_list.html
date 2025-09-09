@@ -547,22 +547,25 @@
       }
      
       const datatable = new DataTable('#campaigns', {
-
         responsive: false,
-        'paging': true,
-        "processing": true,
-        "lengthChange": true,
-        "searching": true,
-        "pageLength": 10,
+        paging: true,
+        processing: true,
+        lengthChange: true,
+        searching: true,
+        pageLength: 10,
+        lengthMenu: [[5, 10, 15, 50, 100], [5, 10, 15, 50, 100]],
         colReorder: true,
         layout: {
-          topStart: {
-            'search': {
-              className: 'form-control form-control-sm',
-              placeholder: 'Search...',
-              ariaLabel: 'Search'
+          topStart: [
+            {
+              search: {
+                className: 'form-control form-control-sm',
+                placeholder: 'Search...',
+                ariaLabel: 'Search'
+              }
             },
-          },
+            'pageLength'   // 👈 this adds the "Show entries" dropdown
+          ],
           topEnd: 'buttons'
         },
         buttons: buttonsConfig,
@@ -573,12 +576,10 @@
         },
         autoWidth: true,
         scrollCollapse: true,
-        //scroller: true,
-        //scrollY: c - 120,
         language: {
           paginate: {
-            previous: '<i class="material-symbols-rounded">chevron_left</i> ',
-            next: '<i class="material-symbols-rounded">chevron_right</i> ',
+            previous: '<i class="material-symbols-rounded">chevron_left</i>',
+            next: '<i class="material-symbols-rounded">chevron_right</i>'
           },
           searchBuilder: {
             button: 'Add filters',
@@ -591,19 +592,17 @@
             right: '<i class="material-symbols-rounded">chevron_right</i>',
             left: '<i class="material-symbols-rounded">chevron_left</i>',
             clearAll: '<i class="material-symbols-rounded">x</i>Clear All'
-
           },
-         "emptyTable": "<img src='{% static 'user/img/illustrations/notfoundImg3.png' %}' width='180px' alt='No data' /><p class='fs-5 fw-500'>No Record available in table</p>",
-          "infoEmpty": "0 Record",
-          "zeroRecords": "<img src='{% static 'user/img/illustrations/notfoundImg3.png' %}' width='180px' alt='No data' /><p class='fs-5 fw-500'>No Record to display</p>",
+          emptyTable:
+            "<img src='{% static 'user/img/illustrations/notfoundImg3.png' %}' width='180px' alt='No data' /><p class='fs-5 fw-500'>No Record available in table</p>",
+          infoEmpty: '0 Record',
+          zeroRecords:
+            "<img src='{% static 'user/img/illustrations/notfoundImg3.png' %}' width='180px' alt='No data' /><p class='fs-5 fw-500'>No Record to display</p>"
         },
         pagingTag: 'button',
-
-
         initComplete: function (settings, json) {
-          console.log('table is ready')
+          console.log('table is ready');
         }
-
       });
 
     });

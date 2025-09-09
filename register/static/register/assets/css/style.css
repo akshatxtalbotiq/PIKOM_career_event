@@ -1,0 +1,25 @@
+body {
+  font-family: 'Poppins', Arial, sans-serif; 
+  font-size: 16px;
+  line-height: 1.6;
+  color: #333;
+  background-color: #d8e8ff;
+}
+
+h5.card-title {
+  font-size: 1.2rem;
+  color: #004080; 
+  border-left: 4px solid #004080;
+  padding-left: 10px;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  body {
+    font-size: 15px;
+  }
+  h5.card-title {
+    font-size: 1rem;
+  }
+}

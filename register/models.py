@@ -173,3 +173,82 @@ class CampaignTeam(models.Model):
 
     def __str__(self):
         return f"Team for {self.campaign.title} - {self.user.username}"
+    
+class Survey(models.Model):
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    fkcampaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="surveys", null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    start_date = models.DateTimeField(null=True, blank=True)
+    end_date = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    survey_code = models.UUIDField(default=uuid.uuid4, unique=True)
+
+    def __str__(self):
+        return self.title
+
+class Question(models.Model):
+    TYPE_TEXT = "text"           # single open text (input)
+    TYPE_TEXTAREA = "textarea"   # long open text (textarea)
+    TYPE_RADIO = "radio"         # single-choice
+    TYPE_CHECKBOX = "checkbox"   # multi-choice
+    TYPE_SELECT = "select"       # dropdown
+    TYPE_MATRIX_ROLES = "matrix_roles"  # special Section C (table)
+
+    QUESTION_TYPES = [
+        (TYPE_TEXT, "Open Text"),
+        (TYPE_TEXTAREA, "Paragraph"),
+        (TYPE_RADIO, "Single Choice"),
+        (TYPE_CHECKBOX, "Multiple Choice"),
+        (TYPE_SELECT, "Dropdown"),
+        (TYPE_MATRIX_ROLES, "Roles & Skills Matrix (Section C - Q6)"),
+    ]
+
+    survey = models.ForeignKey(Survey, on_delete=models.CASCADE, related_name="questions")
+    number = models.PositiveIntegerField(help_text="Question number in the survey.")
+    text = models.TextField()
+    help_text = models.TextField(blank=True)
+    question_type = models.CharField(max_length=32, choices=QUESTION_TYPES, default=TYPE_TEXT)
+
+    # For choice questions, store list of strings as JSON
+    choices = models.JSONField(blank=True, null=True, help_text="List of options for radio/checkbox/select.")
+    allow_other = models.BooleanField(default=False, help_text="Include an 'Other' free-text input.")
+    max_checks = models.PositiveIntegerField(blank=True, null=True, help_text="Optional limit for checkbox selections.")
+    is_required = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["number"]
+
+    def __str__(self):
+        return f"Q{self.number}: {self.text[:60]}"
+
+class SurveyUser(models.Model):
+    id = models.AutoField(primary_key=True)
+    survey = models.ForeignKey(Survey, on_delete=models.CASCADE, related_name="survey_users")
+    name = models.CharField(max_length=500, null=True, blank=True)
+    email = models.EmailField(null=True, blank=True)
+    phone = models.CharField(max_length=50, null=True, blank=True)
+    organization = models.CharField(max_length=500, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.survey.title}"
+
+class Answer(models.Model):
+    survey = models.ForeignKey(Survey, on_delete=models.CASCADE, related_name="answers")
+    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name="answers")
+    user = models.ForeignKey(SurveyUser, on_delete=models.SET_NULL, null=True, blank=True)
+
+    # For text/textarea -> answer_text
+    # For radio/select/checkbox -> selected_options (list of strings)
+    # For matrix_roles (Q6) -> structured JSON in answer_text (stringified JSON)
+    answer_text = models.TextField(blank=True, null=True)
+    selected_options = models.JSONField(blank=True, null=True)
+
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        who = self.user if self.user_id else "Anonymous"
+        return f"{who} Q{self.question.number}"
+    
+

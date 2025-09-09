@@ -29,7 +29,12 @@
   <link id="datatableStyle" rel="stylesheet" href="{% static 'user/js/plugins/timepicker/flatpickr.min.css' %}">
 
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+
+
   
+
   <style>
     .icon-btn {
       background: none;
@@ -48,6 +53,11 @@
     }
 
   </style>
+
+  {% block extra_head %}
+  {% endblock %}
+  {% block extracss %}
+  {% endblock %}
 </head>
 
 <body class="g-sidenav-show  bg-gray-100">
@@ -72,9 +82,15 @@
                 </a>             
             </li> -->             
             <li class="nav-item">             
-                <a class="nav-link active" href="{% url 'campaign_list' %}">                 
+                <a id="campaign_list" class="nav-link" href="{% url 'campaign_list' %}">                 
                     <i class="material-symbols-rounded opacity-5">table_view</i>                 
                     <span class="nav-link-text ms-1">Campaigns</span>             
+                </a>             
+            </li>   
+            <li class="nav-item">             
+                <a id="survey_list" class="nav-link" href="{% url 'survey_list' %}">                 
+                    <i class="material-symbols-rounded opacity-5">table_view</i>                 
+                    <span class="nav-link-text ms-1">Surveys</span>             
                 </a>             
             </li>             
             <!-- <li class="nav-item">             
@@ -115,6 +131,14 @@
   <script src="{% static 'user/js/plugins/timepicker/flatpickr.js' %}"></script>
 
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+  <script src="{% static 'register/sweetalert2/sweetalert2.js' %}"></script>
+
+  {% block extrajs_head %}
+  {% endblock %}
+
+  {% block extrajs %}
+  {% endblock %}
   
   <script>
     var win = navigator.platform.indexOf('Win') > -1;
@@ -124,6 +148,26 @@
       }
       Scrollbar.init(document.querySelector('#sidenav-scrollbar'), options);
     }
+  </script>
+
+  <script>
+    //if url last part is 'survey_list', add class active to the survey_list link in sidebar
+    //after page load
+    document.addEventListener("DOMContentLoaded", function() {
+      let currentPath = window.location.pathname;
+      //remove last slash if exists
+      if (currentPath.endsWith('/')) {
+        currentPath = currentPath.slice(0, -1);
+      }     
+      
+      if (currentPath.endsWith('survey_list')) {
+        document.getElementById('survey_list').classList.add('active');
+       
+      } else if (currentPath.endsWith('campaign_list')) {
+        document.getElementById('campaign_list').classList.add('active');
+    }
+    });
+
   </script>
 </body>
 

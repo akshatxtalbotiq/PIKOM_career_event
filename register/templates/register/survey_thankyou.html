@@ -1,0 +1,36 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thank You</title>
+    <link rel="stylesheet" href="{% static 'register/assets/css/bootstrap.css' %}">
+    <link rel="stylesheet" href="{% static 'register/assets/css/style.css' %}">
+    <style>
+    body {
+        background: url("{% static 'register/assets/images/12.png' %}") no-repeat center center fixed;
+        background-size: cover;
+      }
+  </style>
+
+<body>
+    <section class="container-xl">
+        <div class="row" style="height: 100dvh;">
+        <div class="d-flex justify-content-center align-items-center text-center" >
+        <div class="container bg-white bg-opacity-75 p-5 rounded shadow">
+        <img src="{% static 'register/assets/images/LOGO.png' %}" class="img-fluid rounded"  alt="">
+        <h1 class="fw-bold my-4">Thank you for completing the questionnaire</h1>
+        <p class="text-center">Your contribution is invaluable in building a stronger, future-ready talent ecosystem for Malaysia.</p>
+        <a href="{% url 'survey' survey_id %}" class="btn btn-success">Back to Survey</a>
+        </div>
+        </div>
+        </div>
+    </section>
+
+     <script src="{% static 'register/assets/libraries/js/bootstrap.bundle.min.js' %}"></script>
+</body>
+</html>
+
+

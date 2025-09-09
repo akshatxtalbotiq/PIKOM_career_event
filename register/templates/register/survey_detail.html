@@ -1,0 +1,315 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ survey.title }}</title>
+  <link rel="stylesheet" href="{% static 'register/assets/css/bootstrap.css' %}">
+  <link rel="stylesheet" href="{% static 'register/assets/css/style.css' %}">
+  <link rel="stylesheet" href="{% static 'register/sweetalert2/sweetalert2.css' %}">
+  <style>
+    .border-left-custom { border-left: 6px solid #198754; padding-left: .5rem; }
+
+  </style>
+</head>
+<body>
+  <div class="container-xl py-5">
+
+    <div class="row mb-4">
+      <div class="col-12 p-0 overflow-hidden rounded mb-4 shadow-lg">
+        <img src="{% static 'register/assets/images/banner.png' %}" class="img-fluid w-100 rounded" alt="">
+      </div>
+
+      <div class="col-12 mb-4">
+        <div class="p-4 rounded shadow bg-light" role="alert">
+          <!-- <p>Dear Valued Employer,</p>
+          <p>
+            As Malaysia's premier tech association, PIKOM is committed to ensuring our nation remains a leading hub for AI and digital talent. Our Talent Gap Committee is conducting this crucial survey to understand the evolving challenges you face in a rapidly changing landscape. Your insights are invaluable. By sharing your experiences, you will directly help us identify critical skill gaps, understand future digital talent demands, and inform the development of strategic initiatives and academic curricula. This is about more than just data collection—it's about building a robust, globally competitive digital workforce that strengthens Malaysia's position in the global tech economy. Your participation is a direct investment in the future of our industry. All responses will be kept strictly confidential and used solely for this research.
+          </p>
+          <p class="text-danger"><strong>Estimated Time to Complete:</strong> 12-15 minutes</p> -->
+          {{ survey.description|safe }}
+        </div>
+      </div>
+    </div>
+
+    <form action="{% url 'survey_submit' survey.id %}" method="post">
+      {% csrf_token %}
+
+      <input type="hidden" name="survey_id" id="survey_id " value="{{ survey.id }}">
+      <input type="hidden" name="user_id" id="user_id" value="{{ user_id }}">
+
+      {# Render questions in order; group by "Section" via question.number ranges #}
+      {% for q in survey.questions.all %}
+        {% if q.question_type != 'matrix_roles' and q.number == 1 %}
+        <div class="card mb-4">
+          <div class="card-body">
+            <h5 class="card-title fw-bold border-left-custom">Section A: Respondent & Company Profile</h5>
+        {% endif %}
+
+        {% if q.number == 5 %}
+        </div></div>
+        <div class="card mb-4"><div class="card-body">
+          <h5 class="card-title fw-bold border-left-custom">Section B: Current Hiring Landscape</h5>
+        {% endif %}
+
+        {% if q.number == 6 %}
+        </div></div>
+        <div class="card mb-4"><div class="card-body">
+          <h5 class="card-title fw-bold border-left-custom">Section C: Specific Talent & Skills Demand</h5>
+          <p class="mt-3">6. Please indicate your company's demand for the following roles in upcoming 12 months.<br>For each role, specify the urgency and the difficulty to fill.</p>
+        {% endif %}
+
+        {% if q.number == 9 %}
+        </div></div>
+        <div class="card mb-4"><div class="card-body">
+          <h5 class="card-title fw-bold border-left-custom">Section D: Root Causes of the Talent Gap</h5>
+        {% endif %}
+
+        {% if q.number == 14 %}
+        </div></div>
+        <div class="card mb-4"><div class="card-body">
+          <h5 class="card-title fw-bold border-left-custom">Section E: Retention & Attrition</h5>
+        {% endif %}
+
+        {% if q.number == 16 %}
+        </div></div>
+        <div class="card mb-4"><div class="card-body">
+          <h5 class="card-title fw-bold border-left-custom">Section F: Internship Programs & Talent Integration</h5>
+        {% endif %}
+
+        {% if q.number == 18 %}
+        </div></div>
+        <div class="card mb-4"><div class="card-body">
+          <h5 class="card-title fw-bold border-left-custom">Section G: Future Outlook & Strategic Initiatives</h5>
+        {% endif %}
+
+        {# Render single question block #}
+        <div class="mb-3">
+          {% if q.question_type != 'matrix_roles' %}
+            <label class="form-label">{% if q.is_required %} <span class="text-danger">*</span> {% endif %}{{ q.number }}. {{ q.text|safe }}</label>
+          {% endif %}
+
+          {% if q.help_text %}
+            <div class="text-muted small mb-2">{{ q.help_text|safe }}</div>
+          {% endif %}
+
+          {% if q.question_type == 'text' %}
+            <input type="text" class="form-control" name="q_{{ q.id }}" {% if q.is_required %} required {% endif %}>
+
+          {% elif q.question_type == 'textarea' %}
+            <textarea class="form-control" name="q_{{ q.id }}" rows="4" placeholder="Your comments here..." {% if q.is_required %} required {% endif %}></textarea>
+
+          {% elif q.question_type == 'select' %}
+            <select class="form-select" name="q_{{ q.id }}" id="q{{ q.id }}" {% if q.is_required %} required {% endif %}>
+              <option value="" disabled selected>Choose...</option>
+              {% for opt in q.choices %}
+                <option value="{{ opt }}">{{ opt }}</option>
+              {% endfor %}
+            </select>
+            {% if q.allow_other %}
+              <div id="q{{ q.id }}_other_box" class="mt-2" style="display: none;">
+                <input type="text" class="form-control" name="q_{{ q.id }}_other" placeholder="If 'Other', please specify">
+              </div>
+            {% endif %}
+
+          {% elif q.question_type == 'radio' %}
+            {% for opt in q.choices %}
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="q_{{ q.id }}" id="q{{ q.id }}_{{ forloop.counter }}" value="{{ opt }}" {% if q.is_required %} required {% endif %}>
+                <label class="form-check-label" for="q{{ q.id }}_{{ forloop.counter }}">{{ opt }}</label>
+              </div>
+            {% endfor %}
+            {% if q.allow_other %}
+              <div class="d-flex align-items-center mt-2">
+                <div class="form-check me-2">
+                  <input class="form-check-input" type="radio" name="q_{{ q.id }}" id="q{{ q.id }}_other" value="Other">
+                  <label class="form-check-label" for="q{{ q.id }}_other">Other:</label>
+                </div>
+                <input type="text" class="form-control form-control-sm" style="max-width: 250px;" name="q_{{ q.id }}_other">
+              </div>
+            {% endif %}
+
+          {% elif q.question_type == 'checkbox' %}
+            {% for opt in q.choices %}
+              <div class="form-check" >
+                <input class="form-check-input" type="checkbox" name="q_{{ q.id }}" id="q{{ q.id }}_{{ forloop.counter }}" value="{{ opt }}" {% if q.is_required %} required {% endif %} data-checkbox-id="{% if q.is_required %} required {% endif %}">
+                <label class="form-check-label" for="q{{ q.id }}_{{ forloop.counter }}">{{ opt }}</label>
+              </div>
+            {% endfor %}
+            {% if q.allow_other %}
+              <div class="form-check d-flex align-items-center mt-2">
+                <input class="form-check-input me-2" type="checkbox" name="q_{{ q.id }}" id="q{{ q.id }}_other_chk" onclick="document.querySelector('[name=q_{{ q.id }}_other]').focus();" data-checkbox-id="{% if q.is_required %} required {% endif %}">
+                <label class="form-check-label me-2" for="q{{ q.id }}_other_chk">Other:</label>
+                <input type="text" class="form-control form-control-sm" style="max-width: 250px;" name="q_{{ q.id }}_other">
+              </div>
+            {% endif %}
+            {% if q.max_checks %}
+              <div class="form-text">Select up to {{ q.max_checks }}.</div>
+            {% endif %}
+
+          {% elif q.question_type == 'matrix_roles' %}
+            <div class="table-responsive">
+              <table class="table table-bordered align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>Role Category</th>
+                    <th>Role Example</th>
+                    <th>No. of Openings</th>
+                    <th>Urgency (High/Med/Low)</th>
+                    <th>Difficulty to Fill (1-5)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                    {% for cat in role_categories %}
+                    <tr>
+                        <td>{{ cat }}</td>
+                        <td><input type="text" class="form-control" name="q_{{ q.id }}_row{{ forloop.counter }}_role" placeholder="Eg: ..."></td>
+                        <td><input type="number" class="form-control" name="q_{{ q.id }}_row{{ forloop.counter }}_openings"></td>
+                        <td>
+                        <select class="form-select" name="q_{{ q.id }}_row{{ forloop.counter }}_urgency">
+                            <option>High</option>
+                            <option>Medium</option>
+                            <option>Low</option>
+                        </select>
+                        </td>
+                        <td>
+                        <select class="form-select" name="q_{{ q.id }}_row{{ forloop.counter }}_difficulty">
+                            <option>1</option>
+                            <option>2</option>
+                            <option>3</option>
+                            <option>4</option>
+                            <option>5</option>
+                        </select>
+                        </td>
+                    </tr>
+                    {% endfor %}
+
+                </tbody>
+              </table>
+            </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+
+      <div class="text-center mb-5">
+        <button type="submit" class="btn btn-lg btn-success">Submit</button>
+      </div>
+    </form>
+  </div>
+
+  <script src="{% static 'register/assets/libraries/js/bootstrap.bundle.min.js' %}"></script>
+  <script src="{% static 'register/sweetalert2/sweetalert2.js' %}"></script>
+  <script>
+    // Optional: enforce max checkbox selection client-side
+    document.addEventListener('change', function(e) {
+      if (e.target.matches('input[type=checkbox][name^="q_"]')) {
+        const name = e.target.getAttribute('name');
+        const container = e.target.closest('.mb-3');
+        const hint = container?.querySelector('.form-text');
+        if (!hint) return;
+        const text = hint.textContent.trim();
+        const m = text.match(/up to (\d+)/i);
+        if (!m) return;
+        const max = parseInt(m[1]);
+        const boxes = container.querySelectorAll('input[type=checkbox][name="'+name+'"]:checked');
+        if (boxes.length > max) {
+          e.target.checked = false;
+          //alert('You can only select up to ' + max + ' options.');
+          //sweetalert2
+          Swal.fire({
+            icon: 'warning',
+            title: 'Limit Exceeded',
+            text: 'You can only select up to ' + max + ' options.',
+            confirmButtonColor: '#198754',
+            background: "#fff",   // fixes transparency
+            color: "#000"
+          }); 
+        }
+      }
+    });
+
+    document.addEventListener("DOMContentLoaded", function() {
+      document.querySelectorAll("select.form-select").forEach(function(select) {
+        select.addEventListener("change", function() {
+          const otherBox = document.getElementById(select.id + "_other_box");
+          if (!otherBox) return;
+          if (select.value === "Other" || select.value === "Other (Please specify)") {
+            otherBox.style.display = "block";
+          } else {
+            otherBox.style.display = "none";
+            const input = otherBox.querySelector("input");
+            if (input) input.value = "";
+          }
+        });
+      });
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+      // Function to validate a single question group
+      function validateGroup(qid) { 
+        const group = document.querySelectorAll(`input[name="q_${qid}"]`);
+        const otherChk = document.getElementById(`q${qid}_other_chk`);
+        const otherInput = document.querySelector(`[name="q_${qid}_other"]`);
+
+        const anyChecked = Array.from(group).some(cb => cb.checked);
+        const otherChecked = otherChk?.checked || false;
+        const otherFilled = otherInput?.value.trim().length > 0;
+       
+        const valid = anyChecked || otherChecked || otherFilled;
+
+        // Toggle required depending on validity
+        group.forEach(cb => {
+          if (valid) {
+            cb.removeAttribute("required");
+          } else {
+            cb.setAttribute("required", "required");
+          }
+        });
+
+        if (otherChk) {
+          if (valid) {
+            otherChk.removeAttribute("required");
+          } else {
+            otherChk.setAttribute("required", "required");
+          }
+        }
+      }
+
+      // Attach change handlers to all checkboxes and "Other" input
+      document.querySelectorAll(".form-check-input").forEach(function (checkbox) {
+        checkbox.addEventListener("change", function () {
+          const qid = this.name.split("_")[1]; // extract q.id
+
+          //get value that set in data-required of the changed checkbox
+          const isRequired = this.dataset.checkboxId.trim() === "required";
+          //alert(this.dataset.checkboxId);
+          if (!isRequired) return; // skip non-required groups
+          //alert('validating ' + qid);
+          validateGroup(qid); 
+        });
+      });
+
+      // document.querySelectorAll("input[name$='_other']").forEach(function (input) {
+      //   input.addEventListener("input", function () {
+      //     const qid = this.name.split("_")[1]; // extract q.id
+      //     validateGroup(qid);
+      //   });
+      // });
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+      //check if user_id is present in hidden input or redirect to survey page
+      const userId = document.querySelector('input[name="user_id"]').value;
+      const surveyId = document.querySelector('input[name="survey_id"]').value;
+
+      
+      if (!userId || userId === "None" || userId.trim() === "") {
+        window.location.href = `{% url 'survey' survey.survey_code %}`;
+      }
+    });
+
+</script>
+
+</body>
+</html>
