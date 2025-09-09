@@ -21,7 +21,7 @@
         <img src="{% static 'register/assets/images/banner.png' %}" class="img-fluid w-100 rounded" alt="">
       </div>
 
-      <div class="col-12 mb-4">
+      <div class="col-12 mb-2">
         <div class="p-4 rounded shadow bg-light" role="alert">
           <!-- <p>Dear Valued Employer,</p>
           <p>
@@ -87,7 +87,7 @@
         {# Render single question block #}
         <div class="mb-3">
           {% if q.question_type != 'matrix_roles' %}
-            <label class="form-label">{% if q.is_required %} <span class="text-danger">*</span> {% endif %}{{ q.number }}. {{ q.text|safe }}</label>
+            <label class="form-label fw-bold">{% if q.is_required %} <span class="text-danger">*</span> {% endif %}{{ q.number }}. {{ q.text|safe }}</label>
           {% endif %}
 
           {% if q.help_text %}
