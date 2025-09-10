@@ -4,11 +4,65 @@
 {% block extracss %}
 <style>
   .dataTables_wrapper .dataTables_filter,
-.dataTables_wrapper .dataTables_length {
-  display: inline-block;
-  vertical-align: middle;
-  margin-right: 1rem; /* space between search and select */
+  .dataTables_wrapper .dataTables_length {
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 1rem; /* space between search and select */
+  }
+
+  /* Style the file input to look cleaner */
+#sendQRModal input[type="file"] {
+  padding: 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #fff;
+  font-size: 0.95rem;
+  cursor: pointer;
 }
+
+/* Ensure the file input text doesn’t overflow */
+#sendQRModal input[type="file"]::-webkit-file-upload-button {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #f8f9fa;
+  cursor: pointer;
+  margin-right: 0.75rem;
+  transition: background 0.2s ease;
+}
+#sendQRModal input[type="file"]::-webkit-file-upload-button:hover {
+  background: #e9ecef;
+}
+
+/* File list container */
+#filePreview .list-group-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center; /* Align name + button vertically */
+  padding: 0.6rem 0.75rem;
+  font-size: 0.9rem;
+  border: none;
+  border-bottom: 1px solid #e9ecef;
+}
+
+/* File name styling */
+#filePreview span {
+  flex-grow: 1;
+  font-weight: 500;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Remove button */
+#filePreview .remove-file {
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 6px;
+}
+
 
 </style>
 {% endblock %}
@@ -40,6 +94,7 @@
                 <table id="entries" class="table table-hover align-items-center mb-0" style="font-size: 12px;">
                   <thead>
                     <tr>
+                        <th><input type="checkbox" id="select-all"></th>
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Reg. No.</th>
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Name</th>
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Email</th>
@@ -94,6 +149,46 @@
     </div>
   </div>
 </div>
+
+<!-- Send QR Modal -->
+<div class="modal fade" id="sendQRModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content shadow-lg rounded-3">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="material-symbols-rounded me-2">qr_code</i> Send QR</h5>
+        <!-- <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button> -->
+      </div>
+      
+      <div class="modal-body">
+        <form id="sendQRForm" enctype="multipart/form-data">
+          <!-- Hidden field for selected IDs -->
+          <input type="hidden" name="ids" id="selectedIdsInput">
+
+          <!-- File Upload -->
+          <div class="mb-3">
+            <label for="qrFiles" class="form-label fw-bold">Attach Files</label>
+            <input type="file" name="files" id="qrFiles" class="form-control" multiple>
+            <small class="text-muted">You can attach multiple files. Preview below:</small>
+          </div>
+
+          <!-- Preview Area -->
+          <ul class="list-group" id="filePreview" style="max-height: 200px; overflow-y: auto;"></ul>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary border" data-bs-dismiss="modal">
+          <i class="material-symbols-rounded align-middle">close</i> Cancel
+        </button>
+        <button type="button" class="btn btn-primary" id="sendQRSubmitBtn">
+          <i class="material-symbols-rounded align-middle">send</i> Send
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 
 
 
@@ -153,122 +248,281 @@
       let campaignId = '{{campaign.campaign_code}}';  
 
       new DataTable('#entries', {
-  responsive: false,
-  paging: true,
-  processing: true,
-  lengthChange: true,
-  searching: true,
-  pageLength: 10,
-  colReorder: true,
-  scrollY: '60vh',  
-  ajax: {
-    url: '/get_submission_list',
-    type: 'POST',
-    data: function (d) {
-      d.id = campaignId;
-    },
-    headers: {
-      'X-CSRFToken': getCSRFToken()
-    },
-    dataSrc: ''
-  },
-  columns: [
-    { data: 'reg_no' },
-    { data: 'name' },
-    { data: 'email' },
-    { data: 'job_title' },
-    { data: 'organization' },
-    { data: 'registration_date' },
-    {
-      data: 'is_checked_in',
-      render: function (data, type, row) {
-        return `<span class="material-symbols-rounded ${data === true ? 'text-success' : 'text-danger'}">${data === true ? 'check_circle' : 'cancel'}</span>`;
-      }
-    },
-    { data: 'remarks' },
-    {
-      data: null,
-      render: function (data, type, row) {
-        return `
-          <button class="note-btn border-0 bg-transparent p-0" 
-                  style="font-size: 24px; color: #0d6efd;"
-                  data-regno="${row.reg_no}" 
-                  data-remarks="${row.remarks || ''}">
-            <i class="material-symbols-rounded">note</i>
-          </button>`;
-      },
-      orderable: false,
-      searchable: false
-    }
-  ],
-dom:
-  "<'row mb-3'<'col-sm-6 d-flex align-items-center gap-2 px-2'f l><'col-sm-6 text-end px-2'B>>" +
-  "<'row'<'col-12'tr>>" +
-  "<'row'<'col-sm-6'i><'col-sm-6'p>>",
-
-  buttons: [
-    {
-      extend: 'excel',
-      className: 'btn btn-outline-success btn-sm',
-      text: '<i class="material-symbols-rounded">download</i> Export to Excel',
-      filename: 'submission_list',
-      title: 'Submission List'
-    },
-    {
-      text: 'Send QR',
-      className: 'btn btn-outline-success btn-sm',
-      action: function (e, dt, node, config) {
-        $.ajax({
-          url: "/send_qr/" + campaignId,
-          cache: false,
-          success: function (response) {
+        responsive: false,
+        paging: true,
+        processing: true,
+        lengthChange: true,
+        searching: true,
+        pageLength: 10,
+        colReorder: true,
+        scrollY: '60vh',  
+        ajax: {
+          url: '/get_submission_list',
+          type: 'POST',
+          data: function (d) {
+            d.id = campaignId;
           },
-          error: commonAjaxErrorCallBack
-        });
-      }
-    }
-  ],
-  fixedHeader: {
-    header: true,
-    footer: true,
-    headerOffset: 50
-  },
-  autoWidth: true,
-  scrollCollapse: true,
-  language: {
-    paginate: {
-      previous: '<i class="material-symbols-rounded">chevron_left</i>',
-      next: '<i class="material-symbols-rounded">chevron_right</i>'
-    },
-    searchBuilder: {
-      button: 'Add filters',
-      add: '<i class="material-symbols-rounded">add</i>Add filters',
-      title: {
-        0: 'Filters',
-        _: 'Filters (%d)'
-      },
-      delete: '<i class="material-symbols-rounded">delete</i>',
-      right: '<i class="material-symbols-rounded">chevron_right</i>',
-      left: '<i class="material-symbols-rounded">chevron_left</i>',
-      clearAll: '<i class="material-symbols-rounded">x</i>Clear All'
-    },
-    emptyTable:
-      "<img src='{% static 'user/img/illustrations/notfoundImg3.png' %}' width='180px' alt='No data' /><p class='fs-5 fw-500'>No Record available in table</p>",
-    infoEmpty: "0 Record",
-    zeroRecords:
-      "<img src='{% static 'user/img/illustrations/notfoundImg3.png' %}' width='180px' alt='No data' /><p class='fs-5 fw-500'>No Record to display</p>"
-  },
-  order: [[0, 'desc']],
-  initComplete: function () {
-    console.log('DataTable initialized and loaded via AJAX');
-  }
-});
+          headers: {
+            'X-CSRFToken': getCSRFToken()
+          },
+          dataSrc: ''
+        },
+        columns: [
+          {
+            data: null,
+            orderable: false,
+            searchable: false,
+            className: "dt-checkbox",
+            render: function (data, type, row) {
+              return `<input type="checkbox" class="row-checkbox" value="${row.reg_no}">`;
+            }
+          },
+          { data: 'reg_no' },
+          { data: 'name' },
+          { data: 'email' },
+          { data: 'job_title' },
+          { data: 'organization' },
+          { data: 'registration_date' },
+          {
+            data: 'is_checked_in',
+            render: function (data, type, row) {
+              return `<span class="material-symbols-rounded ${data === true ? 'text-success' : 'text-danger'}">${data === true ? 'check_circle' : 'cancel'}</span>`;
+            }
+          },
+          { data: 'remarks' },
+          {
+            data: null,
+            render: function (data, type, row) {
+              return `
+                <button class="note-btn border-0 bg-transparent p-0" 
+                        style="font-size: 24px; color: #0d6efd;"
+                        data-regno="${row.reg_no}" 
+                        data-remarks="${row.remarks || ''}">
+                  <i class="material-symbols-rounded">note</i>
+                </button>`;
+            },
+            orderable: false,
+            searchable: false
+          }
+        ],
+        dom:
+          "<'row mb-3'<'col-sm-6 d-flex align-items-center gap-2 px-2'f l><'col-sm-6 text-end px-2'B>>" +
+          "<'row'<'col-12'tr>>" +
+          "<'row'<'col-sm-6'i><'col-sm-6'p>>",
+        buttons: [
+          {
+            extend: 'excel',
+            className: 'btn btn-outline-success btn-sm',
+            text: '<i class="material-symbols-rounded">download</i> Export to Excel',
+            filename: 'submission_list',
+            title: 'Submission List'
+          },
+          {
+            text: 'Send QR',
+            className: 'btn btn-outline-success btn-sm',
+            action: function (e, dt, node, config) {
+              let selectedIds = [];
+              $('#entries tbody input.row-checkbox:checked').each(function () {
+                selectedIds.push($(this).val());
+              });
+
+              if (selectedIds.length === 0) {
+                Swal.fire({
+                  title: "No Selection",
+                  text: "Please select at least one row.",
+                  icon: "warning",
+                  confirmButtonColor: "#DD6B55",
+                  confirmButtonText: "OK"
+                });
+                return;
+              }
+
+              // Store IDs in hidden input
+              $('#selectedIdsInput').val(JSON.stringify(selectedIds));
+
+              // Show modal
+              let sendQRModal = new bootstrap.Modal(document.getElementById('sendQRModal'));
+              sendQRModal.show();
+            }
+          }
+
+        ],
+        fixedHeader: {
+          header: true,
+          footer: true,
+          headerOffset: 50
+        },
+        autoWidth: true,
+        scrollCollapse: true,
+        language: {
+          paginate: {
+            previous: '<i class="material-symbols-rounded">chevron_left</i>',
+            next: '<i class="material-symbols-rounded">chevron_right</i>'
+          },
+          searchBuilder: {
+            button: 'Add filters',
+            add: '<i class="material-symbols-rounded">add</i>Add filters',
+            title: {
+              0: 'Filters',
+              _: 'Filters (%d)'
+            },
+            delete: '<i class="material-symbols-rounded">delete</i>',
+            right: '<i class="material-symbols-rounded">chevron_right</i>',
+            left: '<i class="material-symbols-rounded">chevron_left</i>',
+            clearAll: '<i class="material-symbols-rounded">x</i>Clear All'
+          },
+          emptyTable:
+            "<img src='{% static 'user/img/illustrations/notfoundImg3.png' %}' width='180px' alt='No data' /><p class='fs-5 fw-500'>No Record available in table</p>",
+          infoEmpty: "0 Record",
+          zeroRecords:
+            "<img src='{% static 'user/img/illustrations/notfoundImg3.png' %}' width='180px' alt='No data' /><p class='fs-5 fw-500'>No Record to display</p>"
+        },
+        order: [[0, 'desc']],
+        initComplete: function () {
+          console.log('DataTable initialized and loaded via AJAX');          
+        }
+      });
 
       
 
+
   });
 
-  
+  // Handle select-all click
+    $('#entries thead').on('click', '#select-all', function () {
+      let checked = this.checked;
+      $('#entries tbody input.row-checkbox').prop('checked', checked);
+    });
+
+    // Sync header checkbox if individual is unchecked
+    $('#entries tbody').on('change', 'input.row-checkbox', function () {
+      let total = $('#entries tbody input.row-checkbox').length;
+      let checked = $('#entries tbody input.row-checkbox:checked').length;
+
+      $('#select-all').prop('checked', total === checked);
+    });
+
+    
+    let selectedFiles = []; // global array to hold files
+
+    // Handle file selection
+    $('#qrFiles').on('change', function () {
+      let newFiles = Array.from(this.files);
+
+      // Append new files (avoid duplicates by name+size)
+      newFiles.forEach(file => {
+        if (!selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
+          selectedFiles.push(file);
+        }
+      });
+
+      // Refresh preview
+      renderFilePreview();
+
+      // Reset input (so same file can be reselected if removed)
+      this.value = "";
+    });
+
+    // Render preview list
+    function renderFilePreview() {
+      let preview = $('#filePreview');
+      preview.empty();
+
+      selectedFiles.forEach((file, index) => {
+        let isImage = file.type.startsWith("image/");
+        let listItem = $(`
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <span>
+              ${isImage 
+                ? `<img src="${URL.createObjectURL(file)}" alt="${file.name}" class="me-2" style="width:32px;height:32px;object-fit:cover;border-radius:4px;">` 
+                : `<i class="material-symbols-rounded me-2 text-primary">description</i>`}
+              ${file.name}
+            </span>
+            <button type="button" class="btn btn-sm btn-outline-danger remove-file" data-index="${index}">
+              <i class="material-symbols-rounded align-middle">delete</i>
+            </button>
+          </li>
+        `);
+        preview.append(listItem);
+      });
+
+      // Sync with file input using DataTransfer
+      let dt = new DataTransfer();
+      selectedFiles.forEach(file => dt.items.add(file));
+      document.getElementById('qrFiles').files = dt.files;
+    }
+
+    // Remove file
+    $('#filePreview').on('click', '.remove-file', function () {
+      let removeIndex = $(this).data('index');
+      selectedFiles.splice(removeIndex, 1); // remove from array
+      renderFilePreview();
+    });
+
+
+
+    $('#sendQRSubmitBtn').on('click', function () {
+      let campaignId = '{{campaign.campaign_code}}';  
+
+      // Create new FormData manually
+      let formData = new FormData();
+
+      // Append selected IDs
+      formData.append('ids', $('#selectedIdsInput').val());
+
+      // Append all files from global selectedFiles array
+      selectedFiles.forEach(file => {
+        formData.append('files', file);
+      });
+
+      // Disable buttons during sending
+      $('#sendQRSubmitBtn').prop('disabled', true).text('Sending...');
+      $('#sendQRModal .btn-secondary').prop('disabled', true);
+
+      $.ajax({
+        url: "/send_qr/" + campaignId,
+        type: "POST",
+        headers: {
+          'X-CSRFToken': getCSRFToken()
+        },
+        data: formData,
+        processData: false,  
+        contentType: false,  
+        success: function (response) {
+          console.log("QR sent successfully", response);
+
+          if (response.success) {
+            Swal.fire("Success", response.message, "success");
+
+            // Reset UI
+            $('#sendQRSubmitBtn').prop('disabled', false).text('Send');
+            $('#sendQRModal .btn-secondary').prop('disabled', false);
+
+            // Clear file input + preview + global array
+            selectedFiles = [];
+            $('#qrFiles').val('');
+            $('#filePreview').empty();
+
+            // Uncheck all checkboxes
+            $('#entries tbody input.row-checkbox').prop('checked', false);
+            $('#select-all').prop('checked', false);
+
+            // Close modal
+            $('#sendQRModal').modal('hide');
+          } else {
+            Swal.fire("Error", response.message || "Failed to send QRs.", "error");
+            $('#sendQRSubmitBtn').prop('disabled', false).text('Send');
+            $('#sendQRModal .btn-secondary').prop('disabled', false);
+          }
+        },
+        error: function (xhr, status, error) {
+          commonAjaxErrorCallBack(xhr, status, error);
+          $('#sendQRSubmitBtn').prop('disabled', false).text('Send');
+          $('#sendQRModal .btn-secondary').prop('disabled', false);
+        }
+      });
+    });
+
     var win = navigator.platform.indexOf('Win') > -1;
     if (win && document.querySelector('#sidenav-scrollbar')) {
       var options = {

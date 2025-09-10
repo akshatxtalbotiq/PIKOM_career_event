@@ -11,6 +11,8 @@ from django.core.validators import validate_email, ValidationError
 
 from django.contrib.auth.models import User
 from io import BytesIO
+
+from urllib3 import request
 from picom import settings
 from .models import Registration, Player, Sponsorship,Campaign, Submission,CampaignTeam, Survey, Question, Answer, SurveyUser
 
@@ -478,7 +480,7 @@ def generate_qr_code(data):
     qr.save(buffer, format='PNG')
     return ContentFile(buffer.getvalue())
 
-def send_qr_email(player, id):
+def send_qr_email(player, id , files):
     qr_image = generate_qr_code(str(player.registration_code))   
 
     if id == "0":
@@ -507,29 +509,63 @@ def send_qr_email(player, id):
     )
     email.content_subtype = 'html'
     email.attach(f'qr_{player.name}.png', qr_image.read(), 'image/png')
+    for f in files:
+        email.attach(f.name, f.read(), f.content_type)
    
     try:
         email.send()
         player.qr_sent = True
         player.save()
         return True
-    except Exception as e:        
+    except Exception as e:     
+        print(f"Error sending email to {player.email}: {str(e)}")   
         return False    
 
 def send_qr(request, id):
-    if id == "0":
-        players = Player.objects.filter(qr_sent=False)
-    else:
-        id = id.replace("-", "")
-        players = Submission.objects.filter(qr_sent=False, campaign_code=id)
+    #get data from json
+    #data = json.loads(request.body)
+    #reg_no_list = data.get('ids', [])
+    reg_no_list = request.POST["ids"] 
+    files = request.FILES.getlist("files") 
+
+    #convert json list in list
+    reg_no_list = json.loads(reg_no_list)
+
+    #check if total file size is lesser than 10MB
+    total_size = sum(f.size for f in files) < 10 * 1024 * 1024
+   
+    if not total_size:
+        return JsonResponse({'success': False, 'message': 'Total file size exceeds 10MB limit.'})
+
+    #print(f"Sending QR codes for campaign ID: {id} to players: {reg_no_list}")
 
     total_sent = 0
+    total_players = len(reg_no_list)
+
+    if id == "0": # from golf event
+        players = Player.objects.filter(qr_sent=False)       
+    else:
+        id = id.replace("-", "")
+        players = Submission.objects.filter(reg_no__in=reg_no_list, qr_sent=False, campaign_code=id)        
+
     total_players = players.count()
     for player in players:
-        if send_qr_email(player, id):
-            total_sent += 1
+        print(f"Sending QR code to player: {player.name}, email: {player.email}")
+        if send_qr_email(player, id, files):
+           total_sent += 1
+    
+    # if id == "0":
+    #     players = Player.objects.filter(qr_sent=False)
+    # else:
+    #     id = id.replace("-", "")
+    #     players = Submission.objects.filter(qr_sent=False, campaign_code=id)
 
-    return HttpResponse(f"QR codes sent successfully to {total_sent} out of {total_players} players.")
+    # total_sent = 0
+    # total_players = players.count()
+    # for player in players:
+    #     if send_qr_email(player, id):
+    #         total_sent += 1
+    return JsonResponse({'success': True, 'message': f"QR codes sent successfully to {total_sent} out of {total_players} registered participants."})
 
 @csrf_exempt
 def talentgap2025_form(request):
