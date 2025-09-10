@@ -74,7 +74,7 @@
           </div>
         <div class="nb-3">
             <label for="remark" class="form-label">Remark (Optional)</label>
-            <textarea name="remark" id="remark" class="form-control" placeholder="" rows="5"></textarea>
+            <textarea name="remark" id="remark" class="form-control" placeholder="" rows="5" disabled></textarea>
           </div>
       </div>
     </div>
@@ -88,6 +88,7 @@
         const message = document.getElementById("message");
         const result = document.getElementById("remark");
         const html5QrCode = new Html5Qrcode("reader");
+        const codeinput = document.getElementById('code');
 
         let isScanning = false;
 
@@ -112,6 +113,7 @@
                         startScanBtn.style.display = "inline-block";
 
                         $('#code').val(decodedText);
+                        validate(decodedText);
 
                     }).catch(err => {
                         console.error("Failed to stop camera:", err);
@@ -134,13 +136,14 @@
                             .then(data => {
                                 if (data.remarks)
                                     result.innerText = data.message;
+                                codeinput.value='';
+                                codeinput.focus();
                             })
                             .catch(err => {
                                 result.innerText = "Error validating QR code.";
                                 console.error(err);
                             });
         }
-        const codeinput = document.getElementById('code');
 
         codeinput.addEventListener('change', function() {
             console.log('Value committed:', codeinput.value);
