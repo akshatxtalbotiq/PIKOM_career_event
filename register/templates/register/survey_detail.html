@@ -149,11 +149,11 @@
             {% endif %}
 
           {% elif q.question_type == 'matrix_roles' %}
-            <div class="table-responsive">
-              <table class="table table-bordered align-middle">
+            <div class="table-responsive" style="overflow-x:auto;">
+              <table class="table table-bordered align-middle" style="min-width: 900px;">
                 <thead class="table-light">
                   <tr>
-                    <th>Role Category</th>
+                    <th class="sticky-col">Role Category</th>
                     <th>Role Example</th>
                     <th>No. of Openings</th>
                     <th>Urgency (High/Med/Low)</th>
@@ -163,8 +163,8 @@
                 <tbody>
                     {% for cat in role_categories %}
                     <tr>
-                        <td>{{ cat }}</td>
-                        <td><input type="text" class="form-control" name="q_{{ q.id }}_row{{ forloop.counter }}_role" placeholder="Eg: ..."></td>
+                        <td  class="sticky-col">{{ cat }}</td>
+                        <td><input type="text" class="form-control" name="q_{{ q.id }}_row{{ forloop.counter }}_role" placeholder=""></td>
                         <td><input type="number" class="form-control" name="q_{{ q.id }}_row{{ forloop.counter }}_openings"></td>
                         <td>
                         <select class="form-select" name="q_{{ q.id }}_row{{ forloop.counter }}_urgency">
@@ -187,6 +187,9 @@
 
                 </tbody>
               </table>
+              <p class="text-muted small d-block d-md-none">
+                <em>Swipe left to see the full table</em>
+              </p>
             </div>
           {% endif %}
         </div>
