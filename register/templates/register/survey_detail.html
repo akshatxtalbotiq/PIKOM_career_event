@@ -149,6 +149,9 @@
             {% endif %}
 
           {% elif q.question_type == 'matrix_roles' %}
+            <p class="text-muted small d-block d-md-none">
+              <em>Swipe left to see the full table</em>
+            </p>
             <div class="table-responsive" style="overflow-x:auto;">
               <table class="table table-bordered align-middle" style="min-width: 900px;">
                 <thead class="table-light">
@@ -187,9 +190,7 @@
 
                 </tbody>
               </table>
-              <p class="text-muted small d-block d-md-none">
-                <em>Swipe left to see the full table</em>
-              </p>
+              
             </div>
           {% endif %}
         </div>
