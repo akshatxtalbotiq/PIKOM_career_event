@@ -80,9 +80,15 @@
 
         {% if q.number == 18 %}
         </div></div>
-        <div class="card mb-4"><div class="card-body">
+        <div class="card"><div class="card-body">
           <h5 class="card-title fw-bold border-left-custom">Section G: Future Outlook & Strategic Initiatives</h5>
         {% endif %}
+
+        {% if q.number == 21 %}
+        </div></div>
+        <div id="gbs" class="card mt-4" style="display: none;"><div class="card-body">
+          <h5 class="card-title fw-bold border-left-custom">Section H: GBS Industry Perspective</h5>
+        {% endif %}        
 
         {# Render single question block #}
         <div class="mb-3">
@@ -195,16 +201,66 @@
           {% endif %}
         </div>
       {% endfor %}
+        </div></div> <!-- added 2 tags to close last section card-body and card -->
 
-      <div class="text-center mb-5">
-        <button type="submit" class="btn btn-lg btn-success">Submit</button>
-      </div>
+        <div class="card mb-4"><div class="card-body">
+           <div class="d-flex justify-content-between align-items-center position-relative">
+              <button id="gbsBtn" type="button" class="btn btn-lg btn-warning text-white">For GBS Only - Open</button>
+              <button type="submit" class="btn btn-lg btn-success position-absolute start-50 translate-middle-x">Submit</button>
+              <div></div>
+          </div>
+        </div>
+     
     </form>
   </div>
 
   <script src="{% static 'register/assets/libraries/js/bootstrap.bundle.min.js' %}"></script>
   <script src="{% static 'register/sweetalert2/sweetalert2.js' %}"></script>
   <script>
+
+    //after page load, call a function
+    document.addEventListener("DOMContentLoaded", function() {
+      const gbs = document.getElementById("gbs");
+      toggleDiv(gbs, "closed");
+    });
+
+
+    document.getElementById("gbsBtn").addEventListener("click", function () {
+      const gbs = document.getElementById("gbs");
+      const btn = document.getElementById("gbsBtn");
+
+      if (gbs.style.display === "none") {
+        gbs.style.display = "block";
+        btn.textContent = "For GBS Only - Close";
+        toggleDiv(gbs,"opened");
+      } else {
+        gbs.style.display = "none";
+        btn.textContent = "For GBS Only - Open";
+        toggleDiv(gbs,"closed");
+      }     
+    });
+
+    function toggleDiv(div, flg) {     
+      const inputs = div.querySelectorAll("input, select, textarea");
+
+      if (flg === "closed") {
+        inputs.forEach(el => {
+          if (el.hasAttribute("required"))
+          {
+            el.dataset.wasRequired = "true";
+          }
+          el.removeAttribute("required");
+        });
+      } else {
+        inputs.forEach(el => {
+          if (el.dataset.wasRequired === "true" || el.dataset.checkboxId === "required") {
+            el.setAttribute("required", "required");
+          }
+        });
+      }
+    }
+
+
     // Optional: enforce max checkbox selection client-side
     document.addEventListener('change', function(e) {
       if (e.target.matches('input[type=checkbox][name^="q_"]')) {

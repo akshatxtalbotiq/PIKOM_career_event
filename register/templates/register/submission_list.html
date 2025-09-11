@@ -20,7 +20,7 @@
   cursor: pointer;
 }
 
-/* Ensure the file input text doesn’t overflow */
+/* Ensure the file input text doesnâ€™t overflow */
 #sendQRModal input[type="file"]::-webkit-file-upload-button {
   padding: 0.4rem 0.75rem;
   border: 1px solid #ccc;
@@ -103,6 +103,7 @@
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder ">Organization</th>                        
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Registartion Date</th>
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Checked-In</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Sent QR</th>
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Remarks</th>
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder"></th>
                     </tr>
@@ -245,9 +246,18 @@
     
     $(document).ready(function () {
 
-      let campaignId = '{{campaign.campaign_code}}';  
+      let campaignId = '{{campaign.campaign_code}}';
 
-      new DataTable('#entries', {
+      // Function to update select-all state based only on visible rows
+      function updateSelectAllStateFromVisible() {
+        let total = $('#entries tbody input.row-checkbox').length;
+        let checked = $('#entries tbody input.row-checkbox:checked').length;
+        
+        $('#select-all').prop('checked', total === checked && total > 0);
+        $('#select-all').prop('indeterminate', checked > 0 && checked < total);
+      }
+
+      let table = new DataTable('#entries', {
         responsive: false,
         paging: true,
         processing: true,
@@ -289,6 +299,12 @@
               return `<span class="material-symbols-rounded ${data === true ? 'text-success' : 'text-danger'}">${data === true ? 'check_circle' : 'cancel'}</span>`;
             }
           },
+          {
+            data: 'is_qr_sent',
+            render: function (data, type, row) {
+              return `<span class="material-symbols-rounded ${data === true ? 'text-success' : 'text-danger'}">${data === true ? 'check_circle' : 'cancel'}</span>`;
+            }
+          },
           { data: 'remarks' },
           {
             data: null,
@@ -322,6 +338,8 @@
             className: 'btn btn-outline-success btn-sm',
             action: function (e, dt, node, config) {
               let selectedIds = [];
+              
+              // Get only currently visible and selected rows
               $('#entries tbody input.row-checkbox:checked').each(function () {
                 selectedIds.push($(this).val());
               });
@@ -337,15 +355,11 @@
                 return;
               }
 
-              // Store IDs in hidden input
               $('#selectedIdsInput').val(JSON.stringify(selectedIds));
-
-              // Show modal
               let sendQRModal = new bootstrap.Modal(document.getElementById('sendQRModal'));
               sendQRModal.show();
             }
           }
-
         ],
         fixedHeader: {
           header: true,
@@ -377,30 +391,89 @@
           zeroRecords:
             "<img src='{% static 'user/img/illustrations/notfoundImg3.png' %}' width='180px' alt='No data' /><p class='fs-5 fw-500'>No Record to display</p>"
         },
-        order: [[0, 'desc']],
+        order: [[1, 'desc']], // Changed from [[0, 'desc']] since first column is checkbox
+        
+        // Use drawCallback - this runs after table is fully initialized
+        drawCallback: function(settings) {
+          console.log('Draw callback triggered');
+          
+          let selectAllCheckbox = $('#select-all');
+          let isSelectAllChecked = selectAllCheckbox.prop('checked');
+          
+          if (isSelectAllChecked) {
+            // If select-all is checked, check all visible rows
+            $('#entries tbody input.row-checkbox').prop('checked', true);
+          }
+          
+          // Update select-all state based on current visible rows only
+          updateSelectAllStateFromVisible();
+        },
+        
         initComplete: function () {
           console.log('DataTable initialized and loaded via AJAX');          
         }
       });
 
-      
+      // When page length changes
+// When page length changes
+table.on('length.dt', function (e, settings, len) {
+    //alert('Page length changed to: ' + len);
+});
+
+// On every draw (pagination, search, length change, etc.)
+table.on('draw.dt', function () {
+    // Uncheck invisible rows across all pages
+    table.$('input.row-checkbox').each(function () {
+        if (!$(this).is(':visible')) {
+            $(this).prop('checked', false);
+        }
+    });
+
+    // Update select-all based only on *visible* rows
+    let total = $('#entries tbody input.row-checkbox').length;
+    let checked = $('#entries tbody input.row-checkbox:checked').length;
+
+    $('#select-all').prop('checked', total === checked && total > 0);
+    $('#select-all').prop('indeterminate', checked > 0 && checked < total);
+});
 
 
-  });
 
-  // Handle select-all click
+
+
+    });
+
+    // Handle select-all click - only affects currently visible rows
     $('#entries thead').on('click', '#select-all', function () {
+      console.log('Select all clicked:', this.checked);
       let checked = this.checked;
+      
+      // Only check/uncheck currently visible rows
       $('#entries tbody input.row-checkbox').prop('checked', checked);
     });
 
-    // Sync header checkbox if individual is unchecked
+    // Handle individual row checkbox changes
     $('#entries tbody').on('change', 'input.row-checkbox', function () {
       let total = $('#entries tbody input.row-checkbox').length;
       let checked = $('#entries tbody input.row-checkbox:checked').length;
-
-      $('#select-all').prop('checked', total === checked);
+      
+      $('#select-all').prop('checked', total === checked && total > 0);
+      $('#select-all').prop('indeterminate', checked > 0 && checked < total);
     });
+
+  // // Handle select-all click
+  //   $('#entries thead').on('click', '#select-all', function () {
+  //     let checked = this.checked;
+  //     $('#entries tbody input.row-checkbox').prop('checked', checked);
+  //   });
+
+  //   // Sync header checkbox if individual is unchecked
+  //   $('#entries tbody').on('change', 'input.row-checkbox', function () {
+  //     let total = $('#entries tbody input.row-checkbox').length;
+  //     let checked = $('#entries tbody input.row-checkbox:checked').length;
+
+  //     $('#select-all').prop('checked', total === checked);
+  //   });
 
     
     let selectedFiles = []; // global array to hold files
@@ -549,4 +622,3 @@
 }
   </script>
 {%endblock %}
-

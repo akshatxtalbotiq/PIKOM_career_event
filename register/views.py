@@ -1,4 +1,4 @@
-from django.core.mail import EmailMessage
+from django.core.mail import EmailMessage,EmailMultiAlternatives
 from django.shortcuts import render,get_object_or_404,redirect
 from django.http import HttpResponse, JsonResponse
 from django.db import transaction, IntegrityError
@@ -21,6 +21,11 @@ import json
 import qrcode
 
 from django.views.decorators.csrf import csrf_exempt
+
+from email.mime.image import MIMEImage
+import os
+
+
 
 # Create your views here.
 def index(request):
@@ -430,6 +435,7 @@ def get_submission_list(request):
                     'registration_date': s.submitted_at.strftime('%Y-%m-%d %I:%M %p') if s.submitted_at else '',
                     'remarks': s.remarks if s.remarks else '',
                     'is_checked_in': s.is_checked_in,
+                    'is_qr_sent': s.qr_sent,
                 })
 
             return JsonResponse(data, safe=False)
@@ -501,16 +507,45 @@ def send_qr_email(player, id , files):
     if not player.email:
         return False
     
-    email = EmailMessage(
+    email = EmailMultiAlternatives(
         subject='Your Admission QR Code for ' + campaign.title,
         body=html_content,
         from_email=settings.DEFAULT_FROM_EMAIL,
         to=[player.email],
     )
-    email.content_subtype = 'html'
+    email.attach_alternative(html_content, "text/html")
+
+    # Attach banner image
+    banner_path = os.path.join(settings.BASE_DIR, "register", "static", "register","email", "banner.png")
+    with open(banner_path, 'rb') as f:
+        banner = MIMEImage(f.read())
+        banner.add_header('Content-ID', '<banner>')
+        banner.add_header('Content-Disposition', 'inline', filename="banner.png")
+        email.attach(banner)
+
+    # Attach another image
+    logo_path = os.path.join(settings.BASE_DIR, "register", "static", "register","email","agenda.png")
+    with open(logo_path, 'rb') as f:
+        agenda = MIMEImage(f.read())
+        agenda.add_header('Content-ID', '<agenda>')
+        agenda.add_header('Content-Disposition', 'inline', filename="agenda.png")
+        email.attach(agenda)
+
     email.attach(f'qr_{player.name}.png', qr_image.read(), 'image/png')
     for f in files:
         email.attach(f.name, f.read(), f.content_type)
+
+    
+    # email = EmailMessage(
+    #     subject='Your Admission QR Code for ' + campaign.title,
+    #     body=html_content,
+    #     from_email=settings.DEFAULT_FROM_EMAIL,
+    #     to=[player.email],
+    # )
+    # email.content_subtype = 'html'
+    # email.attach(f'qr_{player.name}.png', qr_image.read(), 'image/png')
+    # for f in files:
+    #     email.attach(f.name, f.read(), f.content_type)
    
     try:
         email.send()
