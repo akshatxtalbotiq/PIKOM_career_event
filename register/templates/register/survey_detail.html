@@ -11,6 +11,23 @@
   <style>
     .border-left-custom { border-left: 6px solid #198754; padding-left: .5rem; }
 
+/* Default: center the submit button */
+.submit-btn {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* On small screens: push submit to the right */
+@media (max-width: 767.98px) {
+  .submit-btn {
+    position: static;
+    transform: none;
+    margin-left: auto; /* pushes to right */
+  }
+}
+
+
   </style>
 </head>
 <body>
@@ -203,13 +220,29 @@
       {% endfor %}
         </div></div> <!-- added 2 tags to close last section card-body and card -->
 
-        <div class="card mb-4"><div class="card-body">
+        <!-- <div class="card mb-4"><div class="card-body">
            <div class="d-flex justify-content-between align-items-center position-relative">
               <button id="gbsBtn" type="button" class="btn btn-lg btn-warning text-white">For GBS Only - Open</button>
-              <button type="submit" class="btn btn-lg btn-success position-absolute start-50 translate-middle-x">Submit</button>
+              <button type="submit" class="btn btn-lg btn-success position-absolute start-50 translate-middle-x submit-btn">Submit</button>
               <div></div>
           </div>
+        </div> -->
+
+        <div class="card mb-4">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+              <button id="gbsBtn" type="button" class="btn btn-lg btn-warning text-white">
+                For GBS Only - Open
+              </button>
+              
+              <button type="submit" 
+                      class="btn btn-lg btn-success submit-btn">
+                Submit
+              </button>
+            </div>
+          </div>
         </div>
+
      
     </form>
   </div>
