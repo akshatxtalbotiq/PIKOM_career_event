@@ -2,153 +2,294 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{{name}} Registration</title>
-  <link rel="stylesheet" href="{% static 'user/css/bootstrap.min.css' %}">
-  <link rel="stylesheet" href="{% static 'user/css/style.css' %}">
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>{{ name }} Registration</title>
+    <link rel="stylesheet" href="{% static 'user/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'user/css/style.css' %}">
 
-  <script src="https://unpkg.com/html5-qrcode"></script>
-  <style>
-      #start-scan-btn {
-      background-color: #28a745;
-      color: white;
-      border: none;
-      padding: 1.2rem;
-      font-size: 1.25rem;
-      border-radius: 0.75rem;
-      width: 100%;
-      max-width: 300px;
-      height: 300px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-weight: bold;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-      transition: background-color 0.3s ease, transform 0.2s ease;
-    }
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        #start-scan-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 1.2rem;
+            font-size: 1.25rem;
+            border-radius: 0.75rem;
+            width: 100%;
+            max-width: 300px;
+            height: 300px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
 
-    #start-scan-btn:hover {
-      background-color: #218838;
-      transform: scale(1.03);
-    }
+        #start-scan-btn:hover {
+            background-color: #218838;
+            transform: scale(1.03);
+        }
 
-    #start-scan-btn:active {
-      background-color: #1e7e34;
-      transform: scale(0.97);
-    }
-    #reader {
-      width: 300px;
-      height: 300px;
-      aspect-ratio: 1/1;
-      margin-inline: auto;
-      margin-bottom: 2rem;
-      border-radius: .75rem;
-      overflow: hidden;
-      box-shadow: 0 4px 10px 0 rgba(0, 0, 0, 0.1);
-      >video{
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
+        #start-scan-btn:active {
+            background-color: #1e7e34;
+            transform: scale(0.97);
+        }
 
-      }
-    }
+        #reader {
+            width: 300px;
+            height: 300px;
+            aspect-ratio: 1/1;
+            margin-inline: auto;
+            margin-bottom: 2rem;
+            border-radius: .75rem;
+            overflow: hidden;
+            box-shadow: 0 4px 10px 0 rgba(0, 0, 0, 0.1);
 
-  </style>
+            > video {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+
+            }
+        }
+
+    </style>
 </head>
 <body class="bg-body-tertiary">
 
-  <div class="container-xl py-5">
+<div class="container-xl py-5">
     <div class="row mt-3">
-      <div class="col-xl-6 col-lg-12 mx-auto ">
-        <h1 class="mb-3 text-center">{{name}}</h1>
+        <div class="col-xl-6 col-lg-12 mx-auto ">
+            <h1 class="mb-3 text-center">{{ name }}</h1>
 
-          <div class="d-flex justify-content-center align-items-center mb-3">
-        <button id="start-scan-btn">Scan QR Code</button>
-          </div>
-        <div id="reader" class="ratio ratio-1x1" style=" background-color: aquamarine;display: none" ></div>
+            <div class="d-flex justify-content-center align-items-center mb-3">
+                <button id="start-scan-btn">Scan QR Code</button>
+            </div>
+            <div id="reader" class="ratio ratio-1x1" style=" background-color: aquamarine;display: none"></div>
 
-        <div class="nb-3">
-            <label for="Code" class="form-label">Code</label>
-            <input name="code" id="code" class="form-control" placeholder="Code" autofocus />
-          </div>
-        <div class="nb-3">
-            <label for="remark" class="form-label">Remark (Optional)</label>
-            <textarea name="remark" id="remark" class="form-control" placeholder="" rows="5" disabled></textarea>
-          </div>
-      </div>
+            <div class="nb-3">
+                <label for="Code" class="form-label">Code</label>
+                <input name="code" id="code" class="form-control" placeholder="Code" autofocus/>
+            </div>
+            <div class="nb-3">
+                <label for="remark" class="form-label">Remark (Optional)</label>
+                <textarea name="remark" id="remark" class="form-control" placeholder="" rows="5" disabled></textarea>
+            </div>
+        </div>
     </div>
-  </div>
+</div>
 
-    <script src="{% static 'user/js/jquery-3.7.1.min.js' %}"></script>
-    <script src="{% static 'user/js/bootstrap.bundle.min.js' %}"></script>
-    <script>
-        const startScanBtn = document.getElementById("start-scan-btn");
-        const reader = document.getElementById("reader");
-        const message = document.getElementById("message");
-        const result = document.getElementById("remark");
-        const html5QrCode = new Html5Qrcode("reader");
-        const codeinput = document.getElementById('code');
+<script src="{% static 'user/js/jquery-3.7.1.min.js' %}"></script>
+<script src="{% static 'user/js/bootstrap.bundle.min.js' %}"></script>
+<!--script>
+    const startScanBtn = document.getElementById("start-scan-btn");
+    const reader = document.getElementById("reader");
+    const message = document.getElementById("message");
+    const result = document.getElementById("remark");
+    const html5QrCode = new Html5Qrcode("reader");
+    const codeinput = document.getElementById('code');
 
-        let isScanning = false;
+    let isScanning = false;
 
-        startScanBtn.addEventListener("click", () => {
-            result.innerText = "";
-            reader.style.display = "block";
-            startScanBtn.style.display = "none";
-            isScanning = true;
+    startScanBtn.addEventListener("click", () => {
+        result.innerText = "";
+        reader.style.display = "block";
+        startScanBtn.style.display = "none";
+        isScanning = true;
 
-            html5QrCode.start(
-                { facingMode: "environment" },
-                {
-                    fps: 10,
-                    qrbox: 250
-                },
-                (decodedText) => {
-                    if (!isScanning) return;
+        html5QrCode.start(
+            { facingMode: "environment" },
+            {
+                fps: 10,
+                qrbox: 250
+            },
+            (decodedText) => {
+                if (!isScanning) return;
 
-                    isScanning = false;
-                    html5QrCode.stop().then(() => {
-                        reader.style.display = "none";
-                        startScanBtn.style.display = "inline-block";
+                isScanning = false;
+                html5QrCode.stop().then(() => {
+                    reader.style.display = "none";
+                    startScanBtn.style.display = "inline-block";
 
-                        $('#code').val(decodedText);
-                        validate(decodedText);
+                    $('#code').val(decodedText);
+                    validate(decodedText);
 
-                    }).catch(err => {
-                        console.error("Failed to stop camera:", err);
-                    });
-                },
-                (errorMsg) => {
-                    // Ignore scan failures silently
+                }).catch(err => {
+                    console.error("Failed to stop camera:", err);
+                });
+            },
+            (errorMsg) => {
+                // Ignore scan failures silently
+            }
+        ).catch(err => {
+            console.error("Unable to start scanning:", err);
+            result.innerText = "Camera error. Please try again.";
+            reader.style.display = "none";
+            startScanBtn.style.display = "inline-block";
+        });
+    });
+
+    function validate(decodedText){
+        fetch(`/validate/${decodedText}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.message)
+                                result.innerText = data.message;
+                            codeinput.value='';
+                            codeinput.focus();
+                        })
+                        .catch(err => {
+                            result.innerText = "Error validating QR code.";
+                            console.error(err);
+                        });
+    }
+
+    codeinput.addEventListener('change', function() {
+        console.log('Value committed:', codeinput.value);
+        validate(codeinput.value)
+    });
+</script-->
+<script>
+    // --- Config ---
+    const POST_URL = "/api/attendance/scan/";
+    const SCAN_DEBOUNCE_MS = 40;          // buffer tiny keyboard jitter
+    const DUP_WINDOW_MS = 800;            // ignore accidental double-scan of same code
+    const MAX_RETRIES = 2;                // retry transient network issues
+
+    // --- Helpers ---
+    const getCookie = (name) => {
+        const m = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+        return m ? m.pop() : '';
+    };
+    const statusEl = document.getElementById("remark");
+    const scanInput = document.getElementById("code");
+    const focusBack = () => setTimeout(() => scanInput.focus(), 0);
+    const show = (msg) => {
+        statusEl.innerText = msg;
+    };
+
+    // --- Queue state ---
+    const q = [];
+    let processing = false;
+    let lastScan = {val: null, ts: 0};
+    let debounceT = null;
+
+    // --- Enqueue & processor ---
+    function enqueue(token) {
+        if (!token) return;
+        const now = Date.now();
+        if (token === lastScan.val && (now - lastScan.ts) < DUP_WINDOW_MS) return; // drop dup bursts
+        lastScan = {val: token, ts: now};
+        q.push({token, tries: 0});
+        processQueue();
+    }
+
+    async function processQueue() {
+        if (processing) return;
+        processing = true;
+        while (q.length) {
+            const job = q[0];
+            try {
+                await postToken(job.token);
+                show(`OK: ${job.token}`);
+                q.shift();
+            } catch (err) {
+                if (shouldRetry(err) && job.tries < MAX_RETRIES) {
+                    job.tries += 1;
+                    await sleep(300 * job.tries); // simple backoff
+                } else {
+                    show(`FAILED: ${job.token} — ${err.message || err}`);
+                    q.shift(); // drop or, if you prefer, persist to localStorage for later re-sync
                 }
-            ).catch(err => {
-                console.error("Unable to start scanning:", err);
-                result.innerText = "Camera error. Please try again.";
-                reader.style.display = "none";
-                startScanBtn.style.display = "inline-block";
-            });
-        });
-
-        function validate(decodedText){
-            fetch(`/validate/${decodedText}`)
-                            .then(res => res.json())
-                            .then(data => {
-                                if (data.remarks)
-                                    result.innerText = data.message;
-                                codeinput.value='';
-                                codeinput.focus();
-                            })
-                            .catch(err => {
-                                result.innerText = "Error validating QR code.";
-                                console.error(err);
-                            });
+            }
+            focusBack();
         }
+        processing = false;
+    }
 
-        codeinput.addEventListener('change', function() {
-            console.log('Value committed:', codeinput.value);
-            validate(codeinput.value)
-        });
-    </script>
+    function sleep(ms) {
+        return new Promise(r => setTimeout(r, ms));
+    }
+
+    function shouldRetry(err) {
+        // Retry network/5xx timeouts; adjust as needed
+        const msg = (err && err.message) || "";
+        return /timeout|network|5\d\d/.test(msg);
+    }
+
+    async function postToken(decodedText){
+        const ctrl = new AbortController();
+        const timeout = setTimeout(() => ctrl.abort(), 8000); // guard long hangs
+        try {
+            fetch(`/validate/${decodedText}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.message)
+                                show(data.message);
+                        })
+                        .catch(err => {
+                            show("Error validating QR code.");
+                            console.error(err);
+                        });
+        } finally {
+            clearTimeout(timeout);
+        }
+    }
+
+    async function postToken1(token) {
+        const ctrl = new AbortController();
+        const timeout = setTimeout(() => ctrl.abort(), 8000); // guard long hangs
+        try {
+            const res = await fetch(POST_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCookie("csrftoken"),
+                },
+                data: {token},
+                signal: ctrl.signal,
+            });
+            if (!res.ok) {
+                const text = await res.text().catch(() => "");
+                throw new Error(`${res.status} ${res.statusText} ${text}`);
+            }
+            return res.json();
+        } finally {
+            clearTimeout(timeout);
+        }
+    }
+
+    // --- Capture scans ---
+    // Most “keyboard wedge” scanners end with Enter. Prefer keydown Enter over change().
+    scanInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            const val = scanInput.value.trim();
+            scanInput.value = "";      // clear immediately so next scan won't overlap visually
+            enqueue(val);
+            focusBack();
+        }
+    });
+
+    // If your scanner doesn’t send Enter and you rely on change(), keep this fallback:
+    scanInput.addEventListener("change", () => {
+        clearTimeout(debounceT);
+        debounceT = setTimeout(() => {
+            const val = scanInput.value.trim();
+            scanInput.value = "";
+            enqueue(val);
+            focusBack();
+        }, SCAN_DEBOUNCE_MS);
+    });
+
+    // Always keep focus even if user clicks elsewhere
+    window.addEventListener("blur", focusBack);
+    document.addEventListener("visibilitychange", focusBack);
+    focusBack();
+</script>
+
 </body>
 </html>

@@ -36,7 +36,7 @@ def validate(request, code):
             return JsonResponse({'message': '{0} checked in successfully!'.format(participant.name), 'remarks': participant.remarks},status=200)
         else:
             return JsonResponse({'message': '{0} checked in successfully!'.format(participant.name), 'remarks': participant.remarks},status=200)
-    except Player.DoesNotExist:
+    except Submission.DoesNotExist:
         return JsonResponse({'message': 'Invalid QR code.'},status=400)
     
 def validategolf(request,code):

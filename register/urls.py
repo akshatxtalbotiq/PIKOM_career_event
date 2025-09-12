@@ -7,7 +7,7 @@ from .views import index, save_registration, thankyou, sponsorship, save_sponsor
     create_survey,get_survey,survey,survey_initial_submit
 
 urlpatterns = [
-    path('', index, name='index'),
+    path('', campaign_list, name='campaign_list'),
     path('save_registration', save_registration, name='save_registration'),
     path('thankyou/<str:reg_no>/', thankyou, name='thankyou'),
     path('sponsorship', sponsorship, name='sponsorship'),
