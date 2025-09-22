@@ -1029,7 +1029,7 @@ def send_reminder_email(player, id , files):
     else:
         template_name = f'email_reminder_{id}.html'
 
-    html_content = render_to_string(f'register/email/{template_name}', {'name': player.name, 'id': id})
+    
    
     try:           
         registration_uuid = uuid.UUID(id)
@@ -1037,6 +1037,12 @@ def send_reminder_email(player, id , files):
         return JsonResponse({'status': 'error', 'message': 'Invalid UUID format'})
     
     campaign = get_object_or_404(Campaign, campaign_code=registration_uuid)
+
+    #get the survey for the campaign
+    survey = Survey.objects.filter(fkcampaign=campaign).first()
+
+
+    html_content = render_to_string(f'register/email/{template_name}', {'name': player.name, 'id': survey.survey_code})
 
    
     if not player.email:
