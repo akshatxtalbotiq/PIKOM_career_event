@@ -8,6 +8,7 @@ from .views import index, save_registration, thankyou, sponsorship, save_sponsor
 
 urlpatterns = [
     path('', campaign_list, name='campaign_list'),
+    path('index', index, name='index'),
     path('save_registration', save_registration, name='save_registration'),
     path('thankyou/<str:reg_no>/', thankyou, name='thankyou'),
     path('sponsorship', sponsorship, name='sponsorship'),
