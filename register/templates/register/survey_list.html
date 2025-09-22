@@ -58,7 +58,10 @@
                           <td>
                             <div class="d-flex px-2 py-1">
                               <div class="d-flex flex-column justify-content-center">
-                                <h6 class="mb-0 text-xs">{{ survey.title }}</h6>
+                                <!-- <h6 class="mb-0 text-xs">{{ survey.title }}</h6> -->
+                                <a href="/survey_submission_list/{{ survey.id }}" class="nav-link text-body p-0">
+                                  <h6 class="mb-0 text-xs">{{ survey.title }}</h6>
+                                </a>
                               </div>
                             </div>
                           </td>

@@ -1,0 +1,393 @@
+{% extends 'register/base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block extracss %}
+<style>
+    .main-content {
+        height: 100vh;
+        overflow-y: auto;
+    }
+    
+    .question-number {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        /* font-size: 14px; */
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+    
+    .answer-text {
+        line-height: 1.6;
+        margin: 0;
+        white-space: pre-wrap;
+    }
+    
+    .selected-option {
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        margin: 0.25rem 0.5rem 0.25rem 0;
+        display: inline-block;
+        font-size: 0.9rem;
+    }
+    
+    .matrix-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+    }
+    
+    .matrix-table th,
+    .matrix-table td {
+        padding: 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .info-item {
+        display: flex;
+        /* justify-content: space-between; */
+        align-items: center;
+        margin-bottom: 0.5rem;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #f1f3f4;
+        gap: 0.5rem;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-number {
+        /* font-size: 2rem; */
+        font-weight: bold;
+        display: block;
+    }
+    
+    .stat-label {
+        /* font-size: 0.9rem; */
+        margin-top: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="main-content">
+    <div class="container-fluid py-4">
+        
+        <!-- Survey Header -->
+        
+
+        <div class="col-12">
+          <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <!-- <h4 class="opacity-5 text-dark mb-2">{{ survey.title|default:"Survey Response" }}</h4> -->
+                        <!-- {% if survey.description %}
+                            <p class="mb-0">{{ survey.description }}</p>
+                        {% endif %} -->
+
+                         <h3 class="mb-0 h4 font-weight-bolder opacity-7"><i class="ti ti-user"></i>
+                        {{survey.title}}</h3>
+
+                    </div>
+                    <a href="{% url 'survey_submission_list' survey.id %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Back to Responses
+                    </a>
+                </div>
+        </div>
+
+        <!-- Stats Overview -->
+        <!-- <div class="stats-grid">
+            <div class="card text-center">
+                <div class="card-body">
+                    <span class="stat-number text-primary">{{ answers|length }}</span>
+                    <div class="stat-label text-muted">Questions Answered</div>
+                </div>
+            </div>
+            <div class="card text-center">
+                <div class="card-body">
+                    <span class="stat-number text-primary">{{ survey.questions.count }}</span>
+                    <div class="stat-label text-muted">Total Questions</div>
+                </div>
+            </div>
+            <div class="card text-center">
+                <div class="card-body">
+                    <span class="stat-number text-success">
+                        {% widthratio answers|length survey.questions.count 100 %}%
+                    </span>
+                    <div class="stat-label text-muted">Completion Rate</div>
+                </div>
+            </div>
+        </div> -->
+
+        <!-- User Information -->
+        {% if survey_user %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-user-circle me-2"></i>
+                    Respondent Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% if survey_user.name %}
+                    <div class="col-md-6">
+                        <div class="info-item">
+                            <span class="fw-bold">Name:</span>
+                            <span>{{ survey_user.name }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if survey_user.email %}
+                    <div class="col-md-6">
+                        <div class="info-item">
+                            <span class="fw-bold">Email:</span>
+                            <span>{{ survey_user.email }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if survey_user.phone %}
+                    <div class="col-md-6">
+                        <div class="info-item">
+                            <span class="fw-bold">Phone:</span>
+                            <span>{{ survey_user.phone }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if survey_user.organization %}
+                    <div class="col-md-6">
+                        <div class="info-item">
+                            <span class="fw-bold">Organization:</span>
+                            <span>{{ survey_user.organization }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="col-md-6">
+                        <div class="info-item">
+                            <span class="fw-bold">Submitted:</span>
+                            <span>{{ survey_user.created_at|date:"M d, Y H:i" }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Survey Answers -->
+        <div class="answers-section">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-clipboard-list me-2"></i>
+                        Survey Responses
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if survey.questions.all %}
+                        {% for question in survey.questions.all %}
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-start">
+                                        <div class="question-number bg-primary text-white">
+                                            {{ question.number }}
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="fw-bold mb-2">
+                                                {{ question.text|striptags }}
+                                                <span class="badge bg-secondary ms-2">
+                                                    {{ question.get_question_type_display }}
+                                                </span>
+                                                {% if question.is_required %}
+                                                    <span class="text-danger">*</span>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            {% if question.help_text %}
+                                                <p class="text-muted small mb-3">{{ question.help_text }}</p>
+                                            {% endif %}
+
+                                            <!-- Answer Content -->
+                                            {% with answers|get_item:question.id as answer %}
+                                                {% if answer %}
+                                                    <div class="border-start border-3 ps-3 mt-3">
+                                                        {% if question.question_type == "text" or question.question_type == "textarea" %}
+                                                            {% if answer.answer_text %}
+                                                                <div class="bg-light p-3 rounded">
+                                                                    <p class="answer-text mb-0">{{ answer.answer_text }}</p>
+                                                                </div>
+                                                            {% else %}
+                                                                <div class="alert alert-light text-center mb-0">
+                                                                    <em>No response provided</em>
+                                                                </div>
+                                                            {% endif %}
+                                                            
+                                                        {% elif question.question_type == "radio" or question.question_type == "select" %}
+                                                            {% if answer.selected_options %}
+                                                                {% for option in answer.selected_options %}
+                                                                    <span class="selected-option bg-light border">{{ option }}</span>
+                                                                {% endfor %}
+                                                            {% else %}
+                                                                <div class="alert alert-light text-center mb-0">
+                                                                    <em>No option selected</em>
+                                                                </div>
+                                                            {% endif %}
+                                                            
+                                                        {% elif question.question_type == "checkbox" %}
+                                                            {% if answer.selected_options %}
+                                                                {% for option in answer.selected_options %}
+                                                                    {% if option != "on" %}
+                                                                        {% if option != "Other" %}
+                                                                        <!-- <span class="selected-option bg-success bg-opacity-10 border border-success"> -->
+                                                                        <span class="selected-option bg-light border">
+                                                                            <i class="fas fa-check me-1"></i>{{ option }}
+                                                                        </span>
+                                                                        {% else %}
+                                                                            {% if answer.answer_text %}
+                                                                                <span class="selected-option bg-light border">
+                                                                                    <i class="fas fa-check me-1"></i>Other: {{ answer.answer_text }}
+                                                                                </span>
+                                                                            {% else %}
+                                                                                <span class="selected-option bg-light border">
+                                                                                    <i class="fas fa-check me-1"></i>Other
+                                                                                </span>
+                                                                            {% endif %}
+                                                                        {% endif %}                                                                    
+                                                                    {% endif %}
+                                                                {% endfor %}
+                                                            {% else %}
+                                                                <div class="alert alert-light text-center mb-0">
+                                                                    <em>No options selected</em>
+                                                                </div>
+                                                            {% endif %}
+                                                            
+                                                        {% elif question.question_type == "matrix_roles" %}
+                                                            {% if answer.answer_text %}
+                                                                {% with answer.answer_text|parse_json as matrix_data %}
+                                                                    {% if matrix_data %}
+                                                                        <div class="table-responsive">
+                                                                            <table class="table table-striped matrix-table">
+                                                                                <thead class="table-light">
+                                                                                    <tr>
+                                                                                        <th>Category</th>
+                                                                                        <th>Role Example</th>
+                                                                                        <th>Openings</th>
+                                                                                        <th>Urgency</th>
+                                                                                        <th>Difficulty</th>
+                                                                                    </tr>
+                                                                                </thead>
+                                                                                <tbody>
+                                                                                    {% for item in matrix_data %}
+                                                                                        <tr>
+                                                                                            <td class="fw-bold">{{ item.category|default:"-" }}</td>
+                                                                                            <td>{{ item.role_example|default:"-" }}</td>
+                                                                                            <td>
+                                                                                                {% if item.openings %}
+                                                                                                    <span class="badge bg-info">{{ item.openings }}</span>
+                                                                                                {% else %}
+                                                                                                    <span class="text-muted">-</span>
+                                                                                                {% endif %}
+                                                                                            </td>
+                                                                                            <td>
+                                                                                                {% if item.urgency == "High" %}
+                                                                                                    <span class="badge bg-danger">{{ item.urgency }}</span>
+                                                                                                {% elif item.urgency == "Medium" %}
+                                                                                                    <span class="badge bg-warning">{{ item.urgency }}</span>
+                                                                                                {% elif item.urgency == "Low" %}
+                                                                                                    <span class="badge bg-success">{{ item.urgency }}</span>
+                                                                                                {% else %}
+                                                                                                    <span class="text-muted">{{ item.urgency|default:"-" }}</span>
+                                                                                                {% endif %}
+                                                                                            </td>
+                                                                                            <td>
+                                                                                                {% if item.difficulty %}
+                                                                                                    {% if item.difficulty == "1" %}
+                                                                                                        <span class="badge bg-success">Easy</span>
+                                                                                                    {% elif item.difficulty == "2" %}
+                                                                                                        <span class="badge bg-warning">Medium</span>
+                                                                                                    {% elif item.difficulty == "3" %}
+                                                                                                        <span class="badge bg-danger">Hard</span>
+                                                                                                    {% else %}
+                                                                                                        <span class="badge bg-secondary">{{ item.difficulty }}</span>
+                                                                                                    {% endif %}
+                                                                                                {% else %}
+                                                                                                    <span class="text-muted">-</span>
+                                                                                                {% endif %}
+                                                                                            </td>
+                                                                                        </tr>
+                                                                                    {% endfor %}
+                                                                                </tbody>
+                                                                            </table>
+                                                                        </div>
+                                                                    {% else %}
+                                                                        <div class="bg-light p-3 rounded">
+                                                                            <div class="answer-text mb-0">{{ answer.answer_text }}</div>
+                                                                        </div>
+                                                                    {% endif %}
+                                                                {% endwith %}
+                                                            {% else %}
+                                                                <div class="alert alert-light text-center mb-0">
+                                                                    <em>No matrix responses provided</em>
+                                                                </div>
+                                                            {% endif %}
+                                                            
+                                                        {% else %}
+                                                            <div class="alert alert-warning text-center mb-0">
+                                                                <em>Unknown question type</em>
+                                                            </div>
+                                                        {% endif %}
+                                                    </div>
+                                                    
+                                                    <!-- <div class="text-muted small mt-2">
+                                                        <i class="fas fa-clock me-1"></i>
+                                                        Answered on {{ answer.submitted_at|date:"M d, Y H:i" }}
+                                                    </div> -->
+                                                {% else %}
+                                                    <div class="alert alert-warning text-center mt-3">
+                                                        <i class="fas fa-exclamation-circle me-2"></i>
+                                                        <em>No answer provided for this question</em>
+                                                    </div>
+                                                {% endif %}
+                                            {% endwith %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="alert alert-info text-center">
+                            <i class="fas fa-info-circle me-2"></i>
+                            No questions found for this survey.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="text-center mt-4 mb-4">
+            <a href="{% url 'survey_submission_list' survey.id %}" class="btn btn-primary me-3">
+                <i class="fas fa-list me-2"></i>
+                Back to Response List
+            </a>
+            <!-- <button onclick="window.print()" class="btn btn-success">
+                <i class="fas fa-print me-2"></i>
+                Print Response
+            </button> -->
+        </div>
+    </div>
+</main>
+{% endblock %}

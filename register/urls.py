@@ -4,7 +4,7 @@ from django.urls import path
 from .views import index, save_registration, thankyou, sponsorship, save_sponsorship, sponsorship_thankyou, \
     get_registration_list, get_sponsorship_list, registration_list, sponsorship_list, campaign_list, tnc, send_qr,create_campaign,submission_list, get_submission_list,get_campaign, update_remarks, update_registration_remarks, \
     check_taken_packages,talentgap2025_form, save_submission,submission_thankyou, survey_detail, survey_submit, survey_thankyou,survey_list, \
-    create_survey,get_survey,survey,survey_initial_submit
+    create_survey,get_survey,survey,survey_initial_submit, survey_submission_list,get_survey_submission_list, survey_answer_view,send_survey_reminder
 
 urlpatterns = [
     path('', campaign_list, name='campaign_list'),
@@ -41,4 +41,9 @@ urlpatterns = [
     path('get_survey/<str:id>/', get_survey, name='get_survey'),
     path('survey/<str:survey_id>/', survey, name='survey'),
     path("survey/<int:survey_id>/submit/", survey_initial_submit, name="survey_initial_submit"),
+
+    path('survey_submission_list/<str:id>/', survey_submission_list, name='survey_submission_list'),
+    path('get_survey_submission_list', get_survey_submission_list, name='get_survey_submission_list'),
+    path('survey_answer_view/<str:survey_id>/<str:user_id>/', survey_answer_view, name='survey_answer_view'),
+    path('send_survey_reminder/<str:id>', send_survey_reminder, name='send_survey_reminder'),
 ]

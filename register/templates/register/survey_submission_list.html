@@ -75,12 +75,12 @@
         <div class="col-12">
           <div class="ms-3">
             <h3 class="mb-0 h4 font-weight-bolder opacity-7"><i class="ti ti-list"></i>
-            {{campaign.title}}</h3>
+            {{survey.title}}</h3>
         
             <nav aria-label="breadcrumb m-0">
               <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
-                <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;">Campaigns</a></li>
-                <li class="breadcrumb-item text-sm text-dark active" aria-current="page">{{campaign.title}}</li>
+                <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;">Survey</a></li>
+                <li class="breadcrumb-item text-sm text-dark active" aria-current="page">{{survey.title}}</li>
               </ol>
             </nav>
           </div>
@@ -95,17 +95,13 @@
                   <thead>
                     <tr>
                         <th><input type="checkbox" id="select-all"></th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Reg. No.</th>
+                        
                         <th class="text-uppercase text-secondary text-sm font-weight-bolder">Name</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Email</th>
-                        <!-- <th class="text-uppercase text-secondary text-sm font-weight-bolder">Phone</th> -->
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Designation</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder ">Organization</th>                        
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Registartion Date</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Checked-In</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Sent QR</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Remarks</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder"></th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Email</th>   
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Phone No.</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Organization</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Submission Date</th>
+                        <!-- <th class="text-uppercase text-secondary text-sm font-weight-bolder"></th> -->
                     </tr>
                   </thead>
                   <tbody id="registration-body">
@@ -246,7 +242,7 @@
     
     $(document).ready(function () {
 
-      let campaignId = '{{campaign.campaign_code}}';
+      let surveyId = '{{survey.id}}';
 
       // Function to update select-all state based only on visible rows
       function updateSelectAllStateFromVisible() {
@@ -267,10 +263,10 @@
         colReorder: true,
         scrollY: '60vh',  
         ajax: {
-          url: '/get_submission_list',
+          url: '/get_survey_submission_list',
           type: 'POST',
           data: function (d) {
-            d.id = campaignId;
+            d.id = surveyId;
           },
           headers: {
             'X-CSRFToken': getCSRFToken()
@@ -287,39 +283,34 @@
               return `<input type="checkbox" class="row-checkbox" value="${row.reg_no}">`;
             }
           },
-          { data: 'reg_no' },
-          { data: 'name' },
-          { data: 'email' },
-          { data: 'job_title' },
-          { data: 'organization' },
-          { data: 'registration_date' },
-          {
-            data: 'is_checked_in',
-            render: function (data, type, row) {
-              return `<span class="material-symbols-rounded ${data === true ? 'text-success' : 'text-danger'}">${data === true ? 'check_circle' : 'cancel'}</span>`;
-            }
-          },
-          {
-            data: 'is_qr_sent',
-            render: function (data, type, row) {
-              return `<span class="material-symbols-rounded ${data === true ? 'text-success' : 'text-danger'}">${data === true ? 'check_circle' : 'cancel'}</span>`;
-            }
-          },
-          { data: 'remarks' },
-          {
-            data: null,
+          { data: 'name',
             render: function (data, type, row) {
               return `
-                <button class="note-btn border-0 bg-transparent p-0" 
-                        style="font-size: 24px; color: #0d6efd;"
-                        data-regno="${row.reg_no}" 
-                        data-remarks="${row.remarks || ''}">
-                  <i class="material-symbols-rounded">note</i>
-                </button>`;
+                <div class="d-flex align-items-center">
+                  <div>
+                    <a href="/survey_answer_view/${row.survey_id}/${row.id}/" class="text-decoration-none">${row.name}</a>
+                  </div>
+                </div>`;
             },
-            orderable: false,
-            searchable: false
-          }
+           },
+          { data: 'phone' },
+          { data: 'email' },        
+          { data: 'organization' },
+          { data: 'submitted_date' },          
+          // {
+          //   data: null,
+          //   render: function (data, type, row) {
+          //     return `
+          //       <button class="note-btn border-0 bg-transparent p-0" 
+          //               style="font-size: 24px; color: #0d6efd;"
+          //               data-regno="${row.reg_no}" 
+          //               data-remarks="${row.remarks || ''}">
+          //         <i class="material-symbols-rounded">note</i>
+          //       </button>`;
+          //   },
+          //   orderable: false,
+          //   searchable: false
+          // }
         ],
         dom:
           "<'row mb-3'<'col-sm-6 d-flex align-items-center gap-2 px-2'f l><'col-sm-6 text-end px-2'B>>" +
@@ -333,101 +324,33 @@
             filename: 'submission_list',
             title: 'Submission List'
           },
-          {
-            text: 'Send Survey Reminder',
-            className: 'btn btn-outline-success btn-sm',    
-            action: function (e, dt, node, config) {
-              let selectedIds = [];
-
-              //disable button to prevent multiple clicks
-              node.prop('disabled', true);
+          // {
+          //   text: 'Send QR',
+          //   className: 'btn btn-outline-success btn-sm',
+          //   action: function (e, dt, node, config) {
+          //     let selectedIds = [];
               
-              // Get only currently visible and selected rows
-              $('#entries tbody input.row-checkbox:checked').each(function () {
-                selectedIds.push($(this).val());
-              });
+          //     // Get only currently visible and selected rows
+          //     $('#entries tbody input.row-checkbox:checked').each(function () {
+          //       selectedIds.push($(this).val());
+          //     });
 
-              if (selectedIds.length === 0) {
-                Swal.fire({
-                  title: "No Selection",
-                  text: "Please select at least one row.",
-                  icon: "warning",
-                  confirmButtonColor: "#DD6B55",
-                  confirmButtonText: "OK"
-                });
+          //     if (selectedIds.length === 0) {
+          //       Swal.fire({
+          //         title: "No Selection",
+          //         text: "Please select at least one row.",
+          //         icon: "warning",
+          //         confirmButtonColor: "#DD6B55",
+          //         confirmButtonText: "OK"
+          //       });
+          //       return;
+          //     }
 
-                // Re-enable button if no selection
-                node.prop('disabled', false);
-                return;
-              }
-
-              let campaignId = '{{campaign.campaign_code}}';  
-              let formData = new FormData();
-              formData.append('ids', JSON.stringify(selectedIds));
-
-              $.ajax({
-                url: "/send_survey_reminder/" + campaignId,
-                type: "POST",
-                headers: {
-                  'X-CSRFToken': getCSRFToken()
-                },
-                data: formData,
-                processData: false,  
-                contentType: false,  
-                success: function (response) {
-                  console.log("Mail sent successfully", response);
-
-                  if (response.success) {
-                    Swal.fire("Success", response.message, "success");                    
-
-                    // Uncheck all checkboxes
-                    $('#entries tbody input.row-checkbox').prop('checked', false);
-                    $('#select-all').prop('checked', false);
-                  
-                  } else {
-                    Swal.fire("Error", response.message || "Failed to send QRs.", "error");                   
-                  }
-                },
-                error: function (xhr, status, error) {
-                  commonAjaxErrorCallBack(xhr, status, error);                  
-                },
-                complete: function() {
-                  // Re-enable button after request completes
-                  node.prop('disabled', false);
-                }
-              });
-
-              
-            }
-          },
-          {
-            text: 'Send QR',
-            className: 'btn btn-outline-success btn-sm',
-            action: function (e, dt, node, config) {
-              let selectedIds = [];
-              
-              // Get only currently visible and selected rows
-              $('#entries tbody input.row-checkbox:checked').each(function () {
-                selectedIds.push($(this).val());
-              });
-
-              if (selectedIds.length === 0) {
-                Swal.fire({
-                  title: "No Selection",
-                  text: "Please select at least one row.",
-                  icon: "warning",
-                  confirmButtonColor: "#DD6B55",
-                  confirmButtonText: "OK"
-                });
-                return;
-              }
-
-              $('#selectedIdsInput').val(JSON.stringify(selectedIds));
-              let sendQRModal = new bootstrap.Modal(document.getElementById('sendQRModal'));
-              sendQRModal.show();
-            }
-          },          
-          
+          //     $('#selectedIdsInput').val(JSON.stringify(selectedIds));
+          //     let sendQRModal = new bootstrap.Modal(document.getElementById('sendQRModal'));
+          //     sendQRModal.show();
+          //   }
+          // }
         ],
         fixedHeader: {
           header: true,
@@ -481,10 +404,6 @@
           console.log('DataTable initialized and loaded via AJAX');          
         }
       });
-
-      if ('{{surveyExists}}' === "False") {
-        table.button(1).nodes().addClass('d-none'); // or .hide()
-      }
 
       // When page length changes
 // When page length changes
@@ -689,14 +608,7 @@ table.on('draw.dt', function () {
         });
 
     } else {
-        //AlertButton("Error", `Something went wrong ${jqXHR.status}, ${thrownError}, Please contact Admin`);
-        Swal.fire({
-            title: "Error",
-            text: `Something went wrong ${jqXHR.status}, ${thrownError}, Please contact Admin`,
-            icon: "error",
-            confirmButtonColor: "#DD6B55",
-            confirmButtonText: "OK"
-        });
+        AlertButton("Error", `Something went wrong ${jqXHR.status}, ${thrownError}, Please contact Admin`);
     }
 }
   </script>

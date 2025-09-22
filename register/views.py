@@ -8,6 +8,7 @@ from django.utils.dateparse import parse_datetime
 from django.utils import timezone
 from django.template.loader import render_to_string
 from django.core.validators import validate_email, ValidationError
+from django.utils.html import strip_tags
 
 from django.contrib.auth.models import User
 from io import BytesIO
@@ -410,10 +411,14 @@ def get_campaign(request, id):
 @login_required 
 def submission_list(request, id=None):
     #print("Fetching submission list")
-    current_user = request.user    
- 
+    current_user = request.user
     campaign = Campaign.objects.get(campaign_code=id)
-    return render(request, 'register/submission_list.html', {'user': current_user, 'campaign': campaign})
+
+    surveyExists = False
+    if Survey.objects.filter(fkcampaign=campaign).exists():
+        surveyExists = True
+
+    return render(request, 'register/submission_list.html', {'user': current_user, 'campaign': campaign, 'surveyExists': surveyExists})
 
 @login_required
 def get_submission_list(request):   
@@ -924,4 +929,144 @@ def get_survey(request, id):
     }
     return JsonResponse(data)
 
+
+@login_required 
+def survey_submission_list(request, id=None):
+    #print("Fetching submission list")
+    current_user = request.user    
+
+    survey = Survey.objects.get(id=id)
+    return render(request, 'register/survey_submission_list.html', {'user': current_user, 'survey': survey})
+
+@login_required
+def get_survey_submission_list(request):   
+    try:
+        if request.method == 'POST':
+            id = request.POST.get('id')              
+            submissions = SurveyUser.objects.filter(survey_id=id).order_by('-created_at')
+          
+
+            data = []
+            for s in submissions:
+                data.append({     
+                    'id': s.id,                                 
+                    'name': s.name,
+                    'email': s.email,
+                    'phone': s.phone,
+                    'organization': s.organization,
+                    'submitted_date': s.created_at.strftime('%Y-%m-%d %I:%M %p') if s.created_at else '',  
+                    'survey_id': s.survey.id,                 
+                })
+
+            return JsonResponse(data, safe=False)
+        else:
+            return JsonResponse({'error': 'Invalid request method'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+def survey_answer_view(request, survey_id, user_id):
+    # Get survey and survey user
+    survey = get_object_or_404(Survey, id=survey_id)
+    survey_user = get_object_or_404(SurveyUser, id=user_id, survey=survey)
+
+    # Get all answers for this survey and user
+    answers = Answer.objects.filter(survey=survey, user=survey_user).select_related("question")
+
+    # Organize answers by question.id
+    answer_dict = {ans.question.id: ans for ans in answers}
+
+    #remove html tags from question text in asnwer_dict
+    for q_id, ans in answer_dict.items():
+        ans.question.text = strip_tags(ans.question.text)    
+
+    return render(
+        request,
+        "register/survey_answer_view.html",
+        {
+            "survey": survey,
+            "survey_user": survey_user,
+            "answers": answer_dict,
+        },
+    )
+
+@login_required
+def send_survey_reminder(request, id):
+   
+    reg_no_list = request.POST["ids"] 
+
+    #convert json list in list
+    reg_no_list = json.loads(reg_no_list)   
+
+    total_sent = 0
+    total_players = len(reg_no_list)
+
+    if id == "0": # from golf event
+        players = Player.objects.filter(qr_sent=False)       
+    else:
+        id = id.replace("-", "")
+        players = Submission.objects.filter(reg_no__in=reg_no_list, campaign_code=id) 
+
+    #remove from players if email exist in SurveyUser table for the survey with campaign_code
+    # survey = Survey.objects.filter(fkcampaign__campaign_code=id).first()       
+    # if survey:
+    #     existing_emails = SurveyUser.objects.filter(survey=survey).values_list('email', flat=True)
+    #     players = players.exclude(email__in=existing_emails)
+
+    total_players = players.count()
+    for player in players:
+        print(f"Sending reminder to player: {player.name}, email: {player.email}")
+        if send_reminder_email(player, id, files=[]):
+           total_sent += 1
+   
+    return JsonResponse({'success': True, 'message': f"Reminder sent successfully to {total_sent} out of {total_players} registered participants."})
+
+
+def send_reminder_email(player, id , files):    
+
+    if id == "0":
+        template_name = 'email_registration.html'
+    else:
+        template_name = f'email_reminder_{id}.html'
+
+    html_content = render_to_string(f'register/email/{template_name}', {'name': player.name, 'id': id})
+   
+    try:           
+        registration_uuid = uuid.UUID(id)
+    except ValueError:
+        return JsonResponse({'status': 'error', 'message': 'Invalid UUID format'})
+    
+    campaign = get_object_or_404(Campaign, campaign_code=registration_uuid)
+
+   
+    if not player.email:
+        return False
+    
+    email = EmailMultiAlternatives(
+        subject='Thank You for Driving Change at ' + campaign.title,
+        body=html_content,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[player.email],
+    )
+    email.attach_alternative(html_content, "text/html")
+
+    # Attach banner image
+    banner_path = os.path.join(settings.BASE_DIR, "register", "static", "register","email", "banner.png")
+    with open(banner_path, 'rb') as f:
+        banner = MIMEImage(f.read())
+        banner.add_header('Content-ID', '<banner>')
+        banner.add_header('Content-Disposition', 'inline', filename="banner.png")
+        email.attach(banner)
+
+    
+    for f in files:
+        email.attach(f.name, f.read(), f.content_type)
+    
+   
+    try:
+        email.send()       
+        return True
+    except Exception as e:     
+        print(f"Error sending email to {player.email}: {str(e)}")   
+        return False    
 
