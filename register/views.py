@@ -1,3 +1,5 @@
+from email.utils import formataddr
+
 from django.core.mail import EmailMessage,EmailMultiAlternatives
 from django.shortcuts import render,get_object_or_404,redirect
 from django.http import HttpResponse, JsonResponse
@@ -515,8 +517,9 @@ def send_qr_email(player, id , files):
     email = EmailMultiAlternatives(
         subject='Your Admission QR Code for ' + campaign.title,
         body=html_content,
-        from_email=settings.DEFAULT_FROM_EMAIL,
+        from_email=formataddr((campaign.title, settings.DEFAULT_FROM_EMAIL)),
         to=[player.email],
+        headers = {"Reply-To": "info@pikom.org.my"}
     )
     email.attach_alternative(html_content, "text/html")
 
