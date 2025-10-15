@@ -72,7 +72,7 @@
    
     <div class="container-fluid py-2">
       <div class="row">
-        <div class="col-12">
+        <!-- <div class="col-12">
           <div class="ms-3">
             <h3 class="mb-0 h4 font-weight-bolder opacity-7"><i class="ti ti-list"></i>
             {{campaign.title}}</h3>
@@ -84,46 +84,76 @@
               </ol>
             </nav>
           </div>
-        </div>
-
-        <div class="col-12">
-          <div class="card my-4">
-
-            <div class="card-body px-0 pb-2">
-              <div class="table-responsive p-3">
-                <table id="entries" class="table table-hover align-items-center mb-0" style="font-size: 12px;">
-                  <thead>
-                    <tr>
-                        <th><input type="checkbox" id="select-all"></th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Reg. No.</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Name</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Email</th>
-                        <!-- <th class="text-uppercase text-secondary text-sm font-weight-bolder">Phone</th> -->
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Designation</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder ">Organization</th>                        
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Registartion Date</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Checked-In</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Sent QR</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Remarks</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder"></th>
-                    </tr>
-                  </thead>
-                  <tbody id="registration-body">
-                    <!-- Filled via JavaScript -->
-                </tbody>
-                </table>
-              </div>
+        </div> -->
+        <div class="col-8 d-flex justify-content-start align-items-center gap-2">                
+            <div class="ms-3">
+              <h3 class="mb-0 h4 font-weight-bolder opacity-7"><i class="ti ti-list"></i>
+              {{campaign.title}}</h3>
+          
+              <nav aria-label="breadcrumb m-0">
+                <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
+                  <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;">Campaigns</a></li>
+                  <li class="breadcrumb-item text-sm text-dark active" aria-current="page">{{campaign.title}}</li>
+                </ol>
+              </nav>
+            </div>
+        </div>  
+        <div class="col-4 d-flex justify-content-end align-items-center gap-2">
+          <div>
+            <div class="d-flex justify-content-end align-items-center gap-2 mt-2">
+              <button type="button"  data-bs-toggle="modal" data-bs-target="#new-form" class="btn btn-sm btn-primary waves-effect"><i class="icon-base ti ti-plus"></i> <span class="d-none d-xl-inline-block">Add New Participant</span></button>
+            </div>
+            <div class="badge bg-white border border-success d-flex align-items-center gap-2 ">
+              <i class="ti ti-user text-success"></i>
+              <span class="fw-semibold small text-success">Participants Checked In:</span>
+              <span class="small text-success">
+                <span id="checkedIn" class="fw-bold">0</span>
+                <span class="text-muted mx-1">/</span>
+                <span id="totalParticipants">0</span>
+              </span>
             </div>
           </div>
         </div>
       </div>
+        
+      <div class="col-12">
+        <div class="card my-2">
+
+          <div class="card-body px-0 pb-2">
+            <div class="table-responsive p-3">
+              <table id="entries" class="table table-hover align-items-center mb-0" style="font-size: 12px;">
+                <thead>
+                  <tr>
+                      <th><input type="checkbox" id="select-all"></th>
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Reg. No.</th>
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Name</th>
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Email</th>
+                      <!-- <th class="text-uppercase text-secondary text-sm font-weight-bolder">Phone</th> -->
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Designation</th>
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder ">Organization</th>                        
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Registartion Date</th>
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Checked-In</th>
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Sent QR</th>
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Remarks</th>
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder"></th>
+                  </tr>
+                </thead>
+                <tbody id="registration-body">
+                  <!-- Filled via JavaScript -->
+              </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      
 
     </div>
   </main>
 
   <!-- modal for remarks -->
   <div class="modal fade" id="noteModal" tabindex="-1" aria-labelledby="noteModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-  <div class="modal-dialog modal-sm" style="max-width: 500px;">
+  <div class="modal-dialog modal-sm modal-dialog-centered" style="max-width: 500px;">
     <div class="modal-content border shadow-sm rounded-3">
 
       <div class="modal-header bg-light border-bottom rounded-top">
@@ -139,10 +169,10 @@
       </div>
 
       <div class="modal-footer rounded-bottom">
-        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
           <i class="material-symbols-rounded align-middle">close</i> Close
         </button>
-        <button type="button" class="btn btn-primary btn-sm" id="save-remarks-btn">
+        <button type="button" class="btn btn-primary" id="save-remarks-btn">
           <i class="material-symbols-rounded align-middle">save</i> Save
         </button>
       </div>
@@ -189,6 +219,116 @@
   </div>
 </div>
 
+<!-- new submission modal -->
+<div id="new-form" class="modal fade" tabindex="-1" aria-labelledby="newLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h5 class="modal-title" id="newLabel">New Submission</h5>
+                <!-- <button type="button" class="btn-close btn-outline-danger" data-bs-dismiss="modal" aria-label="Close"></button> -->
+            </div>
+
+            <form id="entryForm" novalidate>
+              <!-- Modal Body -->
+              <div class="modal-body" id="id_new_modal_body">
+                  <!-- <div class="form-container shadow-sm p-4 rounded-3"> -->                 
+                    
+                      <input type="hidden" id="campaignID" name="campaignID" value="{{ campaign.id }}">
+                        <div class="row g-3">
+                          <!-- Full Name -->
+                          <div class="col-xl-12 col-lg-12">
+                            <div class="mb-3">
+                              <label for="name" class="form-label">Full Name <span class="text-danger">*</span></label>
+                              <input type="text" class="form-control border border-1 rounded px-2 py-2" id="name" name="name" required>
+                              <div class="invalid-feedback">Please enter your full name.</div>
+                            </div>
+                          </div>
+
+                          <!-- Company / Designation -->
+                          <div class="col-xl-6 col-lg-6">
+                            <div class="mb-3">
+                              <label for="company" class="form-label">Company / Organization <span class="text-danger">*</span></label>
+                              <input type="text" class="form-control border border-1 rounded px-2 py-2" id="company" name="company" required>
+                              <div class="invalid-feedback">Please enter your company or organization.</div>
+                            </div>
+                          </div>
+                          <div class="col-xl-6 col-lg-6">
+                            <div class="mb-3">
+                              <label for="designation" class="form-label">Designation <span class="text-danger">*</span></label>
+                              <input type="text" class="form-control border border-1 rounded px-2 py-2" id="designation" name="designation" required>
+                              <div class="invalid-feedback">Please enter your designation.</div>
+                            </div>
+                          </div>
+
+                          <!-- Phone / Email -->
+                          <div class="col-xl-6 col-lg-6">
+                            <div class="mb-3">
+                              <label for="phone" class="form-label">Phone <span class="text-danger">*</span></label>
+                              <input type="tel" class="form-control border border-1 rounded px-2 py-2" id="phone" name="phone" required>
+                              <div class="invalid-feedback">Please enter your phone number.</div>
+                            </div>
+                          </div>
+                          <div class="col-xl-6 col-lg-6">
+                            <div class="mb-3">
+                              <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+                              <input type="email" class="form-control border border-1 rounded px-2 py-2" id="email" name="email" required>
+                              <div class="invalid-feedback">Please enter a valid email address.</div>
+                            </div>
+                          </div>
+
+                          <!-- PIKOM Member / Check-In Now -->
+                          <div class="col-xl-6 col-lg-6">
+                            <div class="mb-3">
+                              <label class="form-label d-block">Are you a PIKOM member? <span class="text-danger">*</span></label>
+                              <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="pikomMember" id="memberYes" value="Yes" required>
+                                <label class="form-check-label" for="memberYes">Yes</label>
+                              </div>
+                              <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="pikomMember" id="memberNo" value="No" required>
+                                <label class="form-check-label" for="memberNo">No</label>
+                              </div>
+                              <div class="invalid-feedback d-block">Please select an option.</div>
+                            </div>
+                          </div>
+
+                          <div class="col-xl-6 col-lg-6">
+                            <div class="mb-3">
+                              <label class="form-label d-block">Check-In Now? <span class="text-danger">*</span></label>
+                              <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="checkinNow" id="checkinYes" value="Yes" required>
+                                <label class="form-check-label" for="checkinYes">Yes</label>
+                              </div>
+                              <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="checkinNow" id="checkinNo" value="No" required>
+                                <label class="form-check-label" for="checkinNo">No</label>
+                              </div>
+                              <div class="invalid-feedback d-block">Please select an option.</div>
+                            </div>
+                          </div>
+                        </div>
+                    
+                    
+
+                  <!-- </div> -->
+              </div>      
+              <!-- Modal Footer -->
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary border" data-bs-dismiss="modal" onclick="resetForm();">
+                  <i class="material-symbols-rounded align-middle">close</i> Cancel
+                </button>
+                <button type="submit" id="submitBtn" class="btn btn-primary">
+                  <span id="submitBtnText">Submit</span>
+                  <span id="submitBtnLoader" class="d-none spinner-border spinner-border-sm"></span>
+                </button>
+              </div>
+            </form>
+
+        </div>
+    </div>
+</div>
 
 
 
@@ -275,7 +415,14 @@
           headers: {
             'X-CSRFToken': getCSRFToken()
           },
-          dataSrc: ''
+          dataSrc: function (json) {
+            // Update counts on the page
+            $('#checkedIn').text(json.checked_in_count || 0);
+            $('#totalParticipants').text(json.total_count || 0);
+
+            // Return only the data array for DataTables
+            return json.data || [];
+          }
         },
         columns: [
           {
@@ -296,7 +443,7 @@
           {
             data: 'is_checked_in',
             render: function (data, type, row) {
-              return `<span class="material-symbols-rounded ${data === true ? 'text-success' : 'text-danger'}">${data === true ? 'check_circle' : 'cancel'}</span>`;
+              return `<a href="#" class="checkin-toggle" data-regno="${row.id}" onclick="toggleCheckin(this)"><span class="material-symbols-rounded ${data === true ? 'text-success' : 'text-danger'}">${data === true ? 'check_circle' : 'cancel'}</span></a>`;
             }
           },
           {
@@ -334,7 +481,74 @@
             title: 'Submission List'
           },
           {
-            text: 'Send Survey Reminder',
+            text: '<i class="material-symbols-rounded">timer</i> Send Event Reminder',
+            className: 'btn btn-outline-success btn-sm',    
+            action: function (e, dt, node, config) {
+              let selectedIds = [];
+
+              //disable button to prevent multiple clicks
+              node.prop('disabled', true);
+              
+              // Get only currently visible and selected rows
+              $('#entries tbody input.row-checkbox:checked').each(function () {
+                selectedIds.push($(this).val());
+              });
+
+              if (selectedIds.length === 0) {
+                Swal.fire({
+                  title: "No Selection",
+                  text: "Please select at least one row.",
+                  icon: "warning",
+                  confirmButtonColor: "#DD6B55",
+                  confirmButtonText: "OK"
+                });
+
+                // Re-enable button if no selection
+                node.prop('disabled', false);
+                return;
+              }
+
+              let campaignId = '{{campaign.campaign_code}}';  
+              let formData = new FormData();
+              formData.append('ids', JSON.stringify(selectedIds));
+
+              $.ajax({
+                url: "/send_event_reminder/" + campaignId,
+                type: "POST",
+                headers: {
+                  'X-CSRFToken': getCSRFToken()
+                },
+                data: formData,
+                processData: false,  
+                contentType: false,  
+                success: function (response) {
+                  console.log("Mail sent successfully", response);
+
+                  if (response.success) {
+                    Swal.fire("Success", response.message, "success");                    
+
+                    // Uncheck all checkboxes
+                    $('#entries tbody input.row-checkbox').prop('checked', false);
+                    $('#select-all').prop('checked', false);
+                  
+                  } else {
+                    Swal.fire("Error", response.message || "Failed to send QRs.", "error");                   
+                  }
+                },
+                error: function (xhr, status, error) {
+                  commonAjaxErrorCallBack(xhr, status, error);                  
+                },
+                complete: function() {
+                  // Re-enable button after request completes
+                  node.prop('disabled', false);
+                }
+              });
+
+              
+            }
+          },
+          {
+            text: '<i class="material-symbols-rounded">mail</i>  Send Survey Reminder',
             className: 'btn btn-outline-success btn-sm',    
             action: function (e, dt, node, config) {
               let selectedIds = [];
@@ -401,7 +615,7 @@
             }
           },
           {
-            text: 'Send QR',
+            text: '<i class="material-symbols-rounded">barcode</i> Send QR',
             className: 'btn btn-outline-success btn-sm',
             action: function (e, dt, node, config) {
               let selectedIds = [];
@@ -483,7 +697,7 @@
       });
 
       if ('{{surveyExists}}' === "False") {
-        table.button(1).nodes().addClass('d-none'); // or .hide()
+        table.button(2).nodes().addClass('d-none'); // or .hide()
       }
 
       // When page length changes
@@ -699,5 +913,130 @@ table.on('draw.dt', function () {
         });
     }
 }
+  
+    $('#submitBtn').on('click', function (e) {
+        e.preventDefault(); // now works
+       
+        toggleSaveBtnLoading(true);
+       
+        let form = document.getElementById('entryForm');
+
+        // check required by checking the form
+        if (!form.checkValidity()) {
+            form.classList.add('was-validated');
+            toggleSaveBtnLoading(false);
+            return;
+        }
+
+        $.ajax({
+            type: 'POST',
+            url: '{% url "save_submission" %}',
+            headers: {
+                'X-CSRFToken': getCSRFToken()
+            },
+            contentType: 'application/json',
+            data: JSON.stringify({
+                keyword: $('#campaignID').val(),
+                name: $('#name').val(),
+                organization: $('#company').val(),
+                designation: $('#designation').val(),
+                phone: $('#phone').val(),
+                email: $('#email').val(),
+                is_member: $('input[name="pikomMember"]:checked').val(),
+                is_checkin: $('input[name="checkinNow"]:checked').val(),
+                is_instant: true
+            }),
+            success: function (response) {
+                if (response.success) {
+                    window.location.reload();
+                } else {
+                    alert('An error occurred during submission! Please contact the administrator. Note: ' + response.message);
+                }
+            },
+            error: function () {
+                alert('An error occurred during submission. Please contact the administrator.');
+            },
+            complete: function () {
+                toggleSaveBtnLoading(false);
+            }
+        });
+    });
+
+    function toggleSaveBtnLoading(isLoading) {        
+
+          if (isLoading) {
+              $('#submitBtnText').addClass('d-none');
+              $('#submitBtnLoader').removeClass('d-none');
+          } else {
+              $('#submitBtnText').removeClass('d-none');
+              $('#submitBtnLoader').addClass('d-none');
+          }
+    }
+
+    function resetForm() {
+      const form = document.getElementById('entryForm');
+      form.reset();
+      form.classList.remove('was-validated');
+    }
+  
+    function toggleCheckin(element) {
+      const id= $(element).data('regno');
+      const icon = $(element).find('span.material-symbols-rounded');
+      const isCheckedIn = icon.hasClass('text-success');
+
+      if(isCheckedIn)
+        return;
+
+      
+      //confrim using swal
+      Swal.fire({
+        title: 'Confirm Check-In',
+        text: 'Are you sure you want to check in this participant?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, check in'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          // Disable the link to prevent multiple clicks
+          $(element).css('pointer-events', 'none');
+
+          $.ajax({
+            url: '/manual_checkin/',
+            type: 'POST',
+            data: {
+              id: id,
+              csrfmiddlewaretoken: getCSRFToken()
+            },
+            success: function (response) {
+              if (response.success === true) {
+                
+                icon.removeClass('text-danger').addClass('text-success').text('check_circle');
+
+                let currentCount = parseInt($('#checkedIn').text()) || 0;
+                $('#checkedIn').text(currentCount + 1);
+                
+              } else {
+                //alert('Failed to toggle check-in status: ' + response.message);
+                Swal.fire('Error', 'Failed to toggle check-in status: ' + response.message, 'error');
+              }
+            },
+            error: function () {
+              Swal.fire('Error', 'An error occurred while toggling check-in status.', 'error');
+            },
+            complete: function () {
+              // Re-enable the link after request completes
+              $(element).css('pointer-events', '');
+            }
+          });
+        
+        }
+      });
+
+      
+    
+    }
+  
   </script>
 {%endblock %}

@@ -432,8 +432,11 @@ def get_submission_list(request):
           
 
             data = []
+            checked_in_count = 0
+            total_count = submissions.count()
             for s in submissions:
                 data.append({
+                    'id': s.id,
                     'reg_no': s.reg_no,                    
                     'name': s.name,
                     'email': s.email,
@@ -444,8 +447,14 @@ def get_submission_list(request):
                     'is_checked_in': s.is_checked_in,
                     'is_qr_sent': s.qr_sent,
                 })
+                if s.is_checked_in:
+                    checked_in_count += 1
 
-            return JsonResponse(data, safe=False)
+            return JsonResponse({
+                'data': data,
+                'total_count': total_count,
+                'checked_in_count': checked_in_count
+            }, safe=False)
         else:
             return JsonResponse({'error': 'Invalid request method'}, status=400)
     except Exception as e:
@@ -617,20 +626,40 @@ def talentgap2025_form(request):
 @csrf_exempt
 def save_submission(request):
     if request.method == 'POST':
+        print("Saving submission")
         try:
-            data = json.loads(request.body)   
+            data = json.loads(request.body)
+            print(data)
+
+            instant = False
 
             keyword = data.get('keyword', '').strip()
 
-            campaign = Campaign.objects.filter(entry_keyword__iexact=keyword, is_active=True).first()
+            #if keyword is not int, convert to int and key word isnothing about instant
+            if keyword.isdigit():
+                keyword = int(keyword)               
+           
+
+            #campaign = Campaign.objects.filter(entry_keyword__iexact=keyword, is_active=True).first()
+            campaign = Campaign.objects.filter(id=keyword, is_active=True).first()
             c_id = campaign.campaign_code if campaign else None            
 
             member = data.get('is_member')
+            checkin = data.get('is_checkin')
+            is_instant = data.get('is_instant')
            
             if member and member == 'Yes':
                 is_member = True
             else:
                 is_member = False
+
+            if checkin and checkin == 'Yes':
+                is_checkin = True
+            else:
+                is_checkin = False
+
+            if is_instant and is_instant == True:
+                instant = True
 
             #convert uuid to string
             c_id = str(c_id)
@@ -644,8 +673,8 @@ def save_submission(request):
                 job_title=data.get('designation', ''),
                 is_member=is_member,
                 campaign_code=c_id.replace("-", "")  ,
-                fkcampaign=campaign
-
+                fkcampaign=campaign,
+                is_checked_in=is_checkin,
             )
 
             #update registrationno
@@ -657,7 +686,7 @@ def save_submission(request):
                 #campaign_code = c_id
 
                 #campaign = Campaign.objects.filter(campaign_code=campaign_code).first()
-                if campaign and campaign.pic_email:
+                if campaign and campaign.pic_email and instant == False:
                     
                     html_content = render_to_string('register/email/submission_notification.html', {'title': campaign.title, 'url': 'https://pikom.talxone.com/submission_list/' + c_id.replace("-", "") + '/'})
                     valid_emails = []
@@ -1016,25 +1045,39 @@ def send_survey_reminder(request, id):
     #     existing_emails = SurveyUser.objects.filter(survey=survey).values_list('email', flat=True)
     #     players = players.exclude(email__in=existing_emails)
 
+    campaign = Campaign.objects.filter(campaign_code=id).first()
+    if not campaign :
+        return JsonResponse({'success': False, 'message': 'No valid campaign found.'})
+    
+    email_item = {}
+    email_item['title'] = campaign.title
+    email_item['date'] = ''   
+    email_item['banner'] = 'banner.png'
+    email_item['subject'] = 'Thank You for Driving Change at ' + campaign.title
+    email_item['template'] = f'email_reminder_{id}.html'
+
     total_players = players.count()
     for player in players:
         print(f"Sending reminder to player: {player.name}, email: {player.email}")
-        if send_reminder_email(player, id, files=[]):
+        if send_reminder_email(player, id, files=[], name='survey', email_item=email_item):
            total_sent += 1
    
     return JsonResponse({'success': True, 'message': f"Reminder sent successfully to {total_sent} out of {total_players} registered participants."})
 
 
-def send_reminder_email(player, id , files):    
+def send_reminder_email(player, id , files, name, email_item):    
 
     if id == "0":
         template_name = 'email_registration.html'
     else:
-        template_name = f'email_reminder_{id}.html'
+        template_name = email_item['template']
+        # if name == 'event':
+        #     template_name = f'email_event_reminder_{id}.html'
+        # else:
+        #     template_name = f'email_reminder_{id}.html'
 
-    
-   
-    try:           
+
+    try:
         registration_uuid = uuid.UUID(id)
     except ValueError:
         return JsonResponse({'status': 'error', 'message': 'Invalid UUID format'})
@@ -1045,14 +1088,15 @@ def send_reminder_email(player, id , files):
     survey = Survey.objects.filter(fkcampaign=campaign).first()
 
 
-    html_content = render_to_string(f'register/email/{template_name}', {'name': player.name, 'id': survey.survey_code})
+    html_content = render_to_string(f'register/email/{template_name}', {'name': player.name, 'id': survey.survey_code, 'campaign': campaign})
 
    
     if not player.email:
         return False
     
     email = EmailMultiAlternatives(
-        subject='Thank You for Driving Change at ' + campaign.title,
+        #subject='Thank You for Driving Change at ' + campaign.title,
+        subject=email_item['subject'],
         body=html_content,
         from_email=settings.DEFAULT_FROM_EMAIL,
         to=[player.email],
@@ -1060,11 +1104,11 @@ def send_reminder_email(player, id , files):
     email.attach_alternative(html_content, "text/html")
 
     # Attach banner image
-    banner_path = os.path.join(settings.BASE_DIR, "register", "static", "register","email", "banner.png")
+    banner_path = os.path.join(settings.BASE_DIR, "register", "static", "register","email", email_item['banner'])
     with open(banner_path, 'rb') as f:
         banner = MIMEImage(f.read())
         banner.add_header('Content-ID', '<banner>')
-        banner.add_header('Content-Disposition', 'inline', filename="banner.png")
+        banner.add_header('Content-Disposition', 'inline', filename=email_item['banner'])
         email.attach(banner)
 
     
@@ -1078,4 +1122,75 @@ def send_reminder_email(player, id , files):
     except Exception as e:     
         print(f"Error sending email to {player.email}: {str(e)}")   
         return False    
+
+def manual_checkin(request):
+    if request.method == 'POST':
+        id = request.POST.get('id', '').strip()   
+        try:
+            submission = Submission.objects.get(id=id)
+            if submission.is_checked_in:
+                return JsonResponse({'success': False, 'message': 'This participant has already checked in.'})
+
+            submission.is_checked_in = True
+            submission.save()
+
+            return JsonResponse({'success': True, 'message': f'Check-in successful for {submission.name}.'})
+        except Submission.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'No matching registration found.'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+
+    return JsonResponse({'success': False, 'message': 'Invalid request method.'})
+
+
+@login_required
+def send_event_reminder(request, id):
+   
+    reg_no_list = request.POST["ids"] 
+
+    #convert json list in list
+    reg_no_list = json.loads(reg_no_list)   
+
+    total_sent = 0
+    total_players = len(reg_no_list)
+
+    if id == "0": # from golf event
+        players = Player.objects.filter(qr_sent=False)       
+    else:
+        id = id.replace("-", "")
+        players = Submission.objects.filter(reg_no__in=reg_no_list, campaign_code=id) 
+
+    #remove from players if email exist in SurveyUser table for the survey with campaign_code
+    # survey = Survey.objects.filter(fkcampaign__campaign_code=id).first()       
+    # if survey:
+    #     existing_emails = SurveyUser.objects.filter(survey=survey).values_list('email', flat=True)
+    #     players = players.exclude(email__in=existing_emails)
+
+    campaign = Campaign.objects.filter(campaign_code=id).first()
+    if not campaign :
+        return JsonResponse({'success': False, 'message': 'No valid campaign found.'})
+    
+    email_item = {}
+    email_item['title'] = campaign.title
+    email_item['date'] = ''
+    email_item['venue'] = 'To be announced'
+    email_item['address'] = 'To be announced'
+    email_item['city'] = 'To be announced'
+    email_item['postcode'] = 'To be announced'
+    email_item['state'] = 'To be announced'
+    email_item['country'] = 'To be announced'
+    email_item['contact_phone'] = 'To be announced'
+    email_item['contact_email'] = 'To be announced'
+    email_item['banner'] = 'banner.png'
+    email_item['subject'] = 'THIS IS REMINDER FOR: ' + campaign.title
+    email_item['template'] = f'email_event_reminder_{id}.html'
+
+    total_players = players.count()
+    for player in players:
+        print(f"Sending reminder to player: {player.name}, email: {player.email}")
+        if send_reminder_email(player, id, files=[], name='event', email_item=email_item):
+           total_sent += 1
+   
+    return JsonResponse({'success': True, 'message': f"Reminder sent successfully to {total_sent} out of {total_players} registered participants."})
+
 
