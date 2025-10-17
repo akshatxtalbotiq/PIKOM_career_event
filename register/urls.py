@@ -5,7 +5,7 @@ from .views import index, save_registration, thankyou, sponsorship, save_sponsor
     get_registration_list, get_sponsorship_list, registration_list, sponsorship_list, campaign_list, tnc, send_qr,create_campaign,submission_list, get_submission_list,get_campaign, update_remarks, update_registration_remarks, \
     check_taken_packages,talentgap2025_form, save_submission,submission_thankyou, survey_detail, survey_submit, survey_thankyou,survey_list, \
     create_survey,get_survey,survey,survey_initial_submit, survey_submission_list,get_survey_submission_list, survey_answer_view,send_survey_reminder, \
-    manual_checkin, send_event_reminder,cioconf2025_form
+    manual_checkin, send_event_reminder,lead2025_form
 
 urlpatterns = [
     path('', campaign_list, name='campaign_list'),
@@ -32,7 +32,7 @@ urlpatterns = [
     path('create_campaign', create_campaign, name='create_campaign'),
 
     path('talentgap2025/', talentgap2025_form , name='talentgap2025'),
-    path('cioconf2025/',cioconf2025_form , name='cioconf2025'),
+    path('lead2025/',lead2025_form , name='lead2025'),
     path('save_submission', save_submission, name='save_submission'),
     path('submission_thankyou/<str:reg_no>/', submission_thankyou, name='submission_thankyou'),
 

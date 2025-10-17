@@ -624,7 +624,7 @@ def talentgap2025_form(request):
     return render(request, 'register/talentgap2025.html')
 
 @csrf_exempt
-def cioconf2025_form(request):
+def lead2025_form(request):
     return render(request, 'register/cioconf2025.html')
 
 @csrf_exempt
