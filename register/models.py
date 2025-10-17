@@ -162,6 +162,9 @@ class Submission(models.Model):
     is_member = models.BooleanField(default=False)
     member_code = models.CharField(max_length=100, blank=True, null=True)
     fkcampaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, null=True, blank=True, related_name='submissions', db_column="fkcampaign",default=None)
+    category = models.CharField(max_length=500, null=True, blank=True)
+    promo_code = models.CharField(max_length=100, blank=True, null=True)
+    consent = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name

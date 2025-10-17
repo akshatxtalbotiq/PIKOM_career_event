@@ -624,6 +624,10 @@ def talentgap2025_form(request):
     return render(request, 'register/talentgap2025.html')
 
 @csrf_exempt
+def cioconf2025_form(request):
+    return render(request, 'register/cioconf2025.html')
+
+@csrf_exempt
 def save_submission(request):
     if request.method == 'POST':
         print("Saving submission")
@@ -641,12 +645,16 @@ def save_submission(request):
            
 
             #campaign = Campaign.objects.filter(entry_keyword__iexact=keyword, is_active=True).first()
-            campaign = Campaign.objects.filter(id=keyword, is_active=True).first()
+            campaign = Campaign.objects.filter(entry_keyword=keyword, is_active=True).first()
             c_id = campaign.campaign_code if campaign else None            
 
             member = data.get('is_member')
             checkin = data.get('is_checkin')
             is_instant = data.get('is_instant')
+
+            category = data.get('category', '')
+            promocode = data.get('promo_code', '')
+            consent = data.get('consent', 'No')
            
             if member and member == 'Yes':
                 is_member = True
@@ -657,6 +665,11 @@ def save_submission(request):
                 is_checkin = True
             else:
                 is_checkin = False
+
+            if consent and consent == 'Yes':
+                consent_given = True
+            else:
+                consent_given = False
 
             if is_instant and is_instant == True:
                 instant = True
@@ -675,6 +688,9 @@ def save_submission(request):
                 campaign_code=c_id.replace("-", "")  ,
                 fkcampaign=campaign,
                 is_checked_in=is_checkin,
+                category=category,
+                promo_code=promocode,
+                consent=consent_given,
             )
 
             #update registrationno

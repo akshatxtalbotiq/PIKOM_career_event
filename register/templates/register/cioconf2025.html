@@ -1,0 +1,239 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Delegate Registration  |  PIKOM CIO Conference 2025</title>
+
+  <link rel="stylesheet" href="{% static 'register/cioconf2025/css/bootstrap.css' %}">
+  <link rel="stylesheet" href="{% static 'register/cioconf2025/css/style.css' %}">
+
+</head>
+
+<body>
+
+  <div class="container-xl py-5">
+
+   
+    <div class="mb-4 shadow-lg rounded overflow-hidden">
+      <img src="{% static 'register/cioconf2025/images/pikom-1.JPG' %}" class="img-fluid w-100" alt="PIKOM Conference Banner">
+    </div>
+
+  
+    <div class="alert bg-white shadow-sm p-4 rounded mb-4">
+      <h4 class="fw-bold mb-3 text-primary">Delegate Registration | PIKOM CIO Conference 2025</h4>
+      <ul class="list-unstyled mb-4">
+        <li><strong>Date:</strong> 10 June 2025 (Tuesday)</li>
+        <li><strong>Time:</strong> 8:30 AM - 6:00 PM</li>
+        <li><strong>Venue:</strong> CCEC, The Vertical, Bangsar South, KL</li>
+      </ul>
+
+      <p class="mb-1"><strong>PIKOM Members / CIO / Chapters:</strong> Complimentary seats (limited to 2 per company)</p>
+      <p><strong>Non-PIKOM Members & Others:</strong> RM499 per person</p>
+      <p class="fst-italic text-secondary">* Pre-registration is required.</p>
+    </div>
+
+  
+    <form id="entryForm" novalidate>
+        <input type="hidden" id="campaignID" name="campaignID" value="">
+
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <h5 class="form-section-title border-left-custom text-primary text-primary">Attendee Information</h5>
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="attendeeName" class="form-label">Name of Attendee <span class="text-danger">*</span></label>
+              <input type="text" id="name" class="form-control" name="name" required>
+            </div>
+
+            <div class="col-md-6">
+              <label for="companyName" class="form-label">Company Name <span class="text-danger">*</span></label>
+              <input type="text" id="company" class="form-control" name="company" required>
+            </div>
+
+      
+            <div class="col-md-6">
+              <label for="jobTitle" class="form-label">Job Title <span class="text-danger">*</span></label>
+              <input type="text" id="designation" class="form-control" name="designation" required>
+            </div>
+
+          
+            <div class="col-md-6">
+              <label for="email" class="form-label">Email Address <span class="text-danger">*</span></label>
+              <input type="email" id="email" class="form-control" name="email" required>
+            </div>
+
+          
+            <div class="col-md-6">
+              <label for="mobile" class="form-label">Mobile Number <span class="text-danger">*</span></label>
+              <input type="tel" id="phone" class="form-control" name="phone" placeholder="e.g. 0123456789" required>
+            </div>
+
+          
+            <div class="col-md-6">
+              <label for="category" class="form-label">Category <span class="text-danger">*</span></label>
+              <select id="category" class="form-select" name="category" required>
+                <option selected disabled>Choose...</option>
+                <option value="PIKOM Member">PIKOM Member</option>
+                <option value="PIKOM CIO Chapter Member">PIKOM CIO Chapter Member</option>
+                <option value="Other PIKOM Chapter">Other PIKOM Chapter</option>
+                <option value="Attending by Invitation">Attending by Invitation</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label for="promoCode" class="form-label">Promo Code / Invited By</label>
+              <input type="text" id="promoCode" class="form-control" name="promoCode" placeholder="Enter promo code or inviter name">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <h5 class="form-section-title border-left-custom">Personal Data & Consent</h5>
+
+          <p>By submitting this form, you consent to the collection, use, and storage of your personal data for communications about this event and future events organized by PIKOM.</p>
+          <p>Your data will not be shared outside PIKOM unless you tick the consent box below or as required by law. When sharing is necessary, it will be limited to named event partners for event-related communication only.</p>
+          <p>You may access, correct, or withdraw consent at any time by contacting <strong>Grace Lee</strong> at 
+            <a href="mailto:grace@pikom.org.my">grace@pikom.org.my</a>.
+          </p>
+
+          <div class="form-check mt-4">
+            <input class="form-check-input" type="checkbox" id="consent" name="consent">
+            <label class="form-check-label" for="consent">
+              I consent to PIKOM sharing my registration details with designated event partners for event-related updates.
+            </label>
+          </div>
+        </div>
+      </div>
+
+     
+      <div class="text-center">
+        <button type="submit" id="submitBtn" class="btn btn-lg btn-primary">
+            <span id="submitBtnText">Submit</span>
+            <span id="submitBtnLoader" class="d-none spinner-border spinner-border-sm"></span>
+        </button>
+      </div>
+
+    </form>
+  </div>
+
+  <script src="{% static 'register/js/jquery-3.7.1.min.js' %}"></script> 
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        let currentURL = window.location.href;
+        //remove the last '/' if exist
+        if (currentURL.endsWith("/")) {
+            currentURL = currentURL.slice(0, -1);
+        }
+        const campaign = currentURL.substring(currentURL.lastIndexOf("/") + 1);
+        document.getElementById("campaignID").value = campaign;
+    });
+
+
+    document.addEventListener("DOMContentLoaded", function () {
+    const consentCheckbox = document.getElementById("consent");
+    const submitBtn = document.getElementById("submitBtn");
+
+    // Disable the button by default
+    submitBtn.disabled = true;
+
+    // Listen for checkbox changes
+    consentCheckbox.addEventListener("change", function () {
+        submitBtn.disabled = !this.checked;
+    });
+    });
+
+
+
+    $('form').submit(function(e) {
+          e.preventDefault();
+          toggleSaveBtnLoading(true);
+
+          //check required by checking the form
+          if (!this.checkValidity()) {
+              this.classList.add('was-validated');
+              toggleSaveBtnLoading(false);
+              return;
+          } 
+
+         
+          $.ajax({
+              type: 'POST',
+              url: '{% url "save_submission" %}',
+              headers: {
+                  'X-CSRFToken': getCSRFToken()
+              },
+              contentType: 'application/json',
+              data: JSON.stringify({
+                  keyword: $('#campaignID').val(),
+                  name: $('#name').val(),
+                  organization: $('#company').val(),
+                  designation: $('#designation').val(),
+                  phone: $('#phone').val(),
+                  email: $('#email').val(),
+                  is_member: $('#category').val() =='PIKOM Member' ? 'Yes' : 'No',
+                  category: $('#category').val(),
+                  promo_code: $('#promoCode').val(),     
+                  consent: $('#consent').is(':checked') ? 'Yes' : 'No',          
+              }),
+              success: function (response) {
+              if (response.success) {
+                  window.location.href = `/submission_thankyou/${response.reg_no}/`;
+              }
+              else {
+                   alert('An error occurred during submission! Please contact the administrator. Note: ' + response.message);
+              }
+              
+              },
+              error: function () {
+                  alert('An error occurred during submission.Please contact the administrator.');
+              },
+              complete: function () {
+                  toggleSaveBtnLoading(false);
+              }
+          });
+      });
+
+      function getCSRFToken() {
+        let name = 'csrftoken';
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            let cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                let cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+      function toggleSaveBtnLoading(isLoading) {
+          // const saveBtn = $('#saveBtn');
+          // if (isLoading) {
+          //     saveBtn.prop('disabled', true);
+          //     saveBtn.html('<i class="fa fa-spinner fa-spin"></i> Saving...');
+          // } else {
+          //     saveBtn.prop('disabled', false);
+          //     saveBtn.html('Save');
+          // }
+
+            if (isLoading) {
+                $('#submitBtnText').addClass('d-none');
+                $('#submitBtnLoader').removeClass('d-none');
+            } else {
+                $('#submitBtnText').removeClass('d-none');
+                $('#submitBtnLoader').addClass('d-none');
+            }
+      }
+  
+    </script>
+
+</body>
+</html>
