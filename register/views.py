@@ -645,7 +645,7 @@ def save_submission(request):
            
 
             #campaign = Campaign.objects.filter(entry_keyword__iexact=keyword, is_active=True).first()
-            campaign = Campaign.objects.get(id=keyword)
+            campaign = Campaign.objects.filter(entry_keyword=keyword, is_active=True).first()
             c_id = campaign.campaign_code if campaign else None            
 
             member = data.get('is_member')
