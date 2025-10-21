@@ -633,24 +633,25 @@ def save_submission(request):
         print("Saving submission")
         try:
             data = json.loads(request.body)
-            print(data)
-
-            instant = False
+            print(data)           
 
             keyword = data.get('keyword', '').strip()
+            is_instant = data.get('is_instant', False)
 
             #if keyword is not int, convert to int and key word isnothing about instant
-            if keyword.isdigit():
-                keyword = int(keyword)               
-           
+            if keyword.isdigit() and is_instant:
+                keyword = int(keyword)
 
             #campaign = Campaign.objects.filter(entry_keyword__iexact=keyword, is_active=True).first()
-            campaign = Campaign.objects.filter(entry_keyword=keyword, is_active=True).first()
+            if is_instant:
+                campaign = Campaign.objects.filter(id=keyword, is_active=True).first()
+            else:
+                campaign = Campaign.objects.filter(entry_keyword__iexact=keyword, is_active=True).first()
+            
             c_id = campaign.campaign_code if campaign else None            
 
             member = data.get('is_member')
-            checkin = data.get('is_checkin')
-            is_instant = data.get('is_instant')
+            checkin = data.get('is_checkin')            
 
             category = data.get('category', '')
             promocode = data.get('promo_code', '')
@@ -670,9 +671,7 @@ def save_submission(request):
                 consent_given = True
             else:
                 consent_given = False
-
-            if is_instant and is_instant == True:
-                instant = True
+            
 
             #convert uuid to string
             c_id = str(c_id)
@@ -702,7 +701,7 @@ def save_submission(request):
                 #campaign_code = c_id
 
                 #campaign = Campaign.objects.filter(campaign_code=campaign_code).first()
-                if campaign and campaign.pic_email and instant == False:
+                if campaign and campaign.pic_email and is_instant == False:
                     
                     html_content = render_to_string('register/email/submission_notification.html', {'title': campaign.title, 'url': 'https://pikom.talxone.com/submission_list/' + c_id.replace("-", "") + '/'})
                     valid_emails = []
