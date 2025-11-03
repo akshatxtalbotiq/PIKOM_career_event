@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>{{ title }}</title>
+  <style>
+    /* MOBILE RESPONSIVENESS */
+    @media only screen and (max-width: 600px) {
+      .container {
+        width: 100% !important;
+        padding: 20px !important;
+      }
+      .event-table td {
+        display: block;
+        width: 100% !important;
+        text-align: left !important;
+        padding: 10px 0 !important;
+      }
+      .agenda-button {
+        display: block !important;
+        width: 100% !important;
+      }
+    }
+  </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f6f9; font-family: Arial, sans-serif;">
+
+  <!-- Container -->
+  <table cellpadding="0" cellspacing="0" border="0" width="100%">
+    <tr>
+      <td align="center">
+        <table class="container" width="600" cellpadding="0" cellspacing="0" border="0" style="width: 600px; background-color: #ffffff; margin-top: 20px; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 30px; color: #333333; font-size: 16px; line-height: 1.6;">
+              <p>Dear <strong>{{ name }}</strong>,</p>
+
+              <p>
+                We have received your registration and your Registration Number is: {{ reg_no }}
+
+                An confirmation email with the QR code will be sent once your membership/invitation status has been verified.
+              </p>
+
+              <p>Thank you.</p>
+
+              <p>Warmest regards,<br><strong>{{ title }} Team</strong></p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding: 15px; background-color: #f0f4f8; color: #777; font-size: 12px;">
+              <!-- © Copyright © 2023 PIKOM. All Rights Reserved. -->
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

@@ -735,6 +735,25 @@ def save_submission(request):
 
 @csrf_exempt
 def submission_thankyou(request, reg_no):
+
+    submission = Submission.objects.get(reg_no=reg_no)
+
+    html_content = render_to_string('register/email/email_submission_thankyou.html', {'title': submission.fkcampaign.title,'name':submission.name,'reg_no':reg_no})
+
+    email = EmailMultiAlternatives(
+        subject=f'Your registeration is successfull - {reg_no}',
+        body=html_content,
+        from_email=formataddr((submission.fkcampaign.title, settings.DEFAULT_FROM_EMAIL)),
+        to=[submission.email],
+        headers={"Reply-To": "info@pikom.org.my"}
+    )
+    email.attach_alternative(html_content, "text/html")
+
+    try:
+        email.send()
+    except Exception as e:
+        print(f"Error sending email to {submission.email}: {str(e)}")
+
     return render(request, 'register/submission_thankyou.html', {'reg_no': reg_no})
 
 @csrf_exempt
