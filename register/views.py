@@ -41,7 +41,7 @@ def save_registration(request):
             billing = data.get('billing', {})       
             submitted = data.get('submitted', {}) 
 
-            # Get player 1 info for Registeration
+            # Get player 1 info for Registration
             with transaction.atomic():
                 #first_player = data['players'][0]                
                 
@@ -741,7 +741,7 @@ def submission_thankyou(request, reg_no):
     html_content = render_to_string('register/email/email_submission_thankyou.html', {'title': submission.fkcampaign.title,'name':submission.name,'reg_no':reg_no})
 
     email = EmailMultiAlternatives(
-        subject=f'Your registeration is successfull - {reg_no}',
+        subject=f'Your registration is successful - {reg_no}',
         body=html_content,
         from_email=formataddr((submission.fkcampaign.title, settings.DEFAULT_FROM_EMAIL)),
         to=[submission.email],
