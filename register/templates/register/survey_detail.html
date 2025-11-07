@@ -50,7 +50,7 @@
       </div>
     </div>
 
-    <form action="{% url 'survey_submit' survey.id %}" method="post">
+    <form action="{% url 'survey_submit' survey.id %}" method="post" id="surveyForm" novalidate>
       {% csrf_token %}
 
       <input type="hidden" name="survey_id" id="survey_id " value="{{ survey.id }}">
@@ -402,6 +402,98 @@
       }
     });
 
+    document.addEventListener('DOMContentLoaded', function() {
+      const form = document.getElementById('surveyForm');
+      if (!form) return;
+
+      form.addEventListener('submit', function(e) {
+        e.preventDefault(); // stop default submit
+
+        const missing = [];
+        let firstInvalidField = null;
+
+        form.querySelectorAll('[required]').forEach(field => {
+          const labelElem = field.closest('.mb-3')?.querySelector('label');
+          const label = labelElem ? labelElem.textContent.trim() : field.name;
+          let valid = true;
+
+          if (field.type === 'radio') {
+            const group = form.querySelectorAll(`[name="${field.name}"]`);
+            valid = Array.from(group).some(r => r.checked);
+          } else if (field.type === 'checkbox') {
+            const group = form.querySelectorAll(`[name="${field.name}"]`);
+            valid = Array.from(group).some(c => c.checked);
+          } else if (field.tagName === 'SELECT') {
+            valid = field.value !== '';
+          } else {
+            valid = field.value.trim() !== '';
+          }
+
+          //remove * from label
+          const cleanLabel = label.replace('*', '').trim();
+          let arrLabel = cleanLabel.split('.');
+          if (arrLabel.length > 1) {
+            if (!valid && !missing.includes(arrLabel[0])) missing.push(arrLabel[0]);
+            if (!valid && !firstInvalidField)
+            {
+              firstInvalidField = field;
+            } 
+          }
+
+          
+        });
+
+       
+          if (missing.length > 0) {
+            Swal.fire({
+              icon: 'error',
+              title: 'Required Questions Missing',
+              html: `
+                <div style="text-align:center; font-size:18px;">
+                  <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:10px;">
+                    ${missing.map(num => `
+                      <div style="
+                        background:#ffcccc;
+                        
+                        border-radius:8px;
+                        padding:6px 12px;
+                        font-weight:bold;
+                        min-width:45px;
+                      ">${num}</div>
+                    `).join('')}
+                  </div>
+                </div>
+              `,
+              background: '#fff', 
+              color: '#000',      
+              confirmButtonText: 'OK',
+              confirmButtonColor: '#3085d6',
+              width: '400px',
+            }).then(() => {
+              // After alert is closed, scroll smoothly to first missing field
+              if (firstInvalidField) {
+                const label = firstInvalidField.closest('.mb-3')?.querySelector('label');
+                const scrollTarget = label || firstInvalidField;
+
+                
+                setTimeout(() => {
+                 
+                  scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });               
+                  firstInvalidField.focus({ preventScroll: true });               
+                  scrollTarget.classList.add('border', 'border-danger');    
+
+                  setTimeout(() => {
+                    scrollTarget.classList.remove('border', 'border-danger');
+                  }, 3000);
+                }, 200); 
+              }
+            });
+          } else {
+            form.submit();
+          }
+      });
+    });
+    
 </script>
 
 </body>
