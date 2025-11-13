@@ -140,6 +140,7 @@ class Campaign(models.Model):
     entry_keyword = models.CharField(max_length=100, null=True, blank=True)
     need_qr = models.BooleanField(default=False)
     pic_email = models.TextField(null=True, blank=True)   
+    exclude_columns = models.TextField(null=True, blank=True)
     
     def __str__(self):
         return self.title

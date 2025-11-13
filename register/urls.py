@@ -5,7 +5,7 @@ from .views import index, save_registration, thankyou, sponsorship, save_sponsor
     get_registration_list, get_sponsorship_list, registration_list, sponsorship_list, campaign_list, tnc, send_qr,create_campaign,submission_list, get_submission_list,get_campaign, update_remarks, update_registration_remarks, \
     check_taken_packages,talentgap2025_form, save_submission,submission_thankyou, survey_detail, survey_submit, survey_thankyou,survey_list, \
     create_survey,get_survey,survey,survey_initial_submit, survey_submission_list,get_survey_submission_list, survey_answer_view,send_survey_reminder, \
-    manual_checkin, send_event_reminder,lead2025_form
+    manual_checkin, send_event_reminder,lead2025_form,exclude_columns
 
 urlpatterns = [
     path('', campaign_list, name='campaign_list'),
@@ -52,5 +52,7 @@ urlpatterns = [
 
     path('manual_checkin/', manual_checkin, name='manual_checkin'),
     path('send_event_reminder/<str:id>', send_event_reminder, name='send_event_reminder'),
+
+    path('exclude_columns/', exclude_columns, name='exclude_columns'),
 
 ]

@@ -420,7 +420,27 @@ def submission_list(request, id=None):
     if Survey.objects.filter(fkcampaign=campaign).exists():
         surveyExists = True
 
-    return render(request, 'register/submission_list.html', {'user': current_user, 'campaign': campaign, 'surveyExists': surveyExists})
+    #get html from template register/submission_list_checkin.html and send in the context
+    checkin_html = render(request, 'register/submission_list_checkin.html').content.decode('utf-8')
+
+    exclude_columns = campaign.exclude_columns if campaign and campaign.exclude_columns else {[]}
+    column_list = [       
+        {'data': 'reg_no', 'name': 'Registration No'},
+        {'data': 'name', 'name': 'Name'},
+        {'data': 'email', 'name': 'Email'},
+        {'data': 'mobile', 'name': 'Mobile'},
+        {'data': 'organization', 'name': 'Organization'},
+        {'data': 'job_title', 'name': 'Job Title'},       
+        {'data': 'registration_code', 'name': 'Registration Code'},
+        {'data': 'is_checked_in', 'name': 'Checked In'},
+        {'data': 'is_qr_sent', 'name': 'QR Sent'},       
+        {'data': 'remarks', 'name': 'Remarks'},
+        {'data': 'is_member', 'name': 'Is Member'},
+        {'data': 'category', 'name': 'Category'},
+        {'data': 'promo_code', 'name': 'Promo Code'},       
+    ]
+
+    return render(request, 'register/submission_list.html', {'user': current_user, 'campaign': campaign, 'surveyExists': surveyExists, 'checkin_html': checkin_html, 'exclude_columns': exclude_columns, 'column_list': column_list})
 
 @login_required
 def get_submission_list(request):   
@@ -429,6 +449,7 @@ def get_submission_list(request):
             campaign_code = request.POST.get('id')  
             campaign_code = campaign_code.replace("-", "")  
             submissions = Submission.objects.filter(campaign_code=campaign_code).order_by('-submitted_at')
+            campaign = Campaign.objects.filter(campaign_code=campaign_code).first()
           
 
             data = []
@@ -437,23 +458,48 @@ def get_submission_list(request):
             for s in submissions:
                 data.append({
                     'id': s.id,
-                    'reg_no': s.reg_no,                    
+                    'reg_no': s.reg_no,
                     'name': s.name,
                     'email': s.email,
-                    'job_title': s.job_title,
-                    'organization': s.organization,
+                    'mobile': s.mobile if s.mobile else '',
+                    'organization': s.organization if s.organization else '',
+                    'job_title': s.job_title if s.job_title else '',
                     'registration_date': s.submitted_at.strftime('%Y-%m-%d %I:%M %p') if s.submitted_at else '',
-                    'remarks': s.remarks if s.remarks else '',
+                    'last_modified': s.lastmodified.strftime('%Y-%m-%d %I:%M %p') if s.lastmodified else '',
+                    'registration_code': str(s.registration_code),
                     'is_checked_in': s.is_checked_in,
                     'is_qr_sent': s.qr_sent,
+                    'campaign_code': s.campaign_code if s.campaign_code else '',
+                    'remarks': s.remarks if s.remarks else '',
+                    'is_member': s.is_member,
+                    'member_code': s.member_code if s.member_code else '',
+                    'fkcampaign': s.fkcampaign.id if s.fkcampaign else '',
+                    'fkcampaign_name': s.fkcampaign.name if s.fkcampaign and hasattr(s.fkcampaign, 'name') else '',
+                    'category': s.category if s.category else '',
+                    'promo_code': s.promo_code if s.promo_code else '',
+                    'consent': s.consent,
                 })
+
+                # data.append({
+                #     'id': s.id,
+                #     'reg_no': s.reg_no,                    
+                #     'name': s.name,
+                #     'email': s.email,
+                #     'job_title': s.job_title,
+                #     'organization': s.organization,
+                #     'registration_date': s.submitted_at.strftime('%Y-%m-%d %I:%M %p') if s.submitted_at else '',
+                #     'remarks': s.remarks if s.remarks else '',
+                #     'is_checked_in': s.is_checked_in,
+                #     'is_qr_sent': s.qr_sent,
+                # })
                 if s.is_checked_in:
                     checked_in_count += 1
 
             return JsonResponse({
                 'data': data,
                 'total_count': total_count,
-                'checked_in_count': checked_in_count
+                'checked_in_count': checked_in_count,
+                'exclude_columns': campaign.exclude_columns if campaign and campaign.exclude_columns else {[]}
             }, safe=False)
         else:
             return JsonResponse({'error': 'Invalid request method'}, status=400)
@@ -479,6 +525,26 @@ def update_remarks(request):
             return JsonResponse({'status': 'success'})
         except Submission.DoesNotExist:
             return JsonResponse({'status': 'error', 'message': 'Submission not found'})
+        except IntegrityError as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': f'Integrity error: {str(e)}'
+            })
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid request'})
+
+def exclude_columns(request):
+    if request.method == 'POST':
+        campaign_id = request.POST.get('campaign_id')
+        exclude_columns = request.POST.getlist('exclude_columns[]')
+
+        try:
+            campaign = Campaign.objects.get(id=campaign_id)
+            campaign.exclude_columns = json.dumps(exclude_columns)
+            campaign.save()
+            return JsonResponse({'status': 'success'})
+        except Campaign.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Campaign not found'})
         except IntegrityError as e:
             return JsonResponse({
                 'status': 'error',
@@ -621,11 +687,11 @@ def send_qr(request, id):
 
 @csrf_exempt
 def talentgap2025_form(request):
-    return render(request, 'register/talentgap2025.html')
+    return render(request, 'register/admission/talentgap2025.html')
 
 @csrf_exempt
 def lead2025_form(request):
-    return render(request, 'register/lead2025.html')
+    return render(request, 'register/admission/lead2025.html')
 
 @csrf_exempt
 def save_submission(request):

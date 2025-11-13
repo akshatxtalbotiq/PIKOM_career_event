@@ -125,17 +125,34 @@
                 <thead>
                   <tr>
                       <th><input type="checkbox" id="select-all"></th>
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Reg. No.</th>
+                      <!-- <th class="text-uppercase text-secondary text-sm font-weight-bolder">Reg. No.</th>
                       <th class="text-uppercase text-secondary text-sm font-weight-bolder">Name</th>
                       <th class="text-uppercase text-secondary text-sm font-weight-bolder">Email</th>
-                      <!-- <th class="text-uppercase text-secondary text-sm font-weight-bolder">Phone</th> -->
+                      
                       <th class="text-uppercase text-secondary text-sm font-weight-bolder">Designation</th>
                       <th class="text-uppercase text-secondary text-sm font-weight-bolder ">Organization</th>                        
                       <th class="text-uppercase text-secondary text-sm font-weight-bolder">Registartion Date</th>
                       <th class="text-uppercase text-secondary text-sm font-weight-bolder">Checked-In</th>
                       <th class="text-uppercase text-secondary text-sm font-weight-bolder">Sent QR</th>
                       <th class="text-uppercase text-secondary text-sm font-weight-bolder">Remarks</th>
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder"></th> -->
+
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">ID</th>
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Reg. No.</th>
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Name</th>
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Email</th>
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Mobile</th>
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Organization</th>
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Job Title</th>                      
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Checked In</th>
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">QR Sent</th>                     
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Is Member</th>
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Category</th>
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Promo Code</th>
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Remarks</th>
                       <th class="text-uppercase text-secondary text-sm font-weight-bolder"></th>
+
+
                   </tr>
                 </thead>
                 <tbody id="registration-body">
@@ -227,108 +244,56 @@
             <!-- Modal Header -->
             <div class="modal-header">
                 <h5 class="modal-title" id="newLabel">New Submission</h5>
-                <!-- <button type="button" class="btn-close btn-outline-danger" data-bs-dismiss="modal" aria-label="Close"></button> -->
+                <button type="button" class="btn-close" style="background-color: #f74150;" data-bs-dismiss="modal" aria-label="Close" onclick="resetForm();"></button>
             </div>
 
-            <form id="entryForm" novalidate>
-              <!-- Modal Body -->
-              <div class="modal-body" id="id_new_modal_body">
-                  <!-- <div class="form-container shadow-sm p-4 rounded-3"> -->                 
-                    
-                      <input type="hidden" id="campaignID" name="campaignID" value="{{ campaign.id }}">
-                        <div class="row g-3">
-                          <!-- Full Name -->
-                          <div class="col-xl-12 col-lg-12">
-                            <div class="mb-3">
-                              <label for="name" class="form-label">Full Name <span class="text-danger">*</span></label>
-                              <input type="text" class="form-control border border-1 rounded px-2 py-2" id="name" name="name" required>
-                              <div class="invalid-feedback">Please enter your full name.</div>
-                            </div>
-                          </div>
-
-                          <!-- Company / Designation -->
-                          <div class="col-xl-6 col-lg-6">
-                            <div class="mb-3">
-                              <label for="company" class="form-label">Company / Organization <span class="text-danger">*</span></label>
-                              <input type="text" class="form-control border border-1 rounded px-2 py-2" id="company" name="company" required>
-                              <div class="invalid-feedback">Please enter your company or organization.</div>
-                            </div>
-                          </div>
-                          <div class="col-xl-6 col-lg-6">
-                            <div class="mb-3">
-                              <label for="designation" class="form-label">Designation <span class="text-danger">*</span></label>
-                              <input type="text" class="form-control border border-1 rounded px-2 py-2" id="designation" name="designation" required>
-                              <div class="invalid-feedback">Please enter your designation.</div>
-                            </div>
-                          </div>
-
-                          <!-- Phone / Email -->
-                          <div class="col-xl-6 col-lg-6">
-                            <div class="mb-3">
-                              <label for="phone" class="form-label">Phone <span class="text-danger">*</span></label>
-                              <input type="tel" class="form-control border border-1 rounded px-2 py-2" id="phone" name="phone" required>
-                              <div class="invalid-feedback">Please enter your phone number.</div>
-                            </div>
-                          </div>
-                          <div class="col-xl-6 col-lg-6">
-                            <div class="mb-3">
-                              <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
-                              <input type="email" class="form-control border border-1 rounded px-2 py-2" id="email" name="email" required>
-                              <div class="invalid-feedback">Please enter a valid email address.</div>
-                            </div>
-                          </div>
-
-                          <!-- PIKOM Member / Check-In Now -->
-                          <div class="col-xl-6 col-lg-6">
-                            <div class="mb-3">
-                              <label class="form-label d-block">Are you a PIKOM member? <span class="text-danger">*</span></label>
-                              <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="pikomMember" id="memberYes" value="Yes" required>
-                                <label class="form-check-label" for="memberYes">Yes</label>
-                              </div>
-                              <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="pikomMember" id="memberNo" value="No" required>
-                                <label class="form-check-label" for="memberNo">No</label>
-                              </div>
-                              <div class="invalid-feedback d-block">Please select an option.</div>
-                            </div>
-                          </div>
-
-                          <div class="col-xl-6 col-lg-6">
-                            <div class="mb-3">
-                              <label class="form-label d-block">Check-In Now? <span class="text-danger">*</span></label>
-                              <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="checkinNow" id="checkinYes" value="Yes" required>
-                                <label class="form-check-label" for="checkinYes">Yes</label>
-                              </div>
-                              <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" name="checkinNow" id="checkinNo" value="No" required>
-                                <label class="form-check-label" for="checkinNo">No</label>
-                              </div>
-                              <div class="invalid-feedback d-block">Please select an option.</div>
-                            </div>
-                          </div>
-                        </div>
-                    
-                    
-
-                  <!-- </div> -->
-              </div>      
-              <!-- Modal Footer -->
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary border" data-bs-dismiss="modal" onclick="resetForm();">
-                  <i class="material-symbols-rounded align-middle">close</i> Cancel
-                </button>
-                <button type="submit" id="submitBtn" class="btn btn-primary">
-                  <span id="submitBtnText">Submit</span>
-                  <span id="submitBtnLoader" class="d-none spinner-border spinner-border-sm"></span>
-                </button>
-              </div>
-            </form>
+           <div class="modal-body"> 
+                {% include 'register/admission/'|add:campaign.entry_keyword|add:'_entryform.html' %}
+            </div>  
 
         </div>
     </div>
 </div>
+
+<!-- Modal for Exclude Columns -->
+<div id="exclude-columns-modal" class="modal fade" tabindex="-1" aria-labelledby="excludeColumnsLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-md modal-dialog-centered">
+        <div class="modal-content">
+            
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h5 class="modal-title" id="excludeColumnsLabel">Exclude Columns</h5>
+                <button type="button" class="btn-close" style="background-color: #f74150;" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="modal-body">
+                <form id="excludeColumnsForm">
+                    <div class="form-group">
+                        <label for="excludeColumnsSelect">Select Columns to Exclude</label>
+                        <!-- <select id="excludeColumnsSelect" name="exclude_columns[]" class="form-control select2" multiple="multiple" style="width: 100%;"></select> -->
+                        <select id="excludeColumnsSelect" name="exclude_columns[]" class="form-select" multiple>                          
+                          {% for col in column_list %}
+                            <option value="{{ col.data }}">
+                              {{ col.name }}
+                            </option>
+                          {% endfor %}
+                        </select>
+                      </div>
+
+                    <input type="hidden" id="campaignId" value="{{ campaign.id }}">
+
+                    <div class="mt-3 text-end">
+                        <button type="button" id="saveExcludeColumnsBtn" class="btn btn-primary">
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 
 
@@ -350,6 +315,24 @@
           return cookieValue;
       }
 
+    //after document is ready
+    $(document).ready(function () {
+      //remove div id=consent and it content
+      $('#consent').remove();
+    }
+    );
+
+    document.addEventListener("DOMContentLoaded", function() {
+        // Select all div elements inside #new-forms
+        var divs = document.querySelectorAll("#new-form div");
+
+        divs.forEach(function(div) {
+            div.classList.remove("card", "shadow-sm", "card-body");
+        });
+
+        $("#new-form input, #new-form select").addClass("border border-1 rounded px-2 py-2");
+    });    
+    
     $(document).on('click', '.note-btn', function () {
       const regno = $(this).data('regno');
       const remarks = $(this).data('remarks');
@@ -420,6 +403,20 @@
             $('#checkedIn').text(json.checked_in_count || 0);
             $('#totalParticipants').text(json.total_count || 0);
 
+            let excludedColumns = json.exclude_columns;
+           
+           
+            let table = $('#entries').DataTable();
+            table.columns().every(function () {
+                let column = this;
+                let columnDataKey = column.dataSrc();  // This gets the 'data' property name
+
+                if (excludedColumns.includes(columnDataKey) || columnDataKey === 'id') {
+                    column.visible(false);
+                } else {
+                    column.visible(true);
+                }
+            });
             // Return only the data array for DataTables
             return json.data || [];
           }
@@ -434,12 +431,13 @@
               return `<input type="checkbox" class="row-checkbox" value="${row.reg_no}">`;
             }
           },
+          { data: 'id', visible:false },
           { data: 'reg_no' },
           { data: 'name' },
           { data: 'email' },
-          { data: 'job_title' },
+          { data: 'mobile' },
           { data: 'organization' },
-          { data: 'registration_date' },
+          { data: 'job_title' },
           {
             data: 'is_checked_in',
             render: function (data, type, row) {
@@ -452,6 +450,13 @@
               return `<span class="material-symbols-rounded ${data === true ? 'text-success' : 'text-danger'}">${data === true ? 'check_circle' : 'cancel'}</span>`;
             }
           },
+          { data: 'is_member',
+              render: function (data, type, row) {
+              return `<span class="material-symbols-rounded ${data === true ? 'text-success' : 'text-danger'}">${data === true ? 'check_circle' : 'cancel'}</span>`;
+            }
+          },
+          { data: 'category' },
+          { data: 'promo_code' },
           { data: 'remarks' },
           {
             data: null,
@@ -478,7 +483,33 @@
             className: 'btn btn-outline-success btn-sm',
             text: '<i class="material-symbols-rounded">download</i> Export to Excel',
             filename: 'submission_list',
-            title: 'Submission List'
+            title: 'Submission List',
+            exportOptions: {
+              columns: ':visible',
+              format: {
+                body: function (data, row, column, node) {
+                  const colName = $('#entries').DataTable().settings()[0].aoColumns[column].data;
+                  
+                  if (colName === 'is_checked_in')
+                  { 
+                    return $(data).find('span').hasClass('text-success') ? 'Checked In' : 'Not Checked In';
+                  }
+                    
+
+                  if (colName === 'is_qr_sent')
+                    return $(data).hasClass('text-success') ? 'Sent' : 'Not Sent';
+
+                  if (colName === 'is_member')
+                    return $(data).hasClass('text-success') ? 'Yes' : 'No';
+
+                  if (colName === null)
+                    return ''; // skip note icon column
+
+                  // Strip HTML tags for other fields
+                  return typeof data === 'string' ? data.replace(/<[^>]*>?/gm, '') : data;
+                }
+              }
+            }
           },
           {
             text: '<i class="material-symbols-rounded">timer</i> Send Event Reminder',
@@ -640,7 +671,15 @@
               let sendQRModal = new bootstrap.Modal(document.getElementById('sendQRModal'));
               sendQRModal.show();
             }
-          },          
+          },
+          {
+            text: '<i class="material-symbols-rounded">settings</i>',
+            className: 'btn btn-outline-secondary btn-sm',
+            action: function (e, dt, node, config) {
+              let excludeColumnsModal = new bootstrap.Modal(document.getElementById('exclude-columns-modal'));
+              excludeColumnsModal.show();
+            }
+          }          
           
         ],
         fixedHeader: {
@@ -818,8 +857,6 @@ table.on('draw.dt', function () {
       renderFilePreview();
     });
 
-
-
     $('#sendQRSubmitBtn').on('click', function () {
       let campaignId = '{{campaign.campaign_code}}';  
 
@@ -916,7 +953,7 @@ table.on('draw.dt', function () {
   
     $('#submitBtn').on('click', function (e) {
         e.preventDefault(); // now works
-       
+        let campaignId = '{{campaign.id}}';
         toggleSaveBtnLoading(true);
        
         let form = document.getElementById('entryForm');
@@ -928,6 +965,30 @@ table.on('draw.dt', function () {
             return;
         }
 
+        let is_member = 'No'; 
+        let category = '';
+        let promoCode = '';
+        //check if id=category control exists
+        if (document.getElementById("category")) 
+        {
+          is_member = $('#category').val() =='PIKOM Member' ? 'Yes' : 'No'
+          category = $('#category').val()
+        } 
+        else 
+        {
+            if (document.querySelector("[name='pikomMember']")) 
+            {
+                is_member = $('input[name="pikomMember"]:checked').val()
+            }
+
+        }
+
+        if(document.getElementById("category"))
+        {
+            promoCode = $('#promoCode').val();
+        }
+
+
         $.ajax({
             type: 'POST',
             url: '{% url "save_submission" %}',
@@ -936,15 +997,18 @@ table.on('draw.dt', function () {
             },
             contentType: 'application/json',
             data: JSON.stringify({
-                keyword: $('#campaignID').val(),
+                keyword: campaignId, //$('#campaignID').val(),
                 name: $('#name').val(),
                 organization: $('#company').val(),
                 designation: $('#designation').val(),
                 phone: $('#phone').val(),
                 email: $('#email').val(),
-                is_member: $('input[name="pikomMember"]:checked').val(),
+                is_member: is_member,
                 is_checkin: $('input[name="checkinNow"]:checked').val(),
-                is_instant: true
+                is_instant: true,                
+                category: category,
+                promo_code: promoCode,
+                consent: 'Yes'
             }),
             success: function (response) {
                 if (response.success) {
@@ -1039,4 +1103,65 @@ table.on('draw.dt', function () {
     }
   
   </script>
+
+  <script>
+$(document).ready(function () {
+    // Convert Django context data to JS arrays
+    //const columnList = JSON.parse('{{ column_list|safe|escapejs }}');
+    const excluded = JSON.parse('{{ exclude_columns | safe }}');   
+
+    // Initialize Select2
+  
+    var $userSelect = $('#excludeColumnsSelect');
+    $userSelect.select2({
+      placeholder: 'Select columns to exclude',
+      allowClear: true,
+      width: '100%',
+      dropdownParent: $('#exclude-columns-modal') // IMPORTANT for modal
+    });
+
+    //set selected values
+    $userSelect.val(excluded).trigger('change');
+
+    // Populate select options
+    // columnList.forEach(col => {
+    //     const option = new Option(col.name, col.data, false, excluded.includes(col.data));
+    //     $('#excludeColumnsSelect').append(option);
+    // });
+
+    // Trigger change to show selected values
+    $('#excludeColumnsSelect').trigger('change');
+
+    // Handle Save button click
+    $('#saveExcludeColumnsBtn').on('click', function () {
+        const campaignId = $('#campaignId').val();
+        const selectedColumns = $('#excludeColumnsSelect').val();
+
+        $.ajax({
+            url: "{% url 'exclude_columns' %}",
+            type: "POST",
+            data: {
+                'csrfmiddlewaretoken': getCSRFToken(),
+                'campaign_id': campaignId,
+                'exclude_columns[]': selectedColumns
+            },
+            success: function (response) {
+                if (response.status === 'success') {
+                    //alert('Excluded columns updated successfully!');
+                    $('#exclude-columns-modal').modal('hide');
+                    location.reload();
+                } else {
+                    //alert('Error: ' + response.message);
+                    Swal.fire('Error', response.message, 'error');
+                }
+            },
+            error: function (xhr, status, error) {
+                //alert('An error occurred: ' + error);
+                Swal.fire('Error', 'An error occurred: ' + error, 'error');
+            }
+        });
+    });
+});
+</script>
+
 {%endblock %}
