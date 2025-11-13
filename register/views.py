@@ -423,7 +423,7 @@ def submission_list(request, id=None):
     #get html from template register/submission_list_checkin.html and send in the context
     checkin_html = render(request, 'register/submission_list_checkin.html').content.decode('utf-8')
 
-    exclude_columns = campaign.exclude_columns if campaign and campaign.exclude_columns else {[]}
+    exclude_columns = campaign.exclude_columns if campaign and campaign.exclude_columns else []
     column_list = [       
         {'data': 'reg_no', 'name': 'Registration No'},
         {'data': 'name', 'name': 'Name'},
@@ -499,7 +499,7 @@ def get_submission_list(request):
                 'data': data,
                 'total_count': total_count,
                 'checked_in_count': checked_in_count,
-                'exclude_columns': campaign.exclude_columns if campaign and campaign.exclude_columns else {[]}
+                'exclude_columns': campaign.exclude_columns if campaign and campaign.exclude_columns else []
             }, safe=False)
         else:
             return JsonResponse({'error': 'Invalid request method'}, status=400)
