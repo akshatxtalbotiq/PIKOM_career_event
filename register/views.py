@@ -599,11 +599,11 @@ def send_qr_email(player, id , files):
     email.attach_alternative(html_content, "text/html")
 
     # Attach banner image
-    banner_path = os.path.join(settings.BASE_DIR, "register", "static", "register","email", "banner.png")
+    banner_path = os.path.join(settings.BASE_DIR, "register", "static", "register","email", f"banner_{id}.png")
     with open(banner_path, 'rb') as f:
         banner = MIMEImage(f.read())
         banner.add_header('Content-ID', '<banner>')
-        banner.add_header('Content-Disposition', 'inline', filename="banner.png")
+        banner.add_header('Content-Disposition', 'inline', filename=f"banner_{id}.png")
         email.attach(banner)
 
     # Attach another image
@@ -1152,7 +1152,7 @@ def send_survey_reminder(request, id):
     email_item = {}
     email_item['title'] = campaign.title
     email_item['date'] = ''   
-    email_item['banner'] = 'banner.png'
+    email_item['banner'] = 'banner_' + id + '.png'
     email_item['subject'] = 'Thank You for Driving Change at ' + campaign.title
     email_item['template'] = f'email_reminder_{id}.html'
 
@@ -1188,7 +1188,7 @@ def send_reminder_email(player, id , files, name, email_item):
     survey = Survey.objects.filter(fkcampaign=campaign).first()
 
 
-    html_content = render_to_string(f'register/email/{template_name}', {'name': player.name, 'id': survey.survey_code, 'campaign': campaign})
+    html_content = render_to_string(f'register/email/{template_name}', {'name': player.name, 'id': survey.survey_code if survey else None, 'campaign': campaign})
 
    
     if not player.email:
@@ -1281,7 +1281,7 @@ def send_event_reminder(request, id):
     email_item['country'] = 'To be announced'
     email_item['contact_phone'] = 'To be announced'
     email_item['contact_email'] = 'To be announced'
-    email_item['banner'] = 'banner.png'
+    email_item['banner'] = 'banner_' + id + '.png'
     email_item['subject'] = 'THIS IS REMINDER FOR: ' + campaign.title
     email_item['template'] = f'email_event_reminder_{id}.html'
 
