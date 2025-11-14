@@ -4,10 +4,28 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Delegate Registration  |  PIKOM CIO Conference 2025</title>
+  <title>PIKOM LEAD 2025</title>
 
   <link rel="stylesheet" href="{% static 'register/lead2025/css/bootstrap.css' %}">
   <link rel="stylesheet" href="{% static 'register/lead2025/css/style.css' %}">
+
+  <style>
+    .big-checkbox {
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    border: 2px solid #fd0000;
+}
+
+.big-checkbox:checked {
+    background-color: #0d6efd !important;
+    border-color: #0d6efd !important;
+    box-shadow: 0 0 6px #0d6efd;
+}
+
+   
+  </style>
+
 
 </head>
 
@@ -52,17 +70,21 @@
 
 
     document.addEventListener("DOMContentLoaded", function () {
-    const consentCheckbox = document.getElementById("consent");
-    const submitBtn = document.getElementById("submitBtn");
+        const consentCheckbox = document.getElementById("consent");
+        const submitBtn = document.getElementById("submitBtn");
 
-    // Disable the button by default
-    submitBtn.disabled = true;
+        if (!consentCheckbox || !submitBtn) {
+            console.error("consent or submitBtn not found in DOM");
+            return;
+        }
 
-    // Listen for checkbox changes
-    consentCheckbox.addEventListener("change", function () {
-        submitBtn.disabled = !this.checked;
+        submitBtn.disabled = true;
+
+        consentCheckbox.addEventListener("change", function (e) {
+            submitBtn.disabled = !e.target.checked;
+        });
     });
-    });
+
 
 
 
