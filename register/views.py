@@ -570,6 +570,7 @@ def generate_qr_code(data):
 
 def send_qr_email(player, id , files):
     qr_image = generate_qr_code(str(player.registration_code))   
+    qr_image.seek(0)  # Ensure pointer at start
 
     if id == "0":
         template_name = 'email_registration.html'
@@ -614,7 +615,14 @@ def send_qr_email(player, id , files):
         agenda.add_header('Content-Disposition', 'inline', filename="agenda.png")
         email.attach(agenda)
 
+    # Create MIMEImage for QR
+    qr_mime = MIMEImage(qr_image.read())
+    qr_mime.add_header('Content-ID', '<qrcode>')
+    qr_mime.add_header('Content-Disposition', 'inline', filename=f'qrcode_{player.name}.png')
+    email.attach(qr_mime)
+
     email.attach(f'qr_{player.name}.png', qr_image.read(), 'image/png')
+    
     for f in files:
         email.attach(f.name, f.read(), f.content_type)
 
