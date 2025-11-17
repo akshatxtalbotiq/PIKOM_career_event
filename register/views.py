@@ -608,12 +608,12 @@ def send_qr_email(player, id , files):
         email.attach(banner)
 
     # Attach another image
-    logo_path = os.path.join(settings.BASE_DIR, "register", "static", "register","email","agenda.png")
-    with open(logo_path, 'rb') as f:
-        agenda = MIMEImage(f.read())
-        agenda.add_header('Content-ID', '<agenda>')
-        agenda.add_header('Content-Disposition', 'inline', filename="agenda.png")
-        email.attach(agenda)
+    # logo_path = os.path.join(settings.BASE_DIR, "register", "static", "register","email","agenda.png")
+    # with open(logo_path, 'rb') as f:
+    #     agenda = MIMEImage(f.read())
+    #     agenda.add_header('Content-ID', '<agenda>')
+    #     agenda.add_header('Content-Disposition', 'inline', filename="agenda.png")
+    #     email.attach(agenda)
 
     # Create MIMEImage for QR
     qr_mime = MIMEImage(qr_image.read())
@@ -621,7 +621,7 @@ def send_qr_email(player, id , files):
     qr_mime.add_header('Content-Disposition', 'inline', filename=f'qrcode_{player.name}.png')
     email.attach(qr_mime)
 
-    email.attach(f'qr_{player.name}.png', qr_image.read(), 'image/png')
+    #email.attach(f'qr_{player.name}.png', qr_image.read(), 'image/png')
     
     for f in files:
         email.attach(f.name, f.read(), f.content_type)
