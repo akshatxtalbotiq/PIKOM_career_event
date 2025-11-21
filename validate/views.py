@@ -33,9 +33,9 @@ def validate(request, code):
         if not participant.is_checked_in:
             participant.is_checked_in = True
             participant.save()
-            return JsonResponse({'message': '{0} checked in successfully!'.format(participant.name), 'remarks': participant.remarks},status=200)
+            return JsonResponse({'typ': 'new', 'name': participant.name, 'organization': participant.organization, 'message': '{0} checked in successfully!'.format(participant.name), 'remarks': participant.remarks},status=200)
         else:
-            return JsonResponse({'message': '{0} checked in successfully!'.format(participant.name), 'remarks': participant.remarks},status=200)
+            return JsonResponse({'typ': 'exist', 'name': participant.name, 'organization': participant.organization, 'message': '{0} already checked in!'.format(participant.name), 'remarks': participant.remarks},status=200)
     except Submission.DoesNotExist:
         return JsonResponse({'message': 'Invalid QR code.'},status=400)
     

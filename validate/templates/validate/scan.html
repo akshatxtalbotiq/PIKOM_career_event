@@ -9,7 +9,18 @@
     <link rel="stylesheet" href="{% static 'user/css/style.css' %}">
 
     <script src="https://unpkg.com/html5-qrcode"></script>
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
+        .swal2-rounded {
+            border-radius: 18px !important;
+        }
+
+        .swal2-shadow {
+            box-shadow: 0 6px 18px rgba(0,0,0,0.15) !important;
+        }
+
+
         #start-scan-btn {
             background-color: #28a745;
             color: white;
@@ -61,6 +72,7 @@
 <body class="bg-body-tertiary">
 
 <div class="container-xl py-5">
+    <input type="hidden" id="flg" value="0"/>
     <div class="row mt-3">
         <div class="col-xl-6 col-lg-12 mx-auto ">
             <h1 class="mb-3 text-center">{{ name }}</h1>
@@ -74,9 +86,9 @@
                 <label for="Code" class="form-label">Code</label>
                 <input name="code" id="code" class="form-control" placeholder="Code" autofocus/>
             </div>
-            <div class="nb-3">
+            <div class="nb-3 mt-4">
                 <label for="remark" class="form-label">Remark (Optional)</label>
-                <textarea name="remark" id="remark" class="form-control" placeholder="" rows="5" disabled></textarea>
+                <textarea name="remark" id="remark" class="form-control" placeholder="" rows="5" ></textarea>
             </div>
         </div>
     </div>
@@ -179,6 +191,9 @@
 
     // --- Enqueue & processor ---
     function enqueue(token) {
+        const flagElement = document.getElementById("flg");
+        if (flagElement.value === "1") return;   // BLOCK new scans
+
         if (!token) return;
         const now = Date.now();
         if (token === lastScan.val && (now - lastScan.ts) < DUP_WINDOW_MS) return; // drop dup bursts
@@ -189,6 +204,12 @@
 
     async function processQueue() {
         if (processing) return;
+
+        if (document.getElementById("flg").value === "1") {
+            processing = false;
+            return;  // STOP processing queue during alert
+        }
+
         processing = true;
         while (q.length) {
             const job = q[0];
@@ -220,24 +241,103 @@
         return /timeout|network|5\d\d/.test(msg);
     }
 
-    async function postToken(decodedText){
+    // async function postToken(decodedText){
+    //     const ctrl = new AbortController();
+    //     const timeout = setTimeout(() => ctrl.abort(), 8000); // guard long hangs
+    //     try {
+    //         fetch(`/validate/${decodedText}`)
+    //                     .then(res => res.json())
+    //                     .then(data => {
+    //                         if (data.message)z
+    //                             show(data.message);
+    //                     })
+    //                     .catch(err => {
+    //                         show("Error validating QR code.");
+    //                         console.error(err);
+    //                     });
+    //     } finally {
+    //         clearTimeout(timeout);
+    //     }
+    // }
+
+    async function postToken(decodedText) {
+
+        const flagElement = document.getElementById("flg"); 
+        const flagValue = flagElement.value;
+
+        if (flagValue === "1") {
+            // If flag is set to 1, skip processing
+            return;
+        }
+        else
+        {
+            // Set the flag to 1 to indicate processing is underway
+            flagElement.value = "1";
+        }
+        
         const ctrl = new AbortController();
         const timeout = setTimeout(() => ctrl.abort(), 8000); // guard long hangs
+
         try {
-            fetch(`/validate/${decodedText}`)
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.message)
-                                show(data.message);
-                        })
-                        .catch(err => {
-                            show("Error validating QR code.");
-                            console.error(err);
-                        });
+            const res = await fetch(`/validate/${decodedText}`, { signal: ctrl.signal });
+            const data = await res.json();
+
+            if (data.message) {
+                // Wait for user to click OK
+                Swal.fire({
+                    title: `<span style="font-size: 1.4rem; font-weight: 600; color:#333;">${data.message}</span>`,
+                    html: `
+                        <div style="font-size: 1.1rem; color:#444; text-align:left; line-height:1.6;">
+                            
+                            <p style="margin-top: 30px;">
+                                <strong>Name:</strong><br>
+                                ${data.name}
+                            </p>
+
+                            <p style="margin-bottom: 10px;">
+                                <strong>Company:</strong><br>
+                                ${data.organization}
+                            </p>
+                        </div>
+                    `,
+                    icon: data.typ === 'new' ? 'success' : 'info',
+
+                    // --- Styling ---
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#3085d6',
+                    width: '420px',
+                    customClass: {
+                        popup: 'swal2-rounded swal2-shadow'
+                    },
+
+                    allowOutsideClick: false,
+                    allowEscapeKey: false
+                }).then(() => {
+                    flagElement.value = "0";
+                    processQueue();
+                });
+
+
+                // Continue next logic AFTER user clicks OK
+                console.log("User clicked OK. Continue...");               
+            }
+        } catch (err) {
+            await Swal.fire({
+                title: 'Error',
+                text: "Error validating QR code.",
+                icon: 'error',
+                confirmButtonText: 'OK',
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            });
+            console.error(err);
+            flagElement.value = "0";
+           
         } finally {
             clearTimeout(timeout);
         }
     }
+
 
     async function postToken1(token) {
         const ctrl = new AbortController();
@@ -288,6 +388,29 @@
     // Always keep focus even if user clicks elsewhere
     window.addEventListener("blur", focusBack);
     document.addEventListener("visibilitychange", focusBack);
+
+    // Force focus no matter where user clicks
+    document.addEventListener("mousedown", (e) => {
+        focusBack();
+    }, true);
+
+    document.addEventListener("click", (e) => {
+        focusBack();
+    }, true);
+
+    document.addEventListener("mousedown", (e) => { 
+        if (e.target.tagName === "TEXTAREA") {
+            e.preventDefault();       
+            focusBack();
+        }
+    }, true); 
+
+
+
+
+
+
+
     focusBack();
 </script>
 
