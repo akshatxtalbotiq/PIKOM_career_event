@@ -1290,7 +1290,7 @@ def send_event_reminder(request, id):
     email_item['contact_phone'] = 'To be announced'
     email_item['contact_email'] = 'To be announced'
     email_item['banner'] = 'banner_' + id + '.png'
-    email_item['subject'] = 'THIS IS REMINDER FOR: ' + campaign.title
+    email_item['subject'] = 'Reminder To Attend: ' + campaign.title + ' on 25 November 2025'
     email_item['template'] = f'email_event_reminder_{id}.html'
 
     total_players = players.count()
