@@ -699,6 +699,10 @@ def talentgap2025_form(request):
 
 @csrf_exempt
 def lead2025_form(request):
+    campaign = Campaign.objects.filter(entry_keyword='lead2025').first()
+
+    if campaign is None or campaign.is_active == False:
+        return render(request, 'register/admission/lead2025_closed.html')
     return render(request, 'register/admission/lead2025.html')
 
 @csrf_exempt
@@ -721,6 +725,11 @@ def save_submission(request):
                 campaign = Campaign.objects.filter(id=keyword, is_active=True).first()
             else:
                 campaign = Campaign.objects.filter(entry_keyword__iexact=keyword, is_active=True).first()
+
+            if campaign is None or campaign.is_active == False:                
+                return JsonResponse({'success': False, 'message': 'Registration is closed.', 'code':'1'})
+
+                
             
             c_id = campaign.campaign_code if campaign else None            
 

@@ -124,7 +124,15 @@
                   window.location.href = `/submission_thankyou/${response.reg_no}/`;
               }
               else {
-                   alert('An error occurred during submission! Please contact the administrator. Note: ' + response.message);
+                if(response.code == '1'){
+                    alert('Sorry! Registration is closed.');
+                    window.location.reload();
+                }
+                else
+                {
+                    alert('An error occurred during submission! Please contact the administrator. Note: ' + response.message);
+                }
+                   
               }
               
               },
