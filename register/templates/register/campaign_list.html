@@ -405,6 +405,14 @@
                   </div>
                 </div>
               </div>
+              <div class="col-xl-12 col-lg-12">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <label class="form-check-label" for="enablePrompt">Enable Or Disable Check In Info</label>
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="enablePrompt" name="enablePrompt" checked>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           <div class="modal-footer">
@@ -516,6 +524,7 @@
               document.getElementById('campaignPICEmail').value = data.pic_email || '';
               document.getElementById('campaignEntryURL').value = data.entry_url || '';
               document.getElementById('campaignEntryKeyword').value = data.entry_keyword || '';
+              document.getElementById('enablePrompt').checked = data.enable_prompt;
 
               
 
@@ -719,6 +728,7 @@
         const entry_url = $('#campaignEntryURL').val();
         const entry_keyword = $('#campaignEntryKeyword').val();
         const selectedUsers = $('#campaignTeam').val(); 
+        const promptCheckinInfo = $('#enablePrompt').is(':checked');
 
         $.ajax({
           url: '/create_campaign',
@@ -735,6 +745,7 @@
             pic_email: picEmail,
             entry_url: entry_url,
             entry_keyword: entry_keyword,
+            prompt_checkin_info: promptCheckinInfo,
             users: selectedUsers
           },
           success: function (response) {

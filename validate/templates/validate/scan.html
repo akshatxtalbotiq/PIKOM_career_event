@@ -282,7 +282,7 @@
             const res = await fetch(`/validate/${decodedText}`, { signal: ctrl.signal });
             const data = await res.json();
 
-            if (data.message) {
+            if (data.message && data.prompt_checkin_info === '1') {
                 // Wait for user to click OK
                 Swal.fire({
                     title: `<span style="font-size: 1.4rem; font-weight: 600; color:#333;">${data.message}</span>`,
@@ -320,6 +320,11 @@
 
                 // Continue next logic AFTER user clicks OK
                 console.log("User clicked OK. Continue...");               
+            }
+            else
+            {
+                flagElement.value = "0";
+                processQueue();
             }
         } catch (err) {
             await Swal.fire({

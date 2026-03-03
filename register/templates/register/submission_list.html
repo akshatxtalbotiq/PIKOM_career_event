@@ -673,13 +673,39 @@
             }
           },
           {
+            text: '<i class="material-symbols-rounded">close</i> Remove Entry',
+            className: 'btn btn-outline-success btn-sm',
+            action: function (e, dt, node, config) {
+              let selectedIds = [];
+              
+              // Get only currently visible and selected rows
+              $('#entries tbody input.row-checkbox:checked').each(function () {
+                selectedIds.push($(this).val());
+              });
+
+              if (selectedIds.length === 0) {
+                Swal.fire({
+                  title: "No Selection",
+                  text: "Please select at least one row.",
+                  icon: "warning",
+                  confirmButtonColor: "#DD6B55",
+                  confirmButtonText: "OK"
+                });
+                return;
+              }
+
+              $('#selectedIdsInput').val(JSON.stringify(selectedIds));
+              removeEntries(selectedIds);
+            }
+          },          
+          {
             text: '<i class="material-symbols-rounded">settings</i>',
             className: 'btn btn-outline-secondary btn-sm',
             action: function (e, dt, node, config) {
               let excludeColumnsModal = new bootstrap.Modal(document.getElementById('exclude-columns-modal'));
               excludeColumnsModal.show();
             }
-          }          
+          }               
           
         ],
         fixedHeader: {
@@ -1080,6 +1106,45 @@ table.on('draw.dt', function () {
 
                 let currentCount = parseInt($('#checkedIn').text()) || 0;
                 $('#checkedIn').text(currentCount + 1);
+
+                if (response.message) {
+                // Wait for user to click OK
+                    Swal.fire({
+                        title: `<span style="font-size: 1.4rem; font-weight: 600; color:#333;">${response.message}</span>`,
+                        html: `
+                            <div style="font-size: 1.1rem; color:#444; text-align:left; line-height:1.6;">
+                                
+                                <p style="margin-top: 30px;">
+                                    <strong>Name:</strong><br>
+                                    ${response.name}
+                                </p>
+
+                                <p style="margin-bottom: 10px;">
+                                    <strong>Company:</strong><br>
+                                    ${response.organization}
+                                </p>
+                            </div>
+                        `,
+                        icon:  'success',
+                        // --- Styling ---
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#3085d6',
+                        width: '420px',
+                        customClass: {
+                            popup: 'swal2-rounded swal2-shadow'
+                        },
+
+                        allowOutsideClick: false,
+                        allowEscapeKey: false
+                    }).then(() => {
+                        flagElement.value = "0";
+                        processQueue();
+                    });
+
+
+                    // Continue next logic AFTER user clicks OK
+                    console.log("User clicked OK. Continue...");               
+                }
                 
               } else {
                 //alert('Failed to toggle check-in status: ' + response.message);
@@ -1101,6 +1166,45 @@ table.on('draw.dt', function () {
       
     
     }
+  
+    function removeEntries(selectedIds) {
+      // Confirm using Swal
+      Swal.fire({
+        title: 'Confirm Removal',
+        text: 'Are you sure you want to remove the selected entries?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, remove'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          $.ajax({
+            url: '/remove_submissions/',
+            type: 'POST',
+            headers: {
+              'X-CSRFToken': getCSRFToken()
+            },
+            data: {
+              ids: JSON.stringify(selectedIds),
+              campaign_id: '{{campaign.id}}'
+            },
+            success: function (response) {
+              if (response.success === true) {
+                Swal.fire('Success', response.message, 'success');
+                $('#entries').DataTable().ajax.reload(null, false); // reload only current page
+              } else {
+                Swal.fire('Error', 'Failed to remove entries: ' + response.message, 'error');
+              }
+            },
+            error: function () {
+              Swal.fire('Error', 'An error occurred while removing entries.', 'error');
+            }
+          });
+        }
+      });
+    }
+  
   
   </script>
 

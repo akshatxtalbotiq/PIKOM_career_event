@@ -341,6 +341,7 @@ def create_campaign(request):
         entry_url = request.POST.get('entry_url', '')
         entry_keyword = request.POST.get('entry_keyword', '')
         selected_users = request.POST.getlist("users[]")
+        prompt_checkin_info = request.POST.get('prompt_checkin_info') == 'true'
 
         if id:
             #print(f"Updating campaign with ID: {id}")
@@ -354,6 +355,7 @@ def create_campaign(request):
             campaign.entry_keyword = entry_keyword
             campaign.need_qr = need_qr
             campaign.pic_email = pic_email
+            campaign.prompt_checkin_info = prompt_checkin_info
             campaign.save()
         else:
             #print("Creating a new campaign")
@@ -366,7 +368,8 @@ def create_campaign(request):
                 need_qr=need_qr,
                 pic_email=pic_email,
                 entry_url=entry_url,
-                entry_keyword=entry_keyword
+                entry_keyword=entry_keyword,
+                prompt_checkin_info=prompt_checkin_info
             )
 
         #delete the rows for CampaignTeam model
@@ -406,7 +409,8 @@ def get_campaign(request, id):
         "entry_url": campaign.entry_url,
         "entry_keyword": campaign.entry_keyword,
         "users": user_data,
-        "selected_users": selected_users
+        "selected_users": selected_users,
+        "enable_prompt": campaign.prompt_checkin_info,
     }
     return JsonResponse(data)
 
@@ -692,6 +696,27 @@ def send_qr(request, id):
     #     if send_qr_email(player, id):
     #         total_sent += 1
     return JsonResponse({'success': True, 'message': f"QR codes sent successfully to {total_sent} out of {total_players} registered participants."})
+
+def remove_submissions(request):
+    if request.method == 'POST':
+        try:
+            reg_no_list = request.POST["ids"]  
+            campaign_id = request.POST["campaign_id"]          
+            #convert json list in list
+            reg_no_list = json.loads(reg_no_list)
+
+            print(f"Removing submissions with registration numbers: {reg_no_list}")
+            print(f"From campaign ID: {campaign_id}")
+            deleted_count = Submission.objects.filter(reg_no__in=reg_no_list, fkcampaign__id = campaign_id).delete()
+            # Delete submissions with the given registration numbers
+            #deleted_count, _ = Submission.objects.filter(reg_no__in=reg_nos).delete()
+
+            return JsonResponse({'success': True, 'message': f'Successfully deleted {deleted_count[0]} submissions.'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+
+    return JsonResponse({'success': False, 'message': 'Invalid request method'})
+
 
 @csrf_exempt
 def talentgap2025_form(request):
@@ -1251,7 +1276,7 @@ def manual_checkin(request):
             submission.is_checked_in = True
             submission.save()
 
-            return JsonResponse({'success': True, 'message': f'Check-in successful for {submission.name}.'})
+            return JsonResponse({'success': True, 'message': f'Check-in successful for {submission.name}.','name': submission.name, 'organization': submission.organization})
         except Submission.DoesNotExist:
             return JsonResponse({'success': False, 'message': 'No matching registration found.'})
         except Exception as e:

@@ -141,6 +141,7 @@ class Campaign(models.Model):
     need_qr = models.BooleanField(default=False)
     pic_email = models.TextField(null=True, blank=True)   
     exclude_columns = models.TextField(null=True, blank=True)
+    prompt_checkin_info = models.BooleanField(default=True)
     
     def __str__(self):
         return self.title
