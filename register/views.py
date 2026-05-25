@@ -323,6 +323,18 @@ def campaign_list(request):
         # get list of campign id that has user id in CampaignTeam model
         campaigns = Campaign.objects.filter(campaign_teams__user=current_user).distinct()
 
+    # Attach the campaign's registration form (if any) so the template can
+    # link directly to /form/<survey_code>/, the builder, the check-in
+    # scanner, etc. — no more pasting entry_url by hand.
+    campaigns = list(campaigns)
+    for c in campaigns:
+        c.registration_form = (
+            c.surveys
+             .filter(purpose=Survey.PURPOSE_REGISTRATION)
+             .order_by('-created_at')
+             .first()
+        )
+
     return render(request, 'register/campaign_list.html', {'user': current_user, 'campaigns': campaigns, 'users': user_data})
 
 @login_required
@@ -1076,6 +1088,11 @@ def registration_form_list(request):
 
     surveys = _surveys_for_user(request, Survey.PURPOSE_REGISTRATION)
 
+    # If the user clicked "Create form" from a Campaign row, we receive
+    # ?for_campaign=<id> and auto-open the create modal with that campaign
+    # pre-selected.
+    auto_open_campaign_id = request.GET.get('for_campaign') or ''
+
     return render(request, 'register/survey_list.html', {
         'user': current_user,
         'surveys': surveys,
@@ -1086,6 +1103,7 @@ def registration_form_list(request):
         'list_subtitle': 'Forms that invitees fill in to register for an event',
         'new_button_label': 'New Registration Form',
         'modal_title': 'Add New Registration Form',
+        'auto_open_campaign_id': auto_open_campaign_id,
     })
 
 @login_required

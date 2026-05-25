@@ -253,9 +253,15 @@
                         <td>
                           <div class="d-flex px-2 py-1">
                             <div class="d-flex flex-column justify-content-center">
-                              <a href="{{ campaign.url }}/{{ campaign.campaign_code }}" class="nav-link text-body p-0">
-                                <h6 class="mb-0 text-xs">{{ campaign.title }}</h6>
-                              </a>
+                              {% if campaign.registration_form %}
+                                <a href="{% url 'survey_submission_list' campaign.registration_form.id %}" class="nav-link text-body p-0" title="View registered participants">
+                                  <h6 class="mb-0 text-xs">{{ campaign.title }}</h6>
+                                </a>
+                              {% else %}
+                                <a href="{% url 'submission_list' campaign.campaign_code %}" class="nav-link text-body p-0" title="View registrations (legacy)">
+                                  <h6 class="mb-0 text-xs">{{ campaign.title }}</h6>
+                                </a>
+                              {% endif %}
                             </div>
                           </div>
                         </td>
@@ -277,9 +283,15 @@
                         </td>
                         <td class="align-middle">
                           <div class="d-flex gap-2 align-items-center">
-                            <a href="{{ campaign.url }}/{{ campaign.campaign_code }}" class="text-body p-0" title="View">
-                              <i class="material-symbols-rounded">visibility</i>
-                            </a>
+                            {% if campaign.registration_form %}
+                              <a href="{% url 'survey_submission_list' campaign.registration_form.id %}" class="text-body p-0" title="View registered participants">
+                                <i class="material-symbols-rounded">visibility</i>
+                              </a>
+                            {% else %}
+                              <a href="{% url 'submission_list' campaign.campaign_code %}" class="text-body p-0" title="View registrations (legacy)">
+                                <i class="material-symbols-rounded">visibility</i>
+                              </a>
+                            {% endif %}
 
                             {% if perms.register.change_campaign %}
                               <a href="javascript:void(0);" class="text-body p-0 edit-campaign-btn" 
@@ -289,13 +301,38 @@
                             {% endif %}
                             
                             {% if campaign.need_qr %}
-                              <a href="{% url 'scan' campaign.campaign_code %}" target="_blank" class="text-body p-0" title="QR Code">
+                              <a href="{% url 'scan' campaign.campaign_code %}" target="_blank" class="text-body p-0" title="QR Code (legacy submission flow)">
                                 <i class="material-symbols-rounded">qr_code</i>
                               </a>
                             {% endif %}
-                            {% if campaign.entry_url %}
-                              <a href="{{ campaign.entry_url }}" target="_blank" class="text-body p-0" title="View Entry Form">
+
+                            {# ---------- Dynamic registration form (new flow) ---------- #}
+                            {% if campaign.registration_form %}
+                              <a href="{% url 'form_public' campaign.registration_form.survey_code %}" target="_blank" class="text-body p-0" title="Open registration form">
                                 <i class="material-symbols-rounded">public</i>
+                              </a>
+                              <a href="javascript:void(0);" class="text-body p-0 copy-form-link-btn"
+                                 data-link="{% url 'form_public' campaign.registration_form.survey_code %}"
+                                 title="Copy registration link">
+                                <i class="material-symbols-rounded">link</i>
+                              </a>
+                              <a href="{% url 'form_builder' campaign.registration_form.id %}" class="text-body p-0" title="Build / edit form">
+                                <i class="material-symbols-rounded">tune</i>
+                              </a>
+                              <a href="{% url 'scanform' campaign.registration_form.survey_code %}" target="_blank" class="text-body p-0" title="Check-in scanner (Sunmi / camera)">
+                                <i class="material-symbols-rounded">qr_code_scanner</i>
+                              </a>
+                            {% else %}
+                              <a href="{% url 'registration_form_list' %}?for_campaign={{ campaign.id }}"
+                                 class="text-primary p-0" title="No registration form yet — click to create one">
+                                <i class="material-symbols-rounded">add_box</i>
+                              </a>
+                            {% endif %}
+
+                            {# Legacy entry_url (only shown for old campaigns that still rely on it) #}
+                            {% if campaign.entry_url and not campaign.registration_form %}
+                              <a href="{{ campaign.entry_url }}" target="_blank" class="text-muted p-0" title="Legacy entry form">
+                                <i class="material-symbols-rounded">history</i>
                               </a>
                             {% endif %}
                           </div>
@@ -352,22 +389,27 @@
                   <div class="invalid-feedback">End date is required.</div>
                 </div>
               </div>
-              <div class="col-xl-6 col-lg-6">
+              {# Legacy fields — kept hidden so existing data round-trips through
+                 the edit modal, but no longer shown / required for new campaigns.
+                 The Campaign Page URL and Entry Page URL are now auto-derived
+                 from the campaign's registration form. #}
+              <div class="col-xl-6 col-lg-6" style="display:none;">
                 <div class="mb-3">
-                  <label for="campaignPageURL" class="form-label">Campaign Page URL</label>
-                  <input type="text" class="form-control border border-1 rounded px-2 py-2" id="campaignPageURL" name="campaignPageURL" placeholder="/campaign_page" required>
+                  <label for="campaignPageURL" class="form-label">Campaign Page URL (legacy)</label>
+                  <input type="text" class="form-control border border-1 rounded px-2 py-2" id="campaignPageURL" name="campaignPageURL" placeholder="/campaign_page">
                   <div class="invalid-feedback">Valid URL is required.</div>
                 </div>
               </div>
-              <div class="col-xl-6 col-lg-6">
+              <div class="col-xl-6 col-lg-6" style="display:none;">
                 <div class="mb-3">
-                  <label for="campaignEntryURL" class="form-label">Entry Page URL</label>
+                  <label for="campaignEntryURL" class="form-label">Entry Page URL (legacy)</label>
                   <input type="text" class="form-control border border-1 rounded px-2 py-2" id="campaignEntryURL" name="campaignEntryURL" placeholder="/entry_page" onchange="removeSlashAndSetHidden()">
                   <div class="invalid-feedback">Valid URL is required.</div>
 
                   <input type="hidden" id="campaignEntryKeyword" name="campaignEntryKeyword" placeholder="pikomgolf2025">
                 </div>
-              </div>              
+              </div>
+
               <div class="col-xl-6 col-lg-6">
                 <div class="mb-3">
                   <label for="campaignPICEmail" class="form-label">PIC Email</label>
@@ -499,6 +541,19 @@
             //alert("Code copied: " + code);
           }, function (err) {
             alert("Failed to copy: " + err);
+          });
+        });
+      });
+
+      // Copy the public registration form URL to clipboard
+      document.querySelectorAll('.copy-form-link-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          const url = window.location.origin + btn.dataset.link;
+          navigator.clipboard.writeText(url).then(function () {
+            const icon = btn.querySelector('i');
+            const orig = icon.textContent;
+            icon.textContent = 'check';
+            setTimeout(() => icon.textContent = orig, 1500);
           });
         });
       });

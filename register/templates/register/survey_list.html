@@ -259,6 +259,20 @@
     
     document.addEventListener('DOMContentLoaded', function () {
 
+      // Auto-open the create modal when arriving from a Campaign row
+      // (URL has ?for_campaign=<id>). Pre-selects that campaign.
+      const autoOpenCampaign = "{{ auto_open_campaign_id|default:'' }}";
+      if (autoOpenCampaign) {
+        // Wait for the bootstrap modal class to be ready
+        setTimeout(() => {
+          document.getElementById('surveyPurpose').value = "{{ list_purpose|default:'registration' }}";
+          const sel = document.getElementById('campaignSelect');
+          if (sel) sel.value = autoOpenCampaign;
+          const modal = new bootstrap.Modal(document.getElementById('addNewSurvey'));
+          modal.show();
+        }, 50);
+      }
+
       // Copy-link buttons on each form row
       document.querySelectorAll('.copy-link-btn').forEach(btn => {
         btn.addEventListener('click', () => {
