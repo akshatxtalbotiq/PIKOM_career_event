@@ -11,7 +11,8 @@ from .views import index, save_registration, thankyou, sponsorship, save_sponsor
     manual_checkin, send_event_reminder, lead2025_form, exclude_columns, remove_submissions, survey_consolidated_pdf, \
     form_builder, save_question, get_question, delete_question, reorder_questions, form_public, form_initial_submit, \
     form_detail, form_submit, form_thankyou, registration_form_list, \
-    upload_banner, delete_banner, save_identity_config, form_preview
+    upload_banner, delete_banner, save_identity_config, form_preview, \
+    send_survey_qr, send_survey_event_reminder, send_survey_feedback_reminder, delete_survey_users
 
 urlpatterns = [
     path('', campaign_list, name='campaign_list'),
@@ -71,6 +72,12 @@ urlpatterns = [
     path('delete_banner/<int:survey_id>/', delete_banner, name='delete_banner'),
     path('save_identity_config/<int:survey_id>/', save_identity_config, name='save_identity_config'),
     path('form_preview/<int:survey_id>/', form_preview, name='form_preview'),
+
+    # Bulk actions on a form's registrations
+    path('send_survey_qr/<int:survey_id>/', send_survey_qr, name='send_survey_qr'),
+    path('send_survey_event_reminder/<int:survey_id>/', send_survey_event_reminder, name='send_survey_event_reminder'),
+    path('send_survey_feedback_reminder/<int:survey_id>/', send_survey_feedback_reminder, name='send_survey_feedback_reminder'),
+    path('delete_survey_users/<int:survey_id>/', delete_survey_users, name='delete_survey_users'),
 
     # Generic public form flow
     path('form/<str:survey_code>/', form_public, name='form_public'),

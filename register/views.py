@@ -1185,35 +1185,134 @@ def get_survey(request, id):
     return JsonResponse(data)
 
 
-@login_required 
+@login_required
 def survey_submission_list(request, id=None):
-    #print("Fetching submission list")
-    current_user = request.user    
-
-    survey = Survey.objects.get(id=id)
-    return render(request, 'register/survey_submission_list.html', {'user': current_user, 'survey': survey})
+    current_user = request.user
+    survey = get_object_or_404(Survey, id=id)
+    feedback_survey = None
+    if survey.fkcampaign:
+        feedback_survey = (
+            Survey.objects
+                  .filter(fkcampaign=survey.fkcampaign, purpose=Survey.PURPOSE_FEEDBACK, is_active=True)
+                  .order_by('-created_at')
+                  .first()
+        )
+    return render(request, 'register/survey_submission_list.html', {
+        'user': current_user,
+        'survey': survey,
+        'campaign': survey.fkcampaign,
+        'feedback_survey': feedback_survey,
+    })
 
 @login_required
-def get_survey_submission_list(request):   
+def get_survey_submission_list(request):
     try:
         if request.method == 'POST':
-            id = request.POST.get('id')              
-            submissions = SurveyUser.objects.filter(survey_id=id).order_by('-created_at')
-          
+            survey_id = request.POST.get('id')
+            survey = get_object_or_404(Survey, id=survey_id)
+
+            # Custom questions the admin chose to surface as list columns
+            shown_questions = list(
+                survey.questions
+                      .filter(show_in_list=True)
+                      .exclude(question_type__in=Question.IDENTITY_TYPES.keys())
+                      .order_by('number')
+            )
+            shown_qids = [q.id for q in shown_questions]
+
+            # Pre-fetch answers for those questions so we don't N+1
+            answers_qs = Answer.objects.filter(
+                survey=survey,
+                question_id__in=shown_qids,
+            ).select_related('question')
+            # {(user_id, question_id) -> Answer}
+            answers_by_user_q = {(a.user_id, a.question_id): a for a in answers_qs}
+
+            submissions = SurveyUser.objects.filter(survey_id=survey_id).order_by('-created_at')
+
+            def render_answer(ans):
+                if ans is None:
+                    return ''
+                if ans.selected_options:
+                    return ', '.join(str(o) for o in ans.selected_options)
+                if ans.answer_text:
+                    return ans.answer_text
+                return ''
+
+            def fu_key(qid, option_label):
+                # Stable per-question per-option key for the follow-up column.
+                # Option labels are user-controlled but only used as a dict key,
+                # so the raw value is fine inside JSON; we just avoid '.' for
+                # DataTable's nested-dot lookup.
+                return f"q_{qid}__fu__{option_label}".replace('.', '_')
 
             data = []
+            checked_in_count = 0
+            qr_sent_count = 0
             for s in submissions:
-                data.append({     
-                    'id': s.id,                                 
+                custom = {}
+                for q in shown_questions:
+                    ans = answers_by_user_q.get((s.id, q.id))
+                    custom[f'q_{q.id}'] = render_answer(ans)
+                    # If this question has follow-ups, pull each one into its
+                    # own column. Follow-up answers are stored as a JSON dict
+                    # in Answer.answer_text — {"option label": "user text"}.
+                    if q.choice_followups and ans and ans.answer_text:
+                        try:
+                            fu_data = json.loads(ans.answer_text)
+                        except (json.JSONDecodeError, TypeError):
+                            fu_data = None
+                        if isinstance(fu_data, dict):
+                            for option, fu_text in fu_data.items():
+                                if option in q.choice_followups:
+                                    custom[fu_key(q.id, option)] = fu_text
+                if s.is_checked_in:
+                    checked_in_count += 1
+                if s.qr_sent:
+                    qr_sent_count += 1
+                row = {
+                    'id': s.id,
+                    'reg_no': s.reg_no or '',
                     'name': s.name,
                     'email': s.email,
                     'phone': s.phone,
                     'organization': s.organization,
-                    'submitted_date': s.created_at.strftime('%Y-%m-%d %I:%M %p') if s.created_at else '',  
-                    'survey_id': s.survey.id,                 
-                })
+                    'is_checked_in': s.is_checked_in,
+                    'qr_sent': s.qr_sent,
+                    'submitted_date': s.created_at.strftime('%Y-%m-%d %I:%M %p') if s.created_at else '',
+                    'survey_id': s.survey.id,
+                }
+                row.update(custom)
+                data.append(row)
 
-            return JsonResponse(data, safe=False)
+            columns_meta = []
+            for q in shown_questions:
+                main_title = (
+                    q.list_column_label
+                    or (q.text or '').strip()[:60]
+                    or f'Q{q.number}'
+                )
+                columns_meta.append({'id': q.id, 'title': main_title, 'key': f'q_{q.id}'})
+                # One extra column per configured follow-up, headed by the
+                # placeholder text the admin set in the builder.
+                if q.choice_followups:
+                    for option, placeholder in q.choice_followups.items():
+                        columns_meta.append({
+                            'id': q.id,
+                            'title': placeholder or option,
+                            'key': fu_key(q.id, option),
+                            'is_followup': True,
+                        })
+
+            return JsonResponse({
+                'data': data,
+                'columns': columns_meta,
+                'totals': {
+                    'all': len(data),
+                    'checked_in': checked_in_count,
+                    'qr_sent': qr_sent_count,
+                },
+            })
         else:
             return JsonResponse({'error': 'Invalid request method'}, status=400)
     except Exception as e:
@@ -1539,6 +1638,8 @@ def save_question(request):
     max_checks = data.get("max_checks") or None
     choices = data.get("choices") or []
     raw_followups = data.get("choice_followups") or {}
+    show_in_list = bool(data.get("show_in_list", False))
+    list_column_label = (data.get("list_column_label") or "").strip()[:60]
 
     if not text:
         return JsonResponse({"success": False, "message": "Question text is required"}, status=400)
@@ -1597,6 +1698,9 @@ def save_question(request):
         question.max_checks = max_checks if question_type == Question.TYPE_CHECKBOX else None
         question.choices = choices
         question.choice_followups = choice_followups
+        # Identity questions are always implicitly in the list (Name/Email columns)
+        question.show_in_list = show_in_list and not is_identity
+        question.list_column_label = list_column_label
         question.save()
     else:
         survey = get_object_or_404(Survey, id=survey_id)
@@ -1612,6 +1716,8 @@ def save_question(request):
             max_checks=max_checks if question_type == Question.TYPE_CHECKBOX else None,
             choices=choices,
             choice_followups=choice_followups,
+            show_in_list=show_in_list,
+            list_column_label=list_column_label,
         )
 
     return JsonResponse({"success": True, "id": question.id, "number": question.number})
@@ -1632,6 +1738,8 @@ def get_question(request, question_id):
         "max_checks": question.max_checks,
         "choices": question.choices or [],
         "choice_followups": question.choice_followups or {},
+        "show_in_list": question.show_in_list,
+        "list_column_label": question.list_column_label or "",
     })
 
 
@@ -1752,6 +1860,9 @@ def form_submit(request, survey_id):
             phone=identity_values.get("phone", ""),
             organization=identity_values.get("organization", ""),
         )
+        # Assign a human-readable reference number now that the row has an id.
+        survey_user.reg_no = f"REG{survey_user.id:06d}"
+        survey_user.save(update_fields=["reg_no"])
 
         # 2) Save non-identity questions as Answer rows.
         for q in questions:
@@ -1819,6 +1930,190 @@ def form_submit(request, survey_id):
                     )
 
     return redirect("form_thankyou", survey_code=survey.survey_code, user_id=survey_user.id)
+
+
+# ---------------------------------------------------------------------------
+# Bulk actions on registrations (Send QR / reminders / Remove)
+# ---------------------------------------------------------------------------
+
+def _send_qr_to_surveyuser(survey_user, files=None):
+    """Generate a QR image from the registration_code and email it. Returns True on success."""
+    if not survey_user.email:
+        return False
+    import base64
+    from io import BytesIO
+
+    buf = BytesIO()
+    qrcode.make(str(survey_user.registration_code)).save(buf, format="PNG")
+    qr_bytes = buf.getvalue()
+
+    survey = survey_user.survey
+    campaign = survey.fkcampaign
+
+    ctx = {
+        "name": survey_user.name or "there",
+        "reg_no": survey_user.reg_no or "",
+        "survey": survey,
+        "campaign": campaign,
+        "event_date": campaign.start_date if campaign else None,
+        "event_venue": None,
+    }
+    html_content = render_to_string("register/email/email_registration_qr.html", ctx)
+
+    subject_title = (campaign.title if campaign else survey.title) or "your event"
+    email = EmailMultiAlternatives(
+        subject=f"Your QR code for {subject_title}",
+        body=html_content,
+        from_email=formataddr((subject_title, settings.DEFAULT_FROM_EMAIL)),
+        to=[survey_user.email],
+        headers={"Reply-To": "info@pikom.org.my"},
+    )
+    email.attach_alternative(html_content, "text/html")
+    email.attach(f"qr_{survey_user.reg_no or survey_user.id}.png", qr_bytes, "image/png")
+    for f in (files or []):
+        email.attach(f.name, f.read(), f.content_type)
+    try:
+        email.send()
+        survey_user.qr_sent = True
+        survey_user.save(update_fields=["qr_sent"])
+        return True
+    except Exception as e:
+        print(f"send_qr error for {survey_user.email}: {e}")
+        return False
+
+
+@login_required
+def send_survey_qr(request, survey_id):
+    """POST: ids=[...], files=[...]. Sends QR email to each selected SurveyUser."""
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
+    survey = get_object_or_404(Survey, id=survey_id)
+    try:
+        ids = json.loads(request.POST.get("ids") or "[]")
+    except json.JSONDecodeError:
+        ids = []
+    if not ids:
+        return JsonResponse({"success": False, "message": "No participants selected"}, status=400)
+
+    files = request.FILES.getlist("files")
+    if sum(f.size for f in files) > 10 * 1024 * 1024:
+        return JsonResponse({"success": False, "message": "Total attached files exceed 10 MB"}, status=400)
+
+    users = SurveyUser.objects.filter(survey=survey, id__in=ids)
+    sent = 0
+    for u in users:
+        if _send_qr_to_surveyuser(u, files):
+            sent += 1
+    return JsonResponse({
+        "success": True,
+        "message": f"QR sent to {sent} of {users.count()} participants.",
+    })
+
+
+def _send_simple_email(survey_user, subject, template_name, extra_ctx=None):
+    if not survey_user.email:
+        return False
+    survey = survey_user.survey
+    campaign = survey.fkcampaign
+    ctx = {
+        "name": survey_user.name or "there",
+        "reg_no": survey_user.reg_no or "",
+        "survey": survey,
+        "campaign": campaign,
+        "event_date": campaign.start_date if campaign else None,
+        "event_venue": None,
+    }
+    if extra_ctx:
+        ctx.update(extra_ctx)
+    html_content = render_to_string(template_name, ctx)
+    subject_title = (campaign.title if campaign else survey.title) or "your event"
+    email = EmailMultiAlternatives(
+        subject=subject.format(title=subject_title),
+        body=html_content,
+        from_email=formataddr((subject_title, settings.DEFAULT_FROM_EMAIL)),
+        to=[survey_user.email],
+        headers={"Reply-To": "info@pikom.org.my"},
+    )
+    email.attach_alternative(html_content, "text/html")
+    try:
+        email.send()
+        return True
+    except Exception as e:
+        print(f"email send error for {survey_user.email}: {e}")
+        return False
+
+
+@login_required
+def send_survey_event_reminder(request, survey_id):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
+    survey = get_object_or_404(Survey, id=survey_id)
+    try:
+        ids = json.loads(request.POST.get("ids") or "[]")
+    except json.JSONDecodeError:
+        ids = []
+    if not ids:
+        return JsonResponse({"success": False, "message": "No participants selected"}, status=400)
+    users = SurveyUser.objects.filter(survey=survey, id__in=ids)
+    sent = sum(
+        1 for u in users
+        if _send_simple_email(u, "Reminder: {title}", "register/email/email_event_reminder_generic.html")
+    )
+    return JsonResponse({"success": True, "message": f"Event reminder sent to {sent} of {users.count()}."})
+
+
+@login_required
+def send_survey_feedback_reminder(request, survey_id):
+    """Sends the post-event feedback-survey link to selected registrants of THIS
+    registration form. Looks up the feedback Survey attached to the same campaign."""
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
+    survey = get_object_or_404(Survey, id=survey_id)
+    if not survey.fkcampaign:
+        return JsonResponse({"success": False, "message": "This form is not attached to a campaign."}, status=400)
+    feedback = (
+        Survey.objects
+              .filter(fkcampaign=survey.fkcampaign, purpose=Survey.PURPOSE_FEEDBACK, is_active=True)
+              .order_by('-created_at')
+              .first()
+    )
+    if not feedback:
+        return JsonResponse({"success": False, "message": "No active feedback survey set for this campaign."}, status=400)
+
+    try:
+        ids = json.loads(request.POST.get("ids") or "[]")
+    except json.JSONDecodeError:
+        ids = []
+    if not ids:
+        return JsonResponse({"success": False, "message": "No participants selected"}, status=400)
+
+    survey_url = request.build_absolute_uri(f"/form/{feedback.survey_code}/")
+    users = SurveyUser.objects.filter(survey=survey, id__in=ids)
+    sent = sum(
+        1 for u in users
+        if _send_simple_email(
+            u,
+            "Your feedback for {title}",
+            "register/email/email_feedback_survey.html",
+            extra_ctx={"survey_url": survey_url, "registration_survey": survey},
+        )
+    )
+    return JsonResponse({"success": True, "message": f"Feedback survey link sent to {sent} of {users.count()}."})
+
+
+@login_required
+def delete_survey_users(request, survey_id):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
+    survey = get_object_or_404(Survey, id=survey_id)
+    try:
+        ids = json.loads(request.POST.get("ids") or "[]")
+    except json.JSONDecodeError:
+        ids = []
+    if not ids:
+        return JsonResponse({"success": False, "message": "No participants selected"}, status=400)
+    deleted, _ = SurveyUser.objects.filter(survey=survey, id__in=ids).delete()
+    return JsonResponse({"success": True, "message": f"{deleted} entr{'y' if deleted == 1 else 'ies'} removed."})
 
 
 def form_thankyou(request, survey_code, user_id):

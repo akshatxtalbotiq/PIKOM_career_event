@@ -214,12 +214,22 @@
                 <option value="checkbox">Multiple choice (checkbox)</option>
               </select>
             </div>
-            <div class="col-md-6 mb-3 d-flex align-items-center">
+            <div class="col-md-6 mb-3 d-flex align-items-center gap-3">
               <div class="form-check form-switch mt-3">
                 <input class="form-check-input" type="checkbox" id="qRequired" checked>
                 <label class="form-check-label" for="qRequired">Required</label>
               </div>
+              <div class="form-check form-switch mt-3" id="qShowInListWrap">
+                <input class="form-check-input" type="checkbox" id="qShowInList">
+                <label class="form-check-label" for="qShowInList" title="Show this answer as a column in the registrations list">Show in list</label>
+              </div>
             </div>
+          </div>
+
+          <div class="mb-3" id="qColumnLabelWrap" style="display:none;">
+            <label class="form-label">Column label <span class="text-muted small">(optional, used as the list-column header)</span></label>
+            <input type="text" id="qColumnLabel" class="form-control" maxlength="60" placeholder="e.g. Member, Dietary, Inviter">
+            <small class="text-muted">Leave blank to use the question text (truncated).</small>
           </div>
 
           <div id="choicesBlock" style="display:none;">
@@ -368,9 +378,17 @@
     document.getElementById('qRequired').checked = true;
     document.getElementById('qAllowOther').checked = false;
     document.getElementById('qMaxChecks').value = '';
+    document.getElementById('qShowInList').checked = false;
+    document.getElementById('qColumnLabel').value = '';
+    document.getElementById('qColumnLabelWrap').style.display = 'none';
     document.getElementById('choicesList').innerHTML = '';
     onTypeChange();
   }
+
+  // Toggle the Column label input alongside the Show-in-list switch
+  document.getElementById('qShowInList').addEventListener('change', (e) => {
+    document.getElementById('qColumnLabelWrap').style.display = e.target.checked ? 'block' : 'none';
+  });
 
   function addChoiceRow(value = '', followup = '') {
     const row = document.createElement('div');
@@ -450,12 +468,14 @@
     const typeSel = document.getElementById('qType');
     const helpRow = document.getElementById('qHelp').closest('.mb-3');
     const choicesBlock = document.getElementById('choicesBlock');
+    const showInListWrap = document.getElementById('qShowInListWrap');
     typeSel.disabled = isIdentity;
     typeSel.closest('.col-md-6').style.display = isIdentity ? 'none' : 'block';
     helpRow.style.display = isIdentity ? 'none' : 'block';
     choicesBlock.style.display = isIdentity ? 'none' : choicesBlock.style.display;
-    // If identity, keep the underlying type in the hidden state so save_question
-    // sees it on submit.
+    // Show-in-list only applies to custom questions (identity ones always
+    // appear as Name/Email/Phone/Organization columns).
+    if (showInListWrap) showInListWrap.style.display = isIdentity ? 'none' : 'inline-flex';
     if (isIdentity) typeSel.value = typeSel.value; // preserve
   }
 
@@ -476,6 +496,9 @@
             document.getElementById('qRequired').checked = !!data.is_required;
             document.getElementById('qAllowOther').checked = !!data.allow_other;
             document.getElementById('qMaxChecks').value = data.max_checks || '';
+            document.getElementById('qShowInList').checked = !!data.show_in_list;
+            document.getElementById('qColumnLabel').value = data.list_column_label || '';
+            document.getElementById('qColumnLabelWrap').style.display = data.show_in_list ? 'block' : 'none';
             document.getElementById('choicesList').innerHTML = '';
             const followups = data.choice_followups || {};
             (data.choices || []).forEach(c => addChoiceRow(c, followups[c] || ''));
@@ -543,6 +566,8 @@
       is_required: document.getElementById('qRequired').checked,
       allow_other: document.getElementById('qAllowOther').checked,
       max_checks: document.getElementById('qMaxChecks').value,
+      show_in_list: document.getElementById('qShowInList').checked,
+      list_column_label: document.getElementById('qColumnLabel').value,
       choices,
       choice_followups,
     };

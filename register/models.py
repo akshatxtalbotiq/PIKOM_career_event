@@ -257,6 +257,15 @@ class Question(models.Model):
     text = models.TextField()
     help_text = models.TextField(blank=True)
     question_type = models.CharField(max_length=32, choices=QUESTION_TYPES, default=TYPE_TEXT)
+    show_in_list = models.BooleanField(
+        default=False,
+        help_text="If True, this question's answer is shown as a column in the registrations list.",
+    )
+    list_column_label = models.CharField(
+        max_length=60, blank=True,
+        help_text="Optional short label used as the column header in the registrations list. "
+                  "Falls back to a truncated question text when empty.",
+    )
 
     # For choice questions, store list of strings as JSON
     choices = models.JSONField(blank=True, null=True, help_text="List of options for radio/checkbox/select.")
@@ -284,7 +293,11 @@ class SurveyUser(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     registration_code = models.UUIDField(default=uuid.uuid4, unique=True)
     is_checked_in = models.BooleanField(default=False)
+    qr_sent = models.BooleanField(default=False)
     remarks = models.TextField(null=True, blank=True)
+    # Public-facing reference number given to the registrant (e.g. "REG000123").
+    # Assigned right after the row is created so it can include the row id.
+    reg_no = models.CharField(max_length=32, unique=True, null=True, blank=True)
 
     def __str__(self):
         return f"{self.name} - {self.survey.title}"

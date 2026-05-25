@@ -99,21 +99,15 @@
               </nav>
             </div>
         </div>  
-        <div class="col-4 d-flex justify-content-end align-items-center gap-2">
-          <!-- <div>
-            <div class="d-flex justify-content-end align-items-center gap-2 mt-2">
-              <button type="button"  data-bs-toggle="modal" data-bs-target="#new-form" class="btn btn-sm btn-primary waves-effect"><i class="icon-base ti ti-plus"></i> <span class="d-none d-xl-inline-block">Add New Participant</span></button>
-            </div>
-            <div class="badge bg-white border border-success d-flex align-items-center gap-2 ">
-              <i class="ti ti-user text-success"></i>
-              <span class="fw-semibold small text-success">Participants Checked In:</span>
-              <span class="small text-success">
-                <span id="checkedIn" class="fw-bold">0</span>
-                <span class="text-muted mx-1">/</span>
-                <span id="totalParticipants">0</span>
-              </span>
-            </div>
-          </div> -->
+        <div class="col-4 d-flex flex-column justify-content-end align-items-end gap-1">
+          <div class="d-flex gap-3 small text-secondary">
+            <span><i class="material-symbols-rounded align-middle text-success" style="font-size:18px;">how_to_reg</i>
+              Total <span id="totalParticipants" class="fw-bold">0</span></span>
+            <span><i class="material-symbols-rounded align-middle text-success" style="font-size:18px;">check_circle</i>
+              Checked in <span id="checkedIn" class="fw-bold">0</span></span>
+            <span><i class="material-symbols-rounded align-middle text-success" style="font-size:18px;">qr_code_2</i>
+              QR sent <span id="qrSentCount" class="fw-bold">0</span></span>
+          </div>
         </div>
       </div>
 
@@ -126,18 +120,18 @@
                 <thead>
                   <tr>
                       <th><input type="checkbox" id="select-all"></th>
-                      
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Reg #</th>
                       <th class="text-uppercase text-secondary text-sm font-weight-bolder">Name</th>
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Email</th>   
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Phone No.</th>
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Email</th>
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Phone</th>
                       <th class="text-uppercase text-secondary text-sm font-weight-bolder">Organization</th>
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Submission Date</th>
-                      <!-- <th class="text-uppercase text-secondary text-sm font-weight-bolder"></th> -->
+                      {# Dynamic custom columns (show_in_list=True) injected by DataTable #}
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder text-center">Check-in</th>
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder text-center">QR Sent</th>
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Submitted</th>
                   </tr>
                 </thead>
-                <tbody id="registration-body">
-                  <!-- Filled via JavaScript -->
-              </tbody>
+                <tbody id="registration-body"></tbody>
               </table>
             </div>
           </div>
@@ -284,76 +278,95 @@
         $('#select-all').prop('indeterminate', checked > 0 && checked < total);
       }
 
-      let table = new DataTable('#entries', {
+      const FEEDBACK_SURVEY_EXISTS = {% if feedback_survey %}true{% else %}false{% endif %};
+      const tickHtml = (on) => on
+        ? '<i class="material-symbols-rounded text-success" title="Yes">check_circle</i>'
+        : '<i class="material-symbols-rounded text-muted" title="No" style="opacity:0.3;">radio_button_unchecked</i>';
+
+      // Fetch payload once so we can build dynamic columns from the columns_meta
+      $.ajax({
+        url: '/get_survey_submission_list',
+        type: 'POST',
+        data: { id: surveyId },
+        headers: { 'X-CSRFToken': getCSRFToken() },
+      }).done(function (payload) {
+        const data = payload.data || [];
+        const customCols = payload.columns || [];
+        const totals = payload.totals || {};
+        $('#totalParticipants').text(totals.all || 0);
+        $('#checkedIn').text(totals.checked_in || 0);
+        $('#qrSentCount').text(totals.qr_sent || 0);
+
+        // Inject dynamic <th> for each custom column AFTER the Organization th.
+        // Walk a moving reference so successive inserts preserve order:
+        //   Org → Member → Inviter → Check-in
+        // (The previous version used insertBefore('Check-in') each iteration,
+        // which silently reversed the order because indexes shifted.)
+        const $thead = $('#entries thead tr');
+        let $ref = $thead.find('th').eq(5);  // Organization
+        customCols.forEach(col => {
+          const $th = $('<th class="text-uppercase text-secondary text-sm font-weight-bolder"></th>').text(col.title);
+          $ref.after($th);
+          $ref = $th;
+        });
+
+        const cols = [
+          { data: null, orderable: false, searchable: false, className: 'dt-checkbox',
+            render: (d, t, row) => `<input type="checkbox" class="row-checkbox" value="${row.id}">` },
+          { data: 'reg_no' },
+          { data: 'name', render: (d, t, row) =>
+              `<a href="/survey_answer_view/${row.survey_id}/${row.id}/" class="text-decoration-none">${row.name || ''}</a>` },
+          { data: 'email' },
+          { data: 'phone' },
+          { data: 'organization' },
+        ];
+        customCols.forEach(col => cols.push({ data: col.key }));
+        cols.push({ data: 'is_checked_in', className: 'text-center', render: (v) => tickHtml(!!v) });
+        cols.push({ data: 'qr_sent',       className: 'text-center', render: (v) => tickHtml(!!v) });
+        cols.push({ data: 'submitted_date' });
+
+        let table = new DataTable('#entries', {
         responsive: false,
         paging: true,
-        processing: true,
         lengthChange: true,
         searching: true,
         pageLength: 10,
         colReorder: true,
-        scrollY: '60vh',  
-        ajax: {
-          url: '/get_survey_submission_list',
-          type: 'POST',
-          data: function (d) {
-            d.id = surveyId;
-          },
-          headers: {
-            'X-CSRFToken': getCSRFToken()
-          },
-          dataSrc: ''
-        },
-        columns: [
-          {
-            data: null,
-            orderable: false,
-            searchable: false,
-            className: "dt-checkbox",
-            render: function (data, type, row) {
-              return `<input type="checkbox" class="row-checkbox" value="${row.reg_no}">`;
-            }
-          },
-          { data: 'name',
-            render: function (data, type, row) {
-              return `
-                <div class="d-flex align-items-center">
-                  <div>
-                    <a href="/survey_answer_view/${row.survey_id}/${row.id}/" class="text-decoration-none">${row.name}</a>
-                  </div>
-                </div>`;
-            },
-           },
-          { data: 'phone' },
-          { data: 'email' },        
-          { data: 'organization' },
-          { data: 'submitted_date' },          
-          // {
-          //   data: null,
-          //   render: function (data, type, row) {
-          //     return `
-          //       <button class="note-btn border-0 bg-transparent p-0" 
-          //               style="font-size: 24px; color: #0d6efd;"
-          //               data-regno="${row.reg_no}" 
-          //               data-remarks="${row.remarks || ''}">
-          //         <i class="material-symbols-rounded">note</i>
-          //       </button>`;
-          //   },
-          //   orderable: false,
-          //   searchable: false
-          // }
-        ],
+        scrollY: '60vh',
+        data: data,
+        columns: cols,
         dom:
-          "<'row mb-3'<'col-sm-6 d-flex align-items-center gap-2 px-2'f l><'col-sm-6 text-end px-2'B>>" +
+          "<'row mb-3'<'col-sm-5 d-flex align-items-center gap-2 px-2'f l><'col-sm-7 text-end px-2'B>>" +
           "<'row'<'col-12'tr>>" +
           "<'row'<'col-sm-6'i><'col-sm-6'p>>",
         buttons: [
           {
             extend: 'excel',
             className: 'btn btn-outline-success btn-sm',
-            text: '<i class="material-symbols-rounded">download</i> Export to Excel',
-            filename: 'submission_list',
-            title: 'Submission List'
+            text: '<i class="material-symbols-rounded align-middle">download</i> Export',
+            filename: 'registrations',
+            title: 'Registrations',
+            exportOptions: { columns: ':not(.dt-checkbox)' },
+          },
+          {
+            text: '<i class="material-symbols-rounded align-middle">notifications</i> Send Event Reminder',
+            className: 'btn btn-outline-primary btn-sm',
+            action: function () { bulkAction('event_reminder'); },
+          },
+          ...(FEEDBACK_SURVEY_EXISTS ? [{
+            text: '<i class="material-symbols-rounded align-middle">poll</i> Send Survey Reminder',
+            className: 'btn btn-outline-primary btn-sm',
+            action: function () { bulkAction('feedback_reminder'); },
+          }] : []),
+          {
+            text: '<i class="material-symbols-rounded align-middle">qr_code_2</i> Send QR',
+            className: 'btn btn-outline-success btn-sm',
+            action: function () { openSendQRModal(); },
+          },
+          {
+            text: '<i class="material-symbols-rounded align-middle">delete</i> Remove Entry',
+            className: 'btn btn-outline-danger btn-sm',
+            action: function () { bulkAction('remove'); },
           },
           // {
           //   text: 'Send QR',
@@ -459,9 +472,69 @@ table.on('draw.dt', function () {
     $('#select-all').prop('indeterminate', checked > 0 && checked < total);
 });
 
+      });  // end $.ajax .done — DataTable + handlers are now wired up
 
+      // ---------- Bulk action helpers ----------
+      function selectedIds() {
+        const ids = [];
+        $('#entries tbody input.row-checkbox:checked').each(function () {
+          ids.push(parseInt(this.value, 10));
+        });
+        return ids;
+      }
 
+      function bulkAction(kind) {
+        const ids = selectedIds();
+        if (ids.length === 0) {
+          Swal.fire({ icon: 'warning', title: 'No selection',
+                      text: 'Please select at least one participant.', confirmButtonColor: '#198754' });
+          return;
+        }
+        let url, confirmText;
+        if (kind === 'event_reminder') {
+          url = `/send_survey_event_reminder/${surveyId}/`;
+          confirmText = `Send event reminder email to ${ids.length} participant(s)?`;
+        } else if (kind === 'feedback_reminder') {
+          url = `/send_survey_feedback_reminder/${surveyId}/`;
+          confirmText = `Send the feedback-survey link to ${ids.length} participant(s)?`;
+        } else if (kind === 'remove') {
+          url = `/delete_survey_users/${surveyId}/`;
+          confirmText = `Permanently remove ${ids.length} entr${ids.length === 1 ? 'y' : 'ies'}? This cannot be undone.`;
+        } else {
+          return;
+        }
+        Swal.fire({
+          title: 'Confirm', text: confirmText, icon: 'question',
+          showCancelButton: true, confirmButtonText: 'Yes, proceed',
+          confirmButtonColor: kind === 'remove' ? '#dc3545' : '#198754',
+        }).then((res) => {
+          if (!res.isConfirmed) return;
+          const fd = new FormData();
+          fd.append('ids', JSON.stringify(ids));
+          $.ajax({
+            url, type: 'POST', data: fd, processData: false, contentType: false,
+            headers: { 'X-CSRFToken': getCSRFToken() },
+          }).done((r) => {
+            Swal.fire({ icon: r.success ? 'success' : 'error',
+                        title: r.success ? 'Done' : 'Failed',
+                        text: r.message || '' }).then(() => {
+              if (kind === 'remove' && r.success) location.reload();
+            });
+          }).fail((xhr) => commonAjaxErrorCallBack(xhr, '', ''));
+        });
+      }
 
+      function openSendQRModal() {
+        const ids = selectedIds();
+        if (ids.length === 0) {
+          Swal.fire({ icon: 'warning', title: 'No selection',
+                      text: 'Please select at least one participant to send the QR to.', confirmButtonColor: '#198754' });
+          return;
+        }
+        $('#selectedIdsInput').val(JSON.stringify(ids));
+        const m = new bootstrap.Modal(document.getElementById('sendQRModal'));
+        m.show();
+      }
 
     });
 
@@ -557,12 +630,12 @@ table.on('draw.dt', function () {
 
 
     $('#sendQRSubmitBtn').on('click', function () {
-      let campaignId = '{{campaign.campaign_code}}';  
+      const surveyId = '{{survey.id}}';
 
       // Create new FormData manually
       let formData = new FormData();
 
-      // Append selected IDs
+      // Append selected IDs (already JSON-stringified into #selectedIdsInput)
       formData.append('ids', $('#selectedIdsInput').val());
 
       // Append all files from global selectedFiles array
@@ -575,7 +648,7 @@ table.on('draw.dt', function () {
       $('#sendQRModal .btn-secondary').prop('disabled', true);
 
       $.ajax({
-        url: "/send_qr/" + campaignId,
+        url: "/send_survey_qr/" + surveyId + "/",
         type: "POST",
         headers: {
           'X-CSRFToken': getCSRFToken()
@@ -587,7 +660,7 @@ table.on('draw.dt', function () {
           console.log("QR sent successfully", response);
 
           if (response.success) {
-            Swal.fire("Success", response.message, "success");
+            Swal.fire("Success", response.message, "success").then(() => location.reload());
 
             // Reset UI
             $('#sendQRSubmitBtn').prop('disabled', false).text('Send');

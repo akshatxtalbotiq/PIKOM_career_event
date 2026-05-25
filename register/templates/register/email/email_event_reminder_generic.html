@@ -1,0 +1,18 @@
+{% load static %}
+<!DOCTYPE html>
+<html><body style="font-family: Arial, sans-serif; color:#222; line-height:1.45;">
+  <table cellpadding="0" cellspacing="0" border="0" style="max-width:600px;margin:0 auto;">
+    <tr><td style="padding:20px 0;text-align:center;">
+      <h2 style="margin:0 0 8px;">Reminder — {{ campaign.title|default:survey.title }}</h2>
+      {% if reg_no %}<div style="color:#198754;font-weight:bold;">Reg. No: {{ reg_no }}</div>{% endif %}
+    </td></tr>
+    <tr><td style="padding:0 24px;">
+      <p>Hi {{ name|default:"there" }},</p>
+      <p>This is a friendly reminder that <strong>{{ campaign.title|default:survey.title }}</strong> is coming up.</p>
+      {% if event_date %}<p><strong>When:</strong> {{ event_date }}</p>{% endif %}
+      {% if event_venue %}<p><strong>Where:</strong> {{ event_venue }}</p>{% endif %}
+      <p>Please bring the QR code that was emailed to you for check-in. If you've lost it, reply to this email and we'll resend it.</p>
+      <p>We look forward to seeing you there.</p>
+    </td></tr>
+  </table>
+</body></html>
