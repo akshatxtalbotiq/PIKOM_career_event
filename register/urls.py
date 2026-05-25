@@ -2,10 +2,16 @@
 from django.contrib import admin
 from django.urls import path
 from .views import index, save_registration, thankyou, sponsorship, save_sponsorship, sponsorship_thankyou, \
-    get_registration_list, get_sponsorship_list, registration_list, sponsorship_list, campaign_list, tnc, send_qr,create_campaign,submission_list, get_submission_list,get_campaign, update_remarks, update_registration_remarks, \
-    check_taken_packages,talentgap2025_form, save_submission,submission_thankyou, survey_detail, survey_submit, survey_thankyou,survey_list, \
-    create_survey,get_survey,survey,survey_initial_submit, survey_submission_list,get_survey_submission_list, survey_answer_view,send_survey_reminder, \
-    manual_checkin, send_event_reminder,lead2025_form,exclude_columns, remove_submissions
+    get_registration_list, get_sponsorship_list, registration_list, sponsorship_list, campaign_list, tnc, send_qr, \
+    create_campaign, submission_list, get_submission_list, get_campaign, update_remarks, update_registration_remarks, \
+    check_taken_packages, talentgap2025_form, save_submission, submission_thankyou, survey_detail, survey_submit, \
+    survey_thankyou, survey_list, \
+    create_survey, get_survey, survey, survey_initial_submit, survey_submission_list, get_survey_submission_list, \
+    survey_answer_view, send_survey_reminder, \
+    manual_checkin, send_event_reminder, lead2025_form, exclude_columns, remove_submissions, survey_consolidated_pdf, \
+    form_builder, save_question, get_question, delete_question, reorder_questions, form_public, form_initial_submit, \
+    form_detail, form_submit, form_thankyou, registration_form_list, \
+    upload_banner, delete_banner, save_identity_config, form_preview
 
 urlpatterns = [
     path('', campaign_list, name='campaign_list'),
@@ -37,12 +43,14 @@ urlpatterns = [
     path('submission_thankyou/<str:reg_no>/', submission_thankyou, name='submission_thankyou'),
 
     path('survey_list/', survey_list, name='survey_list'),
+    path('registration_forms/', registration_form_list, name='registration_form_list'),
     path("survey_page/<str:survey_id>/<int:user_id>/", survey_detail, name="survey_detail"),
     path("survey_page/<int:survey_id>/submit/", survey_submit, name="survey_submit"),
     path("survey/thank-you/<str:survey_id>/", survey_thankyou, name="survey_thankyou"),
     path('create_survey', create_survey, name='create_survey'),
     path('get_survey/<str:id>/', get_survey, name='get_survey'),
     path('survey/<str:survey_id>/', survey, name='survey'),
+    path('consolidated_report/<str:survey_id>/', survey_consolidated_pdf, name='consolidated_report'),
     path("survey/<int:survey_id>/submit/", survey_initial_submit, name="survey_initial_submit"),
 
     path('survey_submission_list/<str:id>/', survey_submission_list, name='survey_submission_list'),
@@ -53,6 +61,23 @@ urlpatterns = [
     path('manual_checkin/', manual_checkin, name='manual_checkin'),
     path('send_event_reminder/<str:id>', send_event_reminder, name='send_event_reminder'),
 
+    # Form builder (admin authoring UI)
+    path('form_builder/<int:survey_id>/', form_builder, name='form_builder'),
+    path('save_question', save_question, name='save_question'),
+    path('get_question/<int:question_id>/', get_question, name='get_question'),
+    path('delete_question/<int:question_id>/', delete_question, name='delete_question'),
+    path('reorder_questions/<int:survey_id>/', reorder_questions, name='reorder_questions'),
+    path('upload_banner/<int:survey_id>/', upload_banner, name='upload_banner'),
+    path('delete_banner/<int:survey_id>/', delete_banner, name='delete_banner'),
+    path('save_identity_config/<int:survey_id>/', save_identity_config, name='save_identity_config'),
+    path('form_preview/<int:survey_id>/', form_preview, name='form_preview'),
+
+    # Generic public form flow
+    path('form/<str:survey_code>/', form_public, name='form_public'),
+    path('form/<int:survey_id>/start/', form_initial_submit, name='form_initial_submit'),
+    path('form/<str:survey_code>/q/<int:user_id>/', form_detail, name='form_detail'),
+    path('form/<int:survey_id>/submit/', form_submit, name='form_submit'),
+    path('form/<str:survey_code>/thanks/<int:user_id>/', form_thankyou, name='form_thankyou'),
     path('exclude_columns/', exclude_columns, name='exclude_columns'),
     path('remove_submissions/', remove_submissions, name='remove_submissions'),
 

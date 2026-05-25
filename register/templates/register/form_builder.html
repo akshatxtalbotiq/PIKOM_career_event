@@ -1,0 +1,566 @@
+{% extends 'register/base.html' %}
+{% load static %}
+
+{% block extracss %}
+<style>
+  /* Force normal page scroll. Material Dashboard's .main-content + the
+     g-sidenav-show body class set overflow:hidden / fixed heights, which clips
+     long builder pages. */
+  html, body { height: auto !important; overflow-y: auto !important; }
+  body.g-sidenav-show { overflow: auto !important; }
+  .main-content {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+    min-height: 100vh;
+  }
+
+  .question-card { cursor: default; }
+  .question-card .drag-handle { cursor: grab; color: #999; }
+  .question-card.sortable-ghost { opacity: 0.4; }
+  .question-card.sortable-chosen { background: #f6faff; }
+  .choice-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .public-url-box { background: #f6f9fc; border: 1px dashed #c8d3e1; }
+  .type-pill {
+    display: inline-block; font-size: 0.72rem; padding: 2px 8px;
+    border-radius: 999px; background: #eef2ff; color: #3949ab; font-weight: 600;
+  }
+  .required-pill {
+    display: inline-block; font-size: 0.72rem; padding: 2px 8px;
+    border-radius: 999px; background: #ffe5e5; color: #b71c1c; font-weight: 600; margin-left: 6px;
+  }
+
+  /* Mobile: stack the URL bar and allow question rows to wrap cleanly */
+  @media (max-width: 575.98px) {
+    .public-url-box { flex-direction: column; align-items: stretch !important; }
+    .public-url-box .btn, .public-url-box input { width: 100%; }
+    .public-url-box .btn { margin: 0; }
+    .question-card .card-body > .d-flex { flex-wrap: wrap; row-gap: 6px; }
+    .question-card .flex-grow-1 { flex: 1 1 100%; order: 10; }
+    .type-pill, .required-pill { font-size: 0.65rem; }
+    .choice-row { flex-wrap: wrap; }
+    .choice-row .choice-input { min-width: 0; flex: 1 1 60%; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="main-content position-relative border-radius-lg" style="min-height:100vh;">
+  <div class="container-fluid py-2">
+
+    <div class="row">
+      <div class="col-12 col-md-8 d-flex align-items-center gap-2">
+        <div class="ms-3">
+          <h3 class="mb-0 h4 font-weight-bolder opacity-7">
+            <i class="ti ti-forms"></i> Form Builder
+          </h3>
+          <nav aria-label="breadcrumb m-0">
+            <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
+              <li class="breadcrumb-item text-sm">
+                <a class="opacity-5 text-dark" href="{% url 'survey_list' %}">Forms</a>
+              </li>
+              <li class="breadcrumb-item text-sm text-dark active" aria-current="page">{{ survey.title }}</li>
+            </ol>
+          </nav>
+        </div>
+      </div>
+      <div class="col-12 col-md-4 d-flex justify-content-end align-items-center gap-2">
+        <a href="{% url 'survey_list' %}" class="btn btn-sm btn-outline-secondary mb-0">
+          <i class="material-symbols-rounded align-middle">arrow_back</i> Back
+        </a>
+      </div>
+    </div>
+
+    <div class="card my-2">
+      <div class="card-body">
+        <div class="text-xs text-uppercase text-secondary font-weight-bolder mb-1">Shareable link</div>
+        <div class="public-url-box p-2 rounded d-flex align-items-center gap-2 flex-wrap">
+          <input type="text" id="publicUrl" class="form-control form-control-sm border-0 bg-transparent" value="{{ public_url }}" readonly>
+          <button type="button" id="copyUrlBtn" class="btn btn-sm btn-primary mb-0">
+            <i class="material-symbols-rounded align-middle">content_copy</i> Copy
+          </button>
+          <a href="{% url 'form_preview' survey.id %}" target="_blank" class="btn btn-sm btn-warning mb-0">
+            <i class="material-symbols-rounded align-middle">visibility</i> Preview
+          </a>
+          <a href="{{ public_url }}" target="_blank" class="btn btn-sm btn-outline-success mb-0">
+            <i class="material-symbols-rounded align-middle">open_in_new</i> Open live
+          </a>
+        </div>
+        <small class="text-muted">
+          Send this link to participants.
+          {% if not survey.is_active %}
+            <span class="text-danger fw-bold">This form is currently INACTIVE — toggle it on from the Forms list to accept submissions.</span>
+          {% endif %}
+        </small>
+      </div>
+    </div>
+
+    <!-- Banner -->
+    <div class="card my-2">
+      <div class="card-header pb-0 d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">Banner image</h6>
+        <div>
+          <label for="bannerInput" class="btn btn-sm btn-outline-primary mb-0">
+            <i class="material-symbols-rounded align-middle">upload</i>
+            <span id="bannerLabel">{% if survey.banner %}Replace banner{% else %}Upload banner{% endif %}</span>
+          </label>
+          <input type="file" id="bannerInput" accept="image/*" hidden>
+          <button type="button" id="removeBannerBtn" class="btn btn-sm btn-outline-danger mb-0" {% if not survey.banner %}style="display:none;"{% endif %}>
+            <i class="material-symbols-rounded align-middle">delete</i> Remove
+          </button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="bannerPreview" class="text-center">
+          {% if survey.banner %}
+            <img id="bannerImg" src="{{ survey.banner.url }}" alt="Banner preview" class="img-fluid rounded" style="max-height:180px;">
+          {% else %}
+            <div id="bannerEmpty" class="text-muted py-3">
+              <i class="material-symbols-rounded" style="font-size:48px;opacity:0.5;">image</i>
+              <div>No banner uploaded. The public form will display without one.</div>
+            </div>
+          {% endif %}
+        </div>
+        <small class="text-muted">PNG / JPG / WebP up to 5 MB. Shown at the top of the public registration form.</small>
+      </div>
+    </div>
+
+
+    <div class="card my-2">
+      <div class="card-header pb-0 d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">Form Fields</h6>
+        <button type="button" id="addQuestionBtn" class="btn btn-sm btn-primary mb-0">
+          <i class="material-symbols-rounded align-middle">add</i> Add Question
+        </button>
+      </div>
+      <div class="card-body">
+        <small class="text-muted d-block mb-2">
+          Drag to reorder. Identity fields capture core registrant details and cannot be deleted (mark them optional instead).
+        </small>
+        <div id="questionList">
+          {% for q in questions %}
+            {% with is_identity=q.question_type|slice:":9" %}
+            <div class="card mb-2 question-card{% if is_identity == 'identity_' %} identity-question{% endif %}" data-id="{{ q.id }}" data-type="{{ q.question_type }}">
+              <div class="card-body py-2 px-3">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="drag-handle material-symbols-rounded">drag_indicator</span>
+                  <span class="badge bg-secondary q-number">{{ q.number }}</span>
+                  {% if is_identity == 'identity_' %}
+                    <span class="type-pill" style="background:#fff3cd;color:#7c5e00;">
+                      <i class="material-symbols-rounded align-middle" style="font-size:14px;">lock</i>
+                      Identity · {{ q.question_type|slice:"9:"|title }}
+                    </span>
+                  {% else %}
+                    <span class="type-pill">{{ q.get_question_type_display }}</span>
+                  {% endif %}
+                  {% if q.is_required %}<span class="required-pill">Required</span>{% endif %}
+                  <div class="flex-grow-1 ms-2 text-truncate">{{ q.text|striptags }}</div>
+                  <button type="button" class="btn btn-sm btn-link text-body p-1 edit-q-btn" data-id="{{ q.id }}" title="Edit">
+                    <i class="material-symbols-rounded">edit</i>
+                  </button>
+                  {% if is_identity != 'identity_' %}
+                    <button type="button" class="btn btn-sm btn-link text-danger p-1 delete-q-btn" data-id="{{ q.id }}" title="Delete">
+                      <i class="material-symbols-rounded">delete</i>
+                    </button>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            {% endwith %}
+          {% endfor %}
+        </div>
+        <div id="emptyState" class="text-center text-muted py-4" {% if questions %}style="display:none"{% endif %}>
+          <i class="material-symbols-rounded" style="font-size:48px;opacity:0.5;">quiz</i>
+          <p class="mb-0">No fields yet. Click <strong>Add Question</strong> to start building your form.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Add / Edit Question Modal -->
+<div class="modal fade" id="questionModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <form id="questionForm" novalidate>
+        <div class="modal-header">
+          <h5 class="modal-title">Question</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="qId">
+          <input type="hidden" id="qSurveyId" value="{{ survey.id }}">
+
+          <div class="mb-3">
+            <label class="form-label">Question text <span class="text-danger">*</span></label>
+            <textarea id="qText" class="form-control" rows="2" placeholder="e.g. What is your dietary preference?" required></textarea>
+            <small class="text-muted">HTML allowed.</small>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Help text (optional)</label>
+            <input type="text" id="qHelp" class="form-control" placeholder="Short hint shown under the question">
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Type</label>
+              <select id="qType" class="form-select">
+                <option value="text">Short text</option>
+                <option value="textarea">Long text (paragraph)</option>
+                <option value="select">Dropdown</option>
+                <option value="radio">Single choice (radio)</option>
+                <option value="checkbox">Multiple choice (checkbox)</option>
+              </select>
+            </div>
+            <div class="col-md-6 mb-3 d-flex align-items-center">
+              <div class="form-check form-switch mt-3">
+                <input class="form-check-input" type="checkbox" id="qRequired" checked>
+                <label class="form-check-label" for="qRequired">Required</label>
+              </div>
+            </div>
+          </div>
+
+          <div id="choicesBlock" style="display:none;">
+            <label class="form-label">Choices</label>
+            <div id="choicesList"></div>
+            <button type="button" id="addChoiceBtn" class="btn btn-sm btn-outline-primary mb-2">
+              <i class="material-symbols-rounded align-middle">add</i> Add choice
+            </button>
+            <div class="row align-items-center mt-2">
+              <div class="col-md-6">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="qAllowOther">
+                  <label class="form-check-label" for="qAllowOther">Include an "Other" free-text input</label>
+                </div>
+              </div>
+              <div class="col-md-6" id="maxChecksWrap" style="display:none;">
+                <label class="form-label mb-0">Max selections (optional)</label>
+                <input type="number" id="qMaxChecks" class="form-control form-control-sm" min="1" placeholder="No limit">
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Question</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script>
+  // Defer all initialization until DOMContentLoaded so that bootstrap.min.js
+  // (loaded at the bottom of base.html, AFTER this script block) is available.
+  document.addEventListener('DOMContentLoaded', function () {
+
+  const SURVEY_ID = "{{ survey.id }}";
+
+  function getCSRFToken() {
+    const m = document.cookie.match(/csrftoken=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+
+  function showEmptyStateIfNeeded() {
+    const hasAny = document.querySelectorAll('#questionList .question-card').length > 0;
+    document.getElementById('emptyState').style.display = hasAny ? 'none' : 'block';
+  }
+
+  function updateNumbers() {
+    document.querySelectorAll('#questionList .question-card').forEach((card, idx) => {
+      const badge = card.querySelector('.q-number');
+      if (badge) badge.textContent = (idx + 1);
+    });
+  }
+
+  // --- Copy public URL ---
+  document.getElementById('copyUrlBtn').addEventListener('click', () => {
+    const input = document.getElementById('publicUrl');
+    input.select();
+    input.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(input.value).then(() => {
+      const btn = document.getElementById('copyUrlBtn');
+      const orig = btn.innerHTML;
+      btn.innerHTML = '<i class="material-symbols-rounded align-middle">check</i> Copied';
+      setTimeout(() => btn.innerHTML = orig, 1500);
+    });
+  });
+
+  // --- Sortable for reordering ---
+  const list = document.getElementById('questionList');
+  Sortable.create(list, {
+    handle: '.drag-handle',
+    animation: 150,
+    onEnd: () => {
+      updateNumbers();
+      const order = Array.from(list.querySelectorAll('.question-card')).map(el => parseInt(el.dataset.id, 10));
+      fetch(`/reorder_questions/${SURVEY_ID}/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRFToken() },
+        body: JSON.stringify({ order })
+      });
+    }
+  });
+
+  // --- Banner upload / remove ---
+  const bannerInput = document.getElementById('bannerInput');
+  const bannerPreview = document.getElementById('bannerPreview');
+  const removeBannerBtn = document.getElementById('removeBannerBtn');
+  const bannerLabel = document.getElementById('bannerLabel');
+
+  bannerInput.addEventListener('change', () => {
+    const file = bannerInput.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Banner must be under 5 MB');
+      bannerInput.value = '';
+      return;
+    }
+    const formData = new FormData();
+    formData.append('banner', file);
+    fetch(`/upload_banner/${SURVEY_ID}/`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCSRFToken() },
+      body: formData,
+    }).then(r => r.json()).then(data => {
+      if (data.success) {
+        bannerPreview.innerHTML = `<img id="bannerImg" src="${data.url}" alt="Banner preview" class="img-fluid rounded" style="max-height:180px;">`;
+        removeBannerBtn.style.display = 'inline-block';
+        bannerLabel.textContent = 'Replace banner';
+      } else {
+        alert(data.message || 'Upload failed');
+      }
+      bannerInput.value = '';
+    });
+  });
+
+  removeBannerBtn.addEventListener('click', () => {
+    if (!confirm('Remove the banner?')) return;
+    fetch(`/delete_banner/${SURVEY_ID}/`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCSRFToken() },
+    }).then(r => r.json()).then(data => {
+      if (data.success) {
+        bannerPreview.innerHTML = `
+          <div id="bannerEmpty" class="text-muted py-3">
+            <i class="material-symbols-rounded" style="font-size:48px;opacity:0.5;">image</i>
+            <div>No banner uploaded. The public form will display without one.</div>
+          </div>`;
+        removeBannerBtn.style.display = 'none';
+        bannerLabel.textContent = 'Upload banner';
+      }
+    });
+  });
+
+
+  // --- Modal helpers ---
+  const modalEl = document.getElementById('questionModal');
+  const modal = new bootstrap.Modal(modalEl);
+
+  function resetForm() {
+    document.getElementById('questionForm').reset();
+    document.getElementById('qId').value = '';
+    document.getElementById('qType').value = 'text';
+    document.getElementById('qRequired').checked = true;
+    document.getElementById('qAllowOther').checked = false;
+    document.getElementById('qMaxChecks').value = '';
+    document.getElementById('choicesList').innerHTML = '';
+    onTypeChange();
+  }
+
+  function addChoiceRow(value = '', followup = '') {
+    const row = document.createElement('div');
+    row.className = 'choice-row-wrap mb-2 p-2 rounded border';
+    const escVal = String(value).replace(/"/g, '&quot;');
+    const escFu  = String(followup).replace(/"/g, '&quot;');
+    const hasFu = !!followup;
+    row.innerHTML = `
+      <div class="choice-row">
+        <input type="text" class="form-control form-control-sm choice-input" value="${escVal}" placeholder="Choice label">
+        <button type="button"
+                class="btn btn-sm ${hasFu ? 'btn-success' : 'btn-outline-secondary'} toggle-followup"
+                title="When this option is selected, also show a free-text input for the participant to fill in">
+          <i class="material-symbols-rounded align-middle" style="font-size:18px;">add_box</i>
+          <span class="toggle-label">${hasFu ? 'Follow-up: ON' : '+ Add follow-up text'}</span>
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-danger remove-choice" title="Remove choice"><i class="material-symbols-rounded">close</i></button>
+      </div>
+      <div class="followup-row mt-2 ms-4" style="${hasFu ? '' : 'display:none;'}">
+        <label class="form-label small text-muted mb-1">Placeholder for the follow-up text input shown when this option is picked:</label>
+        <input type="text" class="form-control form-control-sm followup-input"
+               value="${escFu}"
+               placeholder="e.g. 'Name of the inviter'">
+      </div>
+    `;
+    row.querySelector('.remove-choice').addEventListener('click', () => row.remove());
+    const toggleBtn = row.querySelector('.toggle-followup');
+    const toggleLabel = toggleBtn.querySelector('.toggle-label');
+    toggleBtn.addEventListener('click', () => {
+      const fu = row.querySelector('.followup-row');
+      const fuInput = row.querySelector('.followup-input');
+      const showing = fu.style.display !== 'none';
+      if (showing) {
+        fu.style.display = 'none';
+        fuInput.value = '';
+        toggleBtn.classList.remove('btn-success');
+        toggleBtn.classList.add('btn-outline-secondary');
+        toggleLabel.textContent = '+ Add follow-up text';
+      } else {
+        fu.style.display = 'block';
+        if (!fuInput.value) fuInput.value = 'Please specify';
+        fuInput.focus();
+        fuInput.select();
+        toggleBtn.classList.remove('btn-outline-secondary');
+        toggleBtn.classList.add('btn-success');
+        toggleLabel.textContent = 'Follow-up: ON';
+      }
+    });
+    document.getElementById('choicesList').appendChild(row);
+  }
+
+  function onTypeChange() {
+    const type = document.getElementById('qType').value;
+    const needsChoices = ['radio', 'checkbox', 'select'].includes(type);
+    document.getElementById('choicesBlock').style.display = needsChoices ? 'block' : 'none';
+    document.getElementById('maxChecksWrap').style.display = type === 'checkbox' ? 'block' : 'none';
+    if (needsChoices && document.getElementById('choicesList').children.length === 0) {
+      addChoiceRow('');
+      addChoiceRow('');
+    }
+  }
+  document.getElementById('qType').addEventListener('change', onTypeChange);
+  document.getElementById('addChoiceBtn').addEventListener('click', () => addChoiceRow(''));
+
+  // --- Add question ---
+  document.getElementById('addQuestionBtn').addEventListener('click', () => {
+    resetForm();
+    applyIdentityLock(false);  // brand-new questions are always custom types
+    modalEl.querySelector('.modal-title').textContent = 'Add Question';
+    modal.show();
+  });
+
+  // --- Edit question ---
+  const IDENTITY_PREFIX = 'identity_';
+  function applyIdentityLock(isIdentity) {
+    // Identity questions: only label + required are editable.
+    const typeSel = document.getElementById('qType');
+    const helpRow = document.getElementById('qHelp').closest('.mb-3');
+    const choicesBlock = document.getElementById('choicesBlock');
+    typeSel.disabled = isIdentity;
+    typeSel.closest('.col-md-6').style.display = isIdentity ? 'none' : 'block';
+    helpRow.style.display = isIdentity ? 'none' : 'block';
+    choicesBlock.style.display = isIdentity ? 'none' : choicesBlock.style.display;
+    // If identity, keep the underlying type in the hidden state so save_question
+    // sees it on submit.
+    if (isIdentity) typeSel.value = typeSel.value; // preserve
+  }
+
+  function bindEditButtons() {
+    document.querySelectorAll('.edit-q-btn').forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.dataset.id;
+        fetch(`/get_question/${id}/`)
+          .then(r => r.json())
+          .then(data => {
+            resetForm();
+            const isIdentity = (data.question_type || '').startsWith(IDENTITY_PREFIX);
+            modalEl.querySelector('.modal-title').textContent = isIdentity ? 'Edit Identity Field' : 'Edit Question';
+            document.getElementById('qId').value = data.id;
+            document.getElementById('qText').value = data.text || '';
+            document.getElementById('qHelp').value = data.help_text || '';
+            document.getElementById('qType').value = data.question_type || 'text';
+            document.getElementById('qRequired').checked = !!data.is_required;
+            document.getElementById('qAllowOther').checked = !!data.allow_other;
+            document.getElementById('qMaxChecks').value = data.max_checks || '';
+            document.getElementById('choicesList').innerHTML = '';
+            const followups = data.choice_followups || {};
+            (data.choices || []).forEach(c => addChoiceRow(c, followups[c] || ''));
+            onTypeChange();
+            applyIdentityLock(isIdentity);
+            modal.show();
+          });
+      };
+    });
+  }
+  bindEditButtons();
+
+  // --- Delete question ---
+  function bindDeleteButtons() {
+    document.querySelectorAll('.delete-q-btn').forEach(btn => {
+      btn.onclick = () => {
+        if (!confirm('Delete this question? All answers to it will also be removed.')) return;
+        const id = btn.dataset.id;
+        fetch(`/delete_question/${id}/`, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': getCSRFToken() }
+        }).then(r => r.json()).then(data => {
+          if (data.success) {
+            btn.closest('.question-card').remove();
+            updateNumbers();
+            showEmptyStateIfNeeded();
+          } else {
+            alert(data.message || 'Failed to delete.');
+          }
+        });
+      };
+    });
+  }
+  bindDeleteButtons();
+
+  // --- Save question ---
+  document.getElementById('questionForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const type = document.getElementById('qType').value;
+    const rows = Array.from(document.querySelectorAll('#choicesList .choice-row-wrap'));
+    const choices = [];
+    const choice_followups = {};
+    rows.forEach(row => {
+      const label = row.querySelector('.choice-input').value.trim();
+      if (!label) return;
+      choices.push(label);
+      const fuRow = row.querySelector('.followup-row');
+      if (fuRow.style.display !== 'none') {
+        const placeholder = row.querySelector('.followup-input').value.trim() || 'Please specify';
+        choice_followups[label] = placeholder;
+      }
+    });
+
+    if (['radio', 'checkbox', 'select'].includes(type) && choices.length === 0) {
+      alert('Please add at least one choice.');
+      return;
+    }
+
+    const payload = {
+      id: document.getElementById('qId').value || null,
+      survey_id: SURVEY_ID,
+      text: document.getElementById('qText').value,
+      help_text: document.getElementById('qHelp').value,
+      question_type: type,
+      is_required: document.getElementById('qRequired').checked,
+      allow_other: document.getElementById('qAllowOther').checked,
+      max_checks: document.getElementById('qMaxChecks').value,
+      choices,
+      choice_followups,
+    };
+
+    fetch('/save_question', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRFToken() },
+      body: JSON.stringify(payload)
+    }).then(r => r.json()).then(data => {
+      if (data.success) {
+        modal.hide();
+        location.reload();
+      } else {
+        alert(data.message || 'Failed to save question.');
+      }
+    });
+  });
+
+  });  // end DOMContentLoaded
+</script>
+{% endblock %}

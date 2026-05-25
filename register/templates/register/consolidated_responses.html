@@ -1,0 +1,170 @@
+{# consolidated_responses.html #}
+{% load custom_filters %}
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    @page { size: A4; margin: 14mm; }
+
+    body { font-family: Arial, sans-serif; font-size: 12px; color: #111; }
+    h1, h2, h3, h4, h5 { margin: 0 0 8px 0; }
+    .muted { color: #666; }
+
+    .submission { page-break-after: always; }
+    .submission:last-child { page-break-after: auto; }
+
+    .card { border: 1px solid #ddd; border-radius: 6px; margin: 10px 0; }
+    .card-header { padding: 10px; background: #f5f5f5; border-bottom: 1px solid #ddd; }
+    .card-body { padding: 10px; }
+
+    .question-number {
+      width: 26px; height: 26px; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-weight: bold; background: #2c6bed; color: #fff; margin-right: 8px;
+      font-size: 12px;
+    }
+    .selected-option {
+      padding: 4px 8px; border-radius: 6px; border: 1px solid #ddd;
+      display: inline-block; margin: 2px 6px 2px 0;
+    }
+    .answer-box { background: #f7f7f7; border: 1px solid #e5e5e5; padding: 8px; border-radius: 6px; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th, td { border-bottom: 1px solid #ddd; padding: 6px; text-align: left; vertical-align: top; }
+
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; }
+    .info-item { border-bottom: 1px solid #eee; padding: 4px 0; }
+  </style>
+</head>
+
+<body>
+  <h2>{{ survey.title }}</h2>
+  {% if survey.description %}
+    <div class="muted">{{ survey.description | safe }}</div>
+  {% endif %}
+  <div class="muted" style="margin-top:6px;">
+    Consolidated Responses: {{ submissions|length }}
+  </div>
+
+  {% for sub in submissions %}
+    <div class="submission" style="margin-top:14px;">
+      <div class="card">
+        <div class="card-header">
+          <h4 style="margin:0;">Respondent {{ forloop.counter }}</h4>
+          <div class="muted">Submitted: {{ sub.survey_user.created_at|date:"M d, Y H:i" }}</div>
+        </div>
+
+        <div class="card-body">
+          {% if sub.survey_user %}
+            <div class="info-grid">
+              {% if sub.survey_user.name %}<div class="info-item"><b>Name:</b> {{ sub.survey_user.name }}</div>{% endif %}
+              {% if sub.survey_user.email %}<div class="info-item"><b>Email:</b> {{ sub.survey_user.email }}</div>{% endif %}
+              {% if sub.survey_user.phone %}<div class="info-item"><b>Phone:</b> {{ sub.survey_user.phone }}</div>{% endif %}
+              {% if sub.survey_user.organization %}<div class="info-item"><b>Organization:</b> {{ sub.survey_user.organization }}</div>{% endif %}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h4 style="margin:0;">Survey Responses</h4>
+        </div>
+        <div class="card-body">
+          {% for question in survey.questions.all %}
+              {% if question.number > 4 %}
+            <div class="card" style="margin: 8px 0;">
+              <div class="card-body">
+                <div>
+                  <span class="question-number">{{ question.number }}</span>
+                  <b>{{ question.text|striptags }}</b>
+                  <span class="muted">({{ question.get_question_type_display }})</span>
+                  {% if question.is_required %}<span style="color:#c00;">*</span>{% endif %}
+                </div>
+
+                {% if question.help_text %}
+                  <div class="muted" style="margin-top:4px;">{{ question.help_text }}</div>
+                {% endif %}
+
+                {% with sub.answers|get_item:question.id as answer %}
+                  <div style="margin-top:8px;">
+                    {% if answer %}
+                      {% if question.question_type == "text" or question.question_type == "textarea" %}
+                        {% if answer.answer_text %}
+                          <div class="answer-box">{{ answer.answer_text|linebreaksbr }}</div>
+                        {% else %}
+                          <div class="muted"><i>No response provided</i></div>
+                        {% endif %}
+
+                      {% elif question.question_type == "radio" or question.question_type == "select" %}
+                        {% if answer.selected_options %}
+                          {% for opt in answer.selected_options %}
+                            <span class="selected-option">{{ opt }}</span>
+                          {% endfor %}
+                        {% else %}
+                          <div class="muted"><i>No option selected</i></div>
+                        {% endif %}
+
+                      {% elif question.question_type == "checkbox" %}
+                        {% if answer.selected_options %}
+                          {% for opt in answer.selected_options %}
+                            {% if opt != "on" %}
+                              {% if opt == "Other" %}
+                                <span class="selected-option">Other{% if answer.answer_text %}: {{ answer.answer_text }}{% endif %}</span>
+                              {% else %}
+                                <span class="selected-option">{{ opt }}</span>
+                              {% endif %}
+                            {% endif %}
+                          {% endfor %}
+                        {% else %}
+                          <div class="muted"><i>No options selected</i></div>
+                        {% endif %}
+
+                      {% elif question.question_type == "matrix_roles" %}
+                        {% if answer.answer_text %}
+                          {% with answer.answer_text|parse_json as matrix_data %}
+                            {% if matrix_data %}
+                              <table>
+                                <thead>
+                                  <tr>
+                                    <th>Category</th><th>Role Example</th><th>Openings</th><th>Urgency</th><th>Difficulty</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {% for item in matrix_data %}
+                                    <tr>
+                                      <td><b>{{ item.category|default:"-" }}</b></td>
+                                      <td>{{ item.role_example|default:"-" }}</td>
+                                      <td>{{ item.openings|default:"-" }}</td>
+                                      <td>{{ item.urgency|default:"-" }}</td>
+                                      <td>{{ item.difficulty|default:"-" }}</td>
+                                    </tr>
+                                  {% endfor %}
+                                </tbody>
+                              </table>
+                            {% else %}
+                              <div class="answer-box">{{ answer.answer_text|linebreaksbr }}</div>
+                            {% endif %}
+                          {% endwith %}
+                        {% else %}
+                          <div class="muted"><i>No matrix responses provided</i></div>
+                        {% endif %}
+                      {% else %}
+                        <div class="muted"><i>Unknown question type</i></div>
+                      {% endif %}
+                    {% else %}
+                      <div class="muted"><i>No answer provided for this question</i></div>
+                    {% endif %}
+                  </div>
+                {% endwith %}
+              </div>
+            </div>
+              {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+</body>
+</html>

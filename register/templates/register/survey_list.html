@@ -18,12 +18,11 @@
         <div class="col-8 d-flex justify-content-start align-items-center gap-2">                
             <div class="ms-3">
               <h3 class="mb-0 h4 font-weight-bolder opacity-7"><i class="ti ti-list"></i>
-              Surveys</h3>
-          
+              {{ list_title|default:"Surveys" }}</h3>
+
               <nav aria-label="breadcrumb m-0">
                 <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
-                  <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;">List of the surveys</a></li>
-                  <!-- <li class="breadcrumb-item text-sm text-dark active" aria-current="page">{{campaign.title}}</li> -->
+                  <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;">{{ list_subtitle|default:"List of forms" }}</a></li>
                 </ol>
               </nav>
             </div>
@@ -55,7 +54,7 @@
                 <thead>
                   <tr>
                     <th class="text-uppercase text-secondary text-sm font-weight-bolder" style="width: 10%;">ID</th>
-                    <th class="text-uppercase text-secondary text-sm font-weight-bolder" style="width: 55%;">Survey Title</th>                      
+                    <th class="text-uppercase text-secondary text-sm font-weight-bolder" style="width: 55%;">{% if list_purpose == 'registration' %}Form Title{% else %}Survey Title{% endif %}</th>
                     <!-- <th class="text-uppercase text-secondary text-sm font-weight-bolder" style="width: 30%;">Description</th> -->
                     <th class="text-uppercase text-secondary text-sm font-weight-bolder" style="width: 20%;">Created At</th>
                     <th class="text-uppercase text-secondary text-sm font-weight-bolder" style="width: 5%;">Status</th>
@@ -122,9 +121,26 @@
                               </a>
                             {% endif %} -->
 
-                            <a href="{% url 'survey' survey.survey_code %}" target="_blank" class="text-body p-0" title="View Entry Form">
+                            <a href="{% url 'form_builder' survey.id %}" class="text-body p-0" title="Build form (add/edit questions)">
+                              <i class="material-symbols-rounded">tune</i>
+                            </a>
+                            <a href="{% url 'form_preview' survey.id %}" target="_blank" class="text-body p-0" title="Preview form (no data saved)">
+                              <i class="material-symbols-rounded">visibility</i>
+                            </a>
+                            <a href="{% url 'form_public' survey.survey_code %}" target="_blank" class="text-body p-0" title="Open public registration form">
                                 <i class="material-symbols-rounded">public</i>
                               </a>
+                            <a href="javascript:void(0);" class="text-body p-0 copy-link-btn" data-link="{% url 'form_public' survey.survey_code %}" title="Copy public link">
+                              <i class="material-symbols-rounded">link</i>
+                            </a>
+                            {% if list_purpose == 'registration' %}
+                              <a href="{% url 'scanform' survey.survey_code %}" target="_blank" class="text-body p-0" title="Check-in scanner (Sunmi / camera)">
+                                <i class="material-symbols-rounded">qr_code_scanner</i>
+                              </a>
+                            {% endif %}
+                            <a href="{% url 'consolidated_report' survey.survey_code %}" class="text-body p-0" title="Consolidated Report">
+                                <i class="material-symbols-rounded">Report</i>
+                            </a>
                           </div>
                         </td>
 
@@ -153,16 +169,17 @@
         <form id="surveyForm" novalidate>
           <div class="modal-header">
             <input type="hidden" id="surveyID">
-            <h5 class="modal-title" id="addNewSurveyLabel">Add New Survey</h5>
+            <input type="hidden" id="surveyPurpose" value="{{ list_purpose|default:'registration' }}">
+            <h5 class="modal-title" id="addNewSurveyLabel">{{ modal_title|default:"Add New Form" }}</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
             <div class="row g-3">
               <div class="col-xl-12 col-lg-12">
                 <div class="mb-3">
-                  <label for="surveyTitle" class="form-label">Survey Title</label>
-                  <input type="text" class="form-control border border-1 rounded px-2 py-2" id="surveyTitle" name="surveyTitle" placeholder="Survey Title" required>
-                  <div class="invalid-feedback">Survey title is required.</div>
+                  <label for="surveyTitle" class="form-label">{% if list_purpose == 'registration' %}Form{% else %}Survey{% endif %} Title</label>
+                  <input type="text" class="form-control border border-1 rounded px-2 py-2" id="surveyTitle" name="surveyTitle" placeholder="Title" required>
+                  <div class="invalid-feedback">Title is required.</div>
                 </div>
               </div>
               <div class="col-xl-6 col-lg-12">
@@ -240,8 +257,21 @@
 
   <script> 
     
-    document.addEventListener('DOMContentLoaded', function () {      
-     
+    document.addEventListener('DOMContentLoaded', function () {
+
+      // Copy-link buttons on each form row
+      document.querySelectorAll('.copy-link-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const path = btn.dataset.link;
+          const url = window.location.origin + path;
+          navigator.clipboard.writeText(url).then(() => {
+            const icon = btn.querySelector('i');
+            const orig = icon.textContent;
+            icon.textContent = 'check';
+            setTimeout(() => icon.textContent = orig, 1500);
+          });
+        });
+      });
 
       const editButtons = document.querySelectorAll('.edit-survey-btn');
 
@@ -268,8 +298,9 @@
               document.getElementById('surveyEndDate').value = data.end_date || '';              
               document.getElementById('enableSurvey').checked = data.active;
               document.getElementById('surveyID').value = data.id || '';
-              document.getElementById('surveyDesc').value = data.description || '';    
+              document.getElementById('surveyDesc').value = data.description || '';
               document.getElementById('campaignSelect').value = data.campaign_id || '';
+              document.getElementById('surveyPurpose').value = data.purpose || "{{ list_purpose|default:'registration' }}";
 
               quill.clipboard.dangerouslyPasteHTML(0, data.description || '');
 
@@ -298,10 +329,11 @@
 
       if (permValue === "True") {
           buttonsConfig.push({
-              text: '<i class="material-symbols-rounded align-middle">add</i> Add New',
+              text: '<i class="material-symbols-rounded align-middle">add</i> {{ new_button_label|default:"New" }}',
               className: 'btn btn-primary',
               action: function () {
-                  // Open the modal with id #addNewSurvey
+                  // Reset purpose to the default for this list before opening
+                  document.getElementById('surveyPurpose').value = "{{ list_purpose|default:'registration' }}";
                   const modal = new bootstrap.Modal(document.getElementById('addNewSurvey'));
                   modal.show();
               }
@@ -445,10 +477,11 @@
         //const description = $('#surveyDesc').val();
         const campaignId = $('#campaignSelect').val();
         const surveyId = $('#surveyID').val();
+        const purpose = $('#surveyPurpose').val();
 
         const description = quill.root.innerHTML;
 
-       
+
         $.ajax({
           url: '/create_survey',
           method: 'POST',
@@ -460,7 +493,8 @@
             end_date: endDatex,
             is_active: isActive,
             description: description,
-            campaign_id: campaignId
+            campaign_id: campaignId,
+            purpose: purpose
           },
           success: function (response) {
             if (response.success) {

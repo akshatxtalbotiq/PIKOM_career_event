@@ -145,7 +145,7 @@
     });
 
     function validate(decodedText){
-        fetch(`/validate/${decodedText}`)
+        fetch(`{{ validate_endpoint|default:'/validate/' }}${decodedText}`)
                         .then(res => res.json())
                         .then(data => {
                             if (data.message)
@@ -262,7 +262,7 @@
 
     async function postToken(decodedText) {
 
-        const flagElement = document.getElementById("flg"); 
+        const flagElement = document.getElementById("flg");
         const flagValue = flagElement.value;
 
         if (flagValue === "1") {
@@ -274,11 +274,21 @@
             // Set the flag to 1 to indicate processing is underway
             flagElement.value = "1";
         }
-        
+
         const ctrl = new AbortController();
         const timeout = setTimeout(() => ctrl.abort(), 8000); // guard long hangs
 
         try {
+            fetch(`{{ validate_endpoint|default:'/validate/' }}${decodedText}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.message)
+                                show(data.message);
+                        })
+                        .catch(err => {
+                            show("Error validating QR code.");
+                            console.error(err);
+                        });
             const res = await fetch(`/validate/${decodedText}`, { signal: ctrl.signal });
             const data = await res.json();
 
@@ -288,7 +298,7 @@
                     title: `<span style="font-size: 1.4rem; font-weight: 600; color:#333;">${data.message}</span>`,
                     html: `
                         <div style="font-size: 1.1rem; color:#444; text-align:left; line-height:1.6;">
-                            
+
                             <p style="margin-top: 30px;">
                                 <strong>Name:</strong><br>
                                 ${data.name}
@@ -319,7 +329,7 @@
 
 
                 // Continue next logic AFTER user clicks OK
-                console.log("User clicked OK. Continue...");               
+                console.log("User clicked OK. Continue...");
             }
             else
             {
@@ -337,7 +347,7 @@
             });
             console.error(err);
             flagElement.value = "0";
-           
+
         } finally {
             clearTimeout(timeout);
         }
@@ -403,12 +413,12 @@
         focusBack();
     }, true);
 
-    document.addEventListener("mousedown", (e) => { 
+    document.addEventListener("mousedown", (e) => {
         if (e.target.tagName === "TEXTAREA") {
-            e.preventDefault();       
+            e.preventDefault();
             focusBack();
         }
-    }, true); 
+    }, true);
 
 
 

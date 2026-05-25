@@ -1,0 +1,295 @@
+{% load static %}
+{% load custom_filters %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ survey.title }}</title>
+  <link rel="stylesheet" href="{% static 'register/assets/css/bootstrap.css' %}">
+  <link rel="stylesheet" href="{% static 'register/assets/css/style.css' %}">
+  <link rel="stylesheet" href="{% static 'register/sweetalert2/sweetalert2.css' %}">
+  <style>
+    body { background: #f5f7fb; }
+    .form-card { max-width: 820px; margin: 0 auto; }
+    .q-number { font-weight: 600; color: #1976d2; margin-right: 4px; }
+
+    /* Prevent iOS Safari from zooming the viewport when an input is focused. */
+    .form-control, .form-select { font-size: 16px; }
+
+    /* Tighten layout on phones */
+    @media (max-width: 575.98px) {
+      .container-xl { padding-left: 12px; padding-right: 12px; }
+      .py-5 { padding-top: 1.25rem !important; padding-bottom: 1.25rem !important; }
+      .form-card .card-body { padding: 1rem !important; }
+      .followup-box { margin-left: 0.5rem !important; }
+      h3 { font-size: 1.25rem; }
+      .btn-lg { padding: 0.75rem 1.25rem; font-size: 1rem; }
+    }
+
+    /* Long radio/checkbox labels (e.g. consent paragraphs) wrap nicely */
+    .form-check-label { word-break: break-word; }
+  </style>
+</head>
+<body>
+  {% if preview_mode %}
+    <div class="alert alert-warning text-center mb-0 rounded-0" style="position:sticky;top:0;z-index:1030;">
+      <strong>👁 PREVIEW MODE</strong> — this is exactly what participants will see. Submissions are <strong>NOT saved</strong>.
+      <a href="{% url 'form_builder' survey.id %}" class="alert-link ms-2">← Back to builder</a>
+    </div>
+  {% endif %}
+
+  <div class="container-xl py-5">
+    <div class="form-card">
+
+      {% if survey.banner %}
+        <div class="mb-3 rounded overflow-hidden shadow-sm">
+          <img src="{{ survey.banner.url }}" alt="{{ survey.title }}" class="img-fluid w-100">
+        </div>
+      {% endif %}
+
+      <div class="card shadow-sm rounded mb-3">
+        <div class="card-body p-4">
+          <h3 class="fw-bold mb-2">{{ survey.title }}</h3>
+          {% if survey.description %}
+            <div class="text-muted">{{ survey.description|safe }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if not survey.is_active and not preview_mode %}
+        <div class="alert alert-warning shadow-sm">
+          Registration for this event is currently closed. Please contact the organizer.
+        </div>
+      {% else %}
+
+        <form action="{% if preview_mode %}#{% else %}{% url 'form_submit' survey.id %}{% endif %}" method="post" id="formAnswers" novalidate data-preview="{% if preview_mode %}1{% else %}0{% endif %}">
+          {% csrf_token %}
+
+          <div class="card shadow-sm rounded mb-3">
+            <div class="card-body p-4">
+
+              {% for q in survey.questions.all %}
+                <div class="mb-4">
+                  <label class="form-label fw-bold">
+                    {% if q.is_required %}<span class="text-danger">*</span> {% endif %}
+                    {{ q.text|safe }}
+                  </label>
+                  {% if q.help_text %}
+                    <div class="text-muted small mb-2">{{ q.help_text|safe }}</div>
+                  {% endif %}
+
+                  {# ---------- Identity types (special inputs, no Answer row) ---------- #}
+                  {% if q.question_type == 'identity_name' %}
+                    <input type="text" class="form-control" name="q_{{ q.id }}" {% if q.is_required %}required{% endif %}>
+                  {% elif q.question_type == 'identity_email' %}
+                    <input type="email" class="form-control" name="q_{{ q.id }}" {% if q.is_required %}required{% endif %}>
+                  {% elif q.question_type == 'identity_phone' %}
+                    <input type="tel" class="form-control" name="q_{{ q.id }}" placeholder="+60 12 345 6789" {% if q.is_required %}required{% endif %}>
+                  {% elif q.question_type == 'identity_organization' %}
+                    <input type="text" class="form-control" name="q_{{ q.id }}" {% if q.is_required %}required{% endif %}>
+
+                  {# ---------- Standard custom types ---------- #}
+                  {% elif q.question_type == 'text' %}
+                    <input type="text" class="form-control" name="q_{{ q.id }}" {% if q.is_required %}required{% endif %}>
+
+                  {% elif q.question_type == 'textarea' %}
+                    <textarea class="form-control" name="q_{{ q.id }}" rows="4" {% if q.is_required %}required{% endif %}></textarea>
+
+                  {% elif q.question_type == 'select' %}
+                    <select class="form-select" name="q_{{ q.id }}" id="q{{ q.id }}"
+                            data-followup-target="q{{ q.id }}_followups"
+                            {% if q.is_required %}required{% endif %}>
+                      <option value="" disabled selected>Choose...</option>
+                      {% for opt in q.choices %}
+                        <option value="{{ opt }}">{{ opt }}</option>
+                      {% endfor %}
+                      {% if q.allow_other %}<option value="Other">Other</option>{% endif %}
+                    </select>
+                    {% if q.allow_other %}
+                      <div id="q{{ q.id }}_other_box" class="mt-2" style="display:none;">
+                        <input type="text" class="form-control" name="q_{{ q.id }}_other" placeholder="Please specify">
+                      </div>
+                    {% endif %}
+                    {# Follow-up inputs for select options #}
+                    <div id="q{{ q.id }}_followups">
+                      {% for opt, placeholder in q.choice_followups.items %}
+                        <div class="followup-box mt-2 ms-3" data-for-value="{{ opt }}" style="display:none;">
+                          <input type="text" class="form-control" name="q_{{ q.id }}_followup_{{ opt }}" placeholder="{{ placeholder }}">
+                        </div>
+                      {% endfor %}
+                    </div>
+
+                  {% elif q.question_type == 'radio' %}
+                    {% for opt in q.choices %}
+                      <div class="form-check">
+                        <input class="form-check-input radio-with-followup" type="radio"
+                               name="q_{{ q.id }}" id="q{{ q.id }}_{{ forloop.counter }}" value="{{ opt }}"
+                               data-group="q{{ q.id }}"
+                               {% if q.is_required %}required{% endif %}>
+                        <label class="form-check-label" for="q{{ q.id }}_{{ forloop.counter }}">{{ opt }}</label>
+                      </div>
+                      {% if q.choice_followups and opt in q.choice_followups %}
+                        <div class="followup-box ms-4 mt-1 mb-2" data-group="q{{ q.id }}" data-for-value="{{ opt }}" style="display:none;">
+                          <input type="text" class="form-control form-control-sm" name="q_{{ q.id }}_followup_{{ opt }}" placeholder="{{ q.choice_followups|get_item:opt }}">
+                        </div>
+                      {% endif %}
+                    {% endfor %}
+                    {% if q.allow_other %}
+                      <div class="d-flex align-items-center mt-2">
+                        <div class="form-check me-2">
+                          <input class="form-check-input" type="radio" name="q_{{ q.id }}" id="q{{ q.id }}_other" value="Other">
+                          <label class="form-check-label" for="q{{ q.id }}_other">Other:</label>
+                        </div>
+                        <input type="text" class="form-control form-control-sm" style="max-width:280px;" name="q_{{ q.id }}_other">
+                      </div>
+                    {% endif %}
+
+                  {% elif q.question_type == 'checkbox' %}
+                    <div data-checkbox-group="q_{{ q.id }}" data-required="{% if q.is_required %}1{% else %}0{% endif %}">
+                      {% for opt in q.choices %}
+                        <div class="form-check">
+                          <input class="form-check-input checkbox-with-followup" type="checkbox"
+                                 name="q_{{ q.id }}" id="q{{ q.id }}_{{ forloop.counter }}" value="{{ opt }}"
+                                 data-group="q{{ q.id }}">
+                          <label class="form-check-label" for="q{{ q.id }}_{{ forloop.counter }}">{{ opt }}</label>
+                        </div>
+                        {% if q.choice_followups and opt in q.choice_followups %}
+                          <div class="followup-box ms-4 mt-1 mb-2" data-group="q{{ q.id }}" data-for-value="{{ opt }}" style="display:none;">
+                            <input type="text" class="form-control form-control-sm" name="q_{{ q.id }}_followup_{{ opt }}" placeholder="{{ q.choice_followups|get_item:opt }}">
+                          </div>
+                        {% endif %}
+                      {% endfor %}
+                      {% if q.allow_other %}
+                        <div class="form-check d-flex align-items-center mt-2">
+                          <input class="form-check-input me-2" type="checkbox" name="q_{{ q.id }}" id="q{{ q.id }}_other_chk" value="Other">
+                          <label class="form-check-label me-2" for="q{{ q.id }}_other_chk">Other:</label>
+                          <input type="text" class="form-control form-control-sm" style="max-width:280px;" name="q_{{ q.id }}_other">
+                        </div>
+                      {% endif %}
+                      {% if q.max_checks %}
+                        <div class="form-text" data-max="{{ q.max_checks }}">Select up to {{ q.max_checks }}.</div>
+                      {% endif %}
+                    </div>
+                  {% endif %}
+                </div>
+              {% endfor %}
+
+            </div>
+          </div>
+
+          <div class="text-center mb-5">
+            <button type="submit" class="btn btn-lg btn-success px-5">
+              {% if preview_mode %}Submit (Preview){% else %}Submit Registration{% endif %}
+            </button>
+          </div>
+        </form>
+
+      {% endif %}
+
+    </div>
+  </div>
+
+  <script src="{% static 'register/assets/libraries/js/bootstrap.bundle.min.js' %}"></script>
+  <script src="{% static 'register/sweetalert2/sweetalert2.js' %}"></script>
+  <script>
+    document.querySelectorAll('select.form-select').forEach(sel => {
+      sel.addEventListener('change', () => {
+        // "Other" free-text toggle
+        const otherBox = document.getElementById(sel.id + '_other_box');
+        if (otherBox) otherBox.style.display = sel.value === 'Other' ? 'block' : 'none';
+        // Per-option follow-ups
+        const fuContainerId = sel.dataset.followupTarget;
+        if (fuContainerId) {
+          const fuContainer = document.getElementById(fuContainerId);
+          if (fuContainer) {
+            fuContainer.querySelectorAll('.followup-box').forEach(box => {
+              const show = box.dataset.forValue === sel.value;
+              box.style.display = show ? 'block' : 'none';
+              const inp = box.querySelector('input');
+              if (inp) {
+                if (show) inp.setAttribute('required', 'required');
+                else { inp.removeAttribute('required'); inp.value = ''; }
+              }
+            });
+          }
+        }
+      });
+    });
+
+    // Radio buttons with per-option follow-ups
+    document.querySelectorAll('.radio-with-followup').forEach(radio => {
+      radio.addEventListener('change', () => {
+        const group = radio.dataset.group;
+        document.querySelectorAll(`.followup-box[data-group="${group}"]`).forEach(box => {
+          const show = box.dataset.forValue === radio.value && radio.checked;
+          box.style.display = show ? 'block' : 'none';
+          const inp = box.querySelector('input');
+          if (inp) {
+            if (show) inp.setAttribute('required', 'required');
+            else { inp.removeAttribute('required'); inp.value = ''; }
+          }
+        });
+      });
+    });
+
+    // Checkboxes with per-option follow-ups (each independent)
+    document.querySelectorAll('.checkbox-with-followup').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const group = cb.dataset.group;
+        document.querySelectorAll(`.followup-box[data-group="${group}"][data-for-value="${cb.value}"]`).forEach(box => {
+          box.style.display = cb.checked ? 'block' : 'none';
+          const inp = box.querySelector('input');
+          if (inp) {
+            if (cb.checked) inp.setAttribute('required', 'required');
+            else { inp.removeAttribute('required'); inp.value = ''; }
+          }
+        });
+      });
+    });
+
+    const formEl = document.getElementById('formAnswers');
+    if (formEl) {
+      formEl.addEventListener('submit', (e) => {
+        // Preview mode: validate the form so the user can see required-field
+        // errors, then short-circuit instead of POSTing.
+        if (formEl.dataset.preview === '1') {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!formEl.checkValidity()) {
+            formEl.reportValidity();
+            return;
+          }
+          Swal.fire({
+            icon: 'success',
+            title: 'Preview submission OK',
+            html: 'All required fields look good.<br>Nothing was saved — this is preview mode.',
+            confirmButtonColor: '#198754',
+          });
+          return;
+        }
+        let blocked = false;
+        document.querySelectorAll('[data-checkbox-group]').forEach(group => {
+          const hint = group.querySelector('.form-text[data-max]');
+          if (hint) {
+            const max = parseInt(hint.dataset.max, 10);
+            const boxes = group.querySelectorAll('input[type=checkbox]:checked');
+            if (boxes.length > max) {
+              blocked = true;
+              Swal.fire({ icon: 'warning', title: 'Too many selections', text: 'You can only select up to ' + max + ' options.' });
+            }
+          }
+          if (group.dataset.required === '1') {
+            const anyChecked = group.querySelectorAll('input[type=checkbox]:checked').length > 0;
+            if (!anyChecked) {
+              blocked = true;
+              Swal.fire({ icon: 'warning', title: 'Required', text: 'Please select at least one option.' });
+            }
+          }
+        });
+        if (blocked) { e.preventDefault(); e.stopPropagation(); }
+      });
+    }
+  </script>
+</body>
+</html>

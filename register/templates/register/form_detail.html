@@ -1,0 +1,174 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ survey.title }}</title>
+  <link rel="stylesheet" href="{% static 'register/assets/css/bootstrap.css' %}">
+  <link rel="stylesheet" href="{% static 'register/assets/css/style.css' %}">
+  <link rel="stylesheet" href="{% static 'register/sweetalert2/sweetalert2.css' %}">
+  <style>
+    body { background: #f5f7fb; }
+    .form-card { max-width: 820px; margin: 0 auto; }
+    .q-number { font-weight: 600; color: #1976d2; margin-right: 4px; }
+  </style>
+</head>
+<body>
+  <div class="container-xl py-5">
+    <div class="form-card">
+
+      {% if survey.banner %}
+        <div class="mb-3 rounded overflow-hidden shadow-sm">
+          <img src="{{ survey.banner.url }}" alt="{{ survey.title }}" class="img-fluid w-100">
+        </div>
+      {% endif %}
+
+      <div class="card shadow-sm rounded mb-3">
+        <div class="card-body p-4">
+          <h3 class="fw-bold mb-1">{{ survey.title }}</h3>
+          <div class="text-muted small">Hi <strong>{{ survey_user.name }}</strong> — please answer the following:</div>
+        </div>
+      </div>
+
+      <form action="{% url 'form_submit' survey.id %}" method="post" id="formAnswers" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="user_id" value="{{ survey_user.id }}">
+
+        <div class="card shadow-sm rounded mb-3">
+          <div class="card-body p-4">
+
+            {% for q in survey.questions.all %}
+              <div class="mb-4">
+                <label class="form-label fw-bold">
+                  {% if q.is_required %}<span class="text-danger">*</span> {% endif %}
+                  <span class="q-number">{{ q.number }}.</span> {{ q.text|safe }}
+                </label>
+                {% if q.help_text %}
+                  <div class="text-muted small mb-2">{{ q.help_text|safe }}</div>
+                {% endif %}
+
+                {% if q.question_type == 'text' %}
+                  <input type="text" class="form-control" name="q_{{ q.id }}" {% if q.is_required %}required{% endif %}>
+
+                {% elif q.question_type == 'textarea' %}
+                  <textarea class="form-control" name="q_{{ q.id }}" rows="4" {% if q.is_required %}required{% endif %}></textarea>
+
+                {% elif q.question_type == 'select' %}
+                  <select class="form-select" name="q_{{ q.id }}" id="q{{ q.id }}" {% if q.is_required %}required{% endif %}>
+                    <option value="" disabled selected>Choose...</option>
+                    {% for opt in q.choices %}
+                      <option value="{{ opt }}">{{ opt }}</option>
+                    {% endfor %}
+                    {% if q.allow_other %}<option value="Other">Other</option>{% endif %}
+                  </select>
+                  {% if q.allow_other %}
+                    <div id="q{{ q.id }}_other_box" class="mt-2" style="display:none;">
+                      <input type="text" class="form-control" name="q_{{ q.id }}_other" placeholder="Please specify">
+                    </div>
+                  {% endif %}
+
+                {% elif q.question_type == 'radio' %}
+                  {% for opt in q.choices %}
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="q_{{ q.id }}" id="q{{ q.id }}_{{ forloop.counter }}" value="{{ opt }}" {% if q.is_required %}required{% endif %}>
+                      <label class="form-check-label" for="q{{ q.id }}_{{ forloop.counter }}">{{ opt }}</label>
+                    </div>
+                  {% endfor %}
+                  {% if q.allow_other %}
+                    <div class="d-flex align-items-center mt-2">
+                      <div class="form-check me-2">
+                        <input class="form-check-input" type="radio" name="q_{{ q.id }}" id="q{{ q.id }}_other" value="Other">
+                        <label class="form-check-label" for="q{{ q.id }}_other">Other:</label>
+                      </div>
+                      <input type="text" class="form-control form-control-sm" style="max-width:280px;" name="q_{{ q.id }}_other">
+                    </div>
+                  {% endif %}
+
+                {% elif q.question_type == 'checkbox' %}
+                  <div data-checkbox-group="q_{{ q.id }}" data-required="{% if q.is_required %}1{% else %}0{% endif %}">
+                    {% for opt in q.choices %}
+                      <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="q_{{ q.id }}" id="q{{ q.id }}_{{ forloop.counter }}" value="{{ opt }}">
+                        <label class="form-check-label" for="q{{ q.id }}_{{ forloop.counter }}">{{ opt }}</label>
+                      </div>
+                    {% endfor %}
+                    {% if q.allow_other %}
+                      <div class="form-check d-flex align-items-center mt-2">
+                        <input class="form-check-input me-2" type="checkbox" name="q_{{ q.id }}" id="q{{ q.id }}_other_chk" value="Other">
+                        <label class="form-check-label me-2" for="q{{ q.id }}_other_chk">Other:</label>
+                        <input type="text" class="form-control form-control-sm" style="max-width:280px;" name="q_{{ q.id }}_other">
+                      </div>
+                    {% endif %}
+                    {% if q.max_checks %}
+                      <div class="form-text" data-max="{{ q.max_checks }}">Select up to {{ q.max_checks }}.</div>
+                    {% endif %}
+                  </div>
+                {% endif %}
+              </div>
+            {% endfor %}
+
+          </div>
+        </div>
+
+        <div class="text-center mb-5">
+          <button type="submit" class="btn btn-lg btn-success px-5">Submit</button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <script src="{% static 'register/assets/libraries/js/bootstrap.bundle.min.js' %}"></script>
+  <script src="{% static 'register/sweetalert2/sweetalert2.js' %}"></script>
+  <script>
+    // Toggle "Other" text box for selects
+    document.querySelectorAll('select.form-select').forEach(sel => {
+      sel.addEventListener('change', () => {
+        const box = document.getElementById(sel.id + '_other_box');
+        if (!box) return;
+        box.style.display = sel.value === 'Other' ? 'block' : 'none';
+      });
+    });
+
+    // Enforce max checkbox selection and required group on submit
+    document.getElementById('formAnswers').addEventListener('submit', (e) => {
+      // Cap checkbox selections
+      let capped = false;
+      document.querySelectorAll('[data-checkbox-group]').forEach(group => {
+        const hint = group.querySelector('.form-text[data-max]');
+        if (hint) {
+          const max = parseInt(hint.dataset.max, 10);
+          const boxes = group.querySelectorAll('input[type=checkbox]:checked');
+          if (boxes.length > max) {
+            capped = true;
+            Swal.fire({
+              icon: 'warning',
+              title: 'Too many selections',
+              text: 'You can only select up to ' + max + ' options.',
+              background: '#fff', color: '#000'
+            });
+          }
+        }
+        // Validate required checkbox groups
+        if (group.dataset.required === '1') {
+          const anyChecked = group.querySelectorAll('input[type=checkbox]:checked').length > 0;
+          if (!anyChecked) {
+            capped = true;
+            Swal.fire({
+              icon: 'warning',
+              title: 'Required',
+              text: 'Please select at least one option.',
+              background: '#fff', color: '#000'
+            });
+          }
+        }
+      });
+      if (capped) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    });
+  </script>
+</body>
+</html>

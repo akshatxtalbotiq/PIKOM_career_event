@@ -1,6 +1,7 @@
 from email.utils import formataddr
 
 from django.core.mail import EmailMessage,EmailMultiAlternatives
+from django.db.models import Prefetch, Max
 from django.shortcuts import render,get_object_or_404,redirect
 from django.http import HttpResponse, JsonResponse
 from django.db import transaction, IntegrityError
@@ -17,7 +18,7 @@ from io import BytesIO
 
 from urllib3 import request
 from picom import settings
-from .models import Registration, Player, Sponsorship,Campaign, Submission,CampaignTeam, Survey, Question, Answer, SurveyUser
+from .models import Registration, Player, Sponsorship,Campaign, Submission,CampaignTeam, Survey, Question, Answer, SurveyUser, default_identity_field_config
 
 import uuid
 import json
@@ -27,7 +28,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 from email.mime.image import MIMEImage
 import os
-
+from weasyprint import HTML
 
 
 # Create your views here.
@@ -1027,25 +1028,65 @@ def survey_submit(request, survey_id):
 def survey_thankyou(request, survey_id):
     return render(request, "register/survey_thankyou.html", {"survey_id": survey_id})
 
-@login_required
-def survey_list(request):    
-    current_user = request.user    
+def _surveys_for_user(request, purpose):
+    """Surveys visible to the current user, filtered by purpose."""
+    current_user = request.user
+    if current_user.is_superuser:
+        qs = Survey.objects.filter(purpose=purpose)
+    else:
+        qs = Survey.objects.filter(
+            purpose=purpose,
+            fkcampaign__campaign_teams__user=current_user,
+        ).distinct()
+    return qs.order_by('-created_at')
 
-    #get all active campaigns
+
+@login_required
+def survey_list(request):
+    current_user = request.user
     campaigns = Campaign.objects.filter(is_active=True).order_by('-start_date')
     campaign_list = [{"id": str(c.id), "title": c.title} for c in campaigns]
-    
+
     users = User.objects.all()
     user_data = [{"id": user.id, "email": user.email, "name": user.get_full_name()} for user in users]
 
-    if current_user.is_superuser:
-        # Show all surveys
-        surveys = Survey.objects.all()
-    else:
-        # get list of survey id that has user id in SurveyTeam model
-        surveys = Survey.objects.filter(fkcampaign__campaign_teams__user=current_user).distinct()
+    surveys = _surveys_for_user(request, Survey.PURPOSE_FEEDBACK)
 
-    return render(request, 'register/survey_list.html', {'user': current_user, 'surveys': surveys, 'users': user_data, 'campaigns': campaign_list})
+    return render(request, 'register/survey_list.html', {
+        'user': current_user,
+        'surveys': surveys,
+        'users': user_data,
+        'campaigns': campaign_list,
+        'list_purpose': Survey.PURPOSE_FEEDBACK,
+        'list_title': 'Post-event Surveys',
+        'list_subtitle': 'List of surveys sent to attendees after events',
+        'new_button_label': 'New Survey',
+        'modal_title': 'Add New Survey',
+    })
+
+
+@login_required
+def registration_form_list(request):
+    current_user = request.user
+    campaigns = Campaign.objects.filter(is_active=True).order_by('-start_date')
+    campaign_list = [{"id": str(c.id), "title": c.title} for c in campaigns]
+
+    users = User.objects.all()
+    user_data = [{"id": user.id, "email": user.email, "name": user.get_full_name()} for user in users]
+
+    surveys = _surveys_for_user(request, Survey.PURPOSE_REGISTRATION)
+
+    return render(request, 'register/survey_list.html', {
+        'user': current_user,
+        'surveys': surveys,
+        'users': user_data,
+        'campaigns': campaign_list,
+        'list_purpose': Survey.PURPOSE_REGISTRATION,
+        'list_title': 'Registration Forms',
+        'list_subtitle': 'Forms that invitees fill in to register for an event',
+        'new_button_label': 'New Registration Form',
+        'modal_title': 'Add New Registration Form',
+    })
 
 @login_required
 def create_survey(request):
@@ -1063,8 +1104,11 @@ def create_survey(request):
         campaign = get_object_or_404(Campaign, id=campaign_id) if campaign_id else None
         
 
+        purpose = request.POST.get('purpose') or Survey.PURPOSE_REGISTRATION
+        if purpose not in {c[0] for c in Survey.PURPOSE_CHOICES}:
+            purpose = Survey.PURPOSE_REGISTRATION
+
         if id:
-            #print(f"Updating survey with ID: {id}")
             survey = get_object_or_404(Survey, id=id)
             survey.title = title
             survey.start_date = start_date
@@ -1072,17 +1116,35 @@ def create_survey(request):
             survey.is_active = is_active
             survey.description = description
             survey.fkcampaign = campaign
+            survey.purpose = purpose
             survey.save()
         else:
-            #print("Creating a new survey")
             survey = Survey.objects.create(
                 title=title,
                 start_date=start_date,
                 end_date=end_date,
                 is_active=is_active,
                 description=description,
-                fkcampaign=campaign
-            )       
+                fkcampaign=campaign,
+                purpose=purpose,
+            )
+            # For a new registration form, seed the 4 default identity Question
+            # rows so the form is immediately usable end-to-end.
+            if purpose == Survey.PURPOSE_REGISTRATION:
+                defaults = [
+                    (Question.TYPE_IDENTITY_NAME,         "Name",         True),
+                    (Question.TYPE_IDENTITY_EMAIL,        "Email",        True),
+                    (Question.TYPE_IDENTITY_PHONE,        "Phone",        False),
+                    (Question.TYPE_IDENTITY_ORGANIZATION, "Organization", False),
+                ]
+                for idx, (qtype, label, req) in enumerate(defaults, start=1):
+                    Question.objects.create(
+                        survey=survey,
+                        number=idx,
+                        text=label,
+                        question_type=qtype,
+                        is_required=req,
+                    )
 
         return JsonResponse({'success': True, 'id': survey.id})
     return JsonResponse({'success': False, 'error': 'Invalid request'}, status=400)
@@ -1095,11 +1157,12 @@ def get_survey(request, id):
     data = {
         "title": survey.title,
         "start_date": survey.start_date.isoformat() if survey.start_date else "",
-        "end_date": survey.end_date.isoformat() if survey.end_date else "",       
+        "end_date": survey.end_date.isoformat() if survey.end_date else "",
         "active": survey.is_active,
-        "id": survey.id,        
+        "id": survey.id,
         "description": survey.description,
         "campaign_id": str(survey.fkcampaign.id) if survey.fkcampaign else None,
+        "purpose": survey.purpose,
     }
     return JsonResponse(data)
 
@@ -1335,4 +1398,487 @@ def send_event_reminder(request, id):
    
     return JsonResponse({'success': True, 'message': f"Reminder sent successfully to {total_sent} out of {total_players} registered participants."})
 
+
+# ---------------------------------------------------------------------------
+# Generic form builder — lets event owners author their own registration forms
+# ---------------------------------------------------------------------------
+
+@login_required
+def form_builder(request, survey_id):
+    survey = get_object_or_404(Survey, id=survey_id)
+    if not request.user.is_superuser:
+        team_member = CampaignTeam.objects.filter(
+            campaign=survey.fkcampaign, user=request.user
+        ).exists() if survey.fkcampaign else False
+        if not team_member:
+            return HttpResponse(status=403)
+
+    questions = survey.questions.all().order_by("number")
+    public_url = request.build_absolute_uri(
+        f"/form/{survey.survey_code}/"
+    )
+    return render(request, "register/form_builder.html", {
+        "user": request.user,
+        "survey": survey,
+        "questions": questions,
+        "public_url": public_url,
+        "question_types": Question.QUESTION_TYPES,
+        "identity_field_config": survey.identity_field_config or [],
+    })
+
+
+@login_required
+def upload_banner(request, survey_id):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
+    survey = get_object_or_404(Survey, id=survey_id)
+    banner = request.FILES.get("banner")
+    if not banner:
+        return JsonResponse({"success": False, "message": "No file uploaded"}, status=400)
+    if banner.size > 5 * 1024 * 1024:
+        return JsonResponse({"success": False, "message": "Banner must be under 5 MB"}, status=400)
+    if not banner.content_type.startswith("image/"):
+        return JsonResponse({"success": False, "message": "File must be an image"}, status=400)
+    # Replace any existing banner
+    if survey.banner:
+        survey.banner.delete(save=False)
+    survey.banner = banner
+    survey.save(update_fields=["banner"])
+    return JsonResponse({"success": True, "url": survey.banner.url})
+
+
+@login_required
+def delete_banner(request, survey_id):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
+    survey = get_object_or_404(Survey, id=survey_id)
+    if survey.banner:
+        survey.banner.delete(save=False)
+        survey.banner = None
+        survey.save(update_fields=["banner"])
+    return JsonResponse({"success": True})
+
+
+@login_required
+def save_identity_config(request, survey_id):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"success": False, "message": "Invalid JSON"}, status=400)
+    config = data.get("config")
+    if not isinstance(config, list):
+        return JsonResponse({"success": False, "message": "config must be a list"}, status=400)
+
+    allowed_keys = {"name", "email", "phone", "organization"}
+    cleaned = []
+    seen = set()
+    for item in config:
+        if not isinstance(item, dict):
+            continue
+        key = item.get("key")
+        if key not in allowed_keys or key in seen:
+            continue
+        seen.add(key)
+        cleaned.append({
+            "key": key,
+            "label": (item.get("label") or key.title()).strip()[:100],
+            "visible": bool(item.get("visible", True)),
+            "required": bool(item.get("required", False)),
+        })
+    # Force-include any missing keys (hidden, optional) so the config is always complete.
+    defaults = {f["key"]: f for f in default_identity_field_config()}
+    for k in ["name", "email", "phone", "organization"]:
+        if k not in seen:
+            d = dict(defaults[k])
+            d["visible"] = False
+            cleaned.append(d)
+
+    survey = get_object_or_404(Survey, id=survey_id)
+    survey.identity_field_config = cleaned
+    survey.save(update_fields=["identity_field_config"])
+    return JsonResponse({"success": True, "config": cleaned})
+
+
+@login_required
+def save_question(request):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"success": False, "message": "Invalid JSON"}, status=400)
+
+    qid = data.get("id")
+    survey_id = data.get("survey_id")
+    text = (data.get("text") or "").strip()
+    help_text = (data.get("help_text") or "").strip()
+    question_type = data.get("question_type") or Question.TYPE_TEXT
+    is_required = bool(data.get("is_required", False))
+    allow_other = bool(data.get("allow_other", False))
+    max_checks = data.get("max_checks") or None
+    choices = data.get("choices") or []
+    raw_followups = data.get("choice_followups") or {}
+
+    if not text:
+        return JsonResponse({"success": False, "message": "Question text is required"}, status=400)
+
+    valid_types = {choice[0] for choice in Question.QUESTION_TYPES}
+    # matrix_roles is reserved for the legacy PIKOM survey; identity types
+    # are only created automatically (when the survey is created) and via
+    # the data-migration backfill — not via the builder modal.
+    valid_types.discard(Question.TYPE_MATRIX_ROLES)
+    is_identity = question_type in Question.IDENTITY_TYPES
+    if not qid and is_identity:
+        # New questions can't pick an identity type from the builder modal.
+        return JsonResponse({"success": False, "message": "Invalid question type"}, status=400)
+    if question_type not in valid_types:
+        return JsonResponse({"success": False, "message": "Invalid question type"}, status=400)
+
+    needs_choices = question_type in (
+        Question.TYPE_RADIO, Question.TYPE_CHECKBOX, Question.TYPE_SELECT
+    )
+    if needs_choices:
+        choices = [c.strip() for c in choices if isinstance(c, str) and c.strip()]
+        if not choices:
+            return JsonResponse(
+                {"success": False, "message": "At least one choice is required"},
+                status=400,
+            )
+        # Keep only follow-ups whose key actually matches one of the choices.
+        choice_followups = {}
+        if isinstance(raw_followups, dict):
+            for label, placeholder in raw_followups.items():
+                if label in choices and isinstance(placeholder, str):
+                    choice_followups[label] = placeholder.strip()[:200] or "Please specify"
+        choice_followups = choice_followups or None
+    else:
+        choices = None
+        allow_other = False
+        choice_followups = None
+
+    if max_checks not in (None, ""):
+        try:
+            max_checks = int(max_checks)
+            if max_checks <= 0:
+                max_checks = None
+        except (TypeError, ValueError):
+            max_checks = None
+    else:
+        max_checks = None
+
+    if qid:
+        question = get_object_or_404(Question, id=qid)
+        question.text = text
+        question.help_text = help_text
+        question.question_type = question_type
+        question.is_required = is_required
+        question.allow_other = allow_other
+        question.max_checks = max_checks if question_type == Question.TYPE_CHECKBOX else None
+        question.choices = choices
+        question.choice_followups = choice_followups
+        question.save()
+    else:
+        survey = get_object_or_404(Survey, id=survey_id)
+        next_number = (survey.questions.aggregate(m=Max("number"))["m"] or 0) + 1
+        question = Question.objects.create(
+            survey=survey,
+            number=next_number,
+            text=text,
+            help_text=help_text,
+            question_type=question_type,
+            is_required=is_required,
+            allow_other=allow_other,
+            max_checks=max_checks if question_type == Question.TYPE_CHECKBOX else None,
+            choices=choices,
+            choice_followups=choice_followups,
+        )
+
+    return JsonResponse({"success": True, "id": question.id, "number": question.number})
+
+
+@login_required
+def get_question(request, question_id):
+    question = get_object_or_404(Question, id=question_id)
+    return JsonResponse({
+        "id": question.id,
+        "survey_id": question.survey_id,
+        "number": question.number,
+        "text": question.text,
+        "help_text": question.help_text,
+        "question_type": question.question_type,
+        "is_required": question.is_required,
+        "allow_other": question.allow_other,
+        "max_checks": question.max_checks,
+        "choices": question.choices or [],
+        "choice_followups": question.choice_followups or {},
+    })
+
+
+@login_required
+def delete_question(request, question_id):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
+    question = get_object_or_404(Question, id=question_id)
+    if question.question_type in Question.IDENTITY_TYPES:
+        return JsonResponse(
+            {"success": False, "message": "Identity fields cannot be deleted. Mark them optional instead."},
+            status=400,
+        )
+    survey = question.survey
+    question.delete()
+    # Renumber remaining questions so display order stays 1..N
+    for idx, q in enumerate(survey.questions.order_by("number"), start=1):
+        if q.number != idx:
+            q.number = idx
+            q.save(update_fields=["number"])
+    return JsonResponse({"success": True})
+
+
+@login_required
+def reorder_questions(request, survey_id):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"success": False, "message": "Invalid JSON"}, status=400)
+    order = data.get("order") or []
+    survey = get_object_or_404(Survey, id=survey_id)
+    with transaction.atomic():
+        for idx, qid in enumerate(order, start=1):
+            Question.objects.filter(id=qid, survey=survey).update(number=idx)
+    return JsonResponse({"success": True})
+
+
+# ---------------------------------------------------------------------------
+# Public generic form flow (kept separate from the legacy /survey/ flow that
+# is hardcoded for the PIKOM Talent Gap survey)
+# ---------------------------------------------------------------------------
+
+def form_public(request, survey_code):
+    survey = get_object_or_404(Survey, survey_code=survey_code)
+    return render(request, "register/form_public.html", {
+        "survey": survey,
+    })
+
+
+@login_required
+def form_preview(request, survey_id):
+    """Owner-only preview. Renders the public form exactly as participants
+    will see it, but flagged so the submit handler is a no-op (no DB writes)."""
+    survey = get_object_or_404(Survey, id=survey_id)
+    if not request.user.is_superuser:
+        team_member = CampaignTeam.objects.filter(
+            campaign=survey.fkcampaign, user=request.user
+        ).exists() if survey.fkcampaign else False
+        if not team_member:
+            return HttpResponse(status=403)
+    return render(request, "register/form_public.html", {
+        "survey": survey,
+        "preview_mode": True,
+    })
+
+
+@csrf_exempt
+def form_initial_submit(request, survey_id):
+    survey = get_object_or_404(Survey, pk=survey_id)
+    if request.method != "POST" or not survey.is_active:
+        return redirect("form_public", survey_code=survey.survey_code)
+
+    survey_user = SurveyUser.objects.create(
+        survey=survey,
+        name=(request.POST.get("name") or "").strip(),
+        email=(request.POST.get("email") or "").strip(),
+        phone=(request.POST.get("phone") or "").strip(),
+        organization=(request.POST.get("organization") or "").strip(),
+    )
+
+    if not survey.questions.exists():
+        return redirect("form_thankyou", survey_code=survey.survey_code, user_id=survey_user.id)
+    return redirect("form_detail", survey_code=survey.survey_code, user_id=survey_user.id)
+
+
+def form_detail(request, survey_code, user_id):
+    survey = get_object_or_404(Survey, survey_code=survey_code)
+    survey_user = get_object_or_404(SurveyUser, pk=user_id, survey=survey)
+    return render(request, "register/form_detail.html", {
+        "survey": survey,
+        "survey_user": survey_user,
+    })
+
+
+@csrf_exempt
+def form_submit(request, survey_id):
+    """Single-page submission: creates SurveyUser from identity questions and
+    Answer rows for everything else, in one transaction."""
+    survey = get_object_or_404(Survey, pk=survey_id)
+    if request.method != "POST":
+        return redirect("form_public", survey_code=survey.survey_code)
+
+    with transaction.atomic():
+        # 1) Pull identity values out of POST so we can construct SurveyUser.
+        identity_values = {}
+        questions = list(survey.questions.all())
+        for q in questions:
+            if q.question_type in Question.IDENTITY_TYPES:
+                target_field = Question.IDENTITY_TYPES[q.question_type]
+                identity_values[target_field] = (request.POST.get(f"q_{q.id}") or "").strip()
+
+        survey_user = SurveyUser.objects.create(
+            survey=survey,
+            name=identity_values.get("name", ""),
+            email=identity_values.get("email", ""),
+            phone=identity_values.get("phone", ""),
+            organization=identity_values.get("organization", ""),
+        )
+
+        # 2) Save non-identity questions as Answer rows.
+        for q in questions:
+            if q.question_type in Question.IDENTITY_TYPES:
+                continue
+            field = f"q_{q.id}"
+
+            if q.question_type in (Question.TYPE_TEXT, Question.TYPE_TEXTAREA):
+                val = (request.POST.get(field) or "").strip()
+                if val:
+                    Answer.objects.create(
+                        survey=survey, question=q, user=survey_user, answer_text=val
+                    )
+
+            elif q.question_type in (Question.TYPE_RADIO, Question.TYPE_SELECT):
+                picked = request.POST.get(field, "")
+                other = (request.POST.get(f"{field}_other") or "").strip() if q.allow_other else ""
+                # Collect any configured follow-up text for the picked option
+                followups = {}
+                if picked and q.choice_followups and picked in q.choice_followups:
+                    fu_val = (request.POST.get(f"{field}_followup_{picked}") or "").strip()
+                    if fu_val:
+                        followups[picked] = fu_val
+                if picked:
+                    answer_text = None
+                    if picked == "Other" and other:
+                        answer_text = other
+                    elif followups:
+                        answer_text = json.dumps(followups, ensure_ascii=False)
+                    Answer.objects.create(
+                        survey=survey, question=q, user=survey_user,
+                        selected_options=[picked],
+                        answer_text=answer_text,
+                    )
+                elif q.allow_other and other:
+                    Answer.objects.create(
+                        survey=survey, question=q, user=survey_user,
+                        selected_options=["Other"], answer_text=other,
+                    )
+
+            elif q.question_type == Question.TYPE_CHECKBOX:
+                picked = request.POST.getlist(field)
+                other = (request.POST.get(f"{field}_other") or "").strip() if q.allow_other else ""
+                if q.max_checks and len(picked) > q.max_checks:
+                    picked = picked[: q.max_checks]
+                # Follow-up text for each picked option that has one configured
+                followups = {}
+                if q.choice_followups:
+                    for opt in picked:
+                        if opt in q.choice_followups:
+                            fu_val = (request.POST.get(f"{field}_followup_{opt}") or "").strip()
+                            if fu_val:
+                                followups[opt] = fu_val
+                if picked or other:
+                    if other and "Other" not in picked:
+                        picked.append("Other")
+                    if followups and not other:
+                        answer_text = json.dumps(followups, ensure_ascii=False)
+                    else:
+                        answer_text = other if other else None
+                    Answer.objects.create(
+                        survey=survey, question=q, user=survey_user,
+                        selected_options=picked,
+                        answer_text=answer_text,
+                    )
+
+    return redirect("form_thankyou", survey_code=survey.survey_code, user_id=survey_user.id)
+
+
+def form_thankyou(request, survey_code, user_id):
+    survey = get_object_or_404(Survey, survey_code=survey_code)
+    survey_user = get_object_or_404(SurveyUser, pk=user_id, survey=survey)
+
+    qr_data_uri = None
+    # Only registration forms need a QR for event check-in. Post-event surveys
+    # just collect feedback — no QR.
+    if survey.purpose == Survey.PURPOSE_REGISTRATION:
+        import base64
+        from io import BytesIO
+        buf = BytesIO()
+        qrcode.make(str(survey_user.registration_code)).save(buf, format="PNG")
+        qr_data_uri = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
+
+    return render(request, "register/form_thankyou.html", {
+        "survey": survey,
+        "survey_user": survey_user,
+        "qr_data_uri": qr_data_uri,
+    })
+
+
+def build_answers_dict(submission):
+    """
+    Return {question_id: answer_obj} for one submission.
+    Adjust this to your schema (SurveyAnswer etc.).
+    """
+    # Example if you have SurveyAnswer model with FK to submission and question:
+    # answers = submission.answers.select_related("question").all()
+    # return {a.question_id: a for a in answers}
+
+    answers = submission.answers.all()  # adjust
+    return {a.question_id: a for a in answers}
+
+def survey_consolidated_pdf(request, survey_id):
+    survey = get_object_or_404(
+        Survey.objects.prefetch_related("questions"),
+        survey_code=survey_id,
+    )
+
+    # Prefetch answers for each SurveyUser to avoid N+1 queries
+    users_qs = (
+        SurveyUser.objects
+        .filter(survey=survey)
+        .prefetch_related(
+            Prefetch(
+                "answer_set",  # default reverse name since Answer.user has no related_name
+                queryset=Answer.objects.filter(survey=survey).select_related("question"),
+            )
+        )
+        .order_by("-created_at")
+    )
+
+    submissions = []
+    for u in users_qs:
+        # Build {question_id: Answer}
+        answers_dict = {a.question_id: a for a in u.answer_set.all()}
+        submissions.append({
+            "survey_user": u,
+            "answers": answers_dict,
+        })
+
+    html_string = render_to_string(
+        "register/consolidated_responses.html",  # your consolidated template
+        {
+            "survey": survey,
+            "submissions": submissions,
+        },
+        request=request,
+    )
+
+    base_url = request.build_absolute_uri("/")  # helps WeasyPrint resolve relative assets
+
+    pdf_bytes = HTML(string=html_string, base_url=base_url).write_pdf()
+
+    filename = f"survey_{survey_id}_consolidated_responses.pdf"
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
 
