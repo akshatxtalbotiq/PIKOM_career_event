@@ -79,12 +79,22 @@ urlpatterns = [
     path('send_survey_feedback_reminder/<int:survey_id>/', send_survey_feedback_reminder, name='send_survey_feedback_reminder'),
     path('delete_survey_users/<int:survey_id>/', delete_survey_users, name='delete_survey_users'),
 
-    # Generic public form flow
-    path('form/<str:survey_code>/', form_public, name='form_public'),
-    path('form/<int:survey_id>/start/', form_initial_submit, name='form_initial_submit'),
-    path('form/<str:survey_code>/q/<int:user_id>/', form_detail, name='form_detail'),
-    path('form/<int:survey_id>/submit/', form_submit, name='form_submit'),
-    path('form/<str:survey_code>/thanks/<int:user_id>/', form_thankyou, name='form_thankyou'),
+    # Generic public registration flow. /event/ is the user-facing path. The
+    # legacy /form/ paths are kept as silent fallbacks so any QR codes / emails
+    # already shared continue to work. URL names are unchanged, so all
+    # `{% url 'form_public' %}` template tags now resolve to /event/<slug>/.
+    path('event/<str:survey_code>/', form_public, name='form_public'),
+    path('event/<int:survey_id>/start/', form_initial_submit, name='form_initial_submit'),
+    path('event/<str:survey_code>/q/<int:user_id>/', form_detail, name='form_detail'),
+    path('event/<int:survey_id>/submit/', form_submit, name='form_submit'),
+    path('event/<str:survey_code>/thanks/<int:user_id>/', form_thankyou, name='form_thankyou'),
+
+    # Legacy /form/ aliases (do NOT carry name= so reverse() picks /event/)
+    path('form/<str:survey_code>/', form_public),
+    path('form/<int:survey_id>/start/', form_initial_submit),
+    path('form/<str:survey_code>/q/<int:user_id>/', form_detail),
+    path('form/<int:survey_id>/submit/', form_submit),
+    path('form/<str:survey_code>/thanks/<int:user_id>/', form_thankyou),
     path('exclude_columns/', exclude_columns, name='exclude_columns'),
     path('remove_submissions/', remove_submissions, name='remove_submissions'),
 

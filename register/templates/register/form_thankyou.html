@@ -50,7 +50,7 @@
           </p>
         {% endif %}
 
-        <a href="{% url 'form_public' survey.survey_code %}" class="btn btn-outline-success">Back to form</a>
+        <a href="{% url 'form_public' survey.slug|default:survey.survey_code %}" class="btn btn-outline-success">Back to form</a>
       </div>
     </div>
   </section>

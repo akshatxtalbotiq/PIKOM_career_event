@@ -127,10 +127,10 @@
                             <a href="{% url 'form_preview' survey.id %}" target="_blank" class="text-body p-0" title="Preview form (no data saved)">
                               <i class="material-symbols-rounded">visibility</i>
                             </a>
-                            <a href="{% url 'form_public' survey.survey_code %}" target="_blank" class="text-body p-0" title="Open public registration form">
+                            <a href="{% url 'form_public' survey.slug|default:survey.survey_code %}" target="_blank" class="text-body p-0" title="Open public registration form">
                                 <i class="material-symbols-rounded">public</i>
                               </a>
-                            <a href="javascript:void(0);" class="text-body p-0 copy-link-btn" data-link="{% url 'form_public' survey.survey_code %}" title="Copy public link">
+                            <a href="javascript:void(0);" class="text-body p-0 copy-link-btn" data-link="{% url 'form_public' survey.slug|default:survey.survey_code %}" title="Copy public link">
                               <i class="material-symbols-rounded">link</i>
                             </a>
                             {% if list_purpose == 'registration' %}
@@ -180,6 +180,17 @@
                   <label for="surveyTitle" class="form-label">{% if list_purpose == 'registration' %}Form{% else %}Survey{% endif %} Title</label>
                   <input type="text" class="form-control border border-1 rounded px-2 py-2" id="surveyTitle" name="surveyTitle" placeholder="Title" required>
                   <div class="invalid-feedback">Title is required.</div>
+                </div>
+              </div>
+              <div class="col-xl-12 col-lg-12">
+                <div class="mb-3">
+                  <label for="surveySlug" class="form-label">Public URL (optional)</label>
+                  <div class="input-group">
+                    <span class="input-group-text">/form/</span>
+                    <input type="text" class="form-control" id="surveySlug" name="surveySlug" placeholder="auto-generated from title" maxlength="80">
+                    <span class="input-group-text">/</span>
+                  </div>
+                  <small class="text-muted">Leave blank to auto-generate from the title. Use only lowercase letters, numbers, and hyphens.</small>
                 </div>
               </div>
               <div class="col-xl-6 col-lg-12">
@@ -315,6 +326,7 @@
               document.getElementById('surveyDesc').value = data.description || '';
               document.getElementById('campaignSelect').value = data.campaign_id || '';
               document.getElementById('surveyPurpose').value = data.purpose || "{{ list_purpose|default:'registration' }}";
+              document.getElementById('surveySlug').value = data.slug || '';
 
               quill.clipboard.dangerouslyPasteHTML(0, data.description || '');
 
@@ -492,6 +504,7 @@
         const campaignId = $('#campaignSelect').val();
         const surveyId = $('#surveyID').val();
         const purpose = $('#surveyPurpose').val();
+        const slug = $('#surveySlug').val();
 
         const description = quill.root.innerHTML;
 
@@ -508,18 +521,19 @@
             is_active: isActive,
             description: description,
             campaign_id: campaignId,
-            purpose: purpose
+            purpose: purpose,
+            slug: slug,
           },
           success: function (response) {
             if (response.success) {
-              //alert('Campaign saved!');
-              location.reload();  
+              location.reload();
             } else {
-              alert('Failed to save.');
+              alert(response.error || 'Failed to save.');
             }
           },
-          error: function () {
-            alert('Something went wrong!');
+          error: function (xhr) {
+            const msg = (xhr.responseJSON && xhr.responseJSON.error) || 'Something went wrong!';
+            alert(msg);
           }
         });
       

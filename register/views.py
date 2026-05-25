@@ -12,6 +12,8 @@ from django.utils import timezone
 from django.template.loader import render_to_string
 from django.core.validators import validate_email, ValidationError
 from django.utils.html import strip_tags
+from django.utils.text import slugify
+from django.db.models import Q
 
 from django.contrib.auth.models import User
 from io import BytesIO
@@ -1106,6 +1108,22 @@ def registration_form_list(request):
         'auto_open_campaign_id': auto_open_campaign_id,
     })
 
+def _unique_slug(title, exclude_id=None):
+    """Generate a unique Survey slug from `title`. Falls back to a numeric
+    suffix if the base slug is taken."""
+    base = slugify(title or "")[:70] or "form"
+    slug = base
+    n = 2
+    qs = Survey.objects.all()
+    if exclude_id:
+        qs = qs.exclude(id=exclude_id)
+    while qs.filter(slug=slug).exists():
+        suffix = f"-{n}"
+        slug = base[:70 - len(suffix)] + suffix
+        n += 1
+    return slug
+
+
 @login_required
 def create_survey(request):
 
@@ -1126,6 +1144,10 @@ def create_survey(request):
         if purpose not in {c[0] for c in Survey.PURPOSE_CHOICES}:
             purpose = Survey.PURPOSE_REGISTRATION
 
+        # Optional slug from the modal; if provided, validate uniqueness.
+        # If blank, we auto-generate from the title.
+        raw_slug = (request.POST.get('slug') or '').strip()
+
         if id:
             survey = get_object_or_404(Survey, id=id)
             survey.title = title
@@ -1135,10 +1157,33 @@ def create_survey(request):
             survey.description = description
             survey.fkcampaign = campaign
             survey.purpose = purpose
+            # Update slug only if user explicitly changed it or it's missing
+            if raw_slug:
+                new_slug = slugify(raw_slug)[:80]
+                if new_slug and new_slug != survey.slug:
+                    if Survey.objects.filter(slug=new_slug).exclude(id=survey.id).exists():
+                        return JsonResponse(
+                            {'success': False, 'error': f"URL '{new_slug}' is already used by another form."},
+                            status=400,
+                        )
+                    survey.slug = new_slug
+            elif not survey.slug:
+                survey.slug = _unique_slug(title, exclude_id=survey.id)
             survey.save()
         else:
+            # If the admin typed a custom slug, use it (validated); else derive.
+            if raw_slug:
+                slug = slugify(raw_slug)[:80] or _unique_slug(title)
+                if Survey.objects.filter(slug=slug).exists():
+                    return JsonResponse(
+                        {'success': False, 'error': f"URL '{slug}' is already used by another form."},
+                        status=400,
+                    )
+            else:
+                slug = _unique_slug(title)
             survey = Survey.objects.create(
                 title=title,
+                slug=slug,
                 start_date=start_date,
                 end_date=end_date,
                 is_active=is_active,
@@ -1174,6 +1219,7 @@ def get_survey(request, id):
   
     data = {
         "title": survey.title,
+        "slug": survey.slug or "",
         "start_date": survey.start_date.isoformat() if survey.start_date else "",
         "end_date": survey.end_date.isoformat() if survey.end_date else "",
         "active": survey.is_active,
@@ -1532,7 +1578,7 @@ def form_builder(request, survey_id):
 
     questions = survey.questions.all().order_by("number")
     public_url = request.build_absolute_uri(
-        f"/form/{survey.survey_code}/"
+        f"/event/{survey.slug or survey.survey_code}/"
     )
     return render(request, "register/form_builder.html", {
         "user": request.user,
@@ -1784,8 +1830,23 @@ def reorder_questions(request, survey_id):
 # is hardcoded for the PIKOM Talent Gap survey)
 # ---------------------------------------------------------------------------
 
+def _resolve_survey_by_identifier(identifier):
+    """Look up a Survey by slug first; fall back to the UUID survey_code so
+    legacy links / QR codes keep working."""
+    survey = Survey.objects.filter(slug=identifier).first()
+    if survey:
+        return survey
+    try:
+        return get_object_or_404(Survey, survey_code=identifier)
+    except (ValueError, Survey.DoesNotExist):
+        from django.http import Http404
+        raise Http404("Form not found")
+
+
 def form_public(request, survey_code):
-    survey = get_object_or_404(Survey, survey_code=survey_code)
+    # `survey_code` is named for backwards compat with reverse() callers, but it
+    # may be either a slug ("cio-conference-2026") or a UUID.
+    survey = _resolve_survey_by_identifier(survey_code)
     return render(request, "register/form_public.html", {
         "survey": survey,
     })
@@ -1822,13 +1883,14 @@ def form_initial_submit(request, survey_id):
         organization=(request.POST.get("organization") or "").strip(),
     )
 
+    public_ident = survey.slug or str(survey.survey_code)
     if not survey.questions.exists():
-        return redirect("form_thankyou", survey_code=survey.survey_code, user_id=survey_user.id)
-    return redirect("form_detail", survey_code=survey.survey_code, user_id=survey_user.id)
+        return redirect("form_thankyou", survey_code=public_ident, user_id=survey_user.id)
+    return redirect("form_detail", survey_code=public_ident, user_id=survey_user.id)
 
 
 def form_detail(request, survey_code, user_id):
-    survey = get_object_or_404(Survey, survey_code=survey_code)
+    survey = _resolve_survey_by_identifier(survey_code)
     survey_user = get_object_or_404(SurveyUser, pk=user_id, survey=survey)
     return render(request, "register/form_detail.html", {
         "survey": survey,
@@ -1929,7 +1991,7 @@ def form_submit(request, survey_id):
                         answer_text=answer_text,
                     )
 
-    return redirect("form_thankyou", survey_code=survey.survey_code, user_id=survey_user.id)
+    return redirect("form_thankyou", survey_code=(survey.slug or str(survey.survey_code)), user_id=survey_user.id)
 
 
 # ---------------------------------------------------------------------------
@@ -2087,7 +2149,7 @@ def send_survey_feedback_reminder(request, survey_id):
     if not ids:
         return JsonResponse({"success": False, "message": "No participants selected"}, status=400)
 
-    survey_url = request.build_absolute_uri(f"/form/{feedback.survey_code}/")
+    survey_url = request.build_absolute_uri(f"/event/{feedback.slug or feedback.survey_code}/")
     users = SurveyUser.objects.filter(survey=survey, id__in=ids)
     sent = sum(
         1 for u in users
@@ -2117,7 +2179,7 @@ def delete_survey_users(request, survey_id):
 
 
 def form_thankyou(request, survey_code, user_id):
-    survey = get_object_or_404(Survey, survey_code=survey_code)
+    survey = _resolve_survey_by_identifier(survey_code)
     survey_user = get_object_or_404(SurveyUser, pk=user_id, survey=survey)
 
     qr_data_uri = None

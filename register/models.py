@@ -200,6 +200,11 @@ class Survey(models.Model):
     ]
 
     title = models.CharField(max_length=255)
+    slug = models.SlugField(
+        max_length=80, unique=True, null=True, blank=True,
+        help_text="Human-friendly identifier used in the public URL "
+                  "(e.g. 'cio-conference-2026'). Auto-generated from the title.",
+    )
     description = models.TextField(blank=True)
     fkcampaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="surveys", null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
