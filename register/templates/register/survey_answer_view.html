@@ -105,6 +105,51 @@
                 </div>
         </div>
 
+        <!-- Approval panel: one-click vetting for the registration currently
+             being viewed. Calls the same /set_survey_user_status/ endpoint as
+             the bulk action on the list page, just with a single id. -->
+        {% if survey.purpose == "registration" %}
+        <div class="card mt-3 mb-4 approval-panel" id="approvalPanel"
+             data-current-status="{{ survey_user.approval_status }}">
+            <div class="card-body py-3">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
+                        <span class="fw-bold me-2">Vetting status:</span>
+                        <span id="approvalStatusBadge"
+                              class="badge {% if survey_user.approval_status == 'approved' %}bg-success{% elif survey_user.approval_status == 'rejected' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                            {% if survey_user.approval_status == 'approved' %}Approved
+                            {% elif survey_user.approval_status == 'rejected' %}Rejected
+                            {% else %}Pending review{% endif %}
+                        </span>
+                        <span id="approvalMeta" class="text-muted small ms-2">
+                            {% if survey_user.approved_by %}
+                                by {{ survey_user.approved_by.get_full_name|default:survey_user.approved_by.username }}{% if survey_user.approved_at %} on {{ survey_user.approved_at|date:"M d, Y H:i" }}{% endif %}
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="button" class="btn btn-success btn-sm approval-btn"
+                                data-status="approved">
+                            <i class="fas fa-check me-1"></i> Approve
+                        </button>
+                        <button type="button" class="btn btn-outline-danger btn-sm approval-btn"
+                                data-status="rejected">
+                            <i class="fas fa-times me-1"></i> Reject
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm approval-btn"
+                                data-status="pending">
+                            <i class="fas fa-undo me-1"></i> Reset to Pending
+                        </button>
+                    </div>
+                </div>
+                <div class="text-muted small mt-2 mb-0">
+                    Approve to make this delegate eligible to receive their QR-code email.
+                    Rejected delegates will never receive a QR.
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Stats Overview -->
         <!-- <div class="stats-grid">
             <div class="card text-center">
@@ -187,18 +232,21 @@
         </div>
         {% endif %}
 
-        <!-- Survey Answers -->
+        <!-- Non-identity questions only — identity fields are already shown
+             in the Respondent Information card above, so showing them again
+             here just duplicates the same name/email/phone/org rows. -->
+        {% if extra_questions %}
         <div class="answers-section">
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0">
                         <i class="fas fa-clipboard-list me-2"></i>
-                        Survey Responses
+                        {{ responses_section_title }}
                     </h5>
                 </div>
                 <div class="card-body">
-                    {% if survey.questions.all %}
-                        {% for question in survey.questions.all %}
+                    {% if extra_questions %}
+                        {% for question in extra_questions %}
                             <div class="card mb-3">
                                 <div class="card-body">
                                     <div class="d-flex align-items-start">
@@ -370,13 +418,14 @@
                     {% else %}
                         <div class="alert alert-info text-center">
                             <i class="fas fa-info-circle me-2"></i>
-                            No questions found for this survey.
+                            {{ responses_empty_text }}
                         </div>
                     {% endif %}
                 </div>
             </div>
         </div>
-        
+        {% endif %}
+
         <!-- Action Buttons -->
         <div class="text-center mt-4 mb-4">
             <a href="{% url 'survey_submission_list' survey.id %}" class="btn btn-primary me-3">
@@ -390,4 +439,95 @@
         </div>
     </div>
 </main>
+
+<script>
+(function () {
+    const panel = document.getElementById('approvalPanel');
+    if (!panel) return;  // only present on registration forms
+
+    const surveyId = {{ survey.id }};
+    const userId = {{ survey_user.id }};
+    const badge = document.getElementById('approvalStatusBadge');
+    const meta = document.getElementById('approvalMeta');
+
+    function csrf() {
+        const m = document.cookie.match(/(^|;)\s*csrftoken=([^;]+)/);
+        return m ? decodeURIComponent(m[2]) : '';
+    }
+
+    const labels = {
+        approved:  { text: 'Approved',       cls: 'badge bg-success' },
+        rejected:  { text: 'Rejected',       cls: 'badge bg-danger' },
+        pending:   { text: 'Pending review', cls: 'badge bg-warning text-dark' },
+    };
+
+    function setBusy(busy) {
+        panel.querySelectorAll('.approval-btn').forEach(b => b.disabled = busy);
+    }
+
+    panel.addEventListener('click', function (ev) {
+        const btn = ev.target.closest('.approval-btn');
+        if (!btn) return;
+        const newStatus = btn.dataset.status;
+        const verb = newStatus === 'approved' ? 'Approve' :
+                     newStatus === 'rejected' ? 'Reject' : 'Reset to pending';
+
+        const confirmFn = (window.Swal && Swal.fire)
+            ? () => Swal.fire({
+                title: 'Confirm', icon: 'question',
+                text: `${verb} this registration?`,
+                showCancelButton: true, confirmButtonText: 'Yes, proceed',
+                confirmButtonColor: newStatus === 'rejected' ? '#dc3545' : '#198754',
+              }).then(r => r.isConfirmed)
+            : () => Promise.resolve(confirm(`${verb} this registration?`));
+
+        confirmFn().then(ok => {
+            if (!ok) return;
+            setBusy(true);
+
+            const fd = new FormData();
+            fd.append('ids', JSON.stringify([userId]));
+            fd.append('status', newStatus);
+
+            fetch(`/set_survey_user_status/${surveyId}/`, {
+                method: 'POST',
+                body: fd,
+                headers: { 'X-CSRFToken': csrf() },
+                credentials: 'same-origin',
+            })
+            .then(r => r.json())
+            .then(data => {
+                setBusy(false);
+                if (data && data.success) {
+                    const lbl = labels[newStatus] || labels.pending;
+                    badge.className = lbl.cls;
+                    badge.textContent = lbl.text;
+                    if (meta) {
+                        meta.textContent = newStatus === 'pending'
+                            ? ''
+                            : `by you just now`;
+                    }
+                    panel.dataset.currentStatus = newStatus;
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'success', title: 'Done', text: data.message || '',
+                            timer: 1400, showConfirmButton: false,
+                        });
+                    }
+                } else {
+                    const msg = (data && data.message) || 'Could not update status.';
+                    if (window.Swal) Swal.fire({ icon: 'error', title: 'Failed', text: msg });
+                    else alert(msg);
+                }
+            })
+            .catch(err => {
+                setBusy(false);
+                console.error(err);
+                if (window.Swal) Swal.fire({ icon: 'error', title: 'Network error', text: String(err) });
+                else alert('Network error: ' + err);
+            });
+        });
+    });
+})();
+</script>
 {% endblock %}

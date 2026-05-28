@@ -12,7 +12,8 @@ from .views import index, save_registration, thankyou, sponsorship, save_sponsor
     form_builder, save_question, get_question, delete_question, reorder_questions, form_public, form_initial_submit, \
     form_detail, form_submit, form_thankyou, registration_form_list, \
     upload_banner, delete_banner, save_identity_config, form_preview, \
-    send_survey_qr, send_survey_event_reminder, send_survey_feedback_reminder, delete_survey_users
+    send_survey_qr, send_survey_event_reminder, send_survey_feedback_reminder, delete_survey_users, \
+    set_survey_user_status
 
 urlpatterns = [
     path('', campaign_list, name='campaign_list'),
@@ -78,6 +79,7 @@ urlpatterns = [
     path('send_survey_event_reminder/<int:survey_id>/', send_survey_event_reminder, name='send_survey_event_reminder'),
     path('send_survey_feedback_reminder/<int:survey_id>/', send_survey_feedback_reminder, name='send_survey_feedback_reminder'),
     path('delete_survey_users/<int:survey_id>/', delete_survey_users, name='delete_survey_users'),
+    path('set_survey_user_status/<int:survey_id>/', set_survey_user_status, name='set_survey_user_status'),
 
     # Generic public registration flow. /event/ is the user-facing path. The
     # legacy /form/ paths are kept as silent fallbacks so any QR codes / emails

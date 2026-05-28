@@ -82,6 +82,16 @@
             </div>
             <div id="reader" class="ratio ratio-1x1" style=" background-color: aquamarine;display: none"></div>
 
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="form-check form-switch m-0">
+                    <input class="form-check-input" type="checkbox" id="printLabelToggle" checked>
+                    <label class="form-check-label" for="printLabelToggle">Print badge label on scan</label>
+                </div>
+                <button class="btn btn-sm btn-outline-secondary" type="button" id="testPrintBtn">
+                    Test print
+                </button>
+            </div>
+
             <div class="nb-3">
                 <label for="Code" class="form-label">Code</label>
                 <input name="code" id="code" class="form-control" placeholder="Code" autofocus/>
@@ -93,6 +103,15 @@
         </div>
     </div>
 </div>
+
+<!-- Hidden iframe used to push individual label print jobs to the OS
+     printer dialog. The browser's selected printer (configured once on the
+     check-in laptop) is what actually receives the print, so a Dymo / Brother
+     QL-style label printer set as the default will print without prompting if
+     "silent print" is enabled in the browser, otherwise it'll show the dialog
+     pre-targeted at that printer. -->
+<iframe id="labelPrintFrame" title="Label print frame"
+        style="position:fixed; right:0; bottom:0; width:0; height:0; border:0; visibility:hidden;"></iframe>
 
 <script src="{% static 'user/js/jquery-3.7.1.min.js' %}"></script>
 <script src="{% static 'user/js/bootstrap.bundle.min.js' %}"></script>
@@ -260,6 +279,54 @@
     //     }
     // }
 
+    // Build the HTML for a single badge label. Sized for a typical 89x36mm
+     // (Dymo 99012-ish) shipping label — tweak @page size to match your stock.
+    function buildLabelHtml(data) {
+        const name = (data.name || 'Guest').replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+        const org  = (data.organization || '').replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+        const reg  = (data.reg_no || '').replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+        return `<!doctype html>
+<html><head><meta charset="utf-8"><title>Label</title>
+<style>
+  @page { size: 89mm 36mm; margin: 2mm; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: Arial, Helvetica, sans-serif; color: #000; }
+  .label { padding: 4mm 5mm; box-sizing: border-box; width: 100%; height: 100%; }
+  .name { font-size: 18pt; font-weight: 700; line-height: 1.1;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .org  { font-size: 11pt; margin-top: 2mm; line-height: 1.2;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .reg  { font-size: 8pt;  margin-top: 1mm; color: #444; }
+</style></head>
+<body>
+  <div class="label">
+    <div class="name">${name}</div>
+    ${org ? `<div class="org">${org}</div>` : ''}
+    ${reg ? `<div class="reg">${reg}</div>` : ''}
+  </div>
+  <script>
+    window.onload = function () {
+      try { window.focus(); window.print(); } catch (e) {}
+    };
+  <\/script>
+</body></html>`;
+    }
+
+    function printLabel(data) {
+        if (!document.getElementById('printLabelToggle')?.checked) return;
+        if (!data || !data.name) return;
+        const frame = document.getElementById('labelPrintFrame');
+        if (!frame) return;
+        const html = buildLabelHtml(data);
+        // srcdoc kicks off a fresh document inside the iframe; the inline
+        // onload script then triggers the print dialog/silent print.
+        frame.srcdoc = html;
+    }
+
+    document.getElementById('testPrintBtn')?.addEventListener('click', () => {
+        printLabel({ name: 'Sample Delegate', organization: 'Acme Sdn Bhd', reg_no: 'REG000000' });
+    });
+
     async function postToken(decodedText) {
 
         const flagElement = document.getElementById("flg");
@@ -278,61 +345,62 @@
         const ctrl = new AbortController();
         const timeout = setTimeout(() => ctrl.abort(), 8000); // guard long hangs
 
+        const endpoint = `{{ validate_endpoint|default:'/validate/' }}${decodedText}`;
+
         try {
-            fetch(`{{ validate_endpoint|default:'/validate/' }}${decodedText}`)
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.message)
-                                show(data.message);
-                        })
-                        .catch(err => {
-                            show("Error validating QR code.");
-                            console.error(err);
-                        });
-            const res = await fetch(`/validate/${decodedText}`, { signal: ctrl.signal });
+            const res = await fetch(endpoint, { signal: ctrl.signal });
             const data = await res.json();
 
-            if (data.message && data.prompt_checkin_info === '1') {
-                // Wait for user to click OK
-                Swal.fire({
-                    title: `<span style="font-size: 1.4rem; font-weight: 600; color:#333;">${data.message}</span>`,
-                    html: `
-                        <div style="font-size: 1.1rem; color:#444; text-align:left; line-height:1.6;">
+            // Blocked: delegate exists but isn't approved. Show a red alert,
+            // don't print a label, don't mark them as checked in.
+            if (data && data.typ === 'blocked') {
+                await Swal.fire({
+                    title: 'Not approved',
+                    html: `<div style="text-align:left;">
+                            <p><strong>${data.name || 'Delegate'}</strong>${data.reg_no ? ' (' + data.reg_no + ')' : ''} is not approved for this event.</p>
+                            <p class="text-muted small mb-0">Status: ${data.status || 'unknown'}</p>
+                          </div>`,
+                    icon: 'error',
+                    confirmButtonText: 'OK',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                });
+                flagElement.value = "0";
+                processQueue();
+                return;
+            }
 
-                            <p style="margin-top: 30px;">
-                                <strong>Name:</strong><br>
-                                ${data.name}
-                            </p>
+            // Successful check-in: print the label (if toggle is on) before
+            // popping the confirmation modal so the print dialog can resolve
+            // while the operator reads the screen.
+            if (data && (data.typ === 'new' || data.typ === 'exist')) {
+                printLabel(data);
+            }
 
-                            <p style="margin-bottom: 10px;">
-                                <strong>Company:</strong><br>
-                                ${data.organization}
-                            </p>
-                        </div>
-                    `,
+            const promptInfo = data && data.prompt_checkin_info === '1';
+            const summaryHtml = `
+                <div style="font-size: 1.05rem; color:#444; text-align:left; line-height:1.5;">
+                    <p style="margin: 16px 0 8px 0;"><strong>Name:</strong><br>${data.name || ''}</p>
+                    <p style="margin: 0 0 8px 0;"><strong>Company:</strong><br>${data.organization || ''}</p>
+                    ${data.reg_no ? `<p style="margin: 0; color:#666; font-size:.9rem;">Ref: ${data.reg_no}</p>` : ''}
+                </div>`;
+
+            if (data && data.message && (promptInfo || data.typ === 'new' || data.typ === 'exist')) {
+                await Swal.fire({
+                    title: `<span style="font-size: 1.3rem; font-weight: 600; color:#333;">${data.message}</span>`,
+                    html: summaryHtml,
                     icon: data.typ === 'new' ? 'success' : 'info',
-
-                    // --- Styling ---
                     confirmButtonText: 'OK',
                     confirmButtonColor: '#3085d6',
                     width: '420px',
-                    customClass: {
-                        popup: 'swal2-rounded swal2-shadow'
-                    },
-
+                    customClass: { popup: 'swal2-rounded swal2-shadow' },
                     allowOutsideClick: false,
-                    allowEscapeKey: false
-                }).then(() => {
-                    flagElement.value = "0";
-                    processQueue();
+                    allowEscapeKey: false,
                 });
-
-
-                // Continue next logic AFTER user clicks OK
-                console.log("User clicked OK. Continue...");
-            }
-            else
-            {
+                flagElement.value = "0";
+                processQueue();
+            } else {
+                if (data && data.message) show(data.message);
                 flagElement.value = "0";
                 processQueue();
             }

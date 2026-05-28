@@ -226,7 +226,7 @@
               <table id="campaigns" class="table align-items-center mb-0" >
                 <thead>
                   <tr>
-                    <th class="text-uppercase text-secondary text-sm font-weight-bolder">ID</th>
+                    <!--th class="text-uppercase text-secondary text-sm font-weight-bolder">ID</th-->
                     <th class="text-uppercase text-secondary text-sm font-weight-bolder">Campaign Title</th>
                     <th class="text-uppercase text-secondary text-sm font-weight-bolder">Start Date</th>
                     <th class="text-uppercase text-secondary text-sm font-weight-bolder">End Date</th>
@@ -239,7 +239,7 @@
                   {% if campaigns %}
                     {% for campaign in campaigns %}
                       <tr>
-                        <td>
+                        <!--td>
                           <div class="d-flex align-items-center">
                             <p class="text-xs font-weight-bold mb-0 me-2">
                               {{ campaign.campaign_code }}
@@ -248,7 +248,7 @@
                               <i class="material-symbols-rounded">content_copy</i>
                             </button>
                           </div>
-                        </td>
+                        </td-->
 
                         <td>
                           <div class="d-flex px-2 py-1">
@@ -637,7 +637,7 @@
         searching: true,
         pageLength: 10,
         lengthMenu: [[5, 10, 15, 50, 100], [5, 10, 15, 50, 100]],
-        colReorder: true,
+        colReorder: false,
         scrollY: '60vh',  
         layout: {
           topStart: [

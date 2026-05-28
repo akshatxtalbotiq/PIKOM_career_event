@@ -70,12 +70,35 @@ def validategolf(request,code):
 def validatesurvey(request, code):
     try:
         participant = SurveyUser.objects.get(registration_code=code)
-        if not participant.is_checked_in:
-            participant.is_checked_in = True
-            participant.save(update_fields=['is_checked_in'])
-        return JsonResponse({
-            'message': '{0} checked in successfully!'.format(participant.name or 'Participant'),
-            'remarks': participant.remarks or '',
-        }, status=200)
     except SurveyUser.DoesNotExist:
         return JsonResponse({'message': 'Invalid QR code.'}, status=400)
+
+    # Gate check-in on approval. A pending or rejected delegate shouldn't have
+    # received a QR in the first place, but defend in depth in case one slips
+    # through (e.g. screenshot of someone else's pre-approval thank-you page).
+    if participant.approval_status != getattr(participant, 'STATUS_APPROVED', 'approved'):
+        return JsonResponse({
+            'typ': 'blocked',
+            'status': participant.approval_status,
+            'name': participant.name or '',
+            'organization': participant.organization or '',
+            'reg_no': participant.reg_no or '',
+            'message': 'Not approved for check-in (status: {0}).'.format(participant.approval_status),
+        }, status=200)
+
+    was_new = not participant.is_checked_in
+    if was_new:
+        participant.is_checked_in = True
+        participant.save(update_fields=['is_checked_in'])
+
+    return JsonResponse({
+        'typ': 'new' if was_new else 'exist',
+        'status': participant.approval_status,
+        'name': participant.name or '',
+        'organization': participant.organization or '',
+        'reg_no': participant.reg_no or '',
+        'message': '{0} checked in successfully!'.format(participant.name or 'Participant')
+                   if was_new else
+                   '{0} already checked in.'.format(participant.name or 'Participant'),
+        'remarks': participant.remarks or '',
+    }, status=200)

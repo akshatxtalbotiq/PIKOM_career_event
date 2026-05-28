@@ -9,8 +9,13 @@
   <link rel="stylesheet" href="{% static 'register/assets/css/style.css' %}">
   <style>
     body { background: #f5f7fb; }
-    .thanks-card { max-width: 560px; padding: 2.5rem; }
-    .qr-img { width: 100%; max-width: 240px; height: auto; }
+    .thanks-card { max-width: 620px; padding: 2.5rem; }
+    .review-steps { text-align: left; }
+    .review-steps li { padding: .35rem 0; }
+    .ref-pill {
+      display: inline-block; padding: .25rem .75rem; border-radius: 999px;
+      background: #e7f4ec; color: #198754; font-weight: 600; font-size: .9rem;
+    }
     @media (max-width: 575.98px) {
       .thanks-card { padding: 1.5rem; }
       h2 { font-size: 1.5rem; }
@@ -22,35 +27,31 @@
     <div class="d-flex justify-content-center align-items-center text-center py-5" style="min-height:100dvh;">
       <div class="bg-white rounded shadow thanks-card">
         <div class="mb-3" style="font-size:64px; color:#198754;">&#10003;</div>
-        {% if qr_data_uri %}
-          <h2 class="fw-bold mb-2">You're registered!</h2>
-          <p class="text-muted mb-4">
-            Thanks for registering for <strong>{{ survey.title }}</strong>{% if survey_user.name %}, <strong>{{ survey_user.name }}</strong>{% endif %}.
+
+        {% if is_registration %}
+          <h2 class="fw-bold mb-2">Thank you for your submission.</h2>
+          <p class="text-muted mb-3">
+            {% if survey_user.name %}Hi <strong>{{ survey_user.name }}</strong>, thanks for registering for{% else %}Your registration for{% endif %}
+            <strong>{{ survey.title }}</strong> has been received.
           </p>
+
           {% if survey_user.reg_no %}
-            <div class="mb-3">
-              Your reference number: <strong class="text-success">{{ survey_user.reg_no }}</strong>
+            <div class="mb-4">
+              Your reference number: <span class="ref-pill">{{ survey_user.reg_no }}</span>
             </div>
           {% endif %}
+
+          <ol class="review-steps mb-4">
+            <li>We have successfully received your registration and it is currently under review.</li>
+            <li>Please keep an eye out for your registration confirmation with the QR code.</li>
+            <li>For any additional requirements, our team will reach out to you.</li>
+          </ol>
         {% else %}
           <h2 class="fw-bold mb-2">Thank you!</h2>
           <p class="text-muted mb-4">
             Your response to <strong>{{ survey.title }}</strong> has been recorded{% if survey_user.name %}, <strong>{{ survey_user.name }}</strong>{% endif %}.
           </p>
         {% endif %}
-
-        {% if qr_data_uri %}
-          <div class="p-3 mb-3 border rounded bg-light">
-            <p class="text-muted small mb-2">Please present this QR code at event check-in:</p>
-            <img src="{{ qr_data_uri }}" alt="Your check-in QR code" class="qr-img">
-            <div class="small text-muted mt-2">Code: <code>{{ survey_user.registration_code }}</code></div>
-          </div>
-          <p class="text-muted small mb-4">
-            Save this page or take a screenshot. A copy may also be emailed to you by the organizer.
-          </p>
-        {% endif %}
-
-        <a href="{% url 'form_public' survey.slug|default:survey.survey_code %}" class="btn btn-outline-success">Back to form</a>
       </div>
     </div>
   </section>

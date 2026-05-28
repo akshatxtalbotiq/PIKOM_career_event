@@ -100,13 +100,19 @@
             </div>
         </div>  
         <div class="col-4 d-flex flex-column justify-content-end align-items-end gap-1">
-          <div class="d-flex gap-3 small text-secondary">
+          <div class="d-flex flex-wrap justify-content-end gap-3 small text-secondary">
             <span><i class="material-symbols-rounded align-middle text-success" style="font-size:18px;">how_to_reg</i>
               Total <span id="totalParticipants" class="fw-bold">0</span></span>
-            <span><i class="material-symbols-rounded align-middle text-success" style="font-size:18px;">check_circle</i>
-              Checked in <span id="checkedIn" class="fw-bold">0</span></span>
+            <span><i class="material-symbols-rounded align-middle text-warning" style="font-size:18px;">hourglass_top</i>
+              Pending <span id="pendingCount" class="fw-bold">0</span></span>
+            <span><i class="material-symbols-rounded align-middle text-success" style="font-size:18px;">verified</i>
+              Approved <span id="approvedCount" class="fw-bold">0</span></span>
+            <span><i class="material-symbols-rounded align-middle text-danger" style="font-size:18px;">cancel</i>
+              Rejected <span id="rejectedCount" class="fw-bold">0</span></span>
             <span><i class="material-symbols-rounded align-middle text-success" style="font-size:18px;">qr_code_2</i>
               QR sent <span id="qrSentCount" class="fw-bold">0</span></span>
+            <span><i class="material-symbols-rounded align-middle text-success" style="font-size:18px;">check_circle</i>
+              Checked in <span id="checkedIn" class="fw-bold">0</span></span>
           </div>
         </div>
       </div>
@@ -126,6 +132,7 @@
                       <th class="text-uppercase text-secondary text-sm font-weight-bolder">Phone</th>
                       <th class="text-uppercase text-secondary text-sm font-weight-bolder">Organization</th>
                       {# Dynamic custom columns (show_in_list=True) injected by DataTable #}
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder text-center">Status</th>
                       <th class="text-uppercase text-secondary text-sm font-weight-bolder text-center">Check-in</th>
                       <th class="text-uppercase text-secondary text-sm font-weight-bolder text-center">QR Sent</th>
                       <th class="text-uppercase text-secondary text-sm font-weight-bolder">Submitted</th>
@@ -183,8 +190,28 @@
       
       <div class="modal-body">
         <form id="sendQRForm" enctype="multipart/form-data">
-          <!-- Hidden field for selected IDs -->
+          <!-- Hidden field for selected IDs. Empty = "send to every approved
+               delegate". This is the one-week-later bulk send. -->
           <input type="hidden" name="ids" id="selectedIdsInput">
+
+          <div class="alert alert-info py-2 mb-3" style="font-size: .9rem;">
+            <i class="material-symbols-rounded align-middle">info</i>
+            <span id="sendQRModeLabel">Only approved delegates will receive the QR code.</span>
+          </div>
+
+          <!-- Resend toggle. By default we skip anyone with qr_sent=True so
+               repeated clicks don't spam delegates. Tick this when a delegate
+               says they didn't receive the email. -->
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="resendQRCheckbox" name="resend" value="1">
+            <label class="form-check-label" for="resendQRCheckbox">
+              <strong>Resend</strong> to delegates who already received the QR
+              <span class="d-block text-muted small">
+                Off by default — only delegates who haven't received the QR yet will be emailed.
+                Turn this on when a delegate reports they didn't get the email.
+              </span>
+            </label>
+          </div>
 
           <!-- File Upload -->
           <div class="mb-3">
@@ -296,6 +323,21 @@
         $('#totalParticipants').text(totals.all || 0);
         $('#checkedIn').text(totals.checked_in || 0);
         $('#qrSentCount').text(totals.qr_sent || 0);
+        $('#approvedCount').text(totals.approved || 0);
+        $('#pendingCount').text(totals.pending || 0);
+        $('#rejectedCount').text(totals.rejected || 0);
+
+        // Render the vetting status as a coloured badge in the table.
+        const statusBadge = (status) => {
+          const s = (status || 'pending').toLowerCase();
+          if (s === 'approved') {
+            return '<span class="badge bg-success" title="Approved for QR">Approved</span>';
+          }
+          if (s === 'rejected') {
+            return '<span class="badge bg-danger" title="Rejected">Rejected</span>';
+          }
+          return '<span class="badge bg-warning text-dark" title="Awaiting review">Pending</span>';
+        };
 
         // Inject dynamic <th> for each custom column AFTER the Organization th.
         // Walk a moving reference so successive inserts preserve order:
@@ -321,6 +363,17 @@
           { data: 'organization' },
         ];
         customCols.forEach(col => cols.push({ data: col.key }));
+        cols.push({
+          data: 'approval_status',
+          className: 'text-center',
+          render: (v, t, row) => {
+            const tip = row.approved_by
+              ? ` (by ${row.approved_by}${row.approved_at ? ' at ' + row.approved_at : ''})`
+              : '';
+            const html = statusBadge(v);
+            return tip ? html.replace('title="', `title="${tip.trim()} — `) : html;
+          },
+        });
         cols.push({ data: 'is_checked_in', className: 'text-center', render: (v) => tickHtml(!!v) });
         cols.push({ data: 'qr_sent',       className: 'text-center', render: (v) => tickHtml(!!v) });
         cols.push({ data: 'submitted_date' });
@@ -349,6 +402,21 @@
             exportOptions: { columns: ':not(.dt-checkbox)' },
           },
           {
+            text: '<i class="material-symbols-rounded align-middle">verified</i> Approve',
+            className: 'btn btn-outline-success btn-sm',
+            action: function () { bulkAction('approve'); },
+          },
+          {
+            text: '<i class="material-symbols-rounded align-middle">cancel</i> Reject',
+            className: 'btn btn-outline-danger btn-sm',
+            action: function () { bulkAction('reject'); },
+          },
+          {
+            text: '<i class="material-symbols-rounded align-middle">undo</i> Reset to Pending',
+            className: 'btn btn-outline-secondary btn-sm',
+            action: function () { bulkAction('reset'); },
+          },
+          {
             text: '<i class="material-symbols-rounded align-middle">notifications</i> Send Event Reminder',
             className: 'btn btn-outline-primary btn-sm',
             action: function () { bulkAction('event_reminder'); },
@@ -360,7 +428,7 @@
           }] : []),
           {
             text: '<i class="material-symbols-rounded align-middle">qr_code_2</i> Send QR',
-            className: 'btn btn-outline-success btn-sm',
+            className: 'btn btn-success btn-sm',
             action: function () { openSendQRModal(); },
           },
           {
@@ -490,7 +558,7 @@ table.on('draw.dt', function () {
                       text: 'Please select at least one participant.', confirmButtonColor: '#198754' });
           return;
         }
-        let url, confirmText;
+        let url, confirmText, extraData = {};
         if (kind === 'event_reminder') {
           url = `/send_survey_event_reminder/${surveyId}/`;
           confirmText = `Send event reminder email to ${ids.length} participant(s)?`;
@@ -500,17 +568,28 @@ table.on('draw.dt', function () {
         } else if (kind === 'remove') {
           url = `/delete_survey_users/${surveyId}/`;
           confirmText = `Permanently remove ${ids.length} entr${ids.length === 1 ? 'y' : 'ies'}? This cannot be undone.`;
+        } else if (kind === 'approve' || kind === 'reject' || kind === 'reset') {
+          url = `/set_survey_user_status/${surveyId}/`;
+          const verb = kind === 'approve' ? 'Approve' : kind === 'reject' ? 'Reject' : 'Reset to pending';
+          extraData.status = kind === 'approve' ? 'approved' : kind === 'reject' ? 'rejected' : 'pending';
+          confirmText = `${verb} ${ids.length} entr${ids.length === 1 ? 'y' : 'ies'}?`
+            + (kind === 'approve'
+                ? ' Approved delegates become eligible to receive the QR code.'
+                : kind === 'reject'
+                  ? ' Rejected delegates will NOT receive a QR code.'
+                  : '');
         } else {
           return;
         }
         Swal.fire({
           title: 'Confirm', text: confirmText, icon: 'question',
           showCancelButton: true, confirmButtonText: 'Yes, proceed',
-          confirmButtonColor: kind === 'remove' ? '#dc3545' : '#198754',
+          confirmButtonColor: kind === 'remove' || kind === 'reject' ? '#dc3545' : '#198754',
         }).then((res) => {
           if (!res.isConfirmed) return;
           const fd = new FormData();
           fd.append('ids', JSON.stringify(ids));
+          Object.entries(extraData).forEach(([k, v]) => fd.append(k, v));
           $.ajax({
             url, type: 'POST', data: fd, processData: false, contentType: false,
             headers: { 'X-CSRFToken': getCSRFToken() },
@@ -518,20 +597,50 @@ table.on('draw.dt', function () {
             Swal.fire({ icon: r.success ? 'success' : 'error',
                         title: r.success ? 'Done' : 'Failed',
                         text: r.message || '' }).then(() => {
-              if (kind === 'remove' && r.success) location.reload();
+              if (r.success && (kind === 'remove' || kind === 'approve' || kind === 'reject' || kind === 'reset')) {
+                location.reload();
+              }
             });
           }).fail((xhr) => commonAjaxErrorCallBack(xhr, '', ''));
         });
       }
 
+      // One unified flow:
+      //   - If rows are checked → send to that selection (approved ones only).
+      //   - If nothing is checked → send to every approved delegate.
+      // The default in either mode is "skip those who already got the QR";
+      // the Resend checkbox inside the modal overrides that.
       function openSendQRModal() {
         const ids = selectedIds();
-        if (ids.length === 0) {
-          Swal.fire({ icon: 'warning', title: 'No selection',
-                      text: 'Please select at least one participant to send the QR to.', confirmButtonColor: '#198754' });
+        const approved = parseInt($('#approvedCount').text(), 10) || 0;
+
+        if (ids.length === 0 && approved === 0) {
+          Swal.fire({
+            icon: 'warning', title: 'Nothing to send',
+            text: 'There are no approved delegates yet. Approve some registrations first, then try again.',
+            confirmButtonColor: '#198754',
+          });
           return;
         }
-        $('#selectedIdsInput').val(JSON.stringify(ids));
+
+        if (ids.length === 0) {
+          $('#selectedIdsInput').val('');
+          $('#sendQRModeLabel').html(
+            `No rows selected — targeting <strong>every approved delegate</strong> who hasn't received the QR yet ` +
+            `(~${approved} approved in total).`
+          );
+        } else {
+          $('#selectedIdsInput').val(JSON.stringify(ids));
+          $('#sendQRModeLabel').html(
+            `Sending to the <strong>${ids.length} selected</strong> entr${ids.length === 1 ? 'y' : 'ies'} ` +
+            `(only the approved ones will be emailed; already-sent ones are skipped unless you tick Resend below).`
+          );
+        }
+
+        // Always reset the Resend checkbox each time the modal opens so it's
+        // an explicit, conscious choice each time.
+        $('#resendQRCheckbox').prop('checked', false);
+
         const m = new bootstrap.Modal(document.getElementById('sendQRModal'));
         m.show();
       }
@@ -635,8 +744,11 @@ table.on('draw.dt', function () {
       // Create new FormData manually
       let formData = new FormData();
 
-      // Append selected IDs (already JSON-stringified into #selectedIdsInput)
-      formData.append('ids', $('#selectedIdsInput').val());
+      // Append selected IDs (already JSON-stringified into #selectedIdsInput).
+      // Empty string means "all approved delegates" on the server.
+      formData.append('ids', $('#selectedIdsInput').val() || '[]');
+      // Resend = "also email people who already received the QR"
+      formData.append('resend', $('#resendQRCheckbox').is(':checked') ? '1' : '');
 
       // Append all files from global selectedFiles array
       selectedFiles.forEach(file => {

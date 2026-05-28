@@ -289,6 +289,15 @@ class Question(models.Model):
         return f"Q{self.number}: {self.text[:60]}"
 
 class SurveyUser(models.Model):
+    STATUS_PENDING = "pending"
+    STATUS_APPROVED = "approved"
+    STATUS_REJECTED = "rejected"
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "Pending review"),
+        (STATUS_APPROVED, "Approved"),
+        (STATUS_REJECTED, "Rejected"),
+    ]
+
     id = models.AutoField(primary_key=True)
     survey = models.ForeignKey(Survey, on_delete=models.CASCADE, related_name="survey_users")
     name = models.CharField(max_length=500, null=True, blank=True)
@@ -303,6 +312,19 @@ class SurveyUser(models.Model):
     # Public-facing reference number given to the registrant (e.g. "REG000123").
     # Assigned right after the row is created so it can include the row id.
     reg_no = models.CharField(max_length=32, unique=True, null=True, blank=True)
+
+    # Vetting workflow. Registrations land as `pending`; an organiser reviews
+    # them on the dashboard and flips them to `approved` (which is the gate
+    # for issuing the QR-code email) or `rejected`.
+    approval_status = models.CharField(
+        max_length=16, choices=STATUS_CHOICES, default=STATUS_PENDING,
+        help_text="Vetting status. QR codes are only emailed to approved delegates.",
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    approved_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="surveyuser_approvals",
+    )
 
     def __str__(self):
         return f"{self.name} - {self.survey.title}"

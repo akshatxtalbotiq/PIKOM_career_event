@@ -1295,6 +1295,9 @@ def get_survey_submission_list(request):
             data = []
             checked_in_count = 0
             qr_sent_count = 0
+            approved_count = 0
+            pending_count = 0
+            rejected_count = 0
             for s in submissions:
                 custom = {}
                 for q in shown_questions:
@@ -1316,6 +1319,12 @@ def get_survey_submission_list(request):
                     checked_in_count += 1
                 if s.qr_sent:
                     qr_sent_count += 1
+                if s.approval_status == SurveyUser.STATUS_APPROVED:
+                    approved_count += 1
+                elif s.approval_status == SurveyUser.STATUS_REJECTED:
+                    rejected_count += 1
+                else:
+                    pending_count += 1
                 row = {
                     'id': s.id,
                     'reg_no': s.reg_no or '',
@@ -1325,6 +1334,9 @@ def get_survey_submission_list(request):
                     'organization': s.organization,
                     'is_checked_in': s.is_checked_in,
                     'qr_sent': s.qr_sent,
+                    'approval_status': s.approval_status,
+                    'approved_at': s.approved_at.strftime('%Y-%m-%d %I:%M %p') if s.approved_at else '',
+                    'approved_by': (s.approved_by.get_full_name() or s.approved_by.username) if s.approved_by else '',
                     'submitted_date': s.created_at.strftime('%Y-%m-%d %I:%M %p') if s.created_at else '',
                     'survey_id': s.survey.id,
                 }
@@ -1357,6 +1369,9 @@ def get_survey_submission_list(request):
                     'all': len(data),
                     'checked_in': checked_in_count,
                     'qr_sent': qr_sent_count,
+                    'approved': approved_count,
+                    'pending': pending_count,
+                    'rejected': rejected_count,
                 },
             })
         else:
@@ -1378,7 +1393,25 @@ def survey_answer_view(request, survey_id, user_id):
 
     #remove html tags from question text in asnwer_dict
     for q_id, ans in answer_dict.items():
-        ans.question.text = strip_tags(ans.question.text)    
+        ans.question.text = strip_tags(ans.question.text)
+
+    # Identity questions (Name/Email/Phone/Organization) are already displayed
+    # in the Respondent Information card at the top, and their answers live on
+    # the SurveyUser row — not in Answer. Filter them out of the lower section
+    # so we don't repeat the same fields with "no answer" placeholders.
+    extra_questions = list(
+        survey.questions
+              .exclude(question_type__in=Question.IDENTITY_TYPES.keys())
+              .order_by("number")
+    )
+
+    # Section title and empty-state copy depend on what kind of form this is.
+    if survey.purpose == Survey.PURPOSE_REGISTRATION:
+        responses_section_title = "Registration Details"
+        responses_empty_text = "No additional questions on this registration form."
+    else:
+        responses_section_title = "Survey Responses"
+        responses_empty_text = "No questions on this survey."
 
     return render(
         request,
@@ -1387,6 +1420,9 @@ def survey_answer_view(request, survey_id, user_id):
             "survey": survey,
             "survey_user": survey_user,
             "answers": answer_dict,
+            "extra_questions": extra_questions,
+            "responses_section_title": responses_section_title,
+            "responses_empty_text": responses_empty_text,
         },
     )
 
@@ -2046,10 +2082,94 @@ def _send_qr_to_surveyuser(survey_user, files=None):
 
 @login_required
 def send_survey_qr(request, survey_id):
-    """POST: ids=[...], files=[...]. Sends QR email to each selected SurveyUser."""
+    """POST: ids=[...] (optional), resend=0|1, files=[...].
+
+    Single entry point for issuing QR-code emails. Behaviour:
+      - If `ids` is non-empty, target that selection. Otherwise target every
+        approved delegate (the "send to everyone we've vetted" mode).
+      - Only delegates with approval_status=approved are ever emailed.
+      - By default, delegates whose qr_sent is already True are skipped, so
+        repeated clicks of "Send QR" don't spam people who already got it.
+      - If `resend=1`, the qr_sent filter is dropped so an operator can
+        resend to a participant who claims they didn't receive the email.
+    The response itemises what was sent and what was skipped (why) so the
+    operator gets clear feedback instead of a silent no-op.
+    """
     if request.method != "POST":
         return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
     survey = get_object_or_404(Survey, id=survey_id)
+
+    files = request.FILES.getlist("files")
+    if sum(f.size for f in files) > 10 * 1024 * 1024:
+        return JsonResponse({"success": False, "message": "Total attached files exceed 10 MB"}, status=400)
+
+    resend = (request.POST.get("resend") or "").lower() in ("1", "true", "yes")
+
+    try:
+        ids = json.loads(request.POST.get("ids") or "[]")
+    except json.JSONDecodeError:
+        ids = []
+
+    if ids:
+        scope = SurveyUser.objects.filter(survey=survey, id__in=ids)
+    else:
+        scope = SurveyUser.objects.filter(survey=survey)
+
+    approved = scope.filter(approval_status=SurveyUser.STATUS_APPROVED)
+    skipped_pending = scope.filter(approval_status=SurveyUser.STATUS_PENDING).count() if ids else 0
+    skipped_rejected = scope.filter(approval_status=SurveyUser.STATUS_REJECTED).count() if ids else 0
+
+    if resend:
+        recipients = approved
+        skipped_already_sent = 0
+    else:
+        recipients = approved.filter(qr_sent=False)
+        skipped_already_sent = approved.filter(qr_sent=True).count()
+
+    target_count = recipients.count()
+    sent = 0
+    for u in recipients:
+        if _send_qr_to_surveyuser(u, files):
+            sent += 1
+
+    skipped_bits = []
+    if skipped_already_sent:
+        skipped_bits.append(f"{skipped_already_sent} already received the QR (use Resend to override)")
+    if skipped_pending:
+        skipped_bits.append(f"{skipped_pending} pending review")
+    if skipped_rejected:
+        skipped_bits.append(f"{skipped_rejected} rejected")
+    skipped_msg = f" Skipped: {'; '.join(skipped_bits)}." if skipped_bits else ""
+
+    if target_count == 0:
+        if skipped_bits:
+            return JsonResponse({
+                "success": False,
+                "message": f"Nothing to send.{skipped_msg}",
+            })
+        return JsonResponse({
+            "success": False,
+            "message": "No approved delegates matched — approve some registrations first.",
+        })
+
+    verb = "Re-sent" if resend else "Sent"
+    return JsonResponse({
+        "success": True,
+        "message": f"{verb} QR to {sent} of {target_count} approved delegate(s).{skipped_msg}",
+    })
+
+
+@login_required
+def set_survey_user_status(request, survey_id):
+    """POST: ids=[...], status=approved|rejected|pending. Bulk-set the vetting
+    status for the selected registrations of this form."""
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
+    survey = get_object_or_404(Survey, id=survey_id)
+    new_status = (request.POST.get("status") or "").strip().lower()
+    valid = {SurveyUser.STATUS_APPROVED, SurveyUser.STATUS_REJECTED, SurveyUser.STATUS_PENDING}
+    if new_status not in valid:
+        return JsonResponse({"success": False, "message": "Invalid status."}, status=400)
     try:
         ids = json.loads(request.POST.get("ids") or "[]")
     except json.JSONDecodeError:
@@ -2057,18 +2177,30 @@ def send_survey_qr(request, survey_id):
     if not ids:
         return JsonResponse({"success": False, "message": "No participants selected"}, status=400)
 
-    files = request.FILES.getlist("files")
-    if sum(f.size for f in files) > 10 * 1024 * 1024:
-        return JsonResponse({"success": False, "message": "Total attached files exceed 10 MB"}, status=400)
+    qs = SurveyUser.objects.filter(survey=survey, id__in=ids)
+    if new_status == SurveyUser.STATUS_APPROVED:
+        qs.update(
+            approval_status=new_status,
+            approved_at=timezone.now(),
+            approved_by=request.user,
+        )
+    elif new_status == SurveyUser.STATUS_REJECTED:
+        qs.update(
+            approval_status=new_status,
+            approved_at=timezone.now(),
+            approved_by=request.user,
+        )
+    else:
+        qs.update(
+            approval_status=new_status,
+            approved_at=None,
+            approved_by=None,
+        )
 
-    users = SurveyUser.objects.filter(survey=survey, id__in=ids)
-    sent = 0
-    for u in users:
-        if _send_qr_to_surveyuser(u, files):
-            sent += 1
+    label = dict(SurveyUser.STATUS_CHOICES).get(new_status, new_status)
     return JsonResponse({
         "success": True,
-        "message": f"QR sent to {sent} of {users.count()} participants.",
+        "message": f"{qs.count()} entr{'y' if qs.count() == 1 else 'ies'} marked {label}.",
     })
 
 
@@ -2182,20 +2314,13 @@ def form_thankyou(request, survey_code, user_id):
     survey = _resolve_survey_by_identifier(survey_code)
     survey_user = get_object_or_404(SurveyUser, pk=user_id, survey=survey)
 
-    qr_data_uri = None
-    # Only registration forms need a QR for event check-in. Post-event surveys
-    # just collect feedback — no QR.
-    if survey.purpose == Survey.PURPOSE_REGISTRATION:
-        import base64
-        from io import BytesIO
-        buf = BytesIO()
-        qrcode.make(str(survey_user.registration_code)).save(buf, format="PNG")
-        qr_data_uri = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
-
+    # Registration submissions are reviewed before a QR is issued. The QR is
+    # only generated/emailed once the organiser approves the entry from the
+    # dashboard, so the thank-you page no longer renders one inline.
     return render(request, "register/form_thankyou.html", {
         "survey": survey,
         "survey_user": survey_user,
-        "qr_data_uri": qr_data_uri,
+        "is_registration": survey.purpose == Survey.PURPOSE_REGISTRATION,
     })
 
 
