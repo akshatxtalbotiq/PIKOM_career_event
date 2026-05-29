@@ -31,8 +31,8 @@
         {% if is_registration %}
           <h2 class="fw-bold mb-2">Thank you for your submission.</h2>
           <p class="text-muted mb-3">
-            {% if survey_user.name %}Hi <strong>{{ survey_user.name }}</strong>, thanks for registering for{% else %}Your registration for{% endif %}
-            <strong>{{ survey.title }}</strong> has been received.
+            {% if survey_user.name %}Hi <strong>{{ survey_user.name }}</strong>,<br> Thank you for registering for{% else %}Your registration for{% endif %}
+            <strong>{{ survey.title }}</strong>.
           </p>
 
           {% if survey_user.reg_no %}
