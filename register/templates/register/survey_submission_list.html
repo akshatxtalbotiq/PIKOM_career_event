@@ -124,18 +124,13 @@
             <div class="table-responsive p-3">
               <table id="entries" class="table table-hover align-items-center mb-0" style="font-size: 12px;">
                 <thead>
-                  <tr>
+                  <tr id="entriesHeaderRow">
                       <th><input type="checkbox" id="select-all"></th>
                       <th class="text-uppercase text-secondary text-sm font-weight-bolder">Reg #</th>
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Name</th>
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Email</th>
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Phone</th>
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Organization</th>
-                      {# Dynamic custom columns (show_in_list=True) injected by DataTable #}
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder text-center">Status</th>
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder text-center">Check-in</th>
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder text-center">QR Sent</th>
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Submitted</th>
+                      {# All remaining columns (visible identity fields, custom
+                         show_in_list questions, Status, Check-in, QR Sent,
+                         Submitted) are injected by JS so the table matches the
+                         form builder's configuration exactly. #}
                   </tr>
                 </thead>
                 <tbody id="registration-body"></tbody>
@@ -319,6 +314,12 @@
       }).done(function (payload) {
         const data = payload.data || [];
         const customCols = payload.columns || [];
+        const identityCols = payload.identity_cols || [
+          { key: 'name', title: 'Name' },
+          { key: 'email', title: 'Email' },
+          { key: 'phone', title: 'Phone' },
+          { key: 'organization', title: 'Organization' },
+        ];
         const totals = payload.totals || {};
         $('#totalParticipants').text(totals.all || 0);
         $('#checkedIn').text(totals.checked_in || 0);
@@ -327,6 +328,13 @@
         $('#pendingCount').text(totals.pending || 0);
         $('#rejectedCount').text(totals.rejected || 0);
 
+        // Status pretty-name (used for the badge AND for Excel export).
+        const statusText = (s) => {
+          s = (s || 'pending').toLowerCase();
+          if (s === 'approved') return 'Approved';
+          if (s === 'rejected') return 'Rejected';
+          return 'Pending';
+        };
         // Render the vetting status as a coloured badge in the table.
         const statusBadge = (status) => {
           const s = (status || 'pending').toLowerCase();
@@ -339,34 +347,59 @@
           return '<span class="badge bg-warning text-dark" title="Awaiting review">Pending</span>';
         };
 
-        // Inject dynamic <th> for each custom column AFTER the Organization th.
-        // Walk a moving reference so successive inserts preserve order:
-        //   Org → Member → Inviter → Check-in
-        // (The previous version used insertBefore('Check-in') each iteration,
-        // which silently reversed the order because indexes shifted.)
-        const $thead = $('#entries thead tr');
-        let $ref = $thead.find('th').eq(5);  // Organization
-        customCols.forEach(col => {
-          const $th = $('<th class="text-uppercase text-secondary text-sm font-weight-bolder"></th>').text(col.title);
-          $ref.after($th);
-          $ref = $th;
-        });
+        // Build the header dynamically so the visible columns match the
+        // form's configured identity fields + custom show_in_list questions,
+        // followed by the fixed system columns (Status, Check-in, QR Sent,
+        // Submitted). The static <thead> only ships the checkbox and Reg #.
+        const $headerRow = $('#entriesHeaderRow');
+        const appendTh = (label, opts = {}) => {
+          const cls = opts.center
+            ? 'text-uppercase text-secondary text-sm font-weight-bolder text-center'
+            : 'text-uppercase text-secondary text-sm font-weight-bolder';
+          $headerRow.append($('<th></th>').addClass(cls).text(label));
+        };
+        identityCols.forEach(col => appendTh(col.title));
+        customCols.forEach(col => appendTh(col.title));
+        appendTh('Status', { center: true });
+        appendTh('Check-in', { center: true });
+        appendTh('QR Sent', { center: true });
+        appendTh('Submitted');
 
+        // Render Yes / No for booleans when exporting (Excel grabs the icon's
+        // text content otherwise → "radio_button_unchecked"). Display gets
+        // the coloured icon, export/filter/sort get plain text.
+        const boolRender = (v, type) => {
+          if (type === 'display') return tickHtml(!!v);
+          return v ? 'Yes' : 'No';
+        };
+
+        // Columns: checkbox, Reg #, identity..., custom..., Status, Check-in, QR Sent, Submitted.
         const cols = [
           { data: null, orderable: false, searchable: false, className: 'dt-checkbox',
             render: (d, t, row) => `<input type="checkbox" class="row-checkbox" value="${row.id}">` },
           { data: 'reg_no' },
-          { data: 'name', render: (d, t, row) =>
-              `<a href="/survey_answer_view/${row.survey_id}/${row.id}/" class="text-decoration-none">${row.name || ''}</a>` },
-          { data: 'email' },
-          { data: 'phone' },
-          { data: 'organization' },
         ];
+        identityCols.forEach(col => {
+          if (col.key === 'name') {
+            // Name is the link into the detail/answer view, but only when
+            // displayed — exports get the plain string.
+            cols.push({
+              data: 'name',
+              render: (v, type, row) => {
+                if (type !== 'display') return row.name || '';
+                return `<a href="/survey_answer_view/${row.survey_id}/${row.id}/" class="text-decoration-none">${row.name || ''}</a>`;
+              },
+            });
+          } else {
+            cols.push({ data: col.key });
+          }
+        });
         customCols.forEach(col => cols.push({ data: col.key }));
         cols.push({
           data: 'approval_status',
           className: 'text-center',
-          render: (v, t, row) => {
+          render: (v, type, row) => {
+            if (type !== 'display') return statusText(v);
             const tip = row.approved_by
               ? ` (by ${row.approved_by}${row.approved_at ? ' at ' + row.approved_at : ''})`
               : '';
@@ -374,8 +407,8 @@
             return tip ? html.replace('title="', `title="${tip.trim()} — `) : html;
           },
         });
-        cols.push({ data: 'is_checked_in', className: 'text-center', render: (v) => tickHtml(!!v) });
-        cols.push({ data: 'qr_sent',       className: 'text-center', render: (v) => tickHtml(!!v) });
+        cols.push({ data: 'is_checked_in', className: 'text-center', render: boolRender });
+        cols.push({ data: 'qr_sent',       className: 'text-center', render: boolRender });
         cols.push({ data: 'submitted_date' });
 
         let table = new DataTable('#entries', {
@@ -399,7 +432,11 @@
             text: '<i class="material-symbols-rounded align-middle">download</i> Export',
             filename: 'registrations',
             title: 'Registrations',
-            exportOptions: { columns: ':not(.dt-checkbox)' },
+            // orthogonal: 'export' makes DataTables call render(value, 'export', row)
+            // for each cell instead of grabbing the rendered HTML's innerText.
+            // That's how booleans become "Yes"/"No" instead of "radio_button_unchecked"
+            // and the status badge becomes plain "Approved"/"Pending"/"Rejected".
+            exportOptions: { columns: ':not(.dt-checkbox)', orthogonal: 'export' },
           },
           {
             text: '<i class="material-symbols-rounded align-middle">verified</i> Approve',

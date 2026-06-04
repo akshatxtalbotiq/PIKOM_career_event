@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>{{ title }} — Registration received</title>
+  <style>
+    @media only screen and (max-width: 600px) {
+      .container { width: 100% !important; padding: 20px !important; }
+    }
+  </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f6f9; font-family: Arial, sans-serif;">
+
+  <table cellpadding="0" cellspacing="0" border="0" width="100%">
+    <tr>
+      <td align="center">
+        <table class="container" width="600" cellpadding="0" cellspacing="0" border="0"
+               style="width: 600px; background-color: #ffffff; margin-top: 20px;
+                      border-radius: 8px; overflow: hidden;
+                      box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background-color: #198754; padding: 22px 30px; color: #ffffff;">
+              <h2 style="margin: 0; font-size: 20px; font-weight: 700;">Thank you for your submission.</h2>
+              <div style="margin-top: 6px; font-size: 14px; opacity: .9;">{{ title }}</div>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 28px 30px; color: #333333; font-size: 15px; line-height: 1.6;">
+              <p style="margin: 0 0 12px 0;">
+                {% if name %}Dear <strong>{{ name }}</strong>,{% else %}Hello,{% endif %}
+              </p>
+
+              <p style="margin: 0 0 16px 0;">
+                Thank you for registering for <strong>{{ title }}</strong>.
+                Your registration has been received and is currently being reviewed.
+              </p>
+
+              {% if reg_no %}
+                <p style="margin: 0 0 18px 0;">
+                  Your reference number:
+                  <span style="display:inline-block; padding:4px 12px; border-radius:999px;
+                               background:#e7f4ec; color:#198754; font-weight:600;">
+                    {{ reg_no }}
+                  </span>
+                </p>
+              {% endif %}
+
+              <ol style="margin: 0 0 18px 18px; padding: 0; color: #333;">
+                <li style="margin-bottom: 8px;">
+                  We have successfully received your registration and it is currently under review.
+                </li>
+                <li style="margin-bottom: 8px;">
+                  Please keep an eye out for your registration confirmation email with the QR code.
+                </li>
+                <li style="margin-bottom: 0;">
+                  For any additional requirements, our team will reach out to you.
+                </li>
+              </ol>
+
+              <p style="margin: 0 0 8px 0; color: #666; font-size: 13px;">
+                Confirmation emails with the QR code are sent only after our team has vetted the registrations.
+                This usually takes about one week.
+              </p>
+
+              <p style="margin: 24px 0 0 0;">
+                Warmest regards,<br>
+                <strong>{{ title }} Team</strong>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding: 14px; background-color: #f0f4f8;
+                                       color: #777; font-size: 12px;">
+              This is an automated email — please do not reply directly to this message.
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

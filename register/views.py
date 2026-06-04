@@ -1257,6 +1257,19 @@ def get_survey_submission_list(request):
             survey_id = request.POST.get('id')
             survey = get_object_or_404(Survey, id=survey_id)
 
+            # Identity columns to show. Respects the visibility/label settings
+            # the form owner configured in the form builder, so the list
+            # mirrors what's actually being collected on the form.
+            ident_cfg = survey.identity_field_config or default_identity_field_config()
+            identity_cols = [
+                {
+                    'key': item['key'],
+                    'title': (item.get('label') or item['key'].title()),
+                }
+                for item in ident_cfg
+                if item.get('visible', True) and item.get('key') in {'name', 'email', 'phone', 'organization'}
+            ]
+
             # Custom questions the admin chose to surface as list columns
             shown_questions = list(
                 survey.questions
@@ -1364,6 +1377,7 @@ def get_survey_submission_list(request):
 
             return JsonResponse({
                 'data': data,
+                'identity_cols': identity_cols,
                 'columns': columns_meta,
                 'totals': {
                     'all': len(data),
@@ -2027,6 +2041,13 @@ def form_submit(request, survey_id):
                         answer_text=answer_text,
                     )
 
+    # Send the "submission received — under review" email to the registrant
+    # for registration-type forms (feedback surveys don't need it). Done
+    # outside the atomic block so a mail backend hiccup can't roll back a
+    # successful registration.
+    if survey.purpose == Survey.PURPOSE_REGISTRATION:
+        _send_registration_received_email(survey_user)
+
     return redirect("form_thankyou", survey_code=(survey.slug or str(survey.survey_code)), user_id=survey_user.id)
 
 
@@ -2034,11 +2055,54 @@ def form_submit(request, survey_id):
 # Bulk actions on registrations (Send QR / reminders / Remove)
 # ---------------------------------------------------------------------------
 
+def _send_registration_received_email(survey_user):
+    """Send the "thank you for your submission — under review" confirmation
+    to the registrant immediately after they submit the form. Mirrors the
+    on-screen thank-you page so the user has a record in their inbox.
+
+    Best-effort: any error is logged but never raised, so a failed email
+    can't break the registration submission itself.
+    """
+    if not survey_user or not survey_user.email:
+        return False
+    survey = survey_user.survey
+    campaign = survey.fkcampaign if survey else None
+    subject_title = (campaign.title if campaign else survey.title) or "your event"
+
+    ctx = {
+        "name": survey_user.name or "",
+        "reg_no": survey_user.reg_no or "",
+        "title": subject_title,
+        "survey": survey,
+        "campaign": campaign,
+    }
+    try:
+        html_content = render_to_string("register/email/email_registration_received.html", ctx)
+        email = EmailMultiAlternatives(
+            subject=f"Thank you for your registration — {subject_title}",
+            body=strip_tags(html_content),
+            from_email=formataddr((subject_title, settings.DEFAULT_FROM_EMAIL)),
+            to=[survey_user.email],
+            headers={"Reply-To": "info@pikom.org.my"},
+        )
+        email.attach_alternative(html_content, "text/html")
+        email.send()
+        return True
+    except Exception as e:
+        # Never block the submission on email failure — log and move on.
+        print(f"registration-received email failed for {survey_user.email}: {e}")
+        return False
+
+
 def _send_qr_to_surveyuser(survey_user, files=None):
-    """Generate a QR image from the registration_code and email it. Returns True on success."""
+    """Generate a QR image from the registration_code and email it. The QR is
+    embedded inline (Content-ID: qrcode) so it renders inside the message body
+    — the email template references it as <img src="cid:qrcode">. A regular
+    attachment copy is also included so the recipient can save the PNG.
+    Returns True on success.
+    """
     if not survey_user.email:
         return False
-    import base64
     from io import BytesIO
 
     buf = BytesIO()
@@ -2049,7 +2113,7 @@ def _send_qr_to_surveyuser(survey_user, files=None):
     campaign = survey.fkcampaign
 
     ctx = {
-        "name": survey_user.name or "there",
+        "name": survey_user.name or "",
         "reg_no": survey_user.reg_no or "",
         "survey": survey,
         "campaign": campaign,
@@ -2060,14 +2124,26 @@ def _send_qr_to_surveyuser(survey_user, files=None):
 
     subject_title = (campaign.title if campaign else survey.title) or "your event"
     email = EmailMultiAlternatives(
-        subject=f"Your QR code for {subject_title}",
-        body=html_content,
+        subject=f"You're registered for {subject_title} — your check-in QR code",
+        body=strip_tags(html_content),
         from_email=formataddr((subject_title, settings.DEFAULT_FROM_EMAIL)),
         to=[survey_user.email],
         headers={"Reply-To": "info@pikom.org.my"},
     )
+    # The HTML body needs to be a "related" alternative so the inline image
+    # CID resolves. EmailMultiAlternatives + mixed/related is handled by
+    # Django when we set mixed_subtype = 'related'. We also keep a regular
+    # PNG attachment as a download so the recipient can save it.
+    email.mixed_subtype = 'related'
     email.attach_alternative(html_content, "text/html")
-    email.attach(f"qr_{survey_user.reg_no or survey_user.id}.png", qr_bytes, "image/png")
+
+    # Inline QR — referenced as <img src="cid:qrcode"> in the template.
+    qr_inline = MIMEImage(qr_bytes, _subtype="png")
+    qr_inline.add_header("Content-ID", "<qrcode>")
+    qr_inline.add_header("Content-Disposition", "inline",
+                         filename=f"qr_{survey_user.reg_no or survey_user.id}.png")
+    email.attach(qr_inline)
+
     for f in (files or []):
         email.attach(f.name, f.read(), f.content_type)
     try:
