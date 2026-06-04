@@ -1316,6 +1316,14 @@ def get_survey_submission_list(request):
                 for q in shown_questions:
                     ans = answers_by_user_q.get((s.id, q.id))
                     custom[f'q_{q.id}'] = render_answer(ans)
+                    # Pre-seed every configured follow-up column with an empty
+                    # string so each row exposes the same keys. Without this,
+                    # rows that didn't trigger a particular follow-up would be
+                    # missing the key entirely and DataTables warns:
+                    #   "Requested unknown parameter 'q_X__fu__...'".
+                    if q.choice_followups:
+                        for option in q.choice_followups.keys():
+                            custom[fu_key(q.id, option)] = ''
                     # If this question has follow-ups, pull each one into its
                     # own column. Follow-up answers are stored as a JSON dict
                     # in Answer.answer_text — {"option label": "user text"}.

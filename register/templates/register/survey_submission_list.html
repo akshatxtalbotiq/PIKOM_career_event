@@ -127,10 +127,6 @@
                   <tr id="entriesHeaderRow">
                       <th><input type="checkbox" id="select-all"></th>
                       <th class="text-uppercase text-secondary text-sm font-weight-bolder">Reg #</th>
-                      {# All remaining columns (visible identity fields, custom
-                         show_in_list questions, Status, Check-in, QR Sent,
-                         Submitted) are injected by JS so the table matches the
-                         form builder's configuration exactly. #}
                   </tr>
                 </thead>
                 <tbody id="registration-body"></tbody>
@@ -394,7 +390,11 @@
             cols.push({ data: col.key });
           }
         });
-        customCols.forEach(col => cols.push({ data: col.key }));
+        // defaultContent guards against rare rows that legitimately lack a
+        // custom/follow-up key (e.g. older data created before a column was
+        // added). With it, DataTables shows an empty cell instead of
+        // throwing the "Requested unknown parameter" warning.
+        customCols.forEach(col => cols.push({ data: col.key, defaultContent: '' }));
         cols.push({
           data: 'approval_status',
           className: 'text-center',
