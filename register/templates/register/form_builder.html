@@ -154,6 +154,14 @@
                     <span class="type-pill">{{ q.get_question_type_display }}</span>
                   {% endif %}
                   {% if q.is_required %}<span class="required-pill">Required</span>{% endif %}
+                  {% if q.show_in_list %}
+                    <span class="type-pill" style="background:#e7f4ec; color:#198754;"
+                          title="This answer appears as a column in the registrations list">
+                      <i class="material-symbols-rounded align-middle" style="font-size:14px;">view_column</i>
+                      List col:
+                      <strong>{{ q.list_column_label|default:q.text|striptags|truncatechars:30 }}</strong>
+                    </span>
+                  {% endif %}
                   <div class="flex-grow-1 ms-2 text-truncate">{{ q.text|striptags }}</div>
                   <button type="button" class="btn btn-sm btn-link text-body p-1 edit-q-btn" data-id="{{ q.id }}" title="Edit">
                     <i class="material-symbols-rounded">edit</i>
@@ -226,10 +234,18 @@
             </div>
           </div>
 
-          <div class="mb-3" id="qColumnLabelWrap" style="display:none;">
-            <label class="form-label">Column label <span class="text-muted small">(optional, used as the list-column header)</span></label>
-            <input type="text" id="qColumnLabel" class="form-control" maxlength="60" placeholder="e.g. Member, Dietary, Inviter">
-            <small class="text-muted">Leave blank to use the question text (truncated).</small>
+          <div class="mb-3" id="qColumnLabelWrap">
+            <label class="form-label" for="qColumnLabel">
+              Column header for the registrations list
+              <span class="text-muted small">(optional)</span>
+            </label>
+            <input type="text" id="qColumnLabel" class="form-control" maxlength="60"
+                   placeholder="e.g. Member, Dietary, Inviter">
+            <small class="text-muted">
+              Used as the column header on the registrations list page.
+              Leave blank to use the question text (truncated).
+              Only applies when <strong>Show in list</strong> is on.
+            </small>
           </div>
 
           <div id="choicesBlock" style="display:none;">
@@ -371,6 +387,17 @@
   const modalEl = document.getElementById('questionModal');
   const modal = new bootstrap.Modal(modalEl);
 
+  function applyColumnLabelState() {
+    // Keep the Column-label input visible at all times for discoverability,
+    // but disable + gray it when Show-in-list is off so the relationship is
+    // obvious to the form author.
+    const on = document.getElementById('qShowInList').checked;
+    const input = document.getElementById('qColumnLabel');
+    const wrap = document.getElementById('qColumnLabelWrap');
+    input.disabled = !on;
+    wrap.style.opacity = on ? '1' : '0.55';
+  }
+
   function resetForm() {
     document.getElementById('questionForm').reset();
     document.getElementById('qId').value = '';
@@ -380,15 +407,13 @@
     document.getElementById('qMaxChecks').value = '';
     document.getElementById('qShowInList').checked = false;
     document.getElementById('qColumnLabel').value = '';
-    document.getElementById('qColumnLabelWrap').style.display = 'none';
+    applyColumnLabelState();
     document.getElementById('choicesList').innerHTML = '';
     onTypeChange();
   }
 
   // Toggle the Column label input alongside the Show-in-list switch
-  document.getElementById('qShowInList').addEventListener('change', (e) => {
-    document.getElementById('qColumnLabelWrap').style.display = e.target.checked ? 'block' : 'none';
-  });
+  document.getElementById('qShowInList').addEventListener('change', applyColumnLabelState);
 
   function addChoiceRow(value = '', followup = '') {
     const row = document.createElement('div');
@@ -469,13 +494,16 @@
     const helpRow = document.getElementById('qHelp').closest('.mb-3');
     const choicesBlock = document.getElementById('choicesBlock');
     const showInListWrap = document.getElementById('qShowInListWrap');
+    const columnLabelWrap = document.getElementById('qColumnLabelWrap');
     typeSel.disabled = isIdentity;
     typeSel.closest('.col-md-6').style.display = isIdentity ? 'none' : 'block';
     helpRow.style.display = isIdentity ? 'none' : 'block';
     choicesBlock.style.display = isIdentity ? 'none' : choicesBlock.style.display;
-    // Show-in-list only applies to custom questions (identity ones always
-    // appear as Name/Email/Phone/Organization columns).
+    // Show-in-list (and its column label) only apply to custom questions —
+    // identity ones always appear as Name/Email/Phone/Organization columns,
+    // whose labels are managed through the form's identity field config.
     if (showInListWrap) showInListWrap.style.display = isIdentity ? 'none' : 'inline-flex';
+    if (columnLabelWrap) columnLabelWrap.style.display = isIdentity ? 'none' : 'block';
     if (isIdentity) typeSel.value = typeSel.value; // preserve
   }
 
@@ -498,7 +526,7 @@
             document.getElementById('qMaxChecks').value = data.max_checks || '';
             document.getElementById('qShowInList').checked = !!data.show_in_list;
             document.getElementById('qColumnLabel').value = data.list_column_label || '';
-            document.getElementById('qColumnLabelWrap').style.display = data.show_in_list ? 'block' : 'none';
+            applyColumnLabelState();
             document.getElementById('choicesList').innerHTML = '';
             const followups = data.choice_followups || {};
             (data.choices || []).forEach(c => addChoiceRow(c, followups[c] || ''));
