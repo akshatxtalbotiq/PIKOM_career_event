@@ -5,6 +5,7 @@ from django.db.models import Prefetch, Max
 from django.shortcuts import render,get_object_or_404,redirect
 from django.http import HttpResponse, JsonResponse
 from django.db import transaction, IntegrityError
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
 from django.utils.dateparse import parse_datetime
@@ -1964,10 +1965,39 @@ def form_submit(request, survey_id):
     if request.method != "POST":
         return redirect("form_public", survey_code=survey.survey_code)
 
+    # Server-side enforcement of required questions. The browser uses
+    # `novalidate`, and JS validation can be bypassed (curl, JS disabled),
+    # so a blank-but-required field must be rejected here too.
+    questions = list(survey.questions.all())
+    missing = []
+    for q in questions:
+        if not q.is_required:
+            continue
+        field = f"q_{q.id}"
+        if q.question_type == Question.TYPE_CHECKBOX:
+            picked = request.POST.getlist(field)
+            other = (request.POST.get(f"{field}_other") or "").strip() if q.allow_other else ""
+            has_value = bool([p for p in picked if p.strip()]) or bool(other)
+        elif q.question_type in (Question.TYPE_RADIO, Question.TYPE_SELECT):
+            picked = (request.POST.get(field) or "").strip()
+            other = (request.POST.get(f"{field}_other") or "").strip() if q.allow_other else ""
+            has_value = bool(picked) or bool(other)
+        else:
+            has_value = bool((request.POST.get(field) or "").strip())
+        if not has_value:
+            label = strip_tags(q.text or "").strip()
+            missing.append(label or f"Question {q.id}")
+
+    if missing:
+        messages.error(
+            request,
+            "Please complete all required fields: " + ", ".join(missing),
+        )
+        return redirect("form_public", survey_code=(survey.slug or str(survey.survey_code)))
+
     with transaction.atomic():
         # 1) Pull identity values out of POST so we can construct SurveyUser.
         identity_values = {}
-        questions = list(survey.questions.all())
         for q in questions:
             if q.question_type in Question.IDENTITY_TYPES:
                 target_field = Question.IDENTITY_TYPES[q.question_type]

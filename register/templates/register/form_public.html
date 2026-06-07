@@ -42,6 +42,12 @@
   <div class="container-xl py-5">
     <div class="form-card">
 
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} shadow-sm">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+
       {% if survey.banner %}
         <div class="mb-3 rounded overflow-hidden shadow-sm">
           <img src="{{ survey.banner.url }}" alt="{{ survey.title }}" class="img-fluid w-100">
@@ -269,6 +275,14 @@
           return;
         }
         let blocked = false;
+        // Native HTML5 validation for required text/email/phone/radio/select fields.
+        // (The form uses novalidate, so we must trigger this ourselves.)
+        if (!formEl.checkValidity()) {
+          e.preventDefault();
+          e.stopPropagation();
+          formEl.reportValidity();
+          return;
+        }
         document.querySelectorAll('[data-checkbox-group]').forEach(group => {
           const hint = group.querySelector('.form-text[data-max]');
           if (hint) {
