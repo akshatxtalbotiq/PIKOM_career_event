@@ -191,6 +191,43 @@ def default_identity_field_config():
     ]
 
 
+def merge_identity_field_config(stored):
+    """Return the stored identity field config merged with the current defaults.
+
+    JSONField defaults are only applied when a row is first created, so surveys
+    built before a field (e.g. phone/organization) was added to
+    `default_identity_field_config()` have a stored config that is missing those
+    keys. That made the field invisible everywhere it was read from config (list
+    columns, builder toggles). This merges so every identity field is always
+    present, in canonical order, with stored values winning over defaults and
+    any field absent from the stored config falling back to its default
+    (visible) state.
+    """
+    defaults = default_identity_field_config()
+    by_key = {item.get("key"): item for item in (stored or []) if isinstance(item, dict)}
+    merged = []
+    seen = set()
+    for d in defaults:
+        k = d["key"]
+        s = by_key.get(k)
+        if s:
+            merged.append({
+                "key": k,
+                "label": s.get("label") or d["label"],
+                "visible": s.get("visible", d["visible"]),
+                "required": s.get("required", d["required"]),
+            })
+        else:
+            merged.append(dict(d))
+        seen.add(k)
+    # Preserve any extra (future) keys not covered by defaults.
+    for item in (stored or []):
+        if isinstance(item, dict) and item.get("key") not in seen:
+            merged.append(item)
+            seen.add(item.get("key"))
+    return merged
+
+
 class Survey(models.Model):
     PURPOSE_REGISTRATION = "registration"
     PURPOSE_FEEDBACK = "feedback"

@@ -21,7 +21,7 @@ from io import BytesIO
 
 from urllib3 import request
 from picom import settings
-from .models import Registration, Player, Sponsorship,Campaign, Submission,CampaignTeam, Survey, Question, Answer, SurveyUser, default_identity_field_config
+from .models import Registration, Player, Sponsorship,Campaign, Submission,CampaignTeam, Survey, Question, Answer, SurveyUser, default_identity_field_config, merge_identity_field_config
 
 import uuid
 import json
@@ -1261,7 +1261,7 @@ def get_survey_submission_list(request):
             # Identity columns to show. Respects the visibility/label settings
             # the form owner configured in the form builder, so the list
             # mirrors what's actually being collected on the form.
-            ident_cfg = survey.identity_field_config or default_identity_field_config()
+            ident_cfg = merge_identity_field_config(survey.identity_field_config)
             identity_cols = [
                 {
                     'key': item['key'],
@@ -1645,7 +1645,7 @@ def form_builder(request, survey_id):
         "questions": questions,
         "public_url": public_url,
         "question_types": Question.QUESTION_TYPES,
-        "identity_field_config": survey.identity_field_config or [],
+        "identity_field_config": merge_identity_field_config(survey.identity_field_config),
     })
 
 
@@ -1709,13 +1709,14 @@ def save_identity_config(request, survey_id):
             "visible": bool(item.get("visible", True)),
             "required": bool(item.get("required", False)),
         })
-    # Force-include any missing keys (hidden, optional) so the config is always complete.
+    # Force-include any missing keys so the config is always complete. Use each
+    # field's default visibility (not a hard False) so a field that simply
+    # wasn't in the posted payload — e.g. on an older form — isn't silently
+    # hidden from the registrations list.
     defaults = {f["key"]: f for f in default_identity_field_config()}
     for k in ["name", "email", "phone", "organization"]:
         if k not in seen:
-            d = dict(defaults[k])
-            d["visible"] = False
-            cleaned.append(d)
+            cleaned.append(dict(defaults[k]))
 
     survey = get_object_or_404(Survey, id=survey_id)
     survey.identity_field_config = cleaned
