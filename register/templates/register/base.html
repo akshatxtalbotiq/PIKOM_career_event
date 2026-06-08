@@ -53,6 +53,16 @@
       color: #000; /* Optional: hover effect */
     }
 
+    /* The theme locks `body` to height:100vh; overflow:hidden, so the page
+       itself never scrolls and expects .main-content to scroll internally.
+       Make it an actual scroll container so content isn't clipped on short /
+       low-resolution screens (e.g. 1024x640). */
+    .main-content {
+      height: 100vh;
+      overflow-x: auto;
+      overflow-y: auto;
+    }
+
   </style>
 
   {% block extra_head %}
