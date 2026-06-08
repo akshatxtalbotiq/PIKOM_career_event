@@ -1,0 +1,379 @@
+{% extends 'register/base.html' %}
+{% load static %}
+
+{% block content %}
+    <main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg ">
+    <div class="container-fluid py-2">
+
+      <div class="row">
+        <div class="col-8 d-flex justify-content-start align-items-center gap-2">
+            <div class="ms-3">
+              <h3 class="mb-0 h4 font-weight-bolder opacity-7"><i class="ti ti-users"></i>
+              Users</h3>
+              <nav aria-label="breadcrumb m-0">
+                <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
+                  <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;">Manage staff accounts</a></li>
+                </ol>
+              </nav>
+            </div>
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="card my-2">
+          <div class="card-body px-0 pb-2">
+            <div class="table-responsive p-0">
+              <table id="users" class="table align-items-center mb-0">
+                <thead>
+                  <tr>
+                    <th class="text-uppercase text-secondary text-sm font-weight-bolder">Name</th>
+                    <th class="text-uppercase text-secondary text-sm font-weight-bolder">Username</th>
+                    <th class="text-uppercase text-secondary text-sm font-weight-bolder">Email</th>
+                    <th class="text-uppercase text-secondary text-sm font-weight-bolder">Role</th>
+                    <th class="text-uppercase text-secondary text-sm font-weight-bolder">Status</th>
+                    <th class="text-uppercase text-secondary text-sm font-weight-bolder"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for u in users %}
+                    <tr>
+                      <td>
+                        <div class="d-flex px-2 py-1">
+                          <div class="d-flex flex-column justify-content-center">
+                            <h6 class="mb-0 text-xs">{{ u.get_full_name|default:"—" }}</h6>
+                          </div>
+                        </div>
+                      </td>
+                      <td><p class="text-xs font-weight-bold mb-0">{{ u.username }}</p></td>
+                      <td><p class="text-xs font-weight-bold mb-0">{{ u.email|default:"—" }}</p></td>
+                      <td class="align-middle text-center text-sm">
+                        {% if u.is_superuser %}
+                          <span class="badge badge-sm bg-gradient-info">Superuser</span>
+                        {% else %}
+                          <span class="badge badge-sm bg-gradient-secondary">Staff</span>
+                        {% endif %}
+                      </td>
+                      <td class="align-middle text-center text-sm">
+                        {% if u.is_active %}
+                          <span class="badge badge-sm bg-gradient-success">Active</span>
+                        {% else %}
+                          <span class="badge badge-sm bg-gradient-danger">Inactive</span>
+                        {% endif %}
+                        {% if not u.has_usable_password %}
+                          <span class="badge badge-sm bg-gradient-warning" title="Has not set a password yet">Invite pending</span>
+                        {% endif %}
+                      </td>
+                      <td class="align-middle">
+                        <div class="d-flex gap-2 align-items-center">
+                          <a href="javascript:void(0);" class="text-body p-0 edit-user-btn"
+                             data-id="{{ u.id }}" title="Edit user">
+                            <i class="material-symbols-rounded">edit</i>
+                          </a>
+                          {% if u.id != user.id and u.is_active %}
+                            <a href="javascript:void(0);" class="text-body p-0 impersonate-btn"
+                               data-id="{{ u.id }}" data-name="{{ u.get_full_name|default:u.username }}" title="Log in as this user">
+                              <i class="material-symbols-rounded">login</i>
+                            </a>
+                          {% endif %}
+                          <a href="javascript:void(0);" class="text-body p-0 resend-invite-btn"
+                             data-id="{{ u.id }}" data-email="{{ u.email }}" title="Resend set-password invite">
+                            <i class="material-symbols-rounded">forward_to_inbox</i>
+                          </a>
+                          {% if u.id != user.id %}
+                            <a href="javascript:void(0);" class="text-body p-0 toggle-active-btn"
+                               data-id="{{ u.id }}" data-active="{{ u.is_active|yesno:'true,false' }}"
+                               title="{% if u.is_active %}Deactivate{% else %}Activate{% endif %} account">
+                              <i class="material-symbols-rounded">{% if u.is_active %}toggle_on{% else %}toggle_off{% endif %}</i>
+                            </a>
+                          {% endif %}
+                        </div>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Add User Modal -->
+  <div class="modal fade" id="addNewUser" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+      aria-labelledby="addNewUserLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <form id="userForm" novalidate>
+          <div class="modal-header">
+            <input type="hidden" id="userId" name="userId">
+            <h5 class="modal-title" id="addNewUserLabel">Add New User</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p class="text-sm text-secondary" id="inviteHelpText">
+              The new user receives an email with a link to set their own password.
+              No password is needed here.
+            </p>
+            <div class="row g-3">
+              <div class="col-xl-6 col-lg-6">
+                <div class="mb-3">
+                  <label for="firstName" class="form-label">First Name</label>
+                  <input type="text" class="form-control border border-1 rounded px-2 py-2" id="firstName" name="firstName" placeholder="First name">
+                </div>
+              </div>
+              <div class="col-xl-6 col-lg-6">
+                <div class="mb-3">
+                  <label for="lastName" class="form-label">Last Name</label>
+                  <input type="text" class="form-control border border-1 rounded px-2 py-2" id="lastName" name="lastName" placeholder="Last name">
+                </div>
+              </div>
+              <div class="col-xl-12 col-lg-12">
+                <div class="mb-3">
+                  <label for="userEmail" class="form-label">Email</label>
+                  <input type="email" class="form-control border border-1 rounded px-2 py-2" id="userEmail" name="userEmail" placeholder="user@mail.com" required>
+                  <div class="invalid-feedback">A valid email is required.</div>
+                </div>
+              </div>
+              <div class="col-xl-12 col-lg-12">
+                <div class="mb-3">
+                  <label for="userUsername" class="form-label">Username <span class="text-secondary text-xs">(optional — defaults to email)</span></label>
+                  <input type="text" class="form-control border border-1 rounded px-2 py-2" id="userUsername" name="userUsername" placeholder="Leave blank to use email">
+                </div>
+              </div>
+              <div class="col-xl-12 col-lg-12">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <label class="form-check-label" for="userIsSuperuser">Grant superuser access (full control)</label>
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="userIsSuperuser" name="userIsSuperuser">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-primary" id="userSubmitBtn">Create &amp; send invite</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extrajs %}
+  <script>
+    function getCSRFToken() {
+      let name = 'csrftoken';
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        let cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          let cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    function userModal() { return new bootstrap.Modal(document.getElementById('addNewUser')); }
+
+    function setCreateMode() {
+      document.getElementById('userForm').reset();
+      document.getElementById('userForm').classList.remove('was-validated');
+      document.getElementById('userId').value = '';
+      document.getElementById('addNewUserLabel').textContent = 'Add New User';
+      document.getElementById('inviteHelpText').style.display = '';
+      document.getElementById('userSubmitBtn').innerHTML = 'Create &amp; send invite';
+    }
+
+    function setEditMode(u) {
+      document.getElementById('userForm').reset();
+      document.getElementById('userForm').classList.remove('was-validated');
+      document.getElementById('userId').value = u.id;
+      document.getElementById('firstName').value = u.first_name || '';
+      document.getElementById('lastName').value = u.last_name || '';
+      document.getElementById('userEmail').value = u.email || '';
+      document.getElementById('userUsername').value = u.username || '';
+      document.getElementById('userIsSuperuser').checked = !!u.is_superuser;
+      document.getElementById('addNewUserLabel').textContent = 'Edit User';
+      document.getElementById('inviteHelpText').style.display = 'none';
+      document.getElementById('userSubmitBtn').innerHTML = 'Save changes';
+    }
+
+    $(document).ready(function () {
+      const datatable = new DataTable('#users', {
+        responsive: false,
+        paging: true,
+        processing: true,
+        lengthChange: true,
+        searching: true,
+        pageLength: 10,
+        lengthMenu: [[5, 10, 15, 50, 100], [5, 10, 15, 50, 100]],
+        colReorder: false,
+        scrollY: '60vh',
+        layout: {
+          topStart: [
+            {
+              search: {
+                className: 'form-control form-control-sm',
+                placeholder: 'Search...',
+                ariaLabel: 'Search'
+              }
+            },
+            'pageLength'
+          ],
+          topEnd: 'buttons'
+        },
+        buttons: [
+          {
+            text: '<i class="material-symbols-rounded align-middle">person_add</i> Add User',
+            className: 'btn btn-primary',
+            action: function () {
+              setCreateMode();
+              userModal().show();
+            }
+          }
+        ]
+      });
+
+      // ---- Edit user: load data then open modal ----
+      $(document).on('click', '.edit-user-btn', function () {
+        const id = $(this).data('id');
+        fetch("/users/get/" + id + "/")
+          .then(r => r.json())
+          .then(u => {
+            if (u && u.id) { setEditMode(u); userModal().show(); }
+            else { Swal.fire('Error', (u && u.error) || 'Could not load user.', 'error'); }
+          })
+          .catch(() => Swal.fire('Error', 'Could not load user.', 'error'));
+      });
+
+      // ---- Create / update user (one form, two endpoints) ----
+      document.getElementById('userForm').addEventListener('submit', function (event) {
+        event.preventDefault();
+        const form = event.target;
+
+        form.classList.remove('was-validated');
+        if (!form.checkValidity()) {
+          event.stopPropagation();
+          form.classList.add('was-validated');
+          return;
+        }
+
+        const userId = $('#userId').val();
+        const isEdit = !!userId;
+        const payload = {
+          first_name: $('#firstName').val(),
+          last_name: $('#lastName').val(),
+          email: $('#userEmail').val(),
+          username: $('#userUsername').val(),
+          is_superuser: $('#userIsSuperuser').is(':checked')
+        };
+        if (isEdit) { payload.id = userId; }
+
+        $.ajax({
+          url: isEdit ? "{% url 'update_user' %}" : "{% url 'create_user' %}",
+          method: 'POST',
+          headers: { 'X-CSRFToken': getCSRFToken() },
+          data: payload,
+          success: function (response) {
+            if (response.success) {
+              if (isEdit) {
+                Swal.fire('Saved', 'Changes saved.', 'success').then(() => location.reload());
+              } else if (response.warning) {
+                Swal.fire('User created', response.warning, 'warning').then(() => location.reload());
+              } else {
+                Swal.fire('Done', 'User created and an invite email was sent.', 'success').then(() => location.reload());
+              }
+            } else {
+              Swal.fire('Error', response.error || 'Could not save user.', 'error');
+            }
+          },
+          error: function (xhr) {
+            const msg = (xhr.responseJSON && xhr.responseJSON.error) || 'Could not save user.';
+            Swal.fire('Error', msg, 'error');
+          }
+        });
+      });
+
+      // ---- Login as (impersonate) ----
+      $(document).on('click', '.impersonate-btn', function () {
+        const id = $(this).data('id');
+        const name = $(this).data('name');
+        Swal.fire({
+          title: 'Log in as ' + name + '?',
+          text: 'You will browse the site as this user until you choose to return to your own account.',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Log in as user'
+        }).then((result) => {
+          if (!result.isConfirmed) return;
+          // Submit a real form POST so the browser follows the redirect.
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = '/users/impersonate/' + id + '/';
+          const csrf = document.createElement('input');
+          csrf.type = 'hidden';
+          csrf.name = 'csrfmiddlewaretoken';
+          csrf.value = getCSRFToken();
+          form.appendChild(csrf);
+          document.body.appendChild(form);
+          form.submit();
+        });
+      });
+
+      // ---- Resend invite ----
+      $(document).on('click', '.resend-invite-btn', function () {
+        const id = $(this).data('id');
+        const email = $(this).data('email');
+        Swal.fire({
+          title: 'Resend invite?',
+          text: 'A new set-password email will be sent to ' + (email || 'this user') + '.',
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: 'Send'
+        }).then((result) => {
+          if (!result.isConfirmed) return;
+          $.ajax({
+            url: "{% url 'resend_invite' %}",
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCSRFToken() },
+            data: { id: id },
+            success: function (r) {
+              if (r.success) { Swal.fire('Sent', 'Invite email sent.', 'success'); }
+              else { Swal.fire('Error', r.error || 'Could not send invite.', 'error'); }
+            },
+            error: function (xhr) {
+              const msg = (xhr.responseJSON && xhr.responseJSON.error) || 'Could not send invite.';
+              Swal.fire('Error', msg, 'error');
+            }
+          });
+        });
+      });
+
+      // ---- Toggle active ----
+      $(document).on('click', '.toggle-active-btn', function () {
+        const id = $(this).data('id');
+        $.ajax({
+          url: "{% url 'toggle_user_active' %}",
+          method: 'POST',
+          headers: { 'X-CSRFToken': getCSRFToken() },
+          data: { id: id },
+          success: function (r) {
+            if (r.success) { location.reload(); }
+            else { Swal.fire('Error', r.error || 'Could not update user.', 'error'); }
+          },
+          error: function (xhr) {
+            const msg = (xhr.responseJSON && xhr.responseJSON.error) || 'Could not update user.';
+            Swal.fire('Error', msg, 'error');
+          }
+        });
+      });
+    });
+  </script>
+{% endblock %}

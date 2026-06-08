@@ -73,6 +73,17 @@
 
 <body class="g-sidenav-show  bg-gray-100">
 
+    {% if request.session.impersonator_id %}
+    <div class="alert alert-warning text-dark m-0 rounded-0 d-flex justify-content-center align-items-center gap-3 py-2"
+         style="position:sticky; top:0; z-index:2000;">
+      <span class="text-sm">
+        <i class="material-symbols-rounded align-middle">visibility</i>
+        You are logged in as <strong>{{ request.user.get_full_name|default:request.user.username }}</strong> (impersonating).
+      </span>
+      <a href="{% url 'stop_impersonation' %}" class="btn btn-sm btn-dark mb-0 py-1 px-3">Return to your account</a>
+    </div>
+    {% endif %}
+
     <aside class="sidenav navbar navbar-vertical navbar-expand-xs border-radius-lg fixed-start ms-2  bg-white my-2" id="sidenav-main">         
     <div class="sidenav-header">         
         <i class="fas fa-times p-3 cursor-pointer text-dark opacity-5 position-absolute end-0 top-0 d-none d-xl-none"             
@@ -110,12 +121,14 @@
                     <span class="nav-link-text ms-1">Post-event Surveys</span>
                 </a>
             </li>
-            <!-- <li class="nav-item">             
-                <a class="nav-link" href="campaigns.html">                 
-                    <i class="material-symbols-rounded opacity-5">person</i>                 
-                    <span class="nav-link-text ms-1">Users</span>             
-                </a>             
-            </li> -->         
+            {% if user.is_superuser %}
+            <li class="nav-item">
+                <a id="user_list" class="nav-link" href="{% url 'user_list' %}">
+                    <i class="material-symbols-rounded opacity-5">person</i>
+                    <span class="nav-link-text ms-1">Users</span>
+                </a>
+            </li>
+            {% endif %}
         </ul>
         
         <!-- Logout Button -->
@@ -179,9 +192,12 @@
       
       if (currentPath.endsWith('survey_list')) {
         document.getElementById('survey_list').classList.add('active');
-       
+
       } else if (currentPath.endsWith('campaign_list')) {
         document.getElementById('campaign_list').classList.add('active');
+      } else if (currentPath.endsWith('users')) {
+        const el = document.getElementById('user_list');
+        if (el) el.classList.add('active');
     }
     });
 

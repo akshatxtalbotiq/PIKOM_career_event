@@ -1,0 +1,1 @@
+{% load i18n %}{% autoescape off %}You've been invited to PIKOM — set your password{% endautoescape %}
