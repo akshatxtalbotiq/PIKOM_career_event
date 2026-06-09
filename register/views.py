@@ -2577,9 +2577,17 @@ def send_survey_event_reminder(request, survey_id):
         ids = []
     if not ids:
         return JsonResponse({"success": False, "message": "No participants selected"}, status=400)
-    users = SurveyUser.objects.filter(survey=survey, id__in=ids)
+    selected = SurveyUser.objects.filter(survey=survey, id__in=ids)
+    # Only approved participants get the reminder — mirrors the QR-send rule.
+    approved = selected.filter(approval_status=SurveyUser.STATUS_APPROVED)
+    skipped = selected.exclude(approval_status=SurveyUser.STATUS_APPROVED).count()
+    if not approved.exists():
+        return JsonResponse({
+            "success": False,
+            "message": "None of the selected participants are approved, so no reminders were sent.",
+        }, status=400)
     sent = sum(
-        1 for u in users
+        1 for u in approved
         if _send_simple_email(
             u,
             "Reminder to Attend: {title}",
@@ -2588,7 +2596,10 @@ def send_survey_event_reminder(request, survey_id):
             intro_field="reminder_intro",
         )
     )
-    return JsonResponse({"success": True, "message": f"Event reminder sent to {sent} of {users.count()}."})
+    msg = f"Event reminder sent to {sent} of {approved.count()} approved participant{'' if approved.count() == 1 else 's'}."
+    if skipped:
+        msg += f" Skipped {skipped} not yet approved."
+    return JsonResponse({"success": True, "message": msg})
 
 
 @login_required
