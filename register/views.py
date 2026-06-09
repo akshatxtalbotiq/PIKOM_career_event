@@ -1800,7 +1800,12 @@ def save_email_content(request, campaign_id):
     campaign.qr_email_intro = _sanitize_intro(data.get("qr_email_intro"))
     campaign.reminder_intro = _sanitize_intro(data.get("reminder_intro"))
     campaign.email_signoff = (data.get("email_signoff") or "").strip()[:160]
-    campaign.save(update_fields=["qr_email_intro", "reminder_intro", "email_signoff"])
+    campaign.show_details_qr = bool(data.get("show_details_qr", True))
+    campaign.show_details_reminder = bool(data.get("show_details_reminder", True))
+    campaign.save(update_fields=[
+        "qr_email_intro", "reminder_intro", "email_signoff",
+        "show_details_qr", "show_details_reminder",
+    ])
     return JsonResponse({
         "success": True,
         "qr_email_intro": campaign.qr_email_intro,
@@ -1829,6 +1834,7 @@ def preview_email(request, survey_id, kind):
         "title": title,
     }
     intro_field = "qr_email_intro" if kind == "qr" else "reminder_intro"
+    detail_flag = "show_details_qr" if kind == "qr" else "show_details_reminder"
     ctx = dict(tag_ctx)
     ctx["event_date"] = event_date
     ctx.update({
@@ -1837,6 +1843,7 @@ def preview_email(request, survey_id, kind):
         "banner_url": banner_url,
         "signoff": ((campaign.email_signoff if campaign else "") or "").strip() or f"{title} Team",
         "intro_html": _render_intro(getattr(campaign, intro_field, "") or "", tag_ctx) if campaign else "",
+        "show_details": getattr(campaign, detail_flag, True) if campaign else True,
     })
     if kind == "qr":
         buf = BytesIO()
@@ -2313,6 +2320,11 @@ def _event_email_ctx(survey_user, request=None, intro_field=None):
     }
     ctx = dict(tag_ctx)
     ctx["event_date"] = event_date  # datetime, for {{ event_date|date:... }} in templates
+    detail_flag = {
+        "qr_email_intro": "show_details_qr",
+        "reminder_intro": "show_details_reminder",
+    }.get(intro_field)
+    show_details = getattr(campaign, detail_flag, True) if (campaign and detail_flag) else True
     ctx.update({
         "survey": survey,
         "campaign": campaign,
@@ -2320,6 +2332,7 @@ def _event_email_ctx(survey_user, request=None, intro_field=None):
         "signoff": ((campaign.email_signoff if campaign else "") or "").strip() or f"{title} Team",
         "intro_html": _render_intro(getattr(campaign, intro_field, "") or "", tag_ctx)
                       if (intro_field and campaign is not None) else "",
+        "show_details": show_details,
     })
     return ctx
 

@@ -242,6 +242,10 @@
           </div>
           <div class="intro-editor"><div id="qrIntroEditor"></div></div>
           <div id="qrIntroInit" style="display:none;">{{ survey.fkcampaign.qr_email_intro|safe }}</div>
+          <div class="form-check form-switch mt-2">
+            <input class="form-check-input" type="checkbox" id="qrShowDetails" {% if survey.fkcampaign.show_details_qr %}checked{% endif %}>
+            <label class="form-check-label" for="qrShowDetails">Include the event details block (date, venue, etc.) in this email</label>
+          </div>
         </div>
 
         <div class="mb-4">
@@ -261,6 +265,10 @@
           </div>
           <div class="intro-editor"><div id="remIntroEditor"></div></div>
           <div id="remIntroInit" style="display:none;">{{ survey.fkcampaign.reminder_intro|safe }}</div>
+          <div class="form-check form-switch mt-2">
+            <input class="form-check-input" type="checkbox" id="remShowDetails" {% if survey.fkcampaign.show_details_reminder %}checked{% endif %}>
+            <label class="form-check-label" for="remShowDetails">Include the event details block (date, venue, etc.) in this email</label>
+          </div>
         </div>
 
         <div class="mb-3">
@@ -875,6 +883,8 @@
         qr_email_intro: qrQuill.root.innerHTML,
         reminder_intro: remQuill.root.innerHTML,
         email_signoff: document.getElementById('emailSignoff').value,
+        show_details_qr: document.getElementById('qrShowDetails').checked,
+        show_details_reminder: document.getElementById('remShowDetails').checked,
       };
       fetch(`/save_email_content/${CAMPAIGN_ID}/`, {
         method: 'POST',

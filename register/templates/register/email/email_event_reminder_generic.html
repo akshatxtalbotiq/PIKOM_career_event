@@ -49,6 +49,7 @@
           </tr>
 
           <!-- Event details -->
+          {% if show_details %}
           <tr>
             <td style="padding:4px 30px 20px 30px;">
               <h2 style="margin:0 0 12px 0; font-size:18px; color:#198754;">
@@ -57,6 +58,7 @@
               {% include "register/email/_event_details_block.html" %}
             </td>
           </tr>
+          {% endif %}
 
           <!-- Sign-off -->
           <tr>

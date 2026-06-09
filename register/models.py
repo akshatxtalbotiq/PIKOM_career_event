@@ -160,6 +160,9 @@ class Campaign(models.Model):
     qr_email_intro = models.TextField(blank=True, default="")    # body HTML of QR confirmation email
     reminder_intro = models.TextField(blank=True, default="")    # body HTML of attendance reminder
     email_signoff = models.CharField(max_length=160, blank=True, default="")   # "The PCIOC 2026 Organising Team"
+    # Whether to include the event-details block (date/time/venue/etc.) in each email
+    show_details_qr = models.BooleanField(default=True)
+    show_details_reminder = models.BooleanField(default=True)
 
     def __str__(self):
         return self.title
