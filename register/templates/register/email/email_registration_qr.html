@@ -32,10 +32,14 @@
           <!-- Greeting + reference -->
           <tr>
             <td style="padding: 28px 30px 8px 30px; color: #333; font-size: 15px;">
-              <p style="margin: 0 0 12px 0;">
-                Thanks for registering for
-                <strong>{{ campaign.title|default:survey.title }}</strong>{% if name %}, <strong>{{ name }}</strong>{% endif %}.
-              </p>
+              {% if intro_html %}
+                {{ intro_html|safe }}
+              {% else %}
+                <p style="margin: 0 0 12px 0;">
+                  Thanks for registering for
+                  <strong>{{ campaign.title|default:survey.title }}</strong>{% if name %}, <strong>{{ name }}</strong>{% endif %}.
+                </p>
+              {% endif %}
 
               {% if reg_no %}
                 <p style="margin: 0 0 16px 0;">
@@ -57,7 +61,7 @@
               </p>
               <div style="display: inline-block; padding: 14px; background: #ffffff;
                           border: 1px solid #e5e7eb; border-radius: 8px;">
-                <img src="cid:qrcode" alt="Your check-in QR code"
+                <img src="{{ qr_src|default:'cid:qrcode' }}" alt="Your check-in QR code"
                      class="qr-img"
                      style="display:block; width:240px; height:240px; max-width:240px;">
               </div>
@@ -67,16 +71,9 @@
                 </div>
               {% endif %}
 
-              {% if event_date %}
-                <p style="margin: 18px 0 0 0; color: #333; font-size: 14px;">
-                  <strong>Event date:</strong> {{ event_date }}
-                </p>
-              {% endif %}
-              {% if event_venue %}
-                <p style="margin: 6px 0 0 0; color: #333; font-size: 14px;">
-                  <strong>Venue:</strong> {{ event_venue }}
-                </p>
-              {% endif %}
+              <div style="margin: 18px 0 0 0; text-align: left; display: inline-block;">
+                {% include "register/email/_event_details_block.html" %}
+              </div>
             </td>
           </tr>
 

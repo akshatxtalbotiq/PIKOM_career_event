@@ -2,6 +2,7 @@
 {% load static %}
 
 {% block extracss %}
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
 <style>
   /* Force normal page scroll. Material Dashboard's .main-content + the
      g-sidenav-show body class set overflow:hidden / fixed heights, which clips
@@ -29,6 +30,38 @@
     display: inline-block; font-size: 0.72rem; padding: 2px 8px;
     border-radius: 999px; background: #ffe5e5; color: #b71c1c; font-weight: 600; margin-left: 6px;
   }
+  /* Rich-text editors (Quill) for email content */
+  .intro-editor .ql-editor { min-height: 110px; font-size: 0.95rem; }
+  .intro-editor .ql-container { border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; }
+  .intro-editor .ql-toolbar { border-top-left-radius: 6px; border-top-right-radius: 6px; }
+  .merge-tag { font-family: monospace; }
+  .extra-row .ex-icon { text-align: center; }
+
+  /* Config cards: the Material theme's .form-control has no horizontal padding
+     and a transparent background, so standalone fields read like plain label
+     text. Scope clearer styling to these cards only. */
+  .cfg-card .form-label {
+    font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.03em; color: #67748e; margin-bottom: 0.35rem;
+  }
+  .cfg-card .form-control {
+    padding: 0.55rem 0.75rem; background-color: #fff; border: 1px solid #c8d0da;
+    color: #344050;
+  }
+  .cfg-card textarea.form-control { line-height: 1.4; }
+  .cfg-card .form-control::placeholder { color: #aeb6c2; font-weight: 400; }
+  .cfg-card .form-control:focus {
+    border-color: #5e72e4; background-color: #fff;
+    box-shadow: 0 0 0 2px rgba(94,114,228,0.15);
+  }
+  /* Read-only Date field: clearly not editable */
+  .cfg-card .form-control[readonly] {
+    background-color: #f0f2f5; color: #67748e; border-style: dashed;
+  }
+  /* Give each labelled field a touch more breathing room */
+  .cfg-card .form-label { display: block; }
+  .emoji-opt:hover { background: #eef2ff !important; border-radius: 4px; }
+  .ex-icon-btn { text-align: center; }
 
   /* Mobile: stack the URL bar and allow question rows to wrap cleanly */
   @media (max-width: 575.98px) {
@@ -125,6 +158,131 @@
       </div>
     </div>
 
+    {% if survey.fkcampaign %}
+    <!-- Event details (campaign-level) -->
+    <div class="card my-2 cfg-card">
+      <div class="card-header pb-0">
+        <h6 class="mb-0">Event details</h6>
+        <small class="text-muted">
+          Shown in the QR confirmation and reminder emails. Applies to the whole event
+          (all forms for this campaign).
+        </small>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Date</label>
+            <input type="text" class="form-control"
+                   value="{{ survey.fkcampaign.end_date|date:'l, j F Y' }}" readonly>
+            <small class="text-muted">Taken from the campaign end date.</small>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Time</label>
+            <input type="text" id="evTime" class="form-control" placeholder="8:30am – 5:30pm"
+                   value="{{ survey.fkcampaign.event_time }}">
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Venue</label>
+          <textarea id="evVenue" class="form-control" rows="2"
+                    placeholder="Ballroom 1, Level 1, ...">{{ survey.fkcampaign.venue }}</textarea>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Dress code</label>
+          <input type="text" id="evDress" class="form-control" placeholder="Smart Casual or Business Attire"
+                 value="{{ survey.fkcampaign.dress_code }}">
+        </div>
+
+        <hr class="my-2">
+        <label class="form-label d-flex justify-content-between align-items-center">
+          <span>Additional info rows</span>
+          <button type="button" id="addExtraRow" class="btn btn-sm btn-outline-primary mb-0">
+            <i class="material-symbols-rounded align-middle">add</i> Add row
+          </button>
+        </label>
+        <small class="text-muted d-block mb-2">
+          Add any extra lines shown in the emails — parking, agenda link, lucky draw, etc.
+          Pick an emoji, an optional bold label, the text, and an optional link
+          (e.g. an agenda PDF — the text becomes a clickable link).
+        </small>
+        <div id="extraInfoList"></div>
+        {{ survey.fkcampaign.extra_info|json_script:"extraInfoInit" }}
+
+        <div class="text-end mt-3">
+          <span id="evSavedMsg" class="text-success me-2 fw-bold" style="display:none;">Saved ✓</span>
+          <button type="button" id="saveEventDetails" class="btn btn-sm btn-primary mb-0">Save event details</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Email content (campaign-level) -->
+    <div class="card my-2 cfg-card">
+      <div class="card-header pb-0">
+        <h6 class="mb-0">Email content</h6>
+        <small class="text-muted">
+          Write the message shown at the top of each email. Tap a button to drop in a detail like
+          <strong>[Name]</strong> or <strong>[Event]</strong> — each one is filled in automatically for every recipient.
+        </small>
+      </div>
+      <div class="card-body">
+        <div class="mb-4">
+          <label class="form-label d-flex justify-content-between align-items-center">
+            <span>QR confirmation email</span>
+            <a href="{% url 'preview_email' survey.id 'qr' %}" target="_blank"
+               class="btn btn-sm btn-outline-warning mb-0 py-1">
+              <i class="material-symbols-rounded align-middle" style="font-size:16px;">visibility</i> Preview
+            </a>
+          </label>
+          <div class="mb-1">
+            <small class="text-muted me-1">Insert:</small>
+            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 merge-tag" data-target="qr" data-tag="[Name]">Name</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 merge-tag" data-target="qr" data-tag="[Reg no]">Reg no</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 merge-tag" data-target="qr" data-tag="[Date]">Date</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 merge-tag" data-target="qr" data-tag="[Event]">Event</button>
+          </div>
+          <div class="intro-editor"><div id="qrIntroEditor"></div></div>
+          <div id="qrIntroInit" style="display:none;">{{ survey.fkcampaign.qr_email_intro|safe }}</div>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label d-flex justify-content-between align-items-center">
+            <span>Attendance reminder email</span>
+            <a href="{% url 'preview_email' survey.id 'reminder' %}" target="_blank"
+               class="btn btn-sm btn-outline-warning mb-0 py-1">
+              <i class="material-symbols-rounded align-middle" style="font-size:16px;">visibility</i> Preview
+            </a>
+          </label>
+          <div class="mb-1">
+            <small class="text-muted me-1">Insert:</small>
+            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 merge-tag" data-target="rem" data-tag="[Name]">Name</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 merge-tag" data-target="rem" data-tag="[Reg no]">Reg no</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 merge-tag" data-target="rem" data-tag="[Date]">Date</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 merge-tag" data-target="rem" data-tag="[Event]">Event</button>
+          </div>
+          <div class="intro-editor"><div id="remIntroEditor"></div></div>
+          <div id="remIntroInit" style="display:none;">{{ survey.fkcampaign.reminder_intro|safe }}</div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Sign-off</label>
+          <input type="text" id="emailSignoff" class="form-control" placeholder="The PCIOC 2026 Organising Team"
+                 value="{{ survey.fkcampaign.email_signoff }}">
+        </div>
+
+        <div class="text-end">
+          <span id="emSavedMsg" class="text-success me-2 fw-bold" style="display:none;">Saved ✓</span>
+          <button type="button" id="saveEmailContent" class="btn btn-sm btn-primary mb-0">Save email content</button>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="card my-2">
+      <div class="card-body text-muted">
+        <h6 class="mb-1">Event details &amp; email content</h6>
+        Attach this form to a campaign to configure event details and email wording.
+      </div>
+    </div>
+    {% endif %}
 
     <div class="card my-2">
       <div class="card-header pb-0 d-flex justify-content-between align-items-center">
@@ -279,6 +437,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
 <script>
   // Defer all initialization until DOMContentLoaded so that bootstrap.min.js
   // (loaded at the bottom of base.html, AFTER this script block) is available.
@@ -613,6 +772,121 @@
       }
     });
   });
+
+  // --- Event details & Email content (campaign-level) ---
+  if (document.getElementById('saveEventDetails')) {
+    const CAMPAIGN_ID = "{{ survey.fkcampaign.id }}";
+
+    // --- Emoji picker (shared palette popover) ---
+    const EMOJIS = ['📅','🗓️','🕒','⏰','📍','🏢','🅿️','🚗','🚌','👕','👔','🎟️','🎫','📝','📋','🔗','🎉','🎁','🏆','🍽️','☕','🎤','🎧','👥','💡','⚠️','✅','ℹ️','📞','✉️','🌐','⭐'];
+    let activeIconBtn = null;
+    const palette = document.createElement('div');
+    palette.className = 'card shadow-sm';
+    palette.style.cssText = 'position:absolute; z-index:1090; display:none; padding:6px; max-width:260px; background:#fff;';
+    palette.innerHTML = EMOJIS.map(e => `<button type="button" class="emoji-opt" style="font-size:18px; line-height:1; border:0; background:none; padding:4px 6px; cursor:pointer;">${e}</button>`).join('')
+      + `<button type="button" class="emoji-opt" data-clear="1" title="No icon" style="font-size:13px; border:0; background:none; padding:4px 6px; cursor:pointer; color:#b71c1c;">clear ✕</button>`;
+    document.body.appendChild(palette);
+    palette.querySelectorAll('.emoji-opt').forEach(b => b.addEventListener('click', () => {
+      if (activeIconBtn) {
+        const v = b.dataset.clear ? '' : b.textContent;
+        activeIconBtn.dataset.emoji = v;
+        activeIconBtn.textContent = v || '＋';
+      }
+      palette.style.display = 'none';
+    }));
+    function openPalette(btn) {
+      activeIconBtn = btn;
+      const r = btn.getBoundingClientRect();
+      palette.style.left = (window.scrollX + r.left) + 'px';
+      palette.style.top = (window.scrollY + r.bottom + 4) + 'px';
+      palette.style.display = 'block';
+    }
+    document.addEventListener('click', (e) => {
+      if (!palette.contains(e.target) && !e.target.classList.contains('ex-icon-btn')) palette.style.display = 'none';
+    });
+
+    // Additional-info rows (emoji / label / value / link)
+    const extraList = document.getElementById('extraInfoList');
+    function addExtraRow(icon = '', label = '', value = '', link = '') {
+      const row = document.createElement('div');
+      row.className = 'extra-row d-flex gap-2 mb-2 align-items-start flex-wrap';
+      const esc = s => String(s).replace(/"/g, '&quot;');
+      row.innerHTML = `
+        <button type="button" class="btn btn-outline-secondary btn-sm mb-0 ex-icon-btn" title="Pick an emoji"
+                style="min-width:46px; font-size:18px; line-height:1.2;" data-emoji="${esc(icon)}">${icon || '＋'}</button>
+        <input type="text" class="form-control form-control-sm ex-label" style="max-width:170px;" placeholder="Label (optional)" value="${esc(label)}">
+        <input type="text" class="form-control form-control-sm ex-value" style="min-width:140px; flex:1 1 160px;" placeholder="Text" value="${esc(value)}">
+        <input type="url" class="form-control form-control-sm ex-link" style="min-width:140px; flex:1 1 160px;" placeholder="Link URL (optional)" value="${esc(link)}">
+        <button type="button" class="btn btn-sm btn-outline-danger mb-0 ex-remove" title="Remove row"><i class="material-symbols-rounded">close</i></button>`;
+      row.querySelector('.ex-icon-btn').addEventListener('click', (e) => { e.preventDefault(); openPalette(e.currentTarget); });
+      row.querySelector('.ex-remove').addEventListener('click', () => row.remove());
+      extraList.appendChild(row);
+    }
+    let initialExtra = [];
+    try { initialExtra = JSON.parse(document.getElementById('extraInfoInit').textContent || '[]'); } catch (e) { initialExtra = []; }
+    (initialExtra || []).forEach(r => addExtraRow(r.icon, r.label, r.value, r.link));
+    document.getElementById('addExtraRow').addEventListener('click', () => addExtraRow());
+
+    document.getElementById('saveEventDetails').addEventListener('click', () => {
+      const extra_info = Array.from(extraList.querySelectorAll('.extra-row')).map(r => ({
+        icon: (r.querySelector('.ex-icon-btn').dataset.emoji || '').trim(),
+        label: r.querySelector('.ex-label').value.trim(),
+        value: r.querySelector('.ex-value').value.trim(),
+        link: r.querySelector('.ex-link').value.trim(),
+      })).filter(r => r.label || r.value || r.link);
+      const payload = {
+        event_time: document.getElementById('evTime').value,
+        venue: document.getElementById('evVenue').value,
+        dress_code: document.getElementById('evDress').value,
+        extra_info,
+      };
+      fetch(`/save_event_details/${CAMPAIGN_ID}/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRFToken() },
+        body: JSON.stringify(payload),
+      }).then(r => r.json()).then(d => {
+        const m = document.getElementById('evSavedMsg');
+        if (d.success) { m.style.display = 'inline'; setTimeout(() => m.style.display = 'none', 2000); }
+        else { alert(d.message || 'Save failed'); }
+      });
+    });
+
+    // Rich-text editors
+    const toolbar = [['bold', 'italic', 'underline'], [{ list: 'ordered' }, { list: 'bullet' }], ['link']];
+    const qrQuill = new Quill('#qrIntroEditor', { theme: 'snow', modules: { toolbar } });
+    const remQuill = new Quill('#remIntroEditor', { theme: 'snow', modules: { toolbar } });
+    const qrInit = document.getElementById('qrIntroInit').innerHTML.trim();
+    const remInit = document.getElementById('remIntroInit').innerHTML.trim();
+    if (qrInit) qrQuill.clipboard.dangerouslyPasteHTML(qrInit);
+    if (remInit) remQuill.clipboard.dangerouslyPasteHTML(remInit);
+
+    document.querySelectorAll('.merge-tag').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const q = btn.dataset.target === 'qr' ? qrQuill : remQuill;
+        const sel = q.getSelection(true);
+        const at = sel ? sel.index : q.getLength();
+        q.insertText(at, btn.dataset.tag, 'user');
+        q.setSelection(at + btn.dataset.tag.length, 0);
+      });
+    });
+
+    document.getElementById('saveEmailContent').addEventListener('click', () => {
+      const payload = {
+        qr_email_intro: qrQuill.root.innerHTML,
+        reminder_intro: remQuill.root.innerHTML,
+        email_signoff: document.getElementById('emailSignoff').value,
+      };
+      fetch(`/save_email_content/${CAMPAIGN_ID}/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRFToken() },
+        body: JSON.stringify(payload),
+      }).then(r => r.json()).then(d => {
+        const m = document.getElementById('emSavedMsg');
+        if (d.success) { m.style.display = 'inline'; setTimeout(() => m.style.display = 'none', 2000); }
+        else { alert(d.message || 'Save failed'); }
+      });
+    });
+  }
 
   });  // end DOMContentLoaded
 </script>

@@ -317,7 +317,7 @@ def campaign_list(request):
     #sponsorship_count = Sponsorship.objects.count()
 
     users = User.objects.all()
-    user_data = [{"id": user.id, "email": user.email, "name": user.get_full_name()} for user in users]
+    user_data = [{"id": user.id, "email": user.email, "name": (user.get_full_name() or user.username) + ((" (" + user.email + ")") if user.email else "")} for user in users]
 
     if current_user.is_superuser:
         # Show all campaigns
@@ -408,7 +408,7 @@ def get_campaign(request, id):
     
     #get the list of users in auth_user table
     users = User.objects.all()
-    user_data = [{"id": user.id, "email": user.email, "name": user.get_full_name()} for user in users] 
+    user_data = [{"id": user.id, "email": user.email, "name": (user.get_full_name() or user.username) + ((" (" + user.email + ")") if user.email else "")} for user in users] 
 
     #for the campaign, get the data from CampaignTeam
     selected_users = [team.user.id for team in campaign.campaign_teams.all()]
@@ -1063,7 +1063,7 @@ def survey_list(request):
     campaign_list = [{"id": str(c.id), "title": c.title} for c in campaigns]
 
     users = User.objects.all()
-    user_data = [{"id": user.id, "email": user.email, "name": user.get_full_name()} for user in users]
+    user_data = [{"id": user.id, "email": user.email, "name": (user.get_full_name() or user.username) + ((" (" + user.email + ")") if user.email else "")} for user in users]
 
     surveys = _surveys_for_user(request, Survey.PURPOSE_FEEDBACK)
 
@@ -1087,7 +1087,7 @@ def registration_form_list(request):
     campaign_list = [{"id": str(c.id), "title": c.title} for c in campaigns]
 
     users = User.objects.all()
-    user_data = [{"id": user.id, "email": user.email, "name": user.get_full_name()} for user in users]
+    user_data = [{"id": user.id, "email": user.email, "name": (user.get_full_name() or user.username) + ((" (" + user.email + ")") if user.email else "")} for user in users]
 
     surveys = _surveys_for_user(request, Survey.PURPOSE_REGISTRATION)
 
@@ -1724,6 +1724,130 @@ def save_identity_config(request, survey_id):
     return JsonResponse({"success": True, "config": cleaned})
 
 
+def _can_edit_campaign(request, campaign):
+    """Superusers, or members of the campaign's team, may edit it."""
+    if request.user.is_superuser:
+        return True
+    if not campaign:
+        return False
+    return CampaignTeam.objects.filter(campaign=campaign, user=request.user).exists()
+
+
+def _sanitize_intro(raw_html):
+    """Sanitise admin-authored rich-text on save (bleach allowlist). Degrades to
+    pass-through only if bleach is unavailable (logged at import)."""
+    raw_html = (raw_html or "").strip()
+    if not raw_html or bleach is None:
+        return raw_html
+    return bleach.clean(
+        raw_html,
+        tags=_INTRO_ALLOWED_TAGS,
+        attributes=_INTRO_ALLOWED_ATTRS,
+        strip=True,
+    )
+
+
+@login_required
+def save_event_details(request, campaign_id):
+    """Save campaign-level event facts shown in the QR/reminder emails."""
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
+    campaign = get_object_or_404(Campaign, id=campaign_id)
+    if not _can_edit_campaign(request, campaign):
+        return HttpResponse(status=403)
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"success": False, "message": "Invalid JSON"}, status=400)
+
+    campaign.event_time = (data.get("event_time") or "").strip()[:120]
+    campaign.venue = (data.get("venue") or "").strip()
+    campaign.dress_code = (data.get("dress_code") or "").strip()[:120]
+
+    cleaned = []
+    rows = data.get("extra_info")
+    if isinstance(rows, list):
+        for item in rows:
+            if not isinstance(item, dict):
+                continue
+            row = {
+                "icon": (item.get("icon") or "").strip()[:8],
+                "label": (item.get("label") or "").strip()[:120],
+                "value": (item.get("value") or "").strip()[:500],
+                "link": (item.get("link") or "").strip()[:500],
+            }
+            if row["label"] or row["value"] or row["link"]:
+                cleaned.append(row)
+    campaign.extra_info = cleaned
+
+    campaign.save(update_fields=["event_time", "venue", "dress_code", "extra_info"])
+    return JsonResponse({"success": True, "extra_info": cleaned})
+
+
+@login_required
+def save_email_content(request, campaign_id):
+    """Save campaign-level email message text (sanitised rich-text) + sign-off."""
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
+    campaign = get_object_or_404(Campaign, id=campaign_id)
+    if not _can_edit_campaign(request, campaign):
+        return HttpResponse(status=403)
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"success": False, "message": "Invalid JSON"}, status=400)
+
+    campaign.qr_email_intro = _sanitize_intro(data.get("qr_email_intro"))
+    campaign.reminder_intro = _sanitize_intro(data.get("reminder_intro"))
+    campaign.email_signoff = (data.get("email_signoff") or "").strip()[:160]
+    campaign.save(update_fields=["qr_email_intro", "reminder_intro", "email_signoff"])
+    return JsonResponse({
+        "success": True,
+        "qr_email_intro": campaign.qr_email_intro,
+        "reminder_intro": campaign.reminder_intro,
+    })
+
+
+@login_required
+def preview_email(request, survey_id, kind):
+    """Render the QR or reminder email with sample registrant data so the
+    form author can see the result. kind = 'qr' | 'reminder'."""
+    import base64
+
+    survey = get_object_or_404(Survey, id=survey_id)
+    if not _can_edit_campaign(request, survey.fkcampaign) and not request.user.is_superuser:
+        return HttpResponse(status=403)
+    campaign = survey.fkcampaign
+    base = _email_base_url(request)
+    banner_url = (base + survey.banner.url) if survey.banner else ""
+    event_date = campaign.end_date if campaign else None
+    title = (campaign.title if campaign else survey.title) or ""
+    tag_ctx = {
+        "name": "Jane Tan",
+        "reg_no": "REG-00123",
+        "event_date": _date_filter(event_date, "j F Y") if event_date else "",
+        "title": title,
+    }
+    intro_field = "qr_email_intro" if kind == "qr" else "reminder_intro"
+    ctx = dict(tag_ctx)
+    ctx["event_date"] = event_date
+    ctx.update({
+        "survey": survey,
+        "campaign": campaign,
+        "banner_url": banner_url,
+        "signoff": ((campaign.email_signoff if campaign else "") or "").strip() or f"{title} Team",
+        "intro_html": _render_intro(getattr(campaign, intro_field, "") or "", tag_ctx) if campaign else "",
+    })
+    if kind == "qr":
+        buf = BytesIO()
+        qrcode.make("PREVIEW-REG-00123").save(buf, format="PNG")
+        ctx["qr_src"] = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+        template = "register/email/email_registration_qr.html"
+    else:
+        template = "register/email/email_event_reminder_generic.html"
+    return render(request, template, ctx)
+
+
 @login_required
 def save_question(request):
     if request.method != "POST":
@@ -2094,6 +2218,112 @@ def form_submit(request, survey_id):
 # Bulk actions on registrations (Send QR / reminders / Remove)
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# Shared email helpers: event details + sanitised rich-text intros.
+# Used by the QR confirmation and attendance-reminder emails so event facts
+# (date/time/venue/etc.) and message wording come from Campaign fields rather
+# than being hardcoded in templates.
+# ---------------------------------------------------------------------------
+try:
+    import bleach
+except ImportError:  # bleach is a runtime dependency; degrade safely if absent.
+    bleach = None
+
+import re as _re
+from django.utils.html import escape as _html_escape
+from django.template.defaultfilters import date as _date_filter
+
+_INTRO_ALLOWED_TAGS = ["p", "br", "strong", "em", "u", "ol", "ul", "li", "a"]
+_INTRO_ALLOWED_ATTRS = {"a": ["href"]}
+
+# Friendly placeholders organisers insert, e.g. [Name], [Event], [Date],
+# [Reg no]. These are plain find-and-replace tokens — NOT a template language —
+# so authors never see or need to write any code syntax. Matching is
+# case-insensitive and tolerant of inner spaces / underscores.
+_PLACEHOLDER_RE = _re.compile(
+    r"\[\s*(name|event|title|date|event[ _]date|reg[ _]?no)\s*\]", _re.IGNORECASE
+)
+
+
+def _email_base_url(request=None):
+    """Absolute scheme+host for links/images in emails. Prefer the live request;
+    fall back to the configured SITE_BASE_URL when none is available."""
+    if request is not None:
+        return request.build_absolute_uri("/").rstrip("/")
+    return (getattr(settings, "SITE_BASE_URL", "") or "").rstrip("/")
+
+
+def _emailify_html(html):
+    """Inline-style the few tags mail clients render inconsistently."""
+    if not html:
+        return ""
+    html = html.replace("<a ", '<a style="color:#198754;font-weight:600;" ')
+    html = html.replace("<li>", '<li style="margin-bottom:6px;">')
+    return html
+
+
+def _render_intro(raw_html, tag_ctx):
+    """Fill in friendly [Placeholders] with the recipient's details, then
+    sanitise + emailify. Plain text substitution — no template engine — so
+    organisers only ever deal with readable tokens like [Name]."""
+    if not raw_html:
+        return ""
+    name = (tag_ctx.get("name") or "").strip() or "there"
+    title = tag_ctx.get("title") or ""
+    date = tag_ctx.get("event_date") or ""
+    reg_no = tag_ctx.get("reg_no") or ""
+    values = {
+        "name": name,
+        "event": title,
+        "title": title,
+        "date": date,
+        "event date": date,
+        "reg no": reg_no,
+    }
+
+    def _sub(m):
+        key = m.group(1).lower().replace("_", " ")
+        return _html_escape(values.get(key, m.group(0)))
+
+    rendered = _PLACEHOLDER_RE.sub(_sub, raw_html)
+    if bleach is not None:
+        rendered = bleach.clean(
+            rendered,
+            tags=_INTRO_ALLOWED_TAGS,
+            attributes=_INTRO_ALLOWED_ATTRS,
+            strip=True,
+        )
+    return _emailify_html(rendered)
+
+
+def _event_email_ctx(survey_user, request=None, intro_field=None):
+    """Build the shared context for event emails (QR, reminder). `intro_field`
+    names the Campaign rich-text field to render into `intro_html`."""
+    survey = survey_user.survey
+    campaign = survey.fkcampaign if survey else None
+    base = _email_base_url(request)
+    banner_url = (base + survey.banner.url) if (survey and survey.banner) else ""
+    event_date = campaign.end_date if campaign else None
+    title = (campaign.title if campaign else (survey.title if survey else "")) or ""
+    tag_ctx = {
+        "name": survey_user.name or "",
+        "reg_no": survey_user.reg_no or "",
+        "event_date": _date_filter(event_date, "j F Y") if event_date else "",
+        "title": title,
+    }
+    ctx = dict(tag_ctx)
+    ctx["event_date"] = event_date  # datetime, for {{ event_date|date:... }} in templates
+    ctx.update({
+        "survey": survey,
+        "campaign": campaign,
+        "banner_url": banner_url,
+        "signoff": ((campaign.email_signoff if campaign else "") or "").strip() or f"{title} Team",
+        "intro_html": _render_intro(getattr(campaign, intro_field, "") or "", tag_ctx)
+                      if (intro_field and campaign is not None) else "",
+    })
+    return ctx
+
+
 def _send_registration_received_email(survey_user):
     """Send the "thank you for your submission — under review" confirmation
     to the registrant immediately after they submit the form. Mirrors the
@@ -2133,7 +2363,7 @@ def _send_registration_received_email(survey_user):
         return False
 
 
-def _send_qr_to_surveyuser(survey_user, files=None):
+def _send_qr_to_surveyuser(survey_user, files=None, request=None):
     """Generate a QR image from the registration_code and email it. The QR is
     embedded inline (Content-ID: qrcode) so it renders inside the message body
     — the email template references it as <img src="cid:qrcode">. A regular
@@ -2151,17 +2381,10 @@ def _send_qr_to_surveyuser(survey_user, files=None):
     survey = survey_user.survey
     campaign = survey.fkcampaign
 
-    ctx = {
-        "name": survey_user.name or "",
-        "reg_no": survey_user.reg_no or "",
-        "survey": survey,
-        "campaign": campaign,
-        "event_date": campaign.start_date if campaign else None,
-        "event_venue": None,
-    }
+    ctx = _event_email_ctx(survey_user, request=request, intro_field="qr_email_intro")
     html_content = render_to_string("register/email/email_registration_qr.html", ctx)
 
-    subject_title = (campaign.title if campaign else survey.title) or "your event"
+    subject_title = ctx.get("title") or "your event"
     email = EmailMultiAlternatives(
         subject=f"You're registered for {subject_title} — your check-in QR code",
         body=strip_tags(html_content),
@@ -2244,7 +2467,7 @@ def send_survey_qr(request, survey_id):
     target_count = recipients.count()
     sent = 0
     for u in recipients:
-        if _send_qr_to_surveyuser(u, files):
+        if _send_qr_to_surveyuser(u, files, request=request):
             sent += 1
 
     skipped_bits = []
@@ -2319,23 +2542,14 @@ def set_survey_user_status(request, survey_id):
     })
 
 
-def _send_simple_email(survey_user, subject, template_name, extra_ctx=None):
+def _send_simple_email(survey_user, subject, template_name, extra_ctx=None, request=None, intro_field=None):
     if not survey_user.email:
         return False
-    survey = survey_user.survey
-    campaign = survey.fkcampaign
-    ctx = {
-        "name": survey_user.name or "there",
-        "reg_no": survey_user.reg_no or "",
-        "survey": survey,
-        "campaign": campaign,
-        "event_date": campaign.start_date if campaign else None,
-        "event_venue": None,
-    }
+    ctx = _event_email_ctx(survey_user, request=request, intro_field=intro_field)
     if extra_ctx:
         ctx.update(extra_ctx)
     html_content = render_to_string(template_name, ctx)
-    subject_title = (campaign.title if campaign else survey.title) or "your event"
+    subject_title = ctx.get("title") or "your event"
     email = EmailMultiAlternatives(
         subject=subject.format(title=subject_title),
         body=html_content,
@@ -2366,7 +2580,13 @@ def send_survey_event_reminder(request, survey_id):
     users = SurveyUser.objects.filter(survey=survey, id__in=ids)
     sent = sum(
         1 for u in users
-        if _send_simple_email(u, "Reminder: {title}", "register/email/email_event_reminder_generic.html")
+        if _send_simple_email(
+            u,
+            "Reminder to Attend: {title}",
+            "register/email/email_event_reminder_generic.html",
+            request=request,
+            intro_field="reminder_intro",
+        )
     )
     return JsonResponse({"success": True, "message": f"Event reminder sent to {sent} of {users.count()}."})
 

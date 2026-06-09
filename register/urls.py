@@ -13,7 +13,7 @@ from .views import index, save_registration, thankyou, sponsorship, save_sponsor
     form_detail, form_submit, form_thankyou, registration_form_list, \
     upload_banner, delete_banner, save_identity_config, form_preview, \
     send_survey_qr, send_survey_event_reminder, send_survey_feedback_reminder, delete_survey_users, \
-    set_survey_user_status
+    set_survey_user_status, save_event_details, save_email_content, preview_email
 
 urlpatterns = [
     path('', campaign_list, name='campaign_list'),
@@ -73,6 +73,9 @@ urlpatterns = [
     path('delete_banner/<int:survey_id>/', delete_banner, name='delete_banner'),
     path('save_identity_config/<int:survey_id>/', save_identity_config, name='save_identity_config'),
     path('form_preview/<int:survey_id>/', form_preview, name='form_preview'),
+    path('save_event_details/<int:campaign_id>/', save_event_details, name='save_event_details'),
+    path('save_email_content/<int:campaign_id>/', save_email_content, name='save_email_content'),
+    path('preview_email/<int:survey_id>/<str:kind>/', preview_email, name='preview_email'),
 
     # Bulk actions on a form's registrations
     path('send_survey_qr/<int:survey_id>/', send_survey_qr, name='send_survey_qr'),

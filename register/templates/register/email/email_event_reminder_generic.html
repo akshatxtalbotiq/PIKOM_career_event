@@ -1,18 +1,82 @@
 {% load static %}
 <!DOCTYPE html>
-<html><body style="font-family: Arial, sans-serif; color:#222; line-height:1.45;">
-  <table cellpadding="0" cellspacing="0" border="0" style="max-width:600px;margin:0 auto;">
-    <tr><td style="padding:20px 0;text-align:center;">
-      <h2 style="margin:0 0 8px;">Reminder — {{ campaign.title|default:survey.title }}</h2>
-      {% if reg_no %}<div style="color:#198754;font-weight:bold;">Reg. No: {{ reg_no }}</div>{% endif %}
-    </td></tr>
-    <tr><td style="padding:0 24px;">
-      <p>Hi {{ name|default:"there" }},</p>
-      <p>This is a friendly reminder that <strong>{{ campaign.title|default:survey.title }}</strong> is coming up.</p>
-      {% if event_date %}<p><strong>When:</strong> {{ event_date }}</p>{% endif %}
-      {% if event_venue %}<p><strong>Where:</strong> {{ event_venue }}</p>{% endif %}
-      <p>Please bring the QR code that was emailed to you for check-in. If you've lost it, reply to this email and we'll resend it.</p>
-      <p>We look forward to seeing you there.</p>
-    </td></tr>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Reminder to Attend — {{ campaign.title|default:survey.title }}</title>
+</head>
+<body style="margin:0; padding:0; background-color:#f4f6f9; font-family:Arial, sans-serif; color:#222; line-height:1.5;">
+
+  <table cellpadding="0" cellspacing="0" border="0" width="100%">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" border="0"
+               style="width:600px; background-color:#ffffff; margin-top:20px;
+                      border-radius:8px; overflow:hidden;
+                      box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+
+          <!-- Banner (same image as the registration form) -->
+          {% if banner_url %}
+          <tr>
+            <td style="padding:0;">
+              <img src="{{ banner_url }}" alt="{{ campaign.title|default:survey.title }}"
+                   width="600" style="display:block; width:100%; max-width:600px; height:auto;">
+            </td>
+          </tr>
+          {% endif %}
+
+          <!-- Greeting / message -->
+          <tr>
+            <td style="padding:28px 30px 8px 30px; font-size:15px; color:#333;">
+              {% if intro_html %}
+                {{ intro_html|safe }}
+              {% else %}
+                <p style="margin:0 0 14px 0;">Hi {{ name|default:"there" }},</p>
+                <p style="margin:0 0 14px 0;">
+                  This is a friendly reminder that
+                  <strong>{{ campaign.title|default:survey.title }}</strong> is coming up{% if event_date %}
+                  on {{ event_date|date:"j F Y" }}{% endif %}. We look forward to seeing you there!
+                </p>
+              {% endif %}
+              {% if reg_no %}
+                <p style="margin:0 0 14px 0;">
+                  Your reference number:
+                  <span style="display:inline-block; padding:4px 12px; border-radius:999px;
+                               background:#e7f4ec; color:#198754; font-weight:600;">{{ reg_no }}</span>
+                </p>
+              {% endif %}
+            </td>
+          </tr>
+
+          <!-- Event details -->
+          <tr>
+            <td style="padding:4px 30px 20px 30px;">
+              <h2 style="margin:0 0 12px 0; font-size:18px; color:#198754;">
+                {{ campaign.title|default:survey.title }}
+              </h2>
+              {% include "register/email/_event_details_block.html" %}
+            </td>
+          </tr>
+
+          <!-- Sign-off -->
+          <tr>
+            <td style="padding:0 30px 28px 30px; font-size:15px; color:#333;">
+              <p style="margin:0 0 14px 0;">We look forward to seeing you there!</p>
+              <p style="margin:0;">Warm regards,<br><strong>{{ signoff }}</strong></p>
+            </td>
+          </tr>
+
+          <!-- Brand footer -->
+          <tr>
+            <td align="center" style="padding:14px; background-color:#f0f4f8; color:#777; font-size:12px;">
+              This is an automated email &mdash; please contact the organiser for assistance.
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
   </table>
-</body></html>
+
+</body>
+</html>

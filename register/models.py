@@ -139,10 +139,28 @@ class Campaign(models.Model):
     entry_url = models.URLField(max_length=500, null=True, blank=True)
     entry_keyword = models.CharField(max_length=100, null=True, blank=True)
     need_qr = models.BooleanField(default=False)
-    pic_email = models.TextField(null=True, blank=True)   
+    pic_email = models.TextField(null=True, blank=True)
     exclude_columns = models.TextField(null=True, blank=True)
     prompt_checkin_info = models.BooleanField(default=True)
-    
+
+    # --- Event details (shared by all forms/emails for this campaign) ---
+    # Date is NOT stored here — it is derived from `end_date` (the event day),
+    # consistent with the QR/reminder emails.
+    event_time = models.CharField(max_length=120, blank=True, default="")      # "8:30am – 5:30pm"
+    venue = models.TextField(blank=True, default="")                           # full venue line
+    dress_code = models.CharField(max_length=120, blank=True, default="")      # "Smart Casual or Business Attire"
+    # Arbitrary extra rows shown after the fixed fields. Each row has an emoji
+    # icon, optional bold label, text value, and optional link (renders the
+    # value as a clickable link). Covers parking, agenda links, lucky draw, etc.
+    # [{"icon": "🅿️", "label": "", "value": "Complimentary Parking", "link": ""},
+    #  {"icon": "📝", "label": "", "value": "Summit Agenda", "link": "https://..."}]
+    extra_info = models.JSONField(default=list, blank=True)
+
+    # --- Per-email message text: sanitised rich-text HTML, supports merge tags ---
+    qr_email_intro = models.TextField(blank=True, default="")    # body HTML of QR confirmation email
+    reminder_intro = models.TextField(blank=True, default="")    # body HTML of attendance reminder
+    email_signoff = models.CharField(max_length=160, blank=True, default="")   # "The PCIOC 2026 Organising Team"
+
     def __str__(self):
         return self.title
     

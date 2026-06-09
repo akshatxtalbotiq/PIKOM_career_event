@@ -389,10 +389,12 @@
                   <div class="invalid-feedback">End date is required.</div>
                 </div>
               </div>
-              {# Legacy fields — kept hidden so existing data round-trips through
+                {% comment %}
+              Legacy fields — kept hidden so existing data round-trips through
                  the edit modal, but no longer shown / required for new campaigns.
                  The Campaign Page URL and Entry Page URL are now auto-derived
-                 from the campaign's registration form. #}
+                 from the campaign's registration form.
+                 {% endcomment %}
               <div class="col-xl-6 col-lg-6" style="display:none;">
                 <div class="mb-3">
                   <label for="campaignPageURL" class="form-label">Campaign Page URL (legacy)</label>
