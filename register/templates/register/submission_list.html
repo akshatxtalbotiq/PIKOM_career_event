@@ -247,9 +247,14 @@
                 <button type="button" class="btn-close" style="background-color: #f74150;" data-bs-dismiss="modal" aria-label="Close" onclick="resetForm();"></button>
             </div>
 
-           <div class="modal-body"> 
-                {% include 'register/admission/'|add:campaign.entry_keyword|add:'_entryform.html' %}
-            </div>  
+           <div class="modal-body">
+                {% if campaign.entry_keyword %}
+                    {% include 'register/admission/'|add:campaign.entry_keyword|add:'_entryform.html' %}
+                {% else %}
+                    <p class="text-muted">No entry form configured for this campaign.
+                        <a href="{% url 'registration_form_list' %}?for_campaign={{ campaign.id }}">Create a registration form</a> to enable submissions.</p>
+                {% endif %}
+            </div>
 
         </div>
     </div>
