@@ -21,6 +21,8 @@
   .question-card.sortable-ghost { opacity: 0.4; }
   .question-card.sortable-chosen { background: #f6faff; }
   .choice-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .choice-drag-handle { cursor: grab; color: #999; font-size: 20px; }
+  .choice-move-btns .btn { line-height: 1; }
   .public-url-box { background: #f6f9fc; border: 1px dashed #c8d3e1; }
   .type-pill {
     display: inline-block; font-size: 0.72rem; padding: 2px 8px;
@@ -590,7 +592,12 @@
     const hasFu = !!followup;
     row.innerHTML = `
       <div class="choice-row">
+        <span class="choice-drag-handle material-symbols-rounded" title="Drag to reorder">drag_indicator</span>
         <input type="text" class="form-control form-control-sm choice-input" value="${escVal}" placeholder="Choice label">
+        <div class="btn-group-vertical choice-move-btns">
+          <button type="button" class="btn btn-sm btn-outline-secondary move-choice-up p-0" title="Move up"><i class="material-symbols-rounded" style="font-size:16px;">keyboard_arrow_up</i></button>
+          <button type="button" class="btn btn-sm btn-outline-secondary move-choice-down p-0" title="Move down"><i class="material-symbols-rounded" style="font-size:16px;">keyboard_arrow_down</i></button>
+        </div>
         <button type="button"
                 class="btn btn-sm ${hasFu ? 'btn-success' : 'btn-outline-secondary'} toggle-followup"
                 title="When this option is selected, also show a free-text input for the participant to fill in">
@@ -607,6 +614,14 @@
       </div>
     `;
     row.querySelector('.remove-choice').addEventListener('click', () => row.remove());
+    row.querySelector('.move-choice-up').addEventListener('click', () => {
+      const prev = row.previousElementSibling;
+      if (prev) row.parentNode.insertBefore(row, prev);
+    });
+    row.querySelector('.move-choice-down').addEventListener('click', () => {
+      const next = row.nextElementSibling;
+      if (next) row.parentNode.insertBefore(next, row);
+    });
     const toggleBtn = row.querySelector('.toggle-followup');
     const toggleLabel = toggleBtn.querySelector('.toggle-label');
     toggleBtn.addEventListener('click', () => {
@@ -644,6 +659,12 @@
   }
   document.getElementById('qType').addEventListener('change', onTypeChange);
   document.getElementById('addChoiceBtn').addEventListener('click', () => addChoiceRow(''));
+
+  // Drag-to-reorder choices (saved in the order shown)
+  Sortable.create(document.getElementById('choicesList'), {
+    handle: '.choice-drag-handle',
+    animation: 150,
+  });
 
   // --- Add question ---
   document.getElementById('addQuestionBtn').addEventListener('click', () => {
