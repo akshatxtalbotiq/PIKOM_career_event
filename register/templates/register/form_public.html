@@ -29,6 +29,10 @@
 
     /* Long radio/checkbox labels (e.g. consent paragraphs) wrap nicely */
     .form-check-label { word-break: break-word; }
+
+    /* Event details block */
+    .event-details-table td { padding: 4px 0; font-size: 15px; color: #333; vertical-align: top; }
+    .event-details-table .ed-icon { padding-right: 12px; white-space: nowrap; }
   </style>
 </head>
 <body>
@@ -62,6 +66,50 @@
           {% endif %}
         </div>
       </div>
+
+      {% if survey.show_event_details and survey.fkcampaign %}
+        {% with campaign=survey.fkcampaign %}
+        {% if campaign.end_date or campaign.event_time or campaign.venue or campaign.dress_code or campaign.extra_info %}
+        <div class="card shadow-sm rounded mb-3">
+          <div class="card-body p-4">
+            <h6 class="fw-bold text-uppercase text-muted mb-3" style="letter-spacing:.5px;">Event Details</h6>
+            <table class="event-details-table">
+              {% if campaign.end_date %}
+              <tr>
+                <td class="ed-icon">&#128197;</td>
+                <td>{{ campaign.end_date|date:"l, j F Y" }}</td>
+              </tr>
+              {% endif %}
+              {% if campaign.event_time %}
+              <tr>
+                <td class="ed-icon">&#128338;</td>
+                <td>{{ campaign.event_time }}</td>
+              </tr>
+              {% endif %}
+              {% if campaign.venue %}
+              <tr>
+                <td class="ed-icon">&#128205;</td>
+                <td>{{ campaign.venue|linebreaksbr }}</td>
+              </tr>
+              {% endif %}
+              {% if campaign.dress_code %}
+              <tr>
+                <td class="ed-icon">&#128085;</td>
+                <td>{{ campaign.dress_code }}</td>
+              </tr>
+              {% endif %}
+              {% for row in campaign.extra_info %}
+              <tr>
+                <td class="ed-icon">{{ row.icon }}</td>
+                <td>{% if row.label %}<strong>{{ row.label }}</strong> {% endif %}{% if row.link %}<a href="{{ row.link }}" target="_blank" rel="noopener" class="fw-semibold" style="color:#198754;">{{ row.value|default:row.link }}</a>{% else %}{{ row.value }}{% endif %}</td>
+              </tr>
+              {% endfor %}
+            </table>
+          </div>
+        </div>
+        {% endif %}
+        {% endwith %}
+      {% endif %}
 
       {% if not survey.is_active and not preview_mode %}
         <div class="alert alert-warning shadow-sm">

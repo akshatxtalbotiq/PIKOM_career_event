@@ -210,6 +210,20 @@
         <div id="extraInfoList"></div>
         {{ survey.fkcampaign.extra_info|json_script:"extraInfoInit" }}
 
+        {% if survey.purpose == 'registration' %}
+        <hr class="my-2">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <label class="form-check-label" for="evShowOnForm">Show event details on this registration form</label>
+            <small class="text-muted d-block">Displays the date, time, venue and the rows above at the top of the public form. This setting is per form.</small>
+          </div>
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" role="switch" id="evShowOnForm"
+                   {% if survey.show_event_details %}checked{% endif %}>
+          </div>
+        </div>
+        {% endif %}
+
         <div class="text-end mt-3">
           <span id="evSavedMsg" class="text-success me-2 fw-bold" style="display:none;">Saved ✓</span>
           <button type="button" id="saveEventDetails" class="btn btn-sm btn-primary mb-0">Save event details</button>
@@ -235,6 +249,20 @@
               <i class="material-symbols-rounded align-middle" style="font-size:16px;">visibility</i> Preview
             </a>
           </label>
+          <div class="mb-3">
+            <label class="form-label small mb-1" for="qrSubject">Subject line</label>
+            <input type="text" id="qrSubject" class="form-control" maxlength="200"
+                   placeholder="You're registered for [Event] — your check-in QR code"
+                   value="{{ survey.fkcampaign.qr_email_subject }}">
+            <div class="mt-1">
+              <small class="text-muted me-1">Insert into subject:</small>
+              <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 subject-tag" data-input="qrSubject" data-tag="[Event]">Event</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 subject-tag" data-input="qrSubject" data-tag="[Date]">Date</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 subject-tag" data-input="qrSubject" data-tag="[Name]">Name</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 subject-tag" data-input="qrSubject" data-tag="[Reg no]">Reg no</button>
+              <small class="text-muted ms-1">Leave blank to use the default subject.</small>
+            </div>
+          </div>
           <div class="mb-1">
             <small class="text-muted me-1">Insert:</small>
             <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 merge-tag" data-target="qr" data-tag="[Name]">Name</button>
@@ -258,6 +286,20 @@
               <i class="material-symbols-rounded align-middle" style="font-size:16px;">visibility</i> Preview
             </a>
           </label>
+          <div class="mb-3">
+            <label class="form-label small mb-1" for="remSubject">Subject line</label>
+            <input type="text" id="remSubject" class="form-control" maxlength="200"
+                   placeholder="Reminder to Attend: [Event]"
+                   value="{{ survey.fkcampaign.reminder_subject }}">
+            <div class="mt-1">
+              <small class="text-muted me-1">Insert into subject:</small>
+              <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 subject-tag" data-input="remSubject" data-tag="[Event]">Event</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 subject-tag" data-input="remSubject" data-tag="[Date]">Date</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 subject-tag" data-input="remSubject" data-tag="[Name]">Name</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 subject-tag" data-input="remSubject" data-tag="[Reg no]">Reg no</button>
+              <small class="text-muted ms-1">Leave blank to use the default subject.</small>
+            </div>
+          </div>
           <div class="mb-1">
             <small class="text-muted me-1">Insert:</small>
             <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 merge-tag" data-target="rem" data-tag="[Name]">Name</button>
@@ -869,6 +911,11 @@
         dress_code: document.getElementById('evDress').value,
         extra_info,
       };
+      const showOnForm = document.getElementById('evShowOnForm');
+      if (showOnForm) {
+        payload.survey_id = SURVEY_ID;
+        payload.show_on_form = showOnForm.checked;
+      }
       fetch(`/save_event_details/${CAMPAIGN_ID}/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRFToken() },
@@ -889,6 +936,19 @@
     if (qrInit) qrQuill.clipboard.dangerouslyPasteHTML(qrInit);
     if (remInit) remQuill.clipboard.dangerouslyPasteHTML(remInit);
 
+    // Insert merge tags into the subject inputs at the cursor position
+    document.querySelectorAll('.subject-tag').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const inp = document.getElementById(btn.dataset.input);
+        const tag = btn.dataset.tag;
+        const start = inp.selectionStart ?? inp.value.length;
+        const end = inp.selectionEnd ?? inp.value.length;
+        inp.value = inp.value.slice(0, start) + tag + inp.value.slice(end);
+        inp.focus();
+        inp.setSelectionRange(start + tag.length, start + tag.length);
+      });
+    });
+
     document.querySelectorAll('.merge-tag').forEach(btn => {
       btn.addEventListener('click', () => {
         const q = btn.dataset.target === 'qr' ? qrQuill : remQuill;
@@ -904,6 +964,8 @@
         qr_email_intro: qrQuill.root.innerHTML,
         reminder_intro: remQuill.root.innerHTML,
         email_signoff: document.getElementById('emailSignoff').value,
+        qr_email_subject: document.getElementById('qrSubject').value,
+        reminder_subject: document.getElementById('remSubject').value,
         show_details_qr: document.getElementById('qrShowDetails').checked,
         show_details_reminder: document.getElementById('remShowDetails').checked,
       };

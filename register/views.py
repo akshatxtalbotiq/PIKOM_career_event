@@ -615,7 +615,7 @@ def send_qr_email(player, id , files):
         body=html_content,
         from_email=formataddr((campaign.title, settings.DEFAULT_FROM_EMAIL)),
         to=[player.email],
-        headers = {"Reply-To": "info@pikom.org.my"}
+        headers = {"Reply-To": _reply_to_header(campaign)}
     )
     email.attach_alternative(html_content, "text/html")
 
@@ -869,7 +869,7 @@ def submission_thankyou(request, reg_no):
         body=html_content,
         from_email=formataddr((submission.fkcampaign.title, settings.DEFAULT_FROM_EMAIL)),
         to=[submission.email],
-        headers={"Reply-To": "info@pikom.org.my"}
+        headers={"Reply-To": _reply_to_header(submission.fkcampaign)}
     )
     email.attach_alternative(html_content, "text/html")
 
@@ -1858,6 +1858,16 @@ def save_event_details(request, campaign_id):
     campaign.extra_info = cleaned
 
     campaign.save(update_fields=["event_time", "venue", "dress_code", "extra_info"])
+
+    # Survey-level toggle: show the event details block on the public
+    # registration form. Sent along with the campaign payload because both
+    # are edited on the same builder card.
+    survey_id = data.get("survey_id")
+    if survey_id and "show_on_form" in data:
+        Survey.objects.filter(id=survey_id, fkcampaign=campaign).update(
+            show_event_details=bool(data.get("show_on_form"))
+        )
+
     return JsonResponse({"success": True, "extra_info": cleaned})
 
 
@@ -1877,10 +1887,14 @@ def save_email_content(request, campaign_id):
     campaign.qr_email_intro = _sanitize_intro(data.get("qr_email_intro"))
     campaign.reminder_intro = _sanitize_intro(data.get("reminder_intro"))
     campaign.email_signoff = (data.get("email_signoff") or "").strip()[:160]
+    # Subjects are plain text; collapse whitespace to a single line.
+    campaign.qr_email_subject = " ".join((data.get("qr_email_subject") or "").split())[:200]
+    campaign.reminder_subject = " ".join((data.get("reminder_subject") or "").split())[:200]
     campaign.show_details_qr = bool(data.get("show_details_qr", True))
     campaign.show_details_reminder = bool(data.get("show_details_reminder", True))
     campaign.save(update_fields=[
         "qr_email_intro", "reminder_intro", "email_signoff",
+        "qr_email_subject", "reminder_subject",
         "show_details_qr", "show_details_reminder",
     ])
     return JsonResponse({
@@ -1912,6 +1926,14 @@ def preview_email(request, survey_id, kind):
     }
     intro_field = "qr_email_intro" if kind == "qr" else "reminder_intro"
     detail_flag = "show_details_qr" if kind == "qr" else "show_details_reminder"
+    subject_field = "qr_email_subject" if kind == "qr" else "reminder_subject"
+    default_subject = (
+        f"You're registered for {title} — your check-in QR code"
+        if kind == "qr" else f"Reminder to Attend: {title}"
+    )
+    preview_subject = _render_subject(
+        getattr(campaign, subject_field, "") if campaign else "", tag_ctx
+    ) or default_subject
     ctx = dict(tag_ctx)
     ctx["event_date"] = event_date
     ctx.update({
@@ -1929,7 +1951,15 @@ def preview_email(request, survey_id, kind):
         template = "register/email/email_registration_qr.html"
     else:
         template = "register/email/email_event_reminder_generic.html"
-    return render(request, template, ctx)
+    # Show the (rendered) subject line above the email body so authors can
+    # check it together with the content.
+    subject_bar = (
+        '<div style="background:#fff3cd; border-bottom:1px solid #ffe69c; '
+        'padding:10px 16px; font:600 14px/1.4 Arial, sans-serif; color:#664d03;">'
+        f'Subject: {_html_escape(preview_subject)}</div>'
+    )
+    html = render_to_string(template, ctx, request=request)
+    return HttpResponse(subject_bar + html)
 
 
 @login_required
@@ -2380,6 +2410,41 @@ def _render_intro(raw_html, tag_ctx):
     return _emailify_html(rendered)
 
 
+def _reply_to_header(campaign):
+    """Reply-To value for outgoing event emails: the campaign PIC email(s)
+    when configured (comma-separated supported), else the PIKOM default.
+    The actual sending account stays as configured in settings.py."""
+    raw = (campaign.pic_email or "").strip() if campaign else ""
+    addresses = [e.strip() for e in raw.split(",") if e.strip()]
+    return ", ".join(addresses) if addresses else "info@pikom.org.my"
+
+
+def _render_subject(raw, tag_ctx):
+    """Fill in friendly [Placeholders] in a plain-text email subject.
+    Same tokens as _render_intro but no HTML escaping/sanitising, and
+    whitespace is collapsed (subjects must be a single line)."""
+    if not raw:
+        return ""
+    name = (tag_ctx.get("name") or "").strip() or "there"
+    title = tag_ctx.get("title") or ""
+    date = tag_ctx.get("event_date") or ""
+    reg_no = tag_ctx.get("reg_no") or ""
+    values = {
+        "name": name,
+        "event": title,
+        "title": title,
+        "date": date,
+        "event date": date,
+        "reg no": reg_no,
+    }
+
+    def _sub(m):
+        key = m.group(1).lower().replace("_", " ")
+        return values.get(key, m.group(0))
+
+    return " ".join(_PLACEHOLDER_RE.sub(_sub, raw).split())
+
+
 def _event_email_ctx(survey_user, request=None, intro_field=None):
     """Build the shared context for event emails (QR, reminder). `intro_field`
     names the Campaign rich-text field to render into `intro_html`."""
@@ -2397,6 +2462,7 @@ def _event_email_ctx(survey_user, request=None, intro_field=None):
     }
     ctx = dict(tag_ctx)
     ctx["event_date"] = event_date  # datetime, for {{ event_date|date:... }} in templates
+    ctx["event_date_str"] = tag_ctx["event_date"]  # formatted string, for subject merge tags
     detail_flag = {
         "qr_email_intro": "show_details_qr",
         "reminder_intro": "show_details_reminder",
@@ -2434,6 +2500,7 @@ def _send_registration_received_email(survey_user):
         "title": subject_title,
         "survey": survey,
         "campaign": campaign,
+        "signoff": ((campaign.email_signoff if campaign else "") or "").strip() or f"{subject_title} Team",
     }
     try:
         html_content = render_to_string("register/email/email_registration_received.html", ctx)
@@ -2442,7 +2509,7 @@ def _send_registration_received_email(survey_user):
             body=strip_tags(html_content),
             from_email=formataddr((subject_title, settings.DEFAULT_FROM_EMAIL)),
             to=[survey_user.email],
-            headers={"Reply-To": "info@pikom.org.my"},
+            headers={"Reply-To": _reply_to_header(campaign)},
         )
         email.attach_alternative(html_content, "text/html")
         email.send()
@@ -2475,12 +2542,21 @@ def _send_qr_to_surveyuser(survey_user, files=None, request=None):
     html_content = render_to_string("register/email/email_registration_qr.html", ctx)
 
     subject_title = ctx.get("title") or "your event"
+    subject = _render_subject(
+        (campaign.qr_email_subject if campaign else "") or "",
+        {
+            "name": ctx.get("name"),
+            "reg_no": ctx.get("reg_no"),
+            "event_date": ctx.get("event_date_str"),
+            "title": subject_title,
+        },
+    ) or f"You're registered for {subject_title} — your check-in QR code"
     email = EmailMultiAlternatives(
-        subject=f"You're registered for {subject_title} — your check-in QR code",
+        subject=subject,
         body=strip_tags(html_content),
         from_email=formataddr((subject_title, settings.DEFAULT_FROM_EMAIL)),
         to=[survey_user.email],
-        headers={"Reply-To": "info@pikom.org.my"},
+        headers={"Reply-To": _reply_to_header(campaign)},
     )
     # The HTML body needs to be a "related" alternative so the inline image
     # CID resolves. EmailMultiAlternatives + mixed/related is handled by
@@ -2632,7 +2708,7 @@ def set_survey_user_status(request, survey_id):
     })
 
 
-def _send_simple_email(survey_user, subject, template_name, extra_ctx=None, request=None, intro_field=None):
+def _send_simple_email(survey_user, subject, template_name, extra_ctx=None, request=None, intro_field=None, subject_field=None):
     if not survey_user.email:
         return False
     ctx = _event_email_ctx(survey_user, request=request, intro_field=intro_field)
@@ -2640,12 +2716,22 @@ def _send_simple_email(survey_user, subject, template_name, extra_ctx=None, requ
         ctx.update(extra_ctx)
     html_content = render_to_string(template_name, ctx)
     subject_title = ctx.get("title") or "your event"
+    # A campaign-level custom subject (with [Event]/[Date]/... merge tags)
+    # overrides the built-in default when present.
+    campaign = survey_user.survey.fkcampaign if survey_user.survey else None
+    custom_subject = getattr(campaign, subject_field, "") if (campaign and subject_field) else ""
+    rendered_subject = _render_subject(custom_subject, {
+        "name": ctx.get("name"),
+        "reg_no": ctx.get("reg_no"),
+        "event_date": ctx.get("event_date_str"),
+        "title": subject_title,
+    })
     email = EmailMultiAlternatives(
-        subject=subject.format(title=subject_title),
+        subject=rendered_subject or subject.format(title=subject_title),
         body=html_content,
         from_email=formataddr((subject_title, settings.DEFAULT_FROM_EMAIL)),
         to=[survey_user.email],
-        headers={"Reply-To": "info@pikom.org.my"},
+        headers={"Reply-To": _reply_to_header(campaign)},
     )
     email.attach_alternative(html_content, "text/html")
     try:
@@ -2684,6 +2770,7 @@ def send_survey_event_reminder(request, survey_id):
             "register/email/email_event_reminder_generic.html",
             request=request,
             intro_field="reminder_intro",
+            subject_field="reminder_subject",
         )
     )
     msg = f"Event reminder sent to {sent} of {approved.count()} approved participant{'' if approved.count() == 1 else 's'}."
