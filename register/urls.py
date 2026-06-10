@@ -13,7 +13,7 @@ from .views import index, save_registration, thankyou, sponsorship, save_sponsor
     form_detail, form_submit, form_thankyou, registration_form_list, \
     upload_banner, delete_banner, save_identity_config, form_preview, \
     send_survey_qr, send_survey_event_reminder, send_survey_feedback_reminder, delete_survey_users, \
-    set_survey_user_status, save_event_details, save_email_content, preview_email
+    set_survey_user_status, save_event_details, save_email_content, preview_email, clone_survey, delete_survey
 
 urlpatterns = [
     path('', campaign_list, name='campaign_list'),
@@ -46,6 +46,8 @@ urlpatterns = [
 
     path('survey_list/', survey_list, name='survey_list'),
     path('registration_forms/', registration_form_list, name='registration_form_list'),
+    path('clone_survey/<int:survey_id>/', clone_survey, name='clone_survey'),
+    path('delete_survey/<int:survey_id>/', delete_survey, name='delete_survey'),
     path("survey_page/<str:survey_id>/<int:user_id>/", survey_detail, name="survey_detail"),
     path("survey_page/<int:survey_id>/submit/", survey_submit, name="survey_submit"),
     path("survey/thank-you/<str:survey_id>/", survey_thankyou, name="survey_thankyou"),

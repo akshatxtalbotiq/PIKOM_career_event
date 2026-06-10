@@ -1126,6 +1126,83 @@ def _unique_slug(title, exclude_id=None):
 
 
 @login_required
+def clone_survey(request, survey_id):
+    """Clone a form/survey together with all its questions, optionally
+    assigning the copy to a different campaign. Submissions are NOT copied."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST required'}, status=405)
+    if not request.user.has_perm('register.add_survey'):
+        return JsonResponse({'success': False, 'error': 'Permission denied'}, status=403)
+
+    source = get_object_or_404(Survey, id=survey_id)
+
+    title = (request.POST.get('title') or '').strip() or f"Copy of {source.title}"
+    campaign_id = request.POST.get('campaign_id')
+    campaign = get_object_or_404(Campaign, id=campaign_id) if campaign_id else None
+
+    with transaction.atomic():
+        clone = Survey.objects.create(
+            title=title,
+            slug=_unique_slug(title),
+            description=source.description,
+            fkcampaign=campaign,
+            start_date=source.start_date,
+            end_date=source.end_date,
+            is_active=source.is_active,
+            purpose=source.purpose,
+            identity_field_config=source.identity_field_config,
+        )
+
+        # Copy the banner file (a real copy, so deleting one form's banner
+        # never breaks the other).
+        if source.banner:
+            try:
+                source.banner.open('rb')
+                clone.banner.save(
+                    os.path.basename(source.banner.name),
+                    ContentFile(source.banner.read()),
+                    save=True,
+                )
+            except FileNotFoundError:
+                pass
+            finally:
+                source.banner.close()
+
+        Question.objects.bulk_create([
+            Question(
+                survey=clone,
+                number=q.number,
+                text=q.text,
+                help_text=q.help_text,
+                question_type=q.question_type,
+                show_in_list=q.show_in_list,
+                list_column_label=q.list_column_label,
+                choices=q.choices,
+                allow_other=q.allow_other,
+                max_checks=q.max_checks,
+                is_required=q.is_required,
+                choice_followups=q.choice_followups,
+            )
+            for q in source.questions.all()
+        ])
+
+    return JsonResponse({'success': True, 'id': clone.id})
+
+
+@login_required
+def delete_survey(request, survey_id):
+    """Delete a form/survey. Cascades to its questions, submissions and answers."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST required'}, status=405)
+    if not request.user.has_perm('register.delete_survey'):
+        return JsonResponse({'success': False, 'error': 'Permission denied'}, status=403)
+
+    survey = get_object_or_404(Survey, id=survey_id)
+    survey.delete()
+    return JsonResponse({'success': True})
+
+
+@login_required
 def create_survey(request):
 
     print("Creating or updating survey")
