@@ -1944,12 +1944,13 @@ def preview_email(request, survey_id, kind):
         "intro_html": _render_intro(getattr(campaign, intro_field, "") or "", tag_ctx) if campaign else "",
         "show_details": getattr(campaign, detail_flag, True) if campaign else True,
     })
+    buf = BytesIO()
+    qrcode.make("PREVIEW-REG-00123").save(buf, format="PNG")
+    ctx["qr_src"] = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
     if kind == "qr":
-        buf = BytesIO()
-        qrcode.make("PREVIEW-REG-00123").save(buf, format="PNG")
-        ctx["qr_src"] = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
         template = "register/email/email_registration_qr.html"
     else:
+        ctx["show_qr"] = True
         template = "register/email/email_event_reminder_generic.html"
     # Show the (rendered) subject line above the email body so authors can
     # check it together with the content.
@@ -2708,12 +2709,20 @@ def set_survey_user_status(request, survey_id):
     })
 
 
-def _send_simple_email(survey_user, subject, template_name, extra_ctx=None, request=None, intro_field=None, subject_field=None):
+def _send_simple_email(survey_user, subject, template_name, extra_ctx=None, request=None, intro_field=None, subject_field=None, inline_qr=False):
     if not survey_user.email:
         return False
     ctx = _event_email_ctx(survey_user, request=request, intro_field=intro_field)
     if extra_ctx:
         ctx.update(extra_ctx)
+    # Inline check-in QR (same CID mechanism as the registration-QR email).
+    qr_bytes = None
+    if inline_qr and survey_user.registration_code:
+        from io import BytesIO
+        buf = BytesIO()
+        qrcode.make(str(survey_user.registration_code)).save(buf, format="PNG")
+        qr_bytes = buf.getvalue()
+        ctx["show_qr"] = True
     html_content = render_to_string(template_name, ctx)
     subject_title = ctx.get("title") or "your event"
     # A campaign-level custom subject (with [Event]/[Date]/... merge tags)
@@ -2733,7 +2742,17 @@ def _send_simple_email(survey_user, subject, template_name, extra_ctx=None, requ
         to=[survey_user.email],
         headers={"Reply-To": _reply_to_header(campaign)},
     )
+    if qr_bytes:
+        # The HTML body must be a "related" alternative so the cid:qrcode
+        # reference resolves to the inline image.
+        email.mixed_subtype = 'related'
     email.attach_alternative(html_content, "text/html")
+    if qr_bytes:
+        qr_inline = MIMEImage(qr_bytes, _subtype="png")
+        qr_inline.add_header("Content-ID", "<qrcode>")
+        qr_inline.add_header("Content-Disposition", "inline",
+                             filename=f"qr_{survey_user.reg_no or survey_user.id}.png")
+        email.attach(qr_inline)
     try:
         email.send()
         return True
@@ -2771,6 +2790,7 @@ def send_survey_event_reminder(request, survey_id):
             request=request,
             intro_field="reminder_intro",
             subject_field="reminder_subject",
+            inline_qr=True,
         )
     )
     msg = f"Event reminder sent to {sent} of {approved.count()} approved participant{'' if approved.count() == 1 else 's'}."

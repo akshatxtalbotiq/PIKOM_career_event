@@ -48,6 +48,22 @@
             </td>
           </tr>
 
+          <!-- QR code -->
+          {% if show_qr %}
+          <tr>
+            <td style="padding:0 30px 20px 30px; text-align:center;">
+              <p style="margin:0 0 12px 0; color:#555; font-size:14px;">
+                Please present this QR code at event check-in:
+              </p>
+              <div style="display:inline-block; padding:14px; background:#ffffff;
+                          border:1px solid #e5e7eb; border-radius:8px;">
+                <img src="{{ qr_src|default:'cid:qrcode' }}" alt="Your check-in QR code"
+                     style="display:block; width:240px; height:240px; max-width:240px;">
+              </div>
+            </td>
+          </tr>
+          {% endif %}
+
           <!-- Event details -->
           {% if show_details %}
           <tr>

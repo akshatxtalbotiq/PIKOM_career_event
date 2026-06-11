@@ -74,8 +74,10 @@ def _send_invite_email(request, user):
         'token': default_token_generator.make_token(user),
     }
     subject = render_to_string('user/account_invite_subject.txt', context).strip()
-    body = render_to_string('user/account_invite_email.html', context)
-    send_mail(subject, body, None, [user.email], fail_silently=False)
+    text_body = render_to_string('user/account_invite_email.txt', context)
+    html_body = render_to_string('user/account_invite_email.html', context)
+    send_mail(subject, text_body, None, [user.email],
+              html_message=html_body, fail_silently=False)
 
 
 @login_required

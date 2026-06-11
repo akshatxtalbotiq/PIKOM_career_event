@@ -1,0 +1,19 @@
+{% autoescape off %}
+Hello {{ user.get_full_name|default:user.get_username }},
+
+An account has been created for you on the PIKOM dashboard.
+
+To activate your account, set your password using the link below (or paste it
+into your browser):
+
+{{ protocol }}://{{ domain }}{% url 'password_reset_confirm' uidb64=uid token=token %}
+
+Your username is: {{ user.get_username }}
+
+For security, this link can only be used once and will expire after a short
+period. If it expires, you can request a fresh link from the "Forgot password?"
+option on the login page.
+
+Thanks,
+The PIKOM team
+{% endautoescape %}
