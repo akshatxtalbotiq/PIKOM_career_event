@@ -24,7 +24,7 @@
 </head>
 <body>
   <section class="container-xl">
-    <div class="d-flex justify-content-center align-items-center text-center py-5" style="min-height:100dvh;">
+    <div class="d-flex flex-column justify-content-center align-items-center text-center py-5" style="min-height:100dvh;">
       <div class="bg-white rounded shadow thanks-card">
         <div class="mb-3" style="font-size:64px; color:#198754;">&#10003;</div>
 
@@ -52,6 +52,10 @@
             Your response to <strong>{{ survey.title }}</strong> has been recorded{% if survey_user.name %}, <strong>{{ survey_user.name }}</strong>{% endif %}.
           </p>
         {% endif %}
+      </div>
+
+      <div class="text-center mt-3" style="font-size:.78rem; color:#9aa3ad; letter-spacing:.02em;">
+        Powered by <span style="font-weight:600; color:#8a93a0;">Talbotiq Technologies</span>
       </div>
     </div>
   </section>
