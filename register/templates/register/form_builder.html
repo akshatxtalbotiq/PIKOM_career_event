@@ -36,6 +36,7 @@
   .intro-editor .ql-editor { min-height: 110px; font-size: 0.95rem; }
   .intro-editor .ql-container { border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; }
   .intro-editor .ql-toolbar { border-top-left-radius: 6px; border-top-right-radius: 6px; }
+  .signoff-editor .ql-editor { min-height: 60px; }
   .merge-tag { font-family: monospace; }
   .extra-row .ex-icon { text-align: center; }
 
@@ -317,8 +318,12 @@
 
         <div class="mb-3">
           <label class="form-label">Sign-off</label>
-          <input type="text" id="emailSignoff" class="form-control" placeholder="The PCIOC 2026 Organising Team"
-                 value="{{ survey.fkcampaign.email_signoff }}">
+          <div class="intro-editor signoff-editor"><div id="signoffEditor"></div></div>
+          <div id="signoffInit" style="display:none;">{{ survey.fkcampaign.email_signoff|safe }}</div>
+          <small class="text-muted">
+            Can be multiple lines — e.g. <strong>The PIKOM Team</strong> in bold on the first line,
+            "Frontier of Super Intelligence 2026" on the second. Use the toolbar for bold and font colour.
+          </small>
         </div>
 
         <div class="text-end">
@@ -927,14 +932,27 @@
       });
     });
 
-    // Rich-text editors
-    const toolbar = [['bold', 'italic', 'underline'], [{ list: 'ordered' }, { list: 'bullet' }], ['link']];
+    // Rich-text editors — colour pickers for font colour & highlight included
+    const toolbar = [
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ color: [] }, { background: [] }],
+      [{ list: 'ordered' }, { list: 'bullet' }],
+      ['link', 'clean'],
+    ];
     const qrQuill = new Quill('#qrIntroEditor', { theme: 'snow', modules: { toolbar } });
     const remQuill = new Quill('#remIntroEditor', { theme: 'snow', modules: { toolbar } });
+    // Sign-off: small editor — bold/italic/underline + font colour are enough.
+    const signoffQuill = new Quill('#signoffEditor', {
+      theme: 'snow',
+      placeholder: 'The PIKOM Team',
+      modules: { toolbar: [['bold', 'italic', 'underline'], [{ color: [] }], ['clean']] },
+    });
     const qrInit = document.getElementById('qrIntroInit').innerHTML.trim();
     const remInit = document.getElementById('remIntroInit').innerHTML.trim();
+    const signoffInit = document.getElementById('signoffInit').innerHTML.trim();
     if (qrInit) qrQuill.clipboard.dangerouslyPasteHTML(qrInit);
     if (remInit) remQuill.clipboard.dangerouslyPasteHTML(remInit);
+    if (signoffInit) signoffQuill.clipboard.dangerouslyPasteHTML(signoffInit);
 
     // Insert merge tags into the subject inputs at the cursor position
     document.querySelectorAll('.subject-tag').forEach(btn => {
@@ -963,7 +981,7 @@
       const payload = {
         qr_email_intro: qrQuill.root.innerHTML,
         reminder_intro: remQuill.root.innerHTML,
-        email_signoff: document.getElementById('emailSignoff').value,
+        email_signoff: signoffQuill.getText().trim() ? signoffQuill.root.innerHTML : '',
         qr_email_subject: document.getElementById('qrSubject').value,
         reminder_subject: document.getElementById('remSubject').value,
         show_details_qr: document.getElementById('qrShowDetails').checked,

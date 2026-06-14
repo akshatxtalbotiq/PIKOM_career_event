@@ -31,7 +31,7 @@ field is empty. Expects `campaign` and `event_date` (datetime) in context.
   {% for row in campaign.extra_info %}
   <tr>
     <td style="padding:4px 12px 4px 0; vertical-align:top;">{{ row.icon }}</td>
-    <td style="padding:4px 0;">{% if row.label %}<strong>{{ row.label }}</strong> {% endif %}{% if row.link %}<a href="{{ row.link }}" style="color:#198754; font-weight:600; text-decoration:underline;">{{ row.value|default:row.link }}</a>{% else %}{{ row.value }}{% endif %}</td>
+    <td style="padding:4px 0;">{% if row.label %}<strong>{{ row.label }}</strong> {% endif %}{% if row.link %}<a href="{{ row.link }}" style="color:{% firstof campaign.theme '#198754' %}; font-weight:600; text-decoration:underline;">{{ row.value|default:row.link }}</a>{% else %}{{ row.value }}{% endif %}</td>
   </tr>
   {% endfor %}
 </table>

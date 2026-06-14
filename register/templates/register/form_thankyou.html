@@ -8,13 +8,17 @@
   <link rel="stylesheet" href="{% static 'register/assets/css/bootstrap.css' %}">
   <link rel="stylesheet" href="{% static 'register/assets/css/style.css' %}">
   <style>
+    :root {
+      --theme: {% if survey.fkcampaign %}{{ survey.fkcampaign.theme }}{% else %}#198754{% endif %};
+      --theme-soft: {% if survey.fkcampaign %}{{ survey.fkcampaign.theme_soft }}{% else %}#e7f4ec{% endif %};
+    }
     body { background: #f5f7fb; }
     .thanks-card { max-width: 620px; padding: 2.5rem; }
     .review-steps { text-align: left; }
     .review-steps li { padding: .35rem 0; }
     .ref-pill {
       display: inline-block; padding: .25rem .75rem; border-radius: 999px;
-      background: #e7f4ec; color: #198754; font-weight: 600; font-size: .9rem;
+      background: var(--theme-soft); color: var(--theme); font-weight: 600; font-size: .9rem;
     }
     @media (max-width: 575.98px) {
       .thanks-card { padding: 1.5rem; }
@@ -26,7 +30,7 @@
   <section class="container-xl">
     <div class="d-flex flex-column justify-content-center align-items-center text-center py-5" style="min-height:100dvh;">
       <div class="bg-white rounded shadow thanks-card">
-        <div class="mb-3" style="font-size:64px; color:#198754;">&#10003;</div>
+        <div class="mb-3" style="font-size:64px; color:var(--theme);">&#10003;</div>
 
         {% if is_registration %}
           <h2 class="fw-bold mb-2">Thank you for your submission.</h2>

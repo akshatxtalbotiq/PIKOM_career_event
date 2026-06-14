@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+import re
 import uuid
 from datetime import datetime
 
@@ -163,10 +164,35 @@ class Campaign(models.Model):
     # Blank = use the built-in default subject.
     qr_email_subject = models.CharField(max_length=200, blank=True, default="")
     reminder_subject = models.CharField(max_length=200, blank=True, default="")
-    email_signoff = models.CharField(max_length=160, blank=True, default="")   # "The PCIOC 2026 Organising Team"
+    # Sign-off: sanitised rich-text HTML so it can be multi-line with bold /
+    # coloured text (e.g. "<strong>The PIKOM Team</strong><br>Frontier of
+    # Super Intelligence 2026"). Legacy plain-text values still render (bolded).
+    email_signoff = models.TextField(blank=True, default="")
     # Whether to include the event-details block (date/time/venue/etc.) in each email
     show_details_qr = models.BooleanField(default=True)
     show_details_reminder = models.BooleanField(default=True)
+
+    # --- Event theme colour ---
+    # Hex accent colour used on the public registration form and in registrant
+    # emails (header bar, reference pill, headings, links). Each event can set
+    # its own; the default is the green used historically in the emails.
+    THEME_DEFAULT = "#198754"
+    theme_color = models.CharField(max_length=7, blank=True, default="#198754")
+
+    @property
+    def theme(self):
+        """Validated theme colour hex; falls back to the default green so a
+        blank/garbled value can never break the form or emails."""
+        c = (self.theme_color or "").strip()
+        return c.lower() if re.fullmatch(r"#[0-9a-fA-F]{6}", c) else self.THEME_DEFAULT
+
+    @property
+    def theme_soft(self):
+        """Very light tint of the theme colour (90% white) for pill/badge
+        backgrounds — the per-theme equivalent of the old #e7f4ec green."""
+        c = self.theme.lstrip("#")
+        r, g, b = (int(c[i:i + 2], 16) for i in (0, 2, 4))
+        return "#{:02x}{:02x}{:02x}".format(*(round(v + (255 - v) * 0.9) for v in (r, g, b)))
 
     def __str__(self):
         return self.title

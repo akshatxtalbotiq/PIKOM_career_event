@@ -433,6 +433,18 @@
                   <div class="invalid-feedback">Please enter valid user.</div>
                 </div>
               </div>
+              <div class="col-xl-6 col-lg-6">
+                <div class="mb-3">
+                  <label for="campaignThemeColor" class="form-label">Event Theme Colour</label>
+                  <div class="d-flex align-items-center gap-2">
+                    <input type="color" class="form-control form-control-color border border-1 rounded"
+                           id="campaignThemeColor" name="campaignThemeColor" value="#198754"
+                           title="Accent colour for the registration form and emails">
+                    <button type="button" class="btn btn-sm btn-outline-secondary mb-0" id="themeColorReset">Reset to green</button>
+                  </div>
+                  <small class="text-muted">Used as the accent colour on the public form and registrant emails.</small>
+                </div>
+              </div>
               <div class="col-xl-12 col-lg-12">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                   <label class="form-check-label" for="enableCampaign">Enable or Disable QR Scanning Page</label>
@@ -582,6 +594,7 @@
               document.getElementById('campaignEntryURL').value = data.entry_url || '';
               document.getElementById('campaignEntryKeyword').value = data.entry_keyword || '';
               document.getElementById('enablePrompt').checked = data.enable_prompt;
+              document.getElementById('campaignThemeColor').value = data.theme_color || '#198754';
 
               
 
@@ -786,6 +799,7 @@
         const entry_keyword = $('#campaignEntryKeyword').val();
         const selectedUsers = $('#campaignTeam').val(); 
         const promptCheckinInfo = $('#enablePrompt').is(':checked');
+        const themeColor = $('#campaignThemeColor').val();
 
         $.ajax({
           url: '/create_campaign',
@@ -803,6 +817,7 @@
             entry_url: entry_url,
             entry_keyword: entry_keyword,
             prompt_checkin_info: promptCheckinInfo,
+            theme_color: themeColor,
             users: selectedUsers
           },
           success: function (response) {
@@ -819,6 +834,10 @@
         });
       
       });
+
+    document.getElementById('themeColorReset').addEventListener('click', function () {
+      document.getElementById('campaignThemeColor').value = '#198754';
+    });
 
     document.getElementById('closeModalBtn').addEventListener('click', function () {
       const form = document.getElementById('campaignForm');

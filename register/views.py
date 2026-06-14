@@ -23,6 +23,7 @@ from urllib3 import request
 from picom import settings
 from .models import Registration, Player, Sponsorship,Campaign, Submission,CampaignTeam, Survey, Question, Answer, SurveyUser, default_identity_field_config, merge_identity_field_config
 
+import re
 import uuid
 import json
 import qrcode
@@ -358,6 +359,11 @@ def create_campaign(request):
         entry_keyword = request.POST.get('entry_keyword', '')
         selected_users = request.POST.getlist("users[]")
         prompt_checkin_info = request.POST.get('prompt_checkin_info') == 'true'
+        # Event theme colour — only accept a well-formed hex; anything else
+        # falls back to the default green.
+        theme_color = (request.POST.get('theme_color') or '').strip()
+        if not re.fullmatch(r"#[0-9a-fA-F]{6}", theme_color):
+            theme_color = Campaign.THEME_DEFAULT
 
         if id:
             #print(f"Updating campaign with ID: {id}")
@@ -372,6 +378,7 @@ def create_campaign(request):
             campaign.need_qr = need_qr
             campaign.pic_email = pic_email
             campaign.prompt_checkin_info = prompt_checkin_info
+            campaign.theme_color = theme_color
             campaign.save()
         else:
             #print("Creating a new campaign")
@@ -385,7 +392,8 @@ def create_campaign(request):
                 pic_email=pic_email,
                 entry_url=entry_url,
                 entry_keyword=entry_keyword,
-                prompt_checkin_info=prompt_checkin_info
+                prompt_checkin_info=prompt_checkin_info,
+                theme_color=theme_color,
             )
 
         #delete the rows for CampaignTeam model
@@ -427,6 +435,7 @@ def get_campaign(request, id):
         "users": user_data,
         "selected_users": selected_users,
         "enable_prompt": campaign.prompt_checkin_info,
+        "theme_color": campaign.theme,
     }
     return JsonResponse(data)
 
@@ -1816,12 +1825,7 @@ def _sanitize_intro(raw_html):
     raw_html = (raw_html or "").strip()
     if not raw_html or bleach is None:
         return raw_html
-    return bleach.clean(
-        raw_html,
-        tags=_INTRO_ALLOWED_TAGS,
-        attributes=_INTRO_ALLOWED_ATTRS,
-        strip=True,
-    )
+    return bleach.clean(raw_html, **_bleach_clean_kwargs())
 
 
 @login_required
@@ -1886,7 +1890,7 @@ def save_email_content(request, campaign_id):
 
     campaign.qr_email_intro = _sanitize_intro(data.get("qr_email_intro"))
     campaign.reminder_intro = _sanitize_intro(data.get("reminder_intro"))
-    campaign.email_signoff = (data.get("email_signoff") or "").strip()[:160]
+    campaign.email_signoff = _sanitize_intro(data.get("email_signoff"))
     # Subjects are plain text; collapse whitespace to a single line.
     campaign.qr_email_subject = " ".join((data.get("qr_email_subject") or "").split())[:200]
     campaign.reminder_subject = " ".join((data.get("reminder_subject") or "").split())[:200]
@@ -1936,12 +1940,13 @@ def preview_email(request, survey_id, kind):
     ) or default_subject
     ctx = dict(tag_ctx)
     ctx["event_date"] = event_date
+    theme = campaign.theme if campaign else Campaign.THEME_DEFAULT
     ctx.update({
         "survey": survey,
         "campaign": campaign,
         "banner_url": banner_url,
-        "signoff": ((campaign.email_signoff if campaign else "") or "").strip() or f"{title} Team",
-        "intro_html": _render_intro(getattr(campaign, intro_field, "") or "", tag_ctx) if campaign else "",
+        "signoff_html": _signoff_html(campaign, title, theme),
+        "intro_html": _render_intro(getattr(campaign, intro_field, "") or "", tag_ctx, theme) if campaign else "",
         "show_details": getattr(campaign, detail_flag, True) if campaign else True,
     })
     buf = BytesIO()
@@ -2348,8 +2353,24 @@ import re as _re
 from django.utils.html import escape as _html_escape
 from django.template.defaultfilters import date as _date_filter
 
-_INTRO_ALLOWED_TAGS = ["p", "br", "strong", "em", "u", "ol", "ul", "li", "a"]
-_INTRO_ALLOWED_ATTRS = {"a": ["href"]}
+_INTRO_ALLOWED_TAGS = ["p", "br", "strong", "em", "u", "s", "ol", "ul", "li", "a", "span"]
+_INTRO_ALLOWED_ATTRS = {"a": ["href"], "span": ["style"], "p": ["style"]}
+
+# Allow font colour / highlight authored with the editor's colour pickers.
+# bleach >= 5 needs an explicit CSS sanitizer (tinycss2) to keep style attrs;
+# without it the style attribute is stripped, which is the safe degradation.
+try:
+    from bleach.css_sanitizer import CSSSanitizer
+    _INTRO_CSS_SANITIZER = CSSSanitizer(allowed_css_properties=["color", "background-color"])
+except Exception:
+    _INTRO_CSS_SANITIZER = None
+
+
+def _bleach_clean_kwargs():
+    kwargs = dict(tags=_INTRO_ALLOWED_TAGS, attributes=_INTRO_ALLOWED_ATTRS, strip=True)
+    if _INTRO_CSS_SANITIZER is not None:
+        kwargs["css_sanitizer"] = _INTRO_CSS_SANITIZER
+    return kwargs
 
 # Friendly placeholders organisers insert, e.g. [Name], [Event], [Date],
 # [Reg no]. These are plain find-and-replace tokens — NOT a template language —
@@ -2368,16 +2389,30 @@ def _email_base_url(request=None):
     return (getattr(settings, "SITE_BASE_URL", "") or "").rstrip("/")
 
 
-def _emailify_html(html):
-    """Inline-style the few tags mail clients render inconsistently."""
+def _emailify_html(html, theme="#198754"):
+    """Inline-style the few tags mail clients render inconsistently. Links are
+    coloured with the campaign theme."""
     if not html:
         return ""
-    html = html.replace("<a ", '<a style="color:#198754;font-weight:600;" ')
+    html = html.replace("<a ", f'<a style="color:{theme};font-weight:600;" ')
     html = html.replace("<li>", '<li style="margin-bottom:6px;">')
     return html
 
 
-def _render_intro(raw_html, tag_ctx):
+def _signoff_html(campaign, title, theme="#198754"):
+    """Email sign-off as HTML. Rich-text values authored in the builder render
+    as-is (multi-line / bold / coloured, paragraphs tightened so rows read as
+    consecutive lines). Legacy plain-text values and the blank fallback
+    ("<Event> Team") render bolded, as before."""
+    raw = ((campaign.email_signoff if campaign else "") or "").strip()
+    if raw and "<" in raw:
+        if strip_tags(raw).strip():
+            return _emailify_html(raw, theme).replace("<p>", '<p style="margin:0;">')
+        raw = ""  # empty editor markup, e.g. "<p><br></p>"
+    return f"<strong>{_html_escape(raw or f'{title} Team')}</strong>"
+
+
+def _render_intro(raw_html, tag_ctx, theme="#198754"):
     """Fill in friendly [Placeholders] with the recipient's details, then
     sanitise + emailify. Plain text substitution — no template engine — so
     organisers only ever deal with readable tokens like [Name]."""
@@ -2402,13 +2437,8 @@ def _render_intro(raw_html, tag_ctx):
 
     rendered = _PLACEHOLDER_RE.sub(_sub, raw_html)
     if bleach is not None:
-        rendered = bleach.clean(
-            rendered,
-            tags=_INTRO_ALLOWED_TAGS,
-            attributes=_INTRO_ALLOWED_ATTRS,
-            strip=True,
-        )
-    return _emailify_html(rendered)
+        rendered = bleach.clean(rendered, **_bleach_clean_kwargs())
+    return _emailify_html(rendered, theme)
 
 
 def _reply_to_header(campaign):
@@ -2469,12 +2499,15 @@ def _event_email_ctx(survey_user, request=None, intro_field=None):
         "reminder_intro": "show_details_reminder",
     }.get(intro_field)
     show_details = getattr(campaign, detail_flag, True) if (campaign and detail_flag) else True
+    theme = campaign.theme if campaign else Campaign.THEME_DEFAULT
+    signoff_html = _signoff_html(campaign, title, theme)
     ctx.update({
         "survey": survey,
         "campaign": campaign,
         "banner_url": banner_url,
-        "signoff": ((campaign.email_signoff if campaign else "") or "").strip() or f"{title} Team",
-        "intro_html": _render_intro(getattr(campaign, intro_field, "") or "", tag_ctx)
+        "signoff": strip_tags(signoff_html.replace("</p>", " </p>").replace("<br", " <br")).strip(),
+        "signoff_html": signoff_html,
+        "intro_html": _render_intro(getattr(campaign, intro_field, "") or "", tag_ctx, theme)
                       if (intro_field and campaign is not None) else "",
         "show_details": show_details,
     })
@@ -2501,7 +2534,8 @@ def _send_registration_received_email(survey_user):
         "title": subject_title,
         "survey": survey,
         "campaign": campaign,
-        "signoff": ((campaign.email_signoff if campaign else "") or "").strip() or f"{subject_title} Team",
+        "signoff_html": _signoff_html(campaign, subject_title,
+                                      campaign.theme if campaign else Campaign.THEME_DEFAULT),
     }
     try:
         html_content = render_to_string("register/email/email_registration_received.html", ctx)

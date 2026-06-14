@@ -21,7 +21,8 @@
 
           <!-- Header -->
           <tr>
-            <td style="background-color: #198754; padding: 22px 30px; color: #ffffff;">
+            {% firstof campaign.theme "#198754" as theme %}{% firstof campaign.theme_soft "#e7f4ec" as theme_soft %}
+            <td style="background-color: {{ theme }}; padding: 22px 30px; color: #ffffff;">
               <h2 style="margin: 0; font-size: 20px; font-weight: 700;">Thank you for your submission.</h2>
               <div style="margin-top: 6px; font-size: 14px; opacity: .9;">{{ title }}</div>
             </td>
@@ -43,7 +44,7 @@
                 <p style="margin: 0 0 18px 0;">
                   Your reference number:
                   <span style="display:inline-block; padding:4px 12px; border-radius:999px;
-                               background:#e7f4ec; color:#198754; font-weight:600;">
+                               background:{{ theme_soft }}; color:{{ theme }}; font-weight:600;">
                     {{ reg_no }}
                   </span>
                 </p>
@@ -61,15 +62,15 @@
                 </li>
               </ol>
 
-              <p style="margin: 0 0 8px 0; color: #666; font-size: 13px;">
+              <p style="margin: 0 0 8px 0;">
                 Confirmation emails with the QR code are sent only after our team has vetted the registrations.
                 This usually takes about one week.
               </p>
 
-              <p style="margin: 24px 0 0 0;">
-                Warmest regards,<br>
-                <strong>{{ signoff|default:title }}</strong>
+              <p style="margin: 24px 0 2px 0;">
+                Warmest regards,
               </p>
+              {{ signoff_html|safe }}
             </td>
           </tr>
 

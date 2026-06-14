@@ -10,9 +10,34 @@
   <link rel="stylesheet" href="{% static 'register/assets/css/style.css' %}">
   <link rel="stylesheet" href="{% static 'register/sweetalert2/sweetalert2.css' %}">
   <style>
+    :root {
+      --theme: {% if survey.fkcampaign %}{{ survey.fkcampaign.theme }}{% else %}#198754{% endif %};
+      --theme-soft: {% if survey.fkcampaign %}{{ survey.fkcampaign.theme_soft }}{% else %}#e7f4ec{% endif %};
+    }
     body { background: #f5f7fb; }
     .form-card { max-width: 820px; margin: 0 auto; }
-    .q-number { font-weight: 600; color: #1976d2; margin-right: 4px; }
+    .q-number { font-weight: 600; color: var(--theme); margin-right: 4px; }
+
+    /* Theme-coloured submit button (replaces the fixed Bootstrap green) */
+    .btn-theme { background: var(--theme); border-color: var(--theme); color: #fff; }
+    .btn-theme:hover, .btn-theme:focus { background: var(--theme); border-color: var(--theme); color: #fff; filter: brightness(.92); }
+
+    /* Rich "about this event" block under the form title (authored in the
+       form settings with the rich-text editor) */
+    .form-desc { color: #444; font-size: 15px; }
+    .form-desc p { margin: 0 0 .5rem 0; }
+    .form-desc p:last-child { margin-bottom: 0; }
+    .form-desc ul, .form-desc ol { padding-left: 1.4rem; margin: 0 0 .5rem 0; }
+    .form-desc li { margin-bottom: .25rem; }
+    .form-desc strong { color: #222; }
+    .form-desc em, .form-desc small { color: #6b7280; }
+    .form-desc a { color: var(--theme); font-weight: 600; }
+    .form-desc h1, .form-desc h2, .form-desc h3, .form-desc h4 { font-size: 1.05rem; font-weight: 700; color: var(--theme); margin: .75rem 0 .35rem 0; }
+    .form-desc blockquote {
+      margin: .5rem 0; padding: .6rem .9rem;
+      background: var(--theme-soft); border-left: 4px solid var(--theme);
+      border-radius: .25rem; color: #333;
+    }
 
     /* Prevent iOS Safari from zooming the viewport when an input is focused. */
     .form-control, .form-select { font-size: 16px; }
@@ -62,7 +87,7 @@
         <div class="card-body p-4">
           <h3 class="fw-bold mb-2">{{ survey.title }}</h3>
           {% if survey.description %}
-            <div class="text-muted">{{ survey.description|safe }}</div>
+            <div class="form-desc">{{ survey.description|safe }}</div>
           {% endif %}
         </div>
       </div>
@@ -101,7 +126,7 @@
               {% for row in campaign.extra_info %}
               <tr>
                 <td class="ed-icon">{{ row.icon }}</td>
-                <td>{% if row.label %}<strong>{{ row.label }}</strong> {% endif %}{% if row.link %}<a href="{{ row.link }}" target="_blank" rel="noopener" class="fw-semibold" style="color:#198754;">{{ row.value|default:row.link }}</a>{% else %}{{ row.value }}{% endif %}</td>
+                <td>{% if row.label %}<strong>{{ row.label }}</strong> {% endif %}{% if row.link %}<a href="{{ row.link }}" target="_blank" rel="noopener" class="fw-semibold" style="color:var(--theme);">{{ row.value|default:row.link }}</a>{% else %}{{ row.value }}{% endif %}</td>
               </tr>
               {% endfor %}
             </table>
@@ -233,7 +258,7 @@
           </div>
 
           <div class="text-center mb-5">
-            <button type="submit" class="btn btn-lg btn-success px-5">
+            <button type="submit" class="btn btn-lg btn-theme px-5">
               {% if preview_mode %}Submit (Preview){% else %}Submit Registration{% endif %}
             </button>
           </div>
@@ -322,7 +347,7 @@
             icon: 'success',
             title: 'Preview submission OK',
             html: 'All required fields look good.<br>Nothing was saved — this is preview mode.',
-            confirmButtonColor: '#198754',
+            confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--theme').trim() || '#198754',
           });
           return;
         }

@@ -6,6 +6,7 @@
   <title>Reminder to Attend — {{ campaign.title|default:survey.title }}</title>
 </head>
 <body style="margin:0; padding:0; background-color:#f4f6f9; font-family:Arial, sans-serif; color:#222; line-height:1.5;">
+{% firstof campaign.theme "#198754" as theme %}{% firstof campaign.theme_soft "#e7f4ec" as theme_soft %}
 
   <table cellpadding="0" cellspacing="0" border="0" width="100%">
     <tr>
@@ -42,7 +43,7 @@
                 <p style="margin:0 0 14px 0;">
                   Your reference number:
                   <span style="display:inline-block; padding:4px 12px; border-radius:999px;
-                               background:#e7f4ec; color:#198754; font-weight:600;">{{ reg_no }}</span>
+                               background:{{ theme_soft }}; color:{{ theme }}; font-weight:600;">{{ reg_no }}</span>
                 </p>
               {% endif %}
             </td>
@@ -68,7 +69,7 @@
           {% if show_details %}
           <tr>
             <td style="padding:4px 30px 20px 30px;">
-              <h2 style="margin:0 0 12px 0; font-size:18px; color:#198754;">
+              <h2 style="margin:0 0 12px 0; font-size:18px; color:{{ theme }};">
                 {{ campaign.title|default:survey.title }}
               </h2>
               {% include "register/email/_event_details_block.html" %}
@@ -80,7 +81,8 @@
           <tr>
             <td style="padding:0 30px 28px 30px; font-size:15px; color:#333;">
               <p style="margin:0 0 14px 0;">We look forward to seeing you there!</p>
-              <p style="margin:0;">Warm regards,<br><strong>{{ signoff }}</strong></p>
+              <p style="margin:0 0 2px 0;">Warm regards,</p>
+              {{ signoff_html|safe }}
             </td>
           </tr>
 
