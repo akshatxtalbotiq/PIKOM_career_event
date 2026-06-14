@@ -271,12 +271,12 @@
       </div>
       <div class="card-body">
         <ul class="email-tabs" role="tablist">
-          <li><button type="button" class="email-tab active" data-tab="qr">QR confirmation</button></li>
+          <li><button type="button" class="email-tab active" data-tab="ty">Thank-you</button></li>
+          <li><button type="button" class="email-tab" data-tab="qr">QR confirmation</button></li>
           <li><button type="button" class="email-tab" data-tab="rem">Attendance reminder</button></li>
-          <li><button type="button" class="email-tab" data-tab="ty">Thank-you</button></li>
         </ul>
 
-        <div class="email-pane" data-pane="qr">
+        <div class="email-pane d-none" data-pane="qr">
         <div class="mb-4">
           <label class="form-label d-flex justify-content-between align-items-center">
             <span>QR confirmation email</span>
@@ -356,7 +356,7 @@
         </div>
         </div><!-- /rem pane -->
 
-        <div class="email-pane d-none" data-pane="ty">
+        <div class="email-pane" data-pane="ty">
         <div class="mb-4">
           <label class="form-label d-flex justify-content-between align-items-center">
             <span>Thank-you (submission received) email</span>
