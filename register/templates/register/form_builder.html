@@ -32,11 +32,38 @@
     display: inline-block; font-size: 0.72rem; padding: 2px 8px;
     border-radius: 999px; background: #ffe5e5; color: #b71c1c; font-weight: 600; margin-left: 6px;
   }
+  /* Email content tabs */
+  .email-tabs {
+    display: flex; gap: 4px; list-style: none; padding: 0;
+    margin: 0 0 18px 0; border-bottom: 2px solid #e3e8ef; flex-wrap: wrap;
+  }
+  .email-tabs li { margin: 0; }
+  .email-tab {
+    border: 0; background: none; padding: 8px 16px; margin-bottom: -2px;
+    font-size: 0.82rem; font-weight: 700; color: #8392ab; cursor: pointer;
+    border-bottom: 2px solid transparent; border-radius: 6px 6px 0 0;
+  }
+  .email-tab:hover { color: #5e72e4; background: #f6f8fc; }
+  .email-tab.active { color: #5e72e4; border-bottom-color: #5e72e4; }
+
   /* Rich-text editors (Quill) for email content */
   .intro-editor .ql-editor { min-height: 110px; font-size: 0.95rem; }
   .intro-editor .ql-container { border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; }
   .intro-editor .ql-toolbar { border-top-left-radius: 6px; border-top-right-radius: 6px; }
   .signoff-editor .ql-editor { min-height: 60px; }
+  /* Auto-added event-details block shown under the editor when the toggle is on.
+     Reads as a continuation of the email body, but is not editable here. */
+  .ev-details-preview {
+    border: 1px dashed #c8d0da; border-top: 0;
+    border-radius: 0 0 6px 6px; background: #f8fafc;
+    padding: 12px 14px; font-size: 0.9rem; color: #344050;
+  }
+  .ev-details-preview .evp-caption {
+    font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .04em; color: #8392ab; margin-bottom: 8px;
+  }
+  .ev-details-preview table td { padding: 3px 10px 3px 0; vertical-align: top; }
+  .ev-details-preview .evp-empty { color: #8392ab; font-style: italic; }
   .merge-tag { font-family: monospace; }
   .extra-row .ex-icon { text-align: center; }
 
@@ -178,6 +205,7 @@
             <input type="text" class="form-control"
                    value="{{ survey.fkcampaign.end_date|date:'l, j F Y' }}" readonly>
             <small class="text-muted">Taken from the campaign end date.</small>
+            <span id="evDateStr" style="display:none;">{{ survey.fkcampaign.end_date|date:'l, j F Y' }}</span>
           </div>
           <div class="col-md-6 mb-3">
             <label class="form-label">Time</label>
@@ -242,6 +270,13 @@
         </small>
       </div>
       <div class="card-body">
+        <ul class="email-tabs" role="tablist">
+          <li><button type="button" class="email-tab active" data-tab="qr">QR confirmation</button></li>
+          <li><button type="button" class="email-tab" data-tab="rem">Attendance reminder</button></li>
+          <li><button type="button" class="email-tab" data-tab="ty">Thank-you</button></li>
+        </ul>
+
+        <div class="email-pane" data-pane="qr">
         <div class="mb-4">
           <label class="form-label d-flex justify-content-between align-items-center">
             <span>QR confirmation email</span>
@@ -273,12 +308,15 @@
           </div>
           <div class="intro-editor"><div id="qrIntroEditor"></div></div>
           <div id="qrIntroInit" style="display:none;">{{ survey.fkcampaign.qr_email_intro|safe }}</div>
+          <div class="ev-details-preview" data-for="qr" style="display:none;"></div>
           <div class="form-check form-switch mt-2">
             <input class="form-check-input" type="checkbox" id="qrShowDetails" {% if survey.fkcampaign.show_details_qr %}checked{% endif %}>
             <label class="form-check-label" for="qrShowDetails">Include the event details block (date, venue, etc.) in this email</label>
           </div>
         </div>
+        </div><!-- /qr pane -->
 
+        <div class="email-pane d-none" data-pane="rem">
         <div class="mb-4">
           <label class="form-label d-flex justify-content-between align-items-center">
             <span>Attendance reminder email</span>
@@ -310,11 +348,62 @@
           </div>
           <div class="intro-editor"><div id="remIntroEditor"></div></div>
           <div id="remIntroInit" style="display:none;">{{ survey.fkcampaign.reminder_intro|safe }}</div>
+          <div class="ev-details-preview" data-for="rem" style="display:none;"></div>
           <div class="form-check form-switch mt-2">
             <input class="form-check-input" type="checkbox" id="remShowDetails" {% if survey.fkcampaign.show_details_reminder %}checked{% endif %}>
             <label class="form-check-label" for="remShowDetails">Include the event details block (date, venue, etc.) in this email</label>
           </div>
         </div>
+        </div><!-- /rem pane -->
+
+        <div class="email-pane d-none" data-pane="ty">
+        <div class="mb-4">
+          <label class="form-label d-flex justify-content-between align-items-center">
+            <span>Thank-you (submission received) email</span>
+            <a href="{% url 'preview_email' survey.id 'thankyou' %}" target="_blank"
+               class="btn btn-sm btn-outline-warning mb-0 py-1">
+              <i class="material-symbols-rounded align-middle" style="font-size:16px;">visibility</i> Preview
+            </a>
+          </label>
+          <div class="mb-3">
+            <label class="form-label small mb-1" for="tySubject">Subject line</label>
+            <input type="text" id="tySubject" class="form-control" maxlength="200"
+                   placeholder="Thank you for your registration — [Event]"
+                   value="{{ survey.fkcampaign.thankyou_subject }}">
+            <div class="mt-1">
+              <small class="text-muted me-1">Insert into subject:</small>
+              <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 subject-tag" data-input="tySubject" data-tag="[Event]">Event</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 subject-tag" data-input="tySubject" data-tag="[Date]">Date</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 subject-tag" data-input="tySubject" data-tag="[Name]">Name</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 subject-tag" data-input="tySubject" data-tag="[Reg no]">Reg no</button>
+              <small class="text-muted ms-1">Leave blank to use the default subject.</small>
+            </div>
+          </div>
+          <div class="mb-1">
+            <small class="text-muted me-1">Insert:</small>
+            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 merge-tag" data-target="ty" data-tag="[Name]">Name</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 merge-tag" data-target="ty" data-tag="[Reg no]">Reg no</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 merge-tag" data-target="ty" data-tag="[Date]">Date</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 merge-tag" data-target="ty" data-tag="[Event]">Event</button>
+          </div>
+          <div class="intro-editor"><div id="tyIntroEditor"></div></div>
+          <div id="tyIntroInit" style="display:none;">{{ survey.fkcampaign.thankyou_intro|safe }}</div>
+          <div class="ev-details-preview" data-for="ty" style="display:none;"></div>
+          <div class="form-check form-switch mt-2">
+            <input class="form-check-input" type="checkbox" id="tyShowDetails" {% if survey.fkcampaign.show_details_thankyou %}checked{% endif %}>
+            <label class="form-check-label" for="tyShowDetails">Include the event details block (date, venue, etc.) in this email</label>
+          </div>
+        </div>
+        </div><!-- /ty pane -->
+
+        <!-- Default body copy, loaded into an editor when its saved value is blank -->
+        <div id="emailDefaults" style="display:none;">
+          <div id="qrIntroDefault"><p>Thanks for registering for <strong>[Event]</strong>, [Name].</p></div>
+          <div id="remIntroDefault"><p>Hi [Name],</p><p>This is a friendly reminder that <strong>[Event]</strong> is coming up on [Date]. We look forward to seeing you there!</p></div>
+          <div id="tyIntroDefault"><p>Dear [Name],</p><p>Thank you for registering for <strong>[Event]</strong>. Your registration has been received and is currently being reviewed.</p><ol><li>We have successfully received your registration and it is currently under review.</li><li>Please keep an eye out for your registration confirmation email with the QR code.</li><li>For any additional requirements, our team will reach out to you.</li></ol><p>Confirmation emails with the QR code are sent only after our team has vetted the registrations. This usually takes about one week.</p></div>
+        </div>
+
+        <hr class="my-3">
 
         <div class="mb-3">
           <label class="form-label">Sign-off</label>
@@ -867,6 +956,7 @@
         const v = b.dataset.clear ? '' : b.textContent;
         activeIconBtn.dataset.emoji = v;
         activeIconBtn.textContent = v || '＋';
+        if (typeof refreshDetailsPreviews === 'function') refreshDetailsPreviews();
       }
       palette.style.display = 'none';
     }));
@@ -941,18 +1031,89 @@
     ];
     const qrQuill = new Quill('#qrIntroEditor', { theme: 'snow', modules: { toolbar } });
     const remQuill = new Quill('#remIntroEditor', { theme: 'snow', modules: { toolbar } });
+    const tyQuill = new Quill('#tyIntroEditor', { theme: 'snow', modules: { toolbar } });
+    const quillByTarget = { qr: qrQuill, rem: remQuill, ty: tyQuill };
     // Sign-off: small editor — bold/italic/underline + font colour are enough.
     const signoffQuill = new Quill('#signoffEditor', {
       theme: 'snow',
       placeholder: 'The PIKOM Team',
       modules: { toolbar: [['bold', 'italic', 'underline'], [{ color: [] }], ['clean']] },
     });
-    const qrInit = document.getElementById('qrIntroInit').innerHTML.trim();
-    const remInit = document.getElementById('remIntroInit').innerHTML.trim();
+    // Load the saved body; if blank, fall back to the default copy so authors
+    // start from the email we already send and can edit it.
+    function loadEditor(quill, initId, defaultId) {
+      const saved = document.getElementById(initId).innerHTML.trim();
+      const html = saved || document.getElementById(defaultId).innerHTML.trim();
+      if (html) quill.clipboard.dangerouslyPasteHTML(html);
+    }
+    loadEditor(qrQuill, 'qrIntroInit', 'qrIntroDefault');
+    loadEditor(remQuill, 'remIntroInit', 'remIntroDefault');
+    loadEditor(tyQuill, 'tyIntroInit', 'tyIntroDefault');
     const signoffInit = document.getElementById('signoffInit').innerHTML.trim();
-    if (qrInit) qrQuill.clipboard.dangerouslyPasteHTML(qrInit);
-    if (remInit) remQuill.clipboard.dangerouslyPasteHTML(remInit);
     if (signoffInit) signoffQuill.clipboard.dangerouslyPasteHTML(signoffInit);
+
+    // Tab switching for the three email panes
+    document.querySelectorAll('.email-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const name = tab.dataset.tab;
+        document.querySelectorAll('.email-tab').forEach(t => t.classList.toggle('active', t === tab));
+        document.querySelectorAll('.email-pane').forEach(p =>
+          p.classList.toggle('d-none', p.dataset.pane !== name));
+      });
+    });
+
+    // --- Live preview of the event-details block under each editor ---
+    // Mirrors register/email/_event_details_block.html so authors see exactly
+    // what the "Include the event details block" toggle adds to the email body.
+    function escapeHtml(s) {
+      return String(s == null ? '' : s).replace(/[&<>"]/g, c =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    }
+    function buildDetailsHTML() {
+      const rows = [];
+      const get = id => (document.getElementById(id)?.value || '').trim();
+      const date = (document.getElementById('evDateStr')?.textContent || '').trim();
+      const time = get('evTime'), venue = get('evVenue'), dress = get('evDress');
+      if (date) rows.push(['📅', escapeHtml(date)]);
+      if (time) rows.push(['🕒', escapeHtml(time)]);
+      if (venue) rows.push(['📍', escapeHtml(venue).replace(/\n/g, '<br>')]);
+      if (dress) rows.push(['👕', escapeHtml(dress)]);
+      extraList.querySelectorAll('.extra-row').forEach(r => {
+        const icon = (r.querySelector('.ex-icon-btn').dataset.emoji || '').trim();
+        const label = (r.querySelector('.ex-label').value || '').trim();
+        const value = (r.querySelector('.ex-value').value || '').trim();
+        const link = (r.querySelector('.ex-link').value || '').trim();
+        if (!label && !value && !link) return;
+        let text = '';
+        if (label) text += '<strong>' + escapeHtml(label) + '</strong> ';
+        text += link
+          ? '<a href="' + escapeHtml(link) + '">' + escapeHtml(value || link) + '</a>'
+          : escapeHtml(value);
+        rows.push([icon, text]);
+      });
+      if (!rows.length) {
+        return '<div class="evp-empty">No event details added yet — fill in the Event details card above.</div>';
+      }
+      return '<table>' + rows.map(([i, t]) =>
+        `<tr><td>${escapeHtml(i)}</td><td>${t}</td></tr>`).join('') + '</table>';
+    }
+    function refreshDetailsPreviews() {
+      const html = buildDetailsHTML();
+      const toggleByPane = { qr: 'qrShowDetails', rem: 'remShowDetails', ty: 'tyShowDetails' };
+      document.querySelectorAll('.ev-details-preview').forEach(box => {
+        const on = document.getElementById(toggleByPane[box.dataset.for])?.checked;
+        box.style.display = on ? 'block' : 'none';
+        if (on) box.innerHTML = '<div class="evp-caption">Event details (added automatically)</div>' + html;
+      });
+    }
+    ['qrShowDetails', 'remShowDetails', 'tyShowDetails'].forEach(id =>
+      document.getElementById(id)?.addEventListener('change', refreshDetailsPreviews));
+    ['evTime', 'evVenue', 'evDress'].forEach(id =>
+      document.getElementById(id)?.addEventListener('input', refreshDetailsPreviews));
+    // Extra-info rows change (add/remove/edit/emoji) — refresh on the next tick.
+    extraList.addEventListener('input', refreshDetailsPreviews);
+    extraList.addEventListener('click', () => setTimeout(refreshDetailsPreviews, 0));
+    refreshDetailsPreviews();
 
     // Insert merge tags into the subject inputs at the cursor position
     document.querySelectorAll('.subject-tag').forEach(btn => {
@@ -969,7 +1130,7 @@
 
     document.querySelectorAll('.merge-tag').forEach(btn => {
       btn.addEventListener('click', () => {
-        const q = btn.dataset.target === 'qr' ? qrQuill : remQuill;
+        const q = quillByTarget[btn.dataset.target] || qrQuill;
         const sel = q.getSelection(true);
         const at = sel ? sel.index : q.getLength();
         q.insertText(at, btn.dataset.tag, 'user');
@@ -981,11 +1142,14 @@
       const payload = {
         qr_email_intro: qrQuill.root.innerHTML,
         reminder_intro: remQuill.root.innerHTML,
+        thankyou_intro: tyQuill.root.innerHTML,
         email_signoff: signoffQuill.getText().trim() ? signoffQuill.root.innerHTML : '',
         qr_email_subject: document.getElementById('qrSubject').value,
         reminder_subject: document.getElementById('remSubject').value,
+        thankyou_subject: document.getElementById('tySubject').value,
         show_details_qr: document.getElementById('qrShowDetails').checked,
         show_details_reminder: document.getElementById('remShowDetails').checked,
+        show_details_thankyou: document.getElementById('tyShowDetails').checked,
       };
       fetch(`/save_email_content/${CAMPAIGN_ID}/`, {
         method: 'POST',

@@ -414,7 +414,7 @@
 
               <div class="col-xl-6 col-lg-6">
                 <div class="mb-3">
-                  <label for="campaignPICEmail" class="form-label">PIC Email</label>
+                  <label for="campaignPICEmail" class="form-label">'Reply To' Email</label>
                   <input type="text" class="form-control border border-1 rounded px-2 py-2" id="campaignPICEmail" name="campaignPICEmail" placeholder="pic1@mail.com,pic2@mail.com" required>
                   <div class="invalid-feedback">Please enter valid email addresses, separated by commas.</div>
                 </div>
@@ -436,13 +436,26 @@
               <div class="col-xl-6 col-lg-6">
                 <div class="mb-3">
                   <label for="campaignThemeColor" class="form-label">Event Theme Colour</label>
-                  <div class="d-flex align-items-center gap-2">
-                    <input type="color" class="form-control form-control-color border border-1 rounded"
-                           id="campaignThemeColor" name="campaignThemeColor" value="#198754"
-                           title="Accent colour for the registration form and emails">
-                    <button type="button" class="btn btn-sm btn-outline-secondary mb-0" id="themeColorReset">Reset to green</button>
+                  <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <!-- The real colour picker + submitted value. Visually hidden;
+                         opened by the "Choose colour" button, shown via the swatch below. -->
+                    <input type="color" id="campaignThemeColor" name="campaignThemeColor" value="#6c757d"
+                           aria-label="Accent colour" tabindex="-1"
+                           style="position:absolute; width:1px; height:1px; opacity:0; pointer-events:none;">
+                    <button type="button" id="themeColorPick" class="btn btn-sm btn-outline-primary mb-0">
+                      <i class="material-symbols-rounded align-middle" style="font-size:18px;">palette</i>
+                      Choose colour
+                    </button>
+                    <span class="text-muted small">Selected:</span>
+                    <span id="themeColorValue" class="badge text-bg-light border d-inline-flex align-items-center gap-1"
+                          style="font-family:monospace; font-size:.85rem; letter-spacing:.5px;">
+                      <span id="themeColorSwatch"
+                            style="display:inline-block; width:14px; height:14px; border-radius:3px;
+                                   border:1px solid rgba(0,0,0,.25); background:#6c757d;"></span>
+                      <span id="themeColorHex">#6C757D</span>
+                    </span>
                   </div>
-                  <small class="text-muted">Used as the accent colour on the public form and registrant emails.</small>
+                  <small class="text-muted">Click the swatch or <strong>Choose colour</strong> to set the accent colour used on the public form and registrant emails.</small>
                 </div>
               </div>
               <div class="col-xl-12 col-lg-12">
@@ -594,7 +607,17 @@
               document.getElementById('campaignEntryURL').value = data.entry_url || '';
               document.getElementById('campaignEntryKeyword').value = data.entry_keyword || '';
               document.getElementById('enablePrompt').checked = data.enable_prompt;
-              document.getElementById('campaignThemeColor').value = data.theme_color || '#198754';
+              // input[type=color] only accepts lowercase hex; normalise so the
+              // swatch actually paints the saved colour. (This block is a
+              // separate scope from updateThemeColorValue, so update inline.)
+              {
+                const tcPicker = document.getElementById('campaignThemeColor');
+                const tcHex = document.getElementById('themeColorHex');
+                const tcSwatch = document.getElementById('themeColorSwatch');
+                tcPicker.value = (data.theme_color || '#6c757d').toLowerCase();
+                if (tcHex) tcHex.textContent = tcPicker.value.toUpperCase();
+                if (tcSwatch) tcSwatch.style.background = tcPicker.value;
+              }
 
               
 
@@ -835,9 +858,20 @@
       
       });
 
-    document.getElementById('themeColorReset').addEventListener('click', function () {
-      document.getElementById('campaignThemeColor').value = '#198754';
+    // Show the currently selected theme colour (hex) next to the picker.
+    function updateThemeColorValue() {
+      const picker = document.getElementById('campaignThemeColor');
+      const hex = document.getElementById('themeColorHex');
+      const swatch = document.getElementById('themeColorSwatch');
+      if (!picker) return;
+      if (hex) hex.textContent = (picker.value || '').toUpperCase();
+      if (swatch) swatch.style.background = picker.value;
+    }
+    document.getElementById('campaignThemeColor').addEventListener('input', updateThemeColorValue);
+    document.getElementById('themeColorPick')?.addEventListener('click', function () {
+      document.getElementById('campaignThemeColor').click();
     });
+    updateThemeColorValue();
 
     document.getElementById('closeModalBtn').addEventListener('click', function () {
       const form = document.getElementById('campaignForm');
@@ -853,7 +887,8 @@
       
       const feedbacks = form.querySelectorAll('.invalid-feedback');
       feedbacks.forEach(fb => fb.textContent = '');
-    });   
+      updateThemeColorValue();
+    });
 
     
     function removeSlashAndSetHidden() {      

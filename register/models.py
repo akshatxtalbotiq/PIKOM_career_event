@@ -160,10 +160,12 @@ class Campaign(models.Model):
     # --- Per-email message text: sanitised rich-text HTML, supports merge tags ---
     qr_email_intro = models.TextField(blank=True, default="")    # body HTML of QR confirmation email
     reminder_intro = models.TextField(blank=True, default="")    # body HTML of attendance reminder
+    thankyou_intro = models.TextField(blank=True, default="")    # body HTML of "thank you for submission" email
     # Subject lines (plain text, support the same [Event]/[Date]/... merge tags).
     # Blank = use the built-in default subject.
     qr_email_subject = models.CharField(max_length=200, blank=True, default="")
     reminder_subject = models.CharField(max_length=200, blank=True, default="")
+    thankyou_subject = models.CharField(max_length=200, blank=True, default="")
     # Sign-off: sanitised rich-text HTML so it can be multi-line with bold /
     # coloured text (e.g. "<strong>The PIKOM Team</strong><br>Frontier of
     # Super Intelligence 2026"). Legacy plain-text values still render (bolded).
@@ -171,6 +173,7 @@ class Campaign(models.Model):
     # Whether to include the event-details block (date/time/venue/etc.) in each email
     show_details_qr = models.BooleanField(default=True)
     show_details_reminder = models.BooleanField(default=True)
+    show_details_thankyou = models.BooleanField(default=False)
 
     # --- Event theme colour ---
     # Hex accent colour used on the public registration form and in registrant

@@ -19,9 +19,19 @@
                       border-radius: 8px; overflow: hidden;
                       box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
 
+          {% firstof campaign.theme "#198754" as theme %}{% firstof campaign.theme_soft "#e7f4ec" as theme_soft %}
+          <!-- Banner (same image as the registration form) -->
+          {% if banner_url %}
+          <tr>
+            <td style="padding:0;">
+              <img src="{{ banner_url }}" alt="{{ title }}"
+                   width="600" style="display:block; width:100%; max-width:600px; height:auto;">
+            </td>
+          </tr>
+          {% endif %}
+
           <!-- Header -->
           <tr>
-            {% firstof campaign.theme "#198754" as theme %}{% firstof campaign.theme_soft "#e7f4ec" as theme_soft %}
             <td style="background-color: {{ theme }}; padding: 22px 30px; color: #ffffff;">
               <h2 style="margin: 0; font-size: 20px; font-weight: 700;">Thank you for your submission.</h2>
               <div style="margin-top: 6px; font-size: 14px; opacity: .9;">{{ title }}</div>
@@ -31,17 +41,38 @@
           <!-- Content -->
           <tr>
             <td style="padding: 28px 30px; color: #333333; font-size: 15px; line-height: 1.6;">
-              <p style="margin: 0 0 12px 0;">
-                {% if name %}Dear <strong>{{ name }}</strong>,{% else %}Hello,{% endif %}
-              </p>
+              {% if intro_html %}
+                {{ intro_html|safe }}
+              {% else %}
+                <p style="margin: 0 0 12px 0;">
+                  {% if name %}Dear <strong>{{ name }}</strong>,{% else %}Hello,{% endif %}
+                </p>
 
-              <p style="margin: 0 0 16px 0;">
-                Thank you for registering for <strong>{{ title }}</strong>.
-                Your registration has been received and is currently being reviewed.
-              </p>
+                <p style="margin: 0 0 16px 0;">
+                  Thank you for registering for <strong>{{ title }}</strong>.
+                  Your registration has been received and is currently being reviewed.
+                </p>
+
+                <ol style="margin: 0 0 18px 18px; padding: 0; color: #333;">
+                  <li style="margin-bottom: 8px;">
+                    We have successfully received your registration and it is currently under review.
+                  </li>
+                  <li style="margin-bottom: 8px;">
+                    Please keep an eye out for your registration confirmation email with the QR code.
+                  </li>
+                  <li style="margin-bottom: 0;">
+                    For any additional requirements, our team will reach out to you.
+                  </li>
+                </ol>
+
+                <p style="margin: 0 0 8px 0;">
+                  Confirmation emails with the QR code are sent only after our team has vetted the registrations.
+                  This usually takes about one week.
+                </p>
+              {% endif %}
 
               {% if reg_no %}
-                <p style="margin: 0 0 18px 0;">
+                <p style="margin: 18px 0 0 0;">
                   Your reference number:
                   <span style="display:inline-block; padding:4px 12px; border-radius:999px;
                                background:{{ theme_soft }}; color:{{ theme }}; font-weight:600;">
@@ -50,22 +81,11 @@
                 </p>
               {% endif %}
 
-              <ol style="margin: 0 0 18px 18px; padding: 0; color: #333;">
-                <li style="margin-bottom: 8px;">
-                  We have successfully received your registration and it is currently under review.
-                </li>
-                <li style="margin-bottom: 8px;">
-                  Please keep an eye out for your registration confirmation email with the QR code.
-                </li>
-                <li style="margin-bottom: 0;">
-                  For any additional requirements, our team will reach out to you.
-                </li>
-              </ol>
-
-              <p style="margin: 0 0 8px 0;">
-                Confirmation emails with the QR code are sent only after our team has vetted the registrations.
-                This usually takes about one week.
-              </p>
+              {% if show_details %}
+              <div style="margin: 20px 0 0 0;">
+                {% include "register/email/_event_details_block.html" %}
+              </div>
+              {% endif %}
 
               <p style="margin: 24px 0 2px 0;">
                 Warmest regards,

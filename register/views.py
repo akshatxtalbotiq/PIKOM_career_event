@@ -1890,16 +1890,19 @@ def save_email_content(request, campaign_id):
 
     campaign.qr_email_intro = _sanitize_intro(data.get("qr_email_intro"))
     campaign.reminder_intro = _sanitize_intro(data.get("reminder_intro"))
+    campaign.thankyou_intro = _sanitize_intro(data.get("thankyou_intro"))
     campaign.email_signoff = _sanitize_intro(data.get("email_signoff"))
     # Subjects are plain text; collapse whitespace to a single line.
     campaign.qr_email_subject = " ".join((data.get("qr_email_subject") or "").split())[:200]
     campaign.reminder_subject = " ".join((data.get("reminder_subject") or "").split())[:200]
+    campaign.thankyou_subject = " ".join((data.get("thankyou_subject") or "").split())[:200]
     campaign.show_details_qr = bool(data.get("show_details_qr", True))
     campaign.show_details_reminder = bool(data.get("show_details_reminder", True))
+    campaign.show_details_thankyou = bool(data.get("show_details_thankyou", False))
     campaign.save(update_fields=[
-        "qr_email_intro", "reminder_intro", "email_signoff",
-        "qr_email_subject", "reminder_subject",
-        "show_details_qr", "show_details_reminder",
+        "qr_email_intro", "reminder_intro", "thankyou_intro", "email_signoff",
+        "qr_email_subject", "reminder_subject", "thankyou_subject",
+        "show_details_qr", "show_details_reminder", "show_details_thankyou",
     ])
     return JsonResponse({
         "success": True,
@@ -1928,13 +1931,26 @@ def preview_email(request, survey_id, kind):
         "event_date": _date_filter(event_date, "j F Y") if event_date else "",
         "title": title,
     }
-    intro_field = "qr_email_intro" if kind == "qr" else "reminder_intro"
-    detail_flag = "show_details_qr" if kind == "qr" else "show_details_reminder"
-    subject_field = "qr_email_subject" if kind == "qr" else "reminder_subject"
-    default_subject = (
-        f"You're registered for {title} — your check-in QR code"
-        if kind == "qr" else f"Reminder to Attend: {title}"
-    )
+    intro_field = {
+        "qr": "qr_email_intro",
+        "reminder": "reminder_intro",
+        "thankyou": "thankyou_intro",
+    }.get(kind, "reminder_intro")
+    detail_flag = {
+        "qr": "show_details_qr",
+        "reminder": "show_details_reminder",
+        "thankyou": "show_details_thankyou",
+    }.get(kind, "show_details_reminder")
+    subject_field = {
+        "qr": "qr_email_subject",
+        "reminder": "reminder_subject",
+        "thankyou": "thankyou_subject",
+    }.get(kind, "reminder_subject")
+    default_subject = {
+        "qr": f"You're registered for {title} — your check-in QR code",
+        "reminder": f"Reminder to Attend: {title}",
+        "thankyou": f"Thank you for your registration — {title}",
+    }.get(kind, f"Reminder to Attend: {title}")
     preview_subject = _render_subject(
         getattr(campaign, subject_field, "") if campaign else "", tag_ctx
     ) or default_subject
@@ -1954,6 +1970,8 @@ def preview_email(request, survey_id, kind):
     ctx["qr_src"] = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
     if kind == "qr":
         template = "register/email/email_registration_qr.html"
+    elif kind == "thankyou":
+        template = "register/email/email_registration_received.html"
     else:
         ctx["show_qr"] = True
         template = "register/email/email_event_reminder_generic.html"
@@ -2497,6 +2515,7 @@ def _event_email_ctx(survey_user, request=None, intro_field=None):
     detail_flag = {
         "qr_email_intro": "show_details_qr",
         "reminder_intro": "show_details_reminder",
+        "thankyou_intro": "show_details_thankyou",
     }.get(intro_field)
     show_details = getattr(campaign, detail_flag, True) if (campaign and detail_flag) else True
     theme = campaign.theme if campaign else Campaign.THEME_DEFAULT
@@ -2528,19 +2547,21 @@ def _send_registration_received_email(survey_user):
     campaign = survey.fkcampaign if survey else None
     subject_title = (campaign.title if campaign else survey.title) or "your event"
 
-    ctx = {
+    ctx = _event_email_ctx(survey_user, intro_field="thankyou_intro")
+    # Subject: organiser-defined (with merge tags) falls back to the default.
+    subject_tag_ctx = {
         "name": survey_user.name or "",
         "reg_no": survey_user.reg_no or "",
+        "event_date": ctx.get("event_date_str") or "",
         "title": subject_title,
-        "survey": survey,
-        "campaign": campaign,
-        "signoff_html": _signoff_html(campaign, subject_title,
-                                      campaign.theme if campaign else Campaign.THEME_DEFAULT),
     }
+    subject = _render_subject(
+        campaign.thankyou_subject if campaign else "", subject_tag_ctx
+    ) or f"Thank you for your registration — {subject_title}"
     try:
         html_content = render_to_string("register/email/email_registration_received.html", ctx)
         email = EmailMultiAlternatives(
-            subject=f"Thank you for your registration — {subject_title}",
+            subject=subject,
             body=strip_tags(html_content),
             from_email=formataddr((subject_title, settings.DEFAULT_FROM_EMAIL)),
             to=[survey_user.email],
