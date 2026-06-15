@@ -1899,10 +1899,14 @@ def save_email_content(request, campaign_id):
     campaign.show_details_qr = bool(data.get("show_details_qr", True))
     campaign.show_details_reminder = bool(data.get("show_details_reminder", True))
     campaign.show_details_thankyou = bool(data.get("show_details_thankyou", False))
+    campaign.show_banner_qr = bool(data.get("show_banner_qr", True))
+    campaign.show_banner_reminder = bool(data.get("show_banner_reminder", True))
+    campaign.show_banner_thankyou = bool(data.get("show_banner_thankyou", True))
     campaign.save(update_fields=[
         "qr_email_intro", "reminder_intro", "thankyou_intro", "email_signoff",
         "qr_email_subject", "reminder_subject", "thankyou_subject",
         "show_details_qr", "show_details_reminder", "show_details_thankyou",
+        "show_banner_qr", "show_banner_reminder", "show_banner_thankyou",
     ])
     return JsonResponse({
         "success": True,
@@ -1941,6 +1945,11 @@ def preview_email(request, survey_id, kind):
         "reminder": "show_details_reminder",
         "thankyou": "show_details_thankyou",
     }.get(kind, "show_details_reminder")
+    banner_flag = {
+        "qr": "show_banner_qr",
+        "reminder": "show_banner_reminder",
+        "thankyou": "show_banner_thankyou",
+    }.get(kind, "show_banner_reminder")
     subject_field = {
         "qr": "qr_email_subject",
         "reminder": "reminder_subject",
@@ -1964,6 +1973,7 @@ def preview_email(request, survey_id, kind):
         "signoff_html": _signoff_html(campaign, title, theme),
         "intro_html": _render_intro(getattr(campaign, intro_field, "") or "", tag_ctx, theme) if campaign else "",
         "show_details": getattr(campaign, detail_flag, True) if campaign else True,
+        "show_banner": getattr(campaign, banner_flag, True) if campaign else True,
     })
     buf = BytesIO()
     qrcode.make("PREVIEW-REG-00123").save(buf, format="PNG")
@@ -2518,6 +2528,12 @@ def _event_email_ctx(survey_user, request=None, intro_field=None):
         "thankyou_intro": "show_details_thankyou",
     }.get(intro_field)
     show_details = getattr(campaign, detail_flag, True) if (campaign and detail_flag) else True
+    banner_flag = {
+        "qr_email_intro": "show_banner_qr",
+        "reminder_intro": "show_banner_reminder",
+        "thankyou_intro": "show_banner_thankyou",
+    }.get(intro_field)
+    show_banner = getattr(campaign, banner_flag, True) if (campaign and banner_flag) else True
     theme = campaign.theme if campaign else Campaign.THEME_DEFAULT
     signoff_html = _signoff_html(campaign, title, theme)
     ctx.update({
@@ -2529,6 +2545,7 @@ def _event_email_ctx(survey_user, request=None, intro_field=None):
         "intro_html": _render_intro(getattr(campaign, intro_field, "") or "", tag_ctx, theme)
                       if (intro_field and campaign is not None) else "",
         "show_details": show_details,
+        "show_banner": show_banner,
     })
     return ctx
 

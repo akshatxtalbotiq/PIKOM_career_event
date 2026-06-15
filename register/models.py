@@ -174,6 +174,10 @@ class Campaign(models.Model):
     show_details_qr = models.BooleanField(default=True)
     show_details_reminder = models.BooleanField(default=True)
     show_details_thankyou = models.BooleanField(default=False)
+    # Whether to include the banner image at the top of each email
+    show_banner_qr = models.BooleanField(default=True)
+    show_banner_reminder = models.BooleanField(default=True)
+    show_banner_thankyou = models.BooleanField(default=True)
 
     # --- Event theme colour ---
     # Hex accent colour used on the public registration form and in registrant

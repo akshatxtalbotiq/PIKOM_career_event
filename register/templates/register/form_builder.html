@@ -310,6 +310,10 @@
           <div id="qrIntroInit" style="display:none;">{{ survey.fkcampaign.qr_email_intro|safe }}</div>
           <div class="ev-details-preview" data-for="qr" style="display:none;"></div>
           <div class="form-check form-switch mt-2">
+            <input class="form-check-input" type="checkbox" id="qrShowBanner" {% if survey.fkcampaign.show_banner_qr %}checked{% endif %}>
+            <label class="form-check-label" for="qrShowBanner">Show the banner image at the top of this email</label>
+          </div>
+          <div class="form-check form-switch mt-2">
             <input class="form-check-input" type="checkbox" id="qrShowDetails" {% if survey.fkcampaign.show_details_qr %}checked{% endif %}>
             <label class="form-check-label" for="qrShowDetails">Include the event details block (date, venue, etc.) in this email</label>
           </div>
@@ -350,6 +354,10 @@
           <div id="remIntroInit" style="display:none;">{{ survey.fkcampaign.reminder_intro|safe }}</div>
           <div class="ev-details-preview" data-for="rem" style="display:none;"></div>
           <div class="form-check form-switch mt-2">
+            <input class="form-check-input" type="checkbox" id="remShowBanner" {% if survey.fkcampaign.show_banner_reminder %}checked{% endif %}>
+            <label class="form-check-label" for="remShowBanner">Show the banner image at the top of this email</label>
+          </div>
+          <div class="form-check form-switch mt-2">
             <input class="form-check-input" type="checkbox" id="remShowDetails" {% if survey.fkcampaign.show_details_reminder %}checked{% endif %}>
             <label class="form-check-label" for="remShowDetails">Include the event details block (date, venue, etc.) in this email</label>
           </div>
@@ -389,6 +397,10 @@
           <div class="intro-editor"><div id="tyIntroEditor"></div></div>
           <div id="tyIntroInit" style="display:none;">{{ survey.fkcampaign.thankyou_intro|safe }}</div>
           <div class="ev-details-preview" data-for="ty" style="display:none;"></div>
+          <div class="form-check form-switch mt-2">
+            <input class="form-check-input" type="checkbox" id="tyShowBanner" {% if survey.fkcampaign.show_banner_thankyou %}checked{% endif %}>
+            <label class="form-check-label" for="tyShowBanner">Show the banner image at the top of this email</label>
+          </div>
           <div class="form-check form-switch mt-2">
             <input class="form-check-input" type="checkbox" id="tyShowDetails" {% if survey.fkcampaign.show_details_thankyou %}checked{% endif %}>
             <label class="form-check-label" for="tyShowDetails">Include the event details block (date, venue, etc.) in this email</label>
@@ -1150,6 +1162,9 @@
         show_details_qr: document.getElementById('qrShowDetails').checked,
         show_details_reminder: document.getElementById('remShowDetails').checked,
         show_details_thankyou: document.getElementById('tyShowDetails').checked,
+        show_banner_qr: document.getElementById('qrShowBanner').checked,
+        show_banner_reminder: document.getElementById('remShowBanner').checked,
+        show_banner_thankyou: document.getElementById('tyShowBanner').checked,
       };
       fetch(`/save_email_content/${CAMPAIGN_ID}/`, {
         method: 'POST',

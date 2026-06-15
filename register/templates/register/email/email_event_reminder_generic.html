@@ -17,7 +17,7 @@
                       box-shadow:0 2px 10px rgba(0,0,0,0.05);">
 
           <!-- Banner (same image as the registration form) -->
-          {% if banner_url %}
+          {% if show_banner and banner_url %}
           <tr>
             <td style="padding:0;">
               <img src="{{ banner_url }}" alt="{{ campaign.title|default:survey.title }}"

@@ -21,7 +21,7 @@
 
           {% firstof campaign.theme "#198754" as theme %}{% firstof campaign.theme_soft "#e7f4ec" as theme_soft %}
           <!-- Banner (same image as the registration form) -->
-          {% if banner_url %}
+          {% if show_banner and banner_url %}
           <tr>
             <td style="padding:0;">
               <img src="{{ banner_url }}" alt="{{ title }}"
