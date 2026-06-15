@@ -2347,7 +2347,7 @@ def form_submit(request, survey_id):
     # outside the atomic block so a mail backend hiccup can't roll back a
     # successful registration.
     if survey.purpose == Survey.PURPOSE_REGISTRATION:
-        _send_registration_received_email(survey_user)
+        _send_registration_received_email(survey_user, request=request)
 
     return redirect("form_thankyou", survey_code=(survey.slug or str(survey.survey_code)), user_id=survey_user.id)
 
@@ -2533,10 +2533,13 @@ def _event_email_ctx(survey_user, request=None, intro_field=None):
     return ctx
 
 
-def _send_registration_received_email(survey_user):
+def _send_registration_received_email(survey_user, request=None):
     """Send the "thank you for your submission — under review" confirmation
     to the registrant immediately after they submit the form. Mirrors the
     on-screen thank-you page so the user has a record in their inbox.
+
+    `request` (when available) lets links/images use the live host instead of
+    the configured SITE_BASE_URL fallback.
 
     Best-effort: any error is logged but never raised, so a failed email
     can't break the registration submission itself.
@@ -2547,7 +2550,7 @@ def _send_registration_received_email(survey_user):
     campaign = survey.fkcampaign if survey else None
     subject_title = (campaign.title if campaign else survey.title) or "your event"
 
-    ctx = _event_email_ctx(survey_user, intro_field="thankyou_intro")
+    ctx = _event_email_ctx(survey_user, request=request, intro_field="thankyou_intro")
     # Subject: organiser-defined (with merge tags) falls back to the default.
     subject_tag_ctx = {
         "name": survey_user.name or "",
