@@ -330,19 +330,42 @@
 </body></html>`;
     }
 
-    function printLabel(data) {
-        if (!document.getElementById('printLabelToggle')?.checked) return;
-        if (!data || !data.name) return;
+    // Print the same server-rendered 4x6 badge PDF the walk-in flow uses
+    // (QR included, rotated to read along the long edge). Loaded into the hidden
+    // iframe and printed; under Chrome --kiosk-printing this is silent.
+    function printLabelPdfUrl(url) {
         const frame = document.getElementById('labelPrintFrame');
         if (!frame) return;
-        const html = buildLabelHtml(data);
-        // srcdoc kicks off a fresh document inside the iframe; the inline
-        // onload script then triggers the print dialog/silent print.
-        frame.srcdoc = html;
+        frame.removeAttribute('srcdoc');
+        // The label page prints itself on load (silent under --kiosk-printing),
+        // so we only need to (re)load it. Cache-buster ensures re-scanning the
+        // same person reloads and reprints.
+        frame.src = url + (url.indexOf('?') === -1 ? '?' : '&') + '_=' + Date.now();
+    }
+
+    function printLabel(data) {
+        if (!document.getElementById('printLabelToggle')?.checked) return;
+        if (!data) return;
+        // Survey check-ins return id + survey_id → print the full 4x6 PDF badge.
+        if (data.id && data.survey_id) {
+            printLabelPdfUrl('/survey_user_label_pdf/' + data.survey_id + '/?ids=' + data.id);
+            return;
+        }
+        // Legacy fallback (campaign Submission scans): simple HTML name badge.
+        if (!data.name) return;
+        const frame = document.getElementById('labelPrintFrame');
+        if (!frame) return;
+        frame.removeAttribute('src');
+        frame.srcdoc = buildLabelHtml(data);
     }
 
     document.getElementById('testPrintBtn')?.addEventListener('click', () => {
+        {% if survey_id %}
+        // Print a sample of the real 4x6 PDF badge to check printer alignment.
+        printLabelPdfUrl('/survey_user_label_pdf/{{ survey_id }}/?test=1');
+        {% else %}
         printLabel({ name: 'Sample Delegate', organization: 'Acme Sdn Bhd', reg_no: 'REG000000' });
+        {% endif %}
     });
 
     async function postToken(decodedText) {

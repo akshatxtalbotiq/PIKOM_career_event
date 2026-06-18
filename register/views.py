@@ -30,6 +30,7 @@ import base64
 import qrcode
 
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 
 from email.mime.image import MIMEImage
 import os
@@ -2862,19 +2863,13 @@ def register_walkin(request, survey_id):
 
     payload = {
         "success": True,
+        "id": survey_user.id,
         "reg_no": survey_user.reg_no,
         "name": survey_user.name,
+        # The browser opens the print-ready PDF (survey_user_label_pdf) for this
+        # id when print_label is on, rather than building an HTML label here.
+        "print_label": do_print_label,
     }
-
-    if do_print_label:
-        campaign = survey.fkcampaign
-        payload["label"] = {
-            "event": (campaign.title if campaign else survey.title) or "",
-            "name": survey_user.name or "",
-            "organization": survey_user.organization or "",
-            "reg_no": survey_user.reg_no or "",
-            "qr": _qr_data_uri(survey_user.registration_code),
-        }
 
     msg = f"Walk-in registered: {survey_user.name} ({survey_user.reg_no})."
     if done:
@@ -2927,6 +2922,107 @@ def survey_user_labels(request, survey_id):
     if not labels:
         return JsonResponse({"success": False, "message": "No matching participants found."}, status=404)
     return JsonResponse({"success": True, "labels": labels})
+
+
+def _label_print_html(labels):
+    """Build a self-printing HTML document for one or more 7x5cm badge labels.
+
+    The page is landscape 70x50mm. (Chrome's print "Layout" default can't be
+    forced from the page — it follows the printer driver's default orientation,
+    which is also what --kiosk-printing uses. Set the D520BT default orientation
+    to Landscape once and this prints correctly with no manual toggle.) The page
+    prints itself on load."""
+    from django.utils.html import escape
+
+    cards = []
+    for lb in labels:
+        event = escape((lb.get("event") or "")).upper()
+        name = escape(lb.get("name") or "")
+        org = escape(lb.get("organization") or "")
+        cards.append(
+            '<div class="label">'
+            + (f'<div class="event">{event}</div>' if event else "")
+            + f'<div class="name">{name}</div>'
+            + (f'<div class="org">{org}</div>' if org else "")
+            + "</div>"
+        )
+
+    return (
+        "<!doctype html><html><head><meta charset='utf-8'><title>Label</title><style>"
+        "@page{size:70mm 50mm;margin:0;}"
+        "html,body{margin:0;padding:0;}"
+        "*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}"
+        "body{font-family:Arial,Helvetica,sans-serif;color:#000;}"
+        ".label{width:70mm;height:50mm;box-sizing:border-box;padding:3mm;"
+        "display:flex;flex-direction:column;align-items:center;justify-content:center;"
+        "text-align:center;overflow:hidden;page-break-after:always;}"
+        ".label:last-child{page-break-after:auto;}"
+        ".event{font-size:8pt;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2mm;}"
+        ".name{font-size:20pt;font-weight:700;line-height:1.05;word-break:break-word;}"
+        ".org{font-size:9pt;margin-top:2mm;word-break:break-word;}"
+        "</style></head><body>"
+        + "".join(cards)
+        + "<script>window.onload=function(){"
+          "document.querySelectorAll('.name').forEach(function(el){"
+            "var s=20;el.style.fontSize=s+'pt';"
+            "while(el.scrollWidth>el.clientWidth&&s>9){s-=0.5;el.style.fontSize=s+'pt';}"
+          "});"
+          "try{window.focus();window.print();}catch(e){}"
+        "};</script>"
+        "</body></html>"
+    )
+
+
+@login_required
+@xframe_options_sameorigin
+def survey_user_label_pdf(request, survey_id):
+    """GET: ids=comma,separated. Return a self-printing HTML page of landscape
+    70x50mm (7x5cm) badge labels (one per participant). GET test=1 renders a
+    single sample badge for printer-alignment checks. (Named *_pdf for URL
+    back-compat; it now returns HTML so the landscape orientation is honoured.)"""
+    survey = get_object_or_404(Survey, id=survey_id)
+
+    # Any authenticated operator may print a badge (the walk-in desk and the
+    # check-in scan station are both staffed by signed-in users).
+    campaign = survey.fkcampaign
+    event = (campaign.title if campaign else survey.title) or ""
+
+    # Test mode: render one sample badge so an operator can check printer
+    # alignment without a real registration.
+    if (request.GET.get("test") or "").strip().lower() in ("1", "true", "yes"):
+        html = _label_print_html([{
+            "event": event,
+            "name": "Sample Delegate",
+            "organization": "Sample Organization",
+        }])
+        return HttpResponse(html)
+
+    raw = (request.GET.get("ids") or "").strip()
+    ids = []
+    for part in raw.split(","):
+        part = part.strip()
+        if part.isdigit():
+            ids.append(int(part))
+    if not ids:
+        return HttpResponse("No participants selected.", status=400)
+
+    users = {u.id: u for u in SurveyUser.objects.filter(survey=survey, id__in=ids)}
+
+    labels = []
+    for uid in ids:  # preserve the operator's selection order
+        u = users.get(uid)
+        if not u:
+            continue
+        labels.append({
+            "event": event,
+            "name": u.name or "",
+            "organization": u.organization or "",
+        })
+
+    if not labels:
+        return HttpResponse("No matching participants found.", status=404)
+
+    return HttpResponse(_label_print_html(labels))
 
 
 @login_required

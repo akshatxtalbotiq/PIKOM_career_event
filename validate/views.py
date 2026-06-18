@@ -31,6 +31,7 @@ def scan_page_survey(request, survey_code):
     return render(request, 'validate/scan.html', {
         'name': survey.title,
         'validate_endpoint': '/validatesurvey/',
+        'survey_id': survey.id,
     })
 
 def validate(request, code):
@@ -94,6 +95,10 @@ def validatesurvey(request, code):
     return JsonResponse({
         'typ': 'new' if was_new else 'exist',
         'status': participant.approval_status,
+        # id + survey_id let the scan page print the same 4x6 badge PDF the
+        # walk-in flow uses (server-rendered, QR included, correctly rotated).
+        'id': participant.id,
+        'survey_id': participant.survey_id,
         'name': participant.name or '',
         'organization': participant.organization or '',
         'reg_no': participant.reg_no or '',

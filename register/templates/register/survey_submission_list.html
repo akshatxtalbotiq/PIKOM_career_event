@@ -1043,7 +1043,8 @@ table.on('draw.dt', function () {
         m.show();
       };
 
-      // (Re)print labels for the selected, already-registered participants.
+      // (Re)print labels for the selected, already-registered participants —
+      // opens the server-generated, print-ready PDF for the selected ids.
       window.printSelectedLabels = function () {
         const ids = selectedIds();
         if (ids.length === 0) {
@@ -1052,20 +1053,7 @@ table.on('draw.dt', function () {
                       confirmButtonColor: '#198754' });
           return;
         }
-        const fd = new FormData();
-        fd.append('ids', JSON.stringify(ids));
-        $.ajax({
-          url: '/survey_user_labels/' + surveyId + '/',
-          type: 'POST',
-          headers: { 'X-CSRFToken': getCSRFToken() },
-          data: fd, processData: false, contentType: false,
-        }).done(function (r) {
-          if (r.success && r.labels && r.labels.length) {
-            printLabels(r.labels);
-          } else {
-            Swal.fire('Error', r.message || 'Could not build labels.', 'error');
-          }
-        }).fail(function (xhr) { commonAjaxErrorCallBack(xhr, '', ''); });
+        openLabelPdf(ids);
       };
 
     });
@@ -1235,88 +1223,47 @@ table.on('draw.dt', function () {
         .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
-    // Build one badge card. Each card fills a page (page-break-after) so a
-    // batch of labels prints one badge per page.
-    function labelCardHtml(label) {
-      return '<div class="label">' +
-        '<div class="event">' + escapeHtml(label.event) + '</div>' +
-        '<div class="name">' + escapeHtml(label.name) + '</div>' +
-        (label.organization ? '<div class="org">' + escapeHtml(label.organization) + '</div>' : '') +
-        '<img class="qr" src="' + label.qr + '" alt="QR code">' +
-        '<div class="reg">' + escapeHtml(label.reg_no) + '</div>' +
-        '</div>';
+    // The print-ready 4x6 label PDF (generated server-side, badge already
+    // rotated to read along the long edge). We use a PDF rather than an HTML
+    // print window because thermal-printer drivers reproduce a PDF's exact page
+    // size and orientation 1:1, whereas the browser print path was dropping the
+    // CSS rotation and mis-sizing the page.
+    // NB: surveyId is read straight from the template here so this helper works
+    // regardless of which closure calls it.
+    function labelPdfUrl(ids) {
+      return '/survey_user_label_pdf/' + '{{ survey.id }}' + '/?ids=' + ids.join(',');
     }
 
-    // Open a print window with one or more badge labels and trigger the
-    // browser print dialog. The QR is the same check-in code as the emailed QR.
-    function printLabels(labels) {
-      if (!labels || !labels.length) return;
-      const w = window.open('', '_blank', 'width=420,height=600');
+    // Manual path: open the label PDF in a new tab so the operator can view it
+    // and print (Ctrl/Cmd+P). Used by the "Print label" toolbar action.
+    function openLabelPdf(ids) {
+      if (!ids || !ids.length) return;
+      const w = window.open(labelPdfUrl(ids), '_blank');
       if (!w) {
         Swal.fire('Pop-up blocked',
-          'Allow pop-ups for this site to print the label(s). The data is unchanged.',
+          'Allow pop-ups for this site to open the printable label(s). Nothing else changed.',
           'warning');
-        return;
       }
-      const title = labels.length === 1 ? ('Label ' + escapeHtml(labels[0].reg_no)) : (labels.length + ' Labels');
-      // The wait-and-print logic runs INSIDE the label window (below), not from
-      // here. Driving print() from the opener fired too early — when the QR
-      // data-URI was already decoded, print() ran before the new window had
-      // painted, so the printer fed a blank label. The in-window script waits
-      // for the QR image(s) to load, then prints after a short paint delay.
-      w.document.open();
-      w.document.write(
-        '<html><head><title>' + title + '</title><style>' +
-        // Sized for the AIMO D520BT loaded with 4x6 in labels. Use the EXACT
-        // inch dimensions (4in = 101.6mm, 6in = 152.4mm) — rounding to
-        // 100x150mm leaves each label ~2.4mm short, which makes the print creep
-        // down a little more on every successive label. Fixing @page to the
-        // real label stock also stops the browser formatting for A4.
-        '@page { size: 4in 6in; margin: 0; }' +
-        'html,body{margin:0;padding:0;}' +
-        // Force the browser to actually rasterise text/graphics for the printer
-        // (some thermal drivers drop "background" rendering otherwise).
-        '*{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}' +
-        'body{font-family:Arial,Helvetica,sans-serif;color:#000;}' +
-        '.label{width:4in;height:6in;box-sizing:border-box;padding:6mm;' +
-          'display:flex;flex-direction:column;align-items:center;justify-content:center;' +
-          'text-align:center;overflow:hidden;page-break-after:always;}' +
-        '.label:last-child{page-break-after:auto;}' +
-        '.event{font-size:11pt;color:#000;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4mm;}' +
-        '.name{font-size:28pt;font-weight:700;line-height:1.1;margin:2mm 0;word-break:break-word;color:#000;}' +
-        '.org{font-size:14pt;color:#000;margin-bottom:4mm;word-break:break-word;}' +
-        '.qr{width:60mm;height:60mm;}' +
-        '.reg{font-size:13pt;font-weight:600;letter-spacing:1px;margin-top:4mm;color:#000;}' +
-        // On-screen toolbar (hidden when printing) so the operator can re-print
-        // manually if the automatic print didn\'t fire or was cancelled.
-        '.noprint{background:#f1f3f7;padding:10px;text-align:center;font-family:Arial,sans-serif;}' +
-        '.noprint button{font-size:14px;padding:8px 18px;border:0;border-radius:6px;background:#5e72e4;color:#fff;cursor:pointer;}' +
-        '@media print{.noprint{display:none !important;}}' +
-        '</style></head><body>' +
-        '<div class="noprint"><button type="button" onclick="window.print()">Print label</button>' +
-        '<div style="font-size:12px;color:#555;margin-top:6px;">Printing should start automatically. If not, click the button above.</div></div>' +
-        labels.map(labelCardHtml).join('') +
-        '<scr' + 'ipt>(function(){' +
-          'function go(){try{window.focus();window.print();}catch(e){}}' +
-          // Print only after every image has loaded, then wait two animation
-          // frames + a tick so the page is actually painted before printing.
-          'function fire(){if(window.__printed)return;window.__printed=true;' +
-            'requestAnimationFrame(function(){requestAnimationFrame(function(){setTimeout(go,150);});});}' +
-          'var imgs=document.images,n=imgs.length,done=0;' +
-          'if(!n){fire();return;}' +
-          'function one(){if(++done>=n)fire();}' +
-          'for(var i=0;i<n;i++){var im=imgs[i];' +
-            'if(im.complete&&im.naturalWidth>0){one();}' +
-            'else{im.onload=im.onerror=one;}}' +
-          'setTimeout(fire,3000);' +
-        '})();</scr' + 'ipt>' +
-        '</body></html>'
-      );
-      w.document.close();
     }
 
-    // Back-compat single-label helper used by the walk-in flow.
-    function printWalkinLabel(label) { printLabels([label]); }
+    // Auto-print path (used right after a walk-in registration). Loads the PDF
+    // into a hidden iframe and prints it — no pop-up (so it survives an AJAX
+    // callback), and under Chrome's --kiosk-printing it prints silently to the
+    // default printer with no dialog. Falls back to opening a tab if the iframe
+    // can't be printed.
+    function autoPrintLabel(ids) {
+      if (!ids || !ids.length) return;
+      let f = document.getElementById('labelPrintFrame');
+      if (f) f.remove();
+      f = document.createElement('iframe');
+      f.id = 'labelPrintFrame';
+      f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+      // The label page prints itself on load (silent under --kiosk-printing),
+      // so we just load it into the hidden iframe — no explicit print() here,
+      // which would otherwise fire a second copy.
+      f.src = labelPdfUrl(ids);
+      document.body.appendChild(f);
+    }
 
     // --- Walk-in modal: conditional "Other" + per-option follow-up inputs ---
     // Scoped to #walkinForm so they never clash with anything else on the page.
@@ -1404,8 +1351,8 @@ table.on('draw.dt', function () {
           $('#walkinModal .btn-secondary').prop('disabled', false);
           if (response.success) {
             $('#walkinModal').modal('hide');
-            if (response.label) {
-              printWalkinLabel(response.label);
+            if (response.print_label && response.id) {
+              autoPrintLabel([response.id]);
             }
             Swal.fire('Registered', response.message, 'success').then(() => location.reload());
           } else {
