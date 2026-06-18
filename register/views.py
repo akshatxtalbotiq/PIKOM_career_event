@@ -1397,6 +1397,7 @@ def get_survey_submission_list(request):
             data = []
             checked_in_count = 0
             qr_sent_count = 0
+            reminder_sent_count = 0
             approved_count = 0
             pending_count = 0
             rejected_count = 0
@@ -1429,6 +1430,8 @@ def get_survey_submission_list(request):
                     checked_in_count += 1
                 if s.qr_sent:
                     qr_sent_count += 1
+                if s.reminder_sent:
+                    reminder_sent_count += 1
                 if s.approval_status == SurveyUser.STATUS_APPROVED:
                     approved_count += 1
                 elif s.approval_status == SurveyUser.STATUS_REJECTED:
@@ -1444,6 +1447,7 @@ def get_survey_submission_list(request):
                     'organization': s.organization,
                     'is_checked_in': s.is_checked_in,
                     'qr_sent': s.qr_sent,
+                    'reminder_sent': s.reminder_sent,
                     'approval_status': s.approval_status,
                     'approved_at': s.approved_at.strftime('%Y-%m-%d %I:%M %p') if s.approved_at else '',
                     'approved_by': (s.approved_by.get_full_name() or s.approved_by.username) if s.approved_by else '',
@@ -1480,6 +1484,7 @@ def get_survey_submission_list(request):
                     'all': len(data),
                     'checked_in': checked_in_count,
                     'qr_sent': qr_sent_count,
+                    'reminder_sent': reminder_sent_count,
                     'approved': approved_count,
                     'pending': pending_count,
                     'rejected': rejected_count,
@@ -3221,8 +3226,8 @@ def send_survey_event_reminder(request, survey_id):
             "success": False,
             "message": "None of the selected participants are approved, so no reminders were sent.",
         }, status=400)
-    sent = sum(
-        1 for u in approved
+    sent = 0
+    for u in approved:
         if _send_simple_email(
             u,
             "Reminder to Attend: {title}",
@@ -3231,8 +3236,11 @@ def send_survey_event_reminder(request, survey_id):
             intro_field="reminder_intro",
             subject_field="reminder_subject",
             inline_qr=True,
-        )
-    )
+        ):
+            sent += 1
+            if not u.reminder_sent:
+                u.reminder_sent = True
+                u.save(update_fields=["reminder_sent"])
     msg = f"Event reminder sent to {sent} of {approved.count()} approved participant{'' if approved.count() == 1 else 's'}."
     if skipped:
         msg += f" Skipped {skipped} not yet approved."

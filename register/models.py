@@ -408,6 +408,7 @@ class SurveyUser(models.Model):
     registration_code = models.UUIDField(default=uuid.uuid4, unique=True)
     is_checked_in = models.BooleanField(default=False)
     qr_sent = models.BooleanField(default=False)
+    reminder_sent = models.BooleanField(default=False)
     remarks = models.TextField(null=True, blank=True)
     # Public-facing reference number given to the registrant (e.g. "REG000123").
     # Assigned right after the row is created so it can include the row id.
