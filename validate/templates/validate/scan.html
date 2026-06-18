@@ -279,30 +279,48 @@
     //     }
     // }
 
-    // Build the HTML for a single badge label. Sized for a typical 89x36mm
-     // (Dymo 99012-ish) shipping label — tweak @page size to match your stock.
+    // Build the HTML for a single badge label.
+    // Tuned for 70 x 40 mm thermal label stock (common AIMO size).
+    // The printer must be set as the system default with matching media
+    // size; for fully-silent printing, launch Chrome with
+    //   --kiosk-printing --disable-print-preview
+    // and select the AIMO printer as default.
     function buildLabelHtml(data) {
         const name = (data.name || 'Guest').replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
         const org  = (data.organization || '').replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
-        const reg  = (data.reg_no || '').replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
         return `<!doctype html>
 <html><head><meta charset="utf-8"><title>Label</title>
 <style>
-  @page { size: 89mm 36mm; margin: 2mm; }
+  /* AIMO label stock: 70mm wide x 40mm tall. The printer driver must be
+     configured for the same media size or the label will be cropped or
+     scaled. Margin is intentionally small so we use the full label. */
+  @page { size: 70mm 40mm; margin: 2mm; }
   html, body { margin: 0; padding: 0; }
-  body { font-family: Arial, Helvetica, sans-serif; color: #000; }
-  .label { padding: 4mm 5mm; box-sizing: border-box; width: 100%; height: 100%; }
-  .name { font-size: 18pt; font-weight: 700; line-height: 1.1;
-          white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .org  { font-size: 11pt; margin-top: 2mm; line-height: 1.2;
-          white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .reg  { font-size: 8pt;  margin-top: 1mm; color: #444; }
+  body { font-family: Arial, Helvetica, sans-serif; color: #000; -webkit-print-color-adjust: exact; }
+  .label {
+    padding: 1mm 2mm;
+    box-sizing: border-box;
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column; justify-content: center;
+    overflow: hidden;
+  }
+  /* Name can wrap to 2 lines for longer names; anything beyond is clipped
+     so the org line below always stays visible. */
+  .name {
+    font-size: 16pt; font-weight: 700; line-height: 1.05;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden; word-break: break-word;
+  }
+  /* Org wraps freely (no ellipsis); whole label clips if it ever overflows. */
+  .org  {
+    font-size: 10pt; margin-top: 1.5mm; line-height: 1.15;
+    word-break: break-word;
+  }
 </style></head>
 <body>
   <div class="label">
     <div class="name">${name}</div>
     ${org ? `<div class="org">${org}</div>` : ''}
-    ${reg ? `<div class="reg">${reg}</div>` : ''}
   </div>
   <script>
     window.onload = function () {

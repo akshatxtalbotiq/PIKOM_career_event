@@ -1,5 +1,6 @@
 {% extends 'register/base.html' %}
 {% load static %}
+{% load custom_filters %}
 
 {% block extracss %}
 <style>
@@ -63,6 +64,126 @@
   border-radius: 6px;
 }
 
+/* ---------- Register Walk-in modal ---------- */
+#walkinModal .modal-content { border: none; }
+#walkinModal .modal-header {
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+}
+#walkinModal .modal-body { background: #fff; }
+
+/* Make every input clearly visible — the previous version looked too plain. */
+#walkinForm .form-label {
+  font-weight: 600;
+  color: #344767;
+  margin-bottom: .35rem;
+}
+#walkinForm .form-control,
+#walkinForm .form-select {
+  border: 1px solid #c7ccd1;
+  border-radius: 8px;
+  padding: 0.6rem 0.85rem;
+  font-size: 0.95rem;
+  background-color: #fff;
+  box-shadow: none;
+}
+#walkinForm .form-control:focus,
+#walkinForm .form-select:focus {
+  border-color: #5e72e4;
+  box-shadow: 0 0 0 0.18rem rgba(94, 114, 228, 0.15);
+}
+#walkinForm .form-control::placeholder { color: #9aa3ad; }
+
+/* Each question sits in its own subtle panel so fields are easy to find. */
+#walkinForm .walkin-question {
+  padding: 0.9rem 1rem;
+  margin-bottom: 0.85rem;
+  border: 1px solid #eceef1;
+  border-radius: 10px;
+  background: #fcfcfd;
+}
+#walkinForm .walkin-question .form-check-label { word-break: break-word; }
+#walkinForm .followup-box .form-control { background: #fff; }
+
+#walkinModal .walkin-options-block {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  margin-top: 0.25rem;
+}
+
+/* ---------- Toolbar action buttons + grouped dropdown menus ---------- */
+#entries_wrapper .dt-buttons { display: inline-flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+#entries_wrapper .dt-buttons .btn { display: inline-flex; align-items: center; gap: 4px; }
+#selectedCountBadge { font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: 8px; }
+
+/* Each toolbar group gets its own solid colour for a bit of life. */
+#entries_wrapper .dt-buttons .btn-grp {
+  color: #fff !important;
+  border: none !important;
+  background-image: none !important;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-weight: 600;
+  box-shadow: 0 2px 5px rgba(20, 30, 50, 0.12);
+  transition: background-color .15s ease, box-shadow .15s ease, transform .05s ease;
+}
+#entries_wrapper .dt-buttons .btn-grp .material-symbols-rounded { color: #fff !important; }
+#entries_wrapper .dt-buttons .btn-grp:hover { box-shadow: 0 4px 10px rgba(20, 30, 50, 0.18); }
+#entries_wrapper .dt-buttons .btn-grp:active { transform: translateY(1px); }
+
+#entries_wrapper .dt-buttons .btn-grp-walkin  { background-color: #5e72e4 !important; }
+#entries_wrapper .dt-buttons .btn-grp-walkin:hover  { background-color: #4a5cd0 !important; }
+#entries_wrapper .dt-buttons .btn-grp-status  { background-color: #7b5be0 !important; }
+#entries_wrapper .dt-buttons .btn-grp-status:hover  { background-color: #6a49d4 !important; }
+#entries_wrapper .dt-buttons .btn-grp-send    { background-color: #1aa179 !important; }
+#entries_wrapper .dt-buttons .btn-grp-send:hover    { background-color: #158463 !important; }
+#entries_wrapper .dt-buttons .btn-grp-more    { background-color: #5a6b8c !important; }
+#entries_wrapper .dt-buttons .btn-grp-more:hover    { background-color: #4a5a78 !important; }
+
+/* Disabled (e.g. Status before any row is selected) reads as greyed-out. */
+#entries_wrapper .dt-buttons .btn-grp.disabled,
+#entries_wrapper .dt-buttons .btn-grp:disabled {
+  background-color: #adb5bd !important;
+  box-shadow: none;
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+/* Dropdown menu container shared by the Status / Send / More groups */
+div.dt-button-collection {
+  padding: 6px;
+  border: 1px solid #e3e6ea;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(20, 30, 50, 0.12);
+  background: #fff;
+  min-width: 210px;
+}
+div.dt-button-collection .dt-menu-item.dt-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  background: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 12px;
+  margin: 1px 0;
+  font-size: 13px;
+  color: #344767;
+}
+div.dt-button-collection .dt-menu-item.dt-button:hover { background: #f3f5f9; }
+div.dt-button-collection .dt-menu-item.dt-button .material-symbols-rounded { font-size: 19px; }
+/* Destructive item: separated and red */
+div.dt-button-collection .dt-danger-item.dt-button {
+  color: #dc3545;
+  border-top: 1px solid #eceef1;
+  border-radius: 0 0 8px 8px;
+  margin-top: 4px;
+}
+div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; }
 
 </style>
 {% endblock %}
@@ -222,6 +343,186 @@
         </button>
         <button type="button" class="btn btn-primary" id="sendQRSubmitBtn">
           <i class="material-symbols-rounded align-middle">send</i> Send
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Register Walk-in Modal -->
+<div class="modal fade" id="walkinModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+    <div class="modal-content shadow-lg rounded-3">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="material-symbols-rounded me-2">person_add</i> Register Walk-in</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <p class="text-muted small mb-3">
+          Enter the participant's details below. These are the same fields the public registration form collects.
+        </p>
+        <form id="walkinForm" novalidate>
+
+          {% if survey.questions.all %}
+            {# Render the exact same fields (identity + custom) as the public form. #}
+            {% for q in survey.questions.all %}
+              <div class="walkin-question">
+                <label class="form-label">
+                  {% if q.is_required %}<span class="text-danger">*</span> {% endif %}
+                  {{ q.text|safe }}
+                </label>
+                {% if q.help_text %}
+                  <div class="text-muted small mb-2">{{ q.help_text|safe }}</div>
+                {% endif %}
+
+                {# ---------- Identity types ---------- #}
+                {% if q.question_type == 'identity_name' %}
+                  <input type="text" class="form-control" id="wq{{ q.id }}" name="q_{{ q.id }}" {% if q.is_required %}required{% endif %}>
+                {% elif q.question_type == 'identity_email' %}
+                  <input type="email" class="form-control" id="wq{{ q.id }}" name="q_{{ q.id }}" {% if q.is_required %}required{% endif %}>
+                  <small class="text-muted">Required to email the QR code.</small>
+                {% elif q.question_type == 'identity_phone' %}
+                  <input type="tel" class="form-control" id="wq{{ q.id }}" name="q_{{ q.id }}" placeholder="+60 12 345 6789" {% if q.is_required %}required{% endif %}>
+                {% elif q.question_type == 'identity_organization' %}
+                  <input type="text" class="form-control" id="wq{{ q.id }}" name="q_{{ q.id }}" {% if q.is_required %}required{% endif %}>
+
+                {# ---------- Standard custom types ---------- #}
+                {% elif q.question_type == 'text' %}
+                  <input type="text" class="form-control" id="wq{{ q.id }}" name="q_{{ q.id }}" {% if q.is_required %}required{% endif %}>
+
+                {% elif q.question_type == 'textarea' %}
+                  <textarea class="form-control" id="wq{{ q.id }}" name="q_{{ q.id }}" rows="3" {% if q.is_required %}required{% endif %}></textarea>
+
+                {% elif q.question_type == 'select' %}
+                  <select class="form-select walkin-select" name="q_{{ q.id }}" id="wq{{ q.id }}"
+                          data-followup-target="wq{{ q.id }}_followups"
+                          {% if q.is_required %}required{% endif %}>
+                    <option value="" disabled selected>Choose...</option>
+                    {% for opt in q.choices %}
+                      <option value="{{ opt }}">{{ opt }}</option>
+                    {% endfor %}
+                    {% if q.allow_other %}<option value="Other">Other</option>{% endif %}
+                  </select>
+                  {% if q.allow_other %}
+                    <div id="wq{{ q.id }}_other_box" class="mt-2" style="display:none;">
+                      <input type="text" class="form-control" name="q_{{ q.id }}_other" placeholder="Please specify">
+                    </div>
+                  {% endif %}
+                  <div id="wq{{ q.id }}_followups">
+                    {% for opt, placeholder in q.choice_followups.items %}
+                      <div class="followup-box mt-2 ms-3" data-for-value="{{ opt }}" style="display:none;">
+                        <input type="text" class="form-control" name="q_{{ q.id }}_followup_{{ opt }}" placeholder="{{ placeholder }}">
+                      </div>
+                    {% endfor %}
+                  </div>
+
+                {% elif q.question_type == 'radio' %}
+                  {% for opt in q.choices %}
+                    <div class="form-check">
+                      <input class="form-check-input walkin-radio-with-followup" type="radio"
+                             name="q_{{ q.id }}" id="wq{{ q.id }}_{{ forloop.counter }}" value="{{ opt }}"
+                             data-group="wq{{ q.id }}"
+                             {% if q.is_required %}required{% endif %}>
+                      <label class="form-check-label" for="wq{{ q.id }}_{{ forloop.counter }}">{{ opt }}</label>
+                    </div>
+                    {% if q.choice_followups and opt in q.choice_followups %}
+                      <div class="followup-box ms-4 mt-1 mb-2" data-group="wq{{ q.id }}" data-for-value="{{ opt }}" style="display:none;">
+                        <input type="text" class="form-control form-control-sm" name="q_{{ q.id }}_followup_{{ opt }}" placeholder="{{ q.choice_followups|get_item:opt }}">
+                      </div>
+                    {% endif %}
+                  {% endfor %}
+                  {% if q.allow_other %}
+                    <div class="d-flex align-items-center mt-2">
+                      <div class="form-check me-2">
+                        <input class="form-check-input" type="radio" name="q_{{ q.id }}" id="wq{{ q.id }}_other" value="Other">
+                        <label class="form-check-label" for="wq{{ q.id }}_other">Other:</label>
+                      </div>
+                      <input type="text" class="form-control form-control-sm" style="max-width:280px;" name="q_{{ q.id }}_other">
+                    </div>
+                  {% endif %}
+
+                {% elif q.question_type == 'checkbox' %}
+                  <div data-checkbox-group="q_{{ q.id }}" data-required="{% if q.is_required %}1{% else %}0{% endif %}">
+                    {% for opt in q.choices %}
+                      <div class="form-check">
+                        <input class="form-check-input walkin-checkbox-with-followup" type="checkbox"
+                               name="q_{{ q.id }}" id="wq{{ q.id }}_{{ forloop.counter }}" value="{{ opt }}"
+                               data-group="wq{{ q.id }}">
+                        <label class="form-check-label" for="wq{{ q.id }}_{{ forloop.counter }}">{{ opt }}</label>
+                      </div>
+                      {% if q.choice_followups and opt in q.choice_followups %}
+                        <div class="followup-box ms-4 mt-1 mb-2" data-group="wq{{ q.id }}" data-for-value="{{ opt }}" style="display:none;">
+                          <input type="text" class="form-control form-control-sm" name="q_{{ q.id }}_followup_{{ opt }}" placeholder="{{ q.choice_followups|get_item:opt }}">
+                        </div>
+                      {% endif %}
+                    {% endfor %}
+                    {% if q.allow_other %}
+                      <div class="form-check d-flex align-items-center mt-2">
+                        <input class="form-check-input me-2" type="checkbox" name="q_{{ q.id }}" id="wq{{ q.id }}_other_chk" value="Other">
+                        <label class="form-check-label me-2" for="wq{{ q.id }}_other_chk">Other:</label>
+                        <input type="text" class="form-control form-control-sm" style="max-width:280px;" name="q_{{ q.id }}_other">
+                      </div>
+                    {% endif %}
+                    {% if q.max_checks %}
+                      <div class="form-text" data-max="{{ q.max_checks }}">Select up to {{ q.max_checks }}.</div>
+                    {% endif %}
+                  </div>
+                {% endif %}
+              </div>
+            {% endfor %}
+
+          {% else %}
+            {# Fallback: forms with no configured questions still get the basics. #}
+            <div class="walkin-question">
+              <label for="walkinName" class="form-label">Name <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="walkinName" name="name" required>
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="walkin-question">
+                  <label for="walkinEmail" class="form-label">Email</label>
+                  <input type="email" class="form-control" id="walkinEmail" name="email">
+                  <small class="text-muted">Required to email the QR code.</small>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="walkin-question">
+                  <label for="walkinPhone" class="form-label">Phone</label>
+                  <input type="text" class="form-control" id="walkinPhone" name="phone">
+                </div>
+              </div>
+            </div>
+            <div class="walkin-question">
+              <label for="walkinOrg" class="form-label">Organization</label>
+              <input type="text" class="form-control" id="walkinOrg" name="organization">
+            </div>
+          {% endif %}
+
+          <div class="walkin-options-block">
+            <p class="fw-bold mb-2">On registration:</p>
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" id="walkinSendQR" checked>
+              <label class="form-check-label" for="walkinSendQR">Send QR code by email</label>
+            </div>
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" id="walkinCheckIn" checked>
+              <label class="form-check-label" for="walkinCheckIn">Check in now</label>
+            </div>
+            <div class="form-check form-switch mb-1">
+              <input class="form-check-input" type="checkbox" id="walkinPrintLabel" checked>
+              <label class="form-check-label" for="walkinPrintLabel">Print label</label>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary border" data-bs-dismiss="modal">
+          <i class="material-symbols-rounded align-middle">close</i> Cancel
+        </button>
+        <button type="button" class="btn btn-primary" id="walkinSubmitBtn">
+          <i class="material-symbols-rounded align-middle">how_to_reg</i> Register
         </button>
       </div>
     </div>
@@ -427,80 +728,105 @@
           "<'row'<'col-12'tr>>" +
           "<'row'<'col-sm-6'i><'col-sm-6'p>>",
         buttons: [
+          // --- Primary action: the main thing operators come here to do. ---
           {
-            extend: 'excel',
-            className: 'btn btn-outline-success btn-sm',
-            text: '<i class="material-symbols-rounded align-middle">download</i> Export',
-            filename: 'registrations',
-            title: 'Registrations',
-            // orthogonal: 'export' makes DataTables call render(value, 'export', row)
-            // for each cell instead of grabbing the rendered HTML's innerText.
-            // That's how booleans become "Yes"/"No" instead of "radio_button_unchecked"
-            // and the status badge becomes plain "Approved"/"Pending"/"Rejected".
-            exportOptions: { columns: ':not(.dt-checkbox)', orthogonal: 'export' },
+            text: '<i class="material-symbols-rounded align-middle">person_add</i> Register Walk-in',
+            className: 'btn btn-sm btn-grp btn-grp-walkin',
+            action: function () { openWalkinModal(); },
           },
-          {
-            text: '<i class="material-symbols-rounded align-middle">verified</i> Approve',
-            className: 'btn btn-outline-success btn-sm',
-            action: function () { bulkAction('approve'); },
-          },
-          {
-            text: '<i class="material-symbols-rounded align-middle">cancel</i> Reject',
-            className: 'btn btn-outline-danger btn-sm',
-            action: function () { bulkAction('reject'); },
-          },
-          {
-            text: '<i class="material-symbols-rounded align-middle">undo</i> Reset to Pending',
-            className: 'btn btn-outline-secondary btn-sm',
-            action: function () { bulkAction('reset'); },
-          },
-          {
-            text: '<i class="material-symbols-rounded align-middle">notifications</i> Send Event Reminder',
-            className: 'btn btn-outline-primary btn-sm',
-            action: function () { bulkAction('event_reminder'); },
-          },
-          ...(FEEDBACK_SURVEY_EXISTS ? [{
-            text: '<i class="material-symbols-rounded align-middle">poll</i> Send Survey Reminder',
-            className: 'btn btn-outline-primary btn-sm',
-            action: function () { bulkAction('feedback_reminder'); },
-          }] : []),
-          {
-            text: '<i class="material-symbols-rounded align-middle">qr_code_2</i> Send QR',
-            className: 'btn btn-success btn-sm',
-            action: function () { openSendQRModal(); },
-          },
-          {
-            text: '<i class="material-symbols-rounded align-middle">delete</i> Remove Entry',
-            className: 'btn btn-outline-danger btn-sm',
-            action: function () { bulkAction('remove'); },
-          },
-          // {
-          //   text: 'Send QR',
-          //   className: 'btn btn-outline-success btn-sm',
-          //   action: function (e, dt, node, config) {
-          //     let selectedIds = [];
-              
-          //     // Get only currently visible and selected rows
-          //     $('#entries tbody input.row-checkbox:checked').each(function () {
-          //       selectedIds.push($(this).val());
-          //     });
 
-          //     if (selectedIds.length === 0) {
-          //       Swal.fire({
-          //         title: "No Selection",
-          //         text: "Please select at least one row.",
-          //         icon: "warning",
-          //         confirmButtonColor: "#DD6B55",
-          //         confirmButtonText: "OK"
-          //       });
-          //       return;
-          //     }
+          // --- Status group: the three mutually-related status changes. ---
+          // Every item here acts on the ticked rows, so the whole menu is
+          // disabled until at least one row is selected (see updateBulkButtons).
+          {
+            extend: 'collection',
+            name: 'statusBtn',
+            text: '<i class="material-symbols-rounded align-middle">fact_check</i> Status <i class="material-symbols-rounded align-middle" style="font-size:18px;">expand_more</i>',
+            className: 'btn btn-sm btn-grp btn-grp-status',
+            autoClose: true,
+            // Right-align the menu so it opens back toward the toolbar instead
+            // of running off the right edge of the screen.
+            align: 'button-right',
+            buttons: [
+              {
+                text: '<i class="material-symbols-rounded align-middle text-success">verified</i> Approve',
+                className: 'dt-menu-item',
+                action: function () { bulkAction('approve'); },
+              },
+              {
+                text: '<i class="material-symbols-rounded align-middle text-danger">cancel</i> Reject',
+                className: 'dt-menu-item',
+                action: function () { bulkAction('reject'); },
+              },
+              {
+                text: '<i class="material-symbols-rounded align-middle text-secondary">undo</i> Reset to Pending',
+                className: 'dt-menu-item',
+                action: function () { bulkAction('reset'); },
+              },
+            ],
+          },
 
-          //     $('#selectedIdsInput').val(JSON.stringify(selectedIds));
-          //     let sendQRModal = new bootstrap.Modal(document.getElementById('sendQRModal'));
-          //     sendQRModal.show();
-          //   }
-          // }
+          // --- Send group: outbound messages. "Send QR code" works with or
+          // without a selection (falls back to all approved), so this menu
+          // stays enabled; the reminders warn if nothing is selected. ---
+          {
+            extend: 'collection',
+            text: '<i class="material-symbols-rounded align-middle">send</i> Send <i class="material-symbols-rounded align-middle" style="font-size:18px;">expand_more</i>',
+            className: 'btn btn-sm btn-grp btn-grp-send',
+            autoClose: true,
+            align: 'button-right',
+            buttons: [
+              {
+                text: '<i class="material-symbols-rounded align-middle text-success">qr_code_2</i> Send QR code',
+                className: 'dt-menu-item',
+                action: function () { openSendQRModal(); },
+              },
+              {
+                text: '<i class="material-symbols-rounded align-middle text-primary">notifications</i> Event reminder',
+                className: 'dt-menu-item',
+                action: function () { bulkAction('event_reminder'); },
+              },
+              ...(FEEDBACK_SURVEY_EXISTS ? [{
+                text: '<i class="material-symbols-rounded align-middle text-primary">poll</i> Survey reminder',
+                className: 'dt-menu-item',
+                action: function () { bulkAction('feedback_reminder'); },
+              }] : []),
+            ],
+          },
+
+          // --- More group: occasional / utility actions. Remove is destructive
+          // and sits last, separated and in red. ---
+          {
+            extend: 'collection',
+            text: '<i class="material-symbols-rounded align-middle">more_horiz</i> More',
+            className: 'btn btn-sm btn-grp btn-grp-more',
+            autoClose: true,
+            align: 'button-right',
+            buttons: [
+              {
+                extend: 'excel',
+                text: '<i class="material-symbols-rounded align-middle">download</i> Export to Excel',
+                className: 'dt-menu-item',
+                filename: 'registrations',
+                title: 'Registrations',
+                // orthogonal: 'export' makes DataTables call render(value, 'export', row)
+                // for each cell instead of grabbing the rendered HTML's innerText.
+                // That's how booleans become "Yes"/"No" instead of "radio_button_unchecked"
+                // and the status badge becomes plain "Approved"/"Pending"/"Rejected".
+                exportOptions: { columns: ':not(.dt-checkbox)', orthogonal: 'export' },
+              },
+              {
+                text: '<i class="material-symbols-rounded align-middle">print</i> Print label',
+                className: 'dt-menu-item',
+                action: function () { printSelectedLabels(); },
+              },
+              {
+                text: '<i class="material-symbols-rounded align-middle text-danger">delete</i> Remove entry',
+                className: 'dt-menu-item dt-danger-item',
+                action: function () { bulkAction('remove'); },
+              },
+            ],
+          },
         ],
         fixedHeader: {
           header: true,
@@ -536,24 +862,41 @@
         
         // Use drawCallback - this runs after table is fully initialized
         drawCallback: function(settings) {
-          console.log('Draw callback triggered');
-          
-          let selectAllCheckbox = $('#select-all');
-          let isSelectAllChecked = selectAllCheckbox.prop('checked');
-          
-          if (isSelectAllChecked) {
-            // If select-all is checked, check all visible rows
-            $('#entries tbody input.row-checkbox').prop('checked', true);
-          }
-          
-          // Update select-all state based on current visible rows only
+          // Selection is intentionally limited to the current page only, so an
+          // operator can approve/reject one page at a time. On every (re)draw —
+          // including pagination, search and sort — the newly shown page starts
+          // with nothing selected and the header "select all" box is cleared.
+          // This prevents a checked "select all" from carrying over to other
+          // pages.
+          $('#select-all').prop('checked', false).prop('indeterminate', false);
+          $('#entries tbody input.row-checkbox').prop('checked', false);
           updateSelectAllStateFromVisible();
+          if (window.updateBulkButtons) window.updateBulkButtons();
         },
-        
+
         initComplete: function () {
-          console.log('DataTable initialized and loaded via AJAX');          
+          console.log('DataTable initialized and loaded via AJAX');
         }
       });
+
+      // Inject a small "N selected" badge into the buttons toolbar so it's
+      // always clear how many rows the bulk actions will affect.
+      $('<span id="selectedCountBadge" class="badge bg-info text-white align-self-center me-2" style="display:none;"></span>')
+        .prependTo('#entries_wrapper .dt-buttons');
+
+      // Keep selection-dependent controls in sync with the current selection.
+      // Every item in the Status menu needs a selection, so the whole menu is
+      // disabled until at least one row is ticked. The Send/More menus stay
+      // enabled (each has an action that works without a selection) and their
+      // selection-only items warn if nothing is selected.
+      window.updateBulkButtons = function () {
+        const n = $('#entries tbody input.row-checkbox:checked').length;
+        try { table.button('statusBtn:name').enable(n > 0); } catch (e) {}
+        const $badge = $('#selectedCountBadge');
+        if (n > 0) { $badge.text(n + ' selected on this page').show(); }
+        else { $badge.hide(); }
+      };
+      updateBulkButtons();
 
       // When page length changes
 // When page length changes
@@ -683,6 +1026,48 @@ table.on('draw.dt', function () {
         m.show();
       }
 
+      // Open the walk-in registration modal with a clean form (all three
+      // actions toggled on by default).
+      window.openWalkinModal = function () {
+        $('#walkinForm')[0].reset();
+        $('#walkinSendQR').prop('checked', true);
+        $('#walkinCheckIn').prop('checked', true);
+        $('#walkinPrintLabel').prop('checked', true);
+        // Hide and de-require any conditional follow-up / "Other" inputs so a
+        // reopened modal starts clean.
+        $('#walkinForm .followup-box, #walkinForm [id$="_other_box"]').each(function () {
+          $(this).hide();
+          $(this).find('input').prop('required', false).val('');
+        });
+        const m = new bootstrap.Modal(document.getElementById('walkinModal'));
+        m.show();
+      };
+
+      // (Re)print labels for the selected, already-registered participants.
+      window.printSelectedLabels = function () {
+        const ids = selectedIds();
+        if (ids.length === 0) {
+          Swal.fire({ icon: 'warning', title: 'No selection',
+                      text: 'Please select at least one participant to print a label for.',
+                      confirmButtonColor: '#198754' });
+          return;
+        }
+        const fd = new FormData();
+        fd.append('ids', JSON.stringify(ids));
+        $.ajax({
+          url: '/survey_user_labels/' + surveyId + '/',
+          type: 'POST',
+          headers: { 'X-CSRFToken': getCSRFToken() },
+          data: fd, processData: false, contentType: false,
+        }).done(function (r) {
+          if (r.success && r.labels && r.labels.length) {
+            printLabels(r.labels);
+          } else {
+            Swal.fire('Error', r.message || 'Could not build labels.', 'error');
+          }
+        }).fail(function (xhr) { commonAjaxErrorCallBack(xhr, '', ''); });
+      };
+
     });
 
     // Handle select-all click - only affects currently visible rows
@@ -692,15 +1077,17 @@ table.on('draw.dt', function () {
       
       // Only check/uncheck currently visible rows
       $('#entries tbody input.row-checkbox').prop('checked', checked);
+      if (window.updateBulkButtons) window.updateBulkButtons();
     });
 
     // Handle individual row checkbox changes
     $('#entries tbody').on('change', 'input.row-checkbox', function () {
       let total = $('#entries tbody input.row-checkbox').length;
       let checked = $('#entries tbody input.row-checkbox:checked').length;
-      
+
       $('#select-all').prop('checked', total === checked && total > 0);
       $('#select-all').prop('indeterminate', checked > 0 && checked < total);
+      if (window.updateBulkButtons) window.updateBulkButtons();
     });
 
   // // Handle select-all click
@@ -837,6 +1224,199 @@ table.on('draw.dt', function () {
           commonAjaxErrorCallBack(xhr, status, error);
           $('#sendQRSubmitBtn').prop('disabled', false).text('Send');
           $('#sendQRModal .btn-secondary').prop('disabled', false);
+        }
+      });
+    });
+
+    // ---------- Walk-in registration ----------
+    function escapeHtml(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    // Build one badge card. Each card fills a page (page-break-after) so a
+    // batch of labels prints one badge per page.
+    function labelCardHtml(label) {
+      return '<div class="label">' +
+        '<div class="event">' + escapeHtml(label.event) + '</div>' +
+        '<div class="name">' + escapeHtml(label.name) + '</div>' +
+        (label.organization ? '<div class="org">' + escapeHtml(label.organization) + '</div>' : '') +
+        '<img class="qr" src="' + label.qr + '" alt="QR code">' +
+        '<div class="reg">' + escapeHtml(label.reg_no) + '</div>' +
+        '</div>';
+    }
+
+    // Open a print window with one or more badge labels and trigger the
+    // browser print dialog. The QR is the same check-in code as the emailed QR.
+    function printLabels(labels) {
+      if (!labels || !labels.length) return;
+      const w = window.open('', '_blank', 'width=420,height=600');
+      if (!w) {
+        Swal.fire('Pop-up blocked',
+          'Allow pop-ups for this site to print the label(s). The data is unchanged.',
+          'warning');
+        return;
+      }
+      const title = labels.length === 1 ? ('Label ' + escapeHtml(labels[0].reg_no)) : (labels.length + ' Labels');
+      // The wait-and-print logic runs INSIDE the label window (below), not from
+      // here. Driving print() from the opener fired too early — when the QR
+      // data-URI was already decoded, print() ran before the new window had
+      // painted, so the printer fed a blank label. The in-window script waits
+      // for the QR image(s) to load, then prints after a short paint delay.
+      w.document.open();
+      w.document.write(
+        '<html><head><title>' + title + '</title><style>' +
+        // Sized for the AIMO D520BT loaded with 4x6 in labels. Use the EXACT
+        // inch dimensions (4in = 101.6mm, 6in = 152.4mm) — rounding to
+        // 100x150mm leaves each label ~2.4mm short, which makes the print creep
+        // down a little more on every successive label. Fixing @page to the
+        // real label stock also stops the browser formatting for A4.
+        '@page { size: 4in 6in; margin: 0; }' +
+        'html,body{margin:0;padding:0;}' +
+        // Force the browser to actually rasterise text/graphics for the printer
+        // (some thermal drivers drop "background" rendering otherwise).
+        '*{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}' +
+        'body{font-family:Arial,Helvetica,sans-serif;color:#000;}' +
+        '.label{width:4in;height:6in;box-sizing:border-box;padding:6mm;' +
+          'display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+          'text-align:center;overflow:hidden;page-break-after:always;}' +
+        '.label:last-child{page-break-after:auto;}' +
+        '.event{font-size:11pt;color:#000;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4mm;}' +
+        '.name{font-size:28pt;font-weight:700;line-height:1.1;margin:2mm 0;word-break:break-word;color:#000;}' +
+        '.org{font-size:14pt;color:#000;margin-bottom:4mm;word-break:break-word;}' +
+        '.qr{width:60mm;height:60mm;}' +
+        '.reg{font-size:13pt;font-weight:600;letter-spacing:1px;margin-top:4mm;color:#000;}' +
+        // On-screen toolbar (hidden when printing) so the operator can re-print
+        // manually if the automatic print didn\'t fire or was cancelled.
+        '.noprint{background:#f1f3f7;padding:10px;text-align:center;font-family:Arial,sans-serif;}' +
+        '.noprint button{font-size:14px;padding:8px 18px;border:0;border-radius:6px;background:#5e72e4;color:#fff;cursor:pointer;}' +
+        '@media print{.noprint{display:none !important;}}' +
+        '</style></head><body>' +
+        '<div class="noprint"><button type="button" onclick="window.print()">Print label</button>' +
+        '<div style="font-size:12px;color:#555;margin-top:6px;">Printing should start automatically. If not, click the button above.</div></div>' +
+        labels.map(labelCardHtml).join('') +
+        '<scr' + 'ipt>(function(){' +
+          'function go(){try{window.focus();window.print();}catch(e){}}' +
+          // Print only after every image has loaded, then wait two animation
+          // frames + a tick so the page is actually painted before printing.
+          'function fire(){if(window.__printed)return;window.__printed=true;' +
+            'requestAnimationFrame(function(){requestAnimationFrame(function(){setTimeout(go,150);});});}' +
+          'var imgs=document.images,n=imgs.length,done=0;' +
+          'if(!n){fire();return;}' +
+          'function one(){if(++done>=n)fire();}' +
+          'for(var i=0;i<n;i++){var im=imgs[i];' +
+            'if(im.complete&&im.naturalWidth>0){one();}' +
+            'else{im.onload=im.onerror=one;}}' +
+          'setTimeout(fire,3000);' +
+        '})();</scr' + 'ipt>' +
+        '</body></html>'
+      );
+      w.document.close();
+    }
+
+    // Back-compat single-label helper used by the walk-in flow.
+    function printWalkinLabel(label) { printLabels([label]); }
+
+    // --- Walk-in modal: conditional "Other" + per-option follow-up inputs ---
+    // Scoped to #walkinForm so they never clash with anything else on the page.
+    $('#walkinForm').on('change', 'select.walkin-select', function () {
+      const sel = this;
+      const otherBox = document.getElementById(sel.id + '_other_box');
+      if (otherBox) otherBox.style.display = sel.value === 'Other' ? 'block' : 'none';
+      const fuContainer = document.getElementById(sel.dataset.followupTarget || '');
+      if (fuContainer) {
+        fuContainer.querySelectorAll('.followup-box').forEach(box => {
+          const show = box.dataset.forValue === sel.value;
+          box.style.display = show ? 'block' : 'none';
+          const inp = box.querySelector('input');
+          if (inp) { if (show) { inp.setAttribute('required', 'required'); } else { inp.removeAttribute('required'); inp.value = ''; } }
+        });
+      }
+    });
+
+    $('#walkinForm').on('change', '.walkin-radio-with-followup', function () {
+      const group = this.dataset.group;
+      $('#walkinForm').find('.followup-box[data-group="' + group + '"]').each(function () {
+        const show = this.dataset.forValue === document.querySelector('.walkin-radio-with-followup[data-group="' + group + '"]:checked')?.value;
+        this.style.display = show ? 'block' : 'none';
+        const inp = this.querySelector('input');
+        if (inp) { if (show) { inp.setAttribute('required', 'required'); } else { inp.removeAttribute('required'); inp.value = ''; } }
+      });
+    });
+
+    $('#walkinForm').on('change', '.walkin-checkbox-with-followup', function () {
+      const group = this.dataset.group, val = this.value, checked = this.checked;
+      $('#walkinForm').find('.followup-box[data-group="' + group + '"][data-for-value="' + val + '"]').each(function () {
+        this.style.display = checked ? 'block' : 'none';
+        const inp = this.querySelector('input');
+        if (inp) { if (checked) { inp.setAttribute('required', 'required'); } else { inp.removeAttribute('required'); inp.value = ''; } }
+      });
+    });
+
+    $('#walkinSubmitBtn').on('click', function () {
+      const surveyId = '{{survey.id}}';
+      const formEl = document.getElementById('walkinForm');
+
+      // Native validation for required text/email/phone/radio/select fields.
+      if (!formEl.checkValidity()) {
+        formEl.reportValidity();
+        return;
+      }
+      // Checkbox group rules (at-least-one when required, max-checks limit).
+      let blocked = false;
+      formEl.querySelectorAll('[data-checkbox-group]').forEach(group => {
+        const hint = group.querySelector('.form-text[data-max]');
+        if (hint) {
+          const max = parseInt(hint.dataset.max, 10);
+          if (group.querySelectorAll('input[type=checkbox]:checked').length > max) {
+            blocked = true;
+            Swal.fire('Too many selections', 'You can only select up to ' + max + ' options.', 'warning');
+          }
+        }
+        if (group.dataset.required === '1' &&
+            group.querySelectorAll('input[type=checkbox]:checked').length === 0) {
+          blocked = true;
+          Swal.fire('Required', 'Please select at least one option.', 'warning');
+        }
+      });
+      if (blocked) return;
+
+      // FormData(formEl) captures every named field — identity + custom answers.
+      const fd = new FormData(formEl);
+      fd.append('send_qr', $('#walkinSendQR').is(':checked') ? '1' : '0');
+      fd.append('check_in', $('#walkinCheckIn').is(':checked') ? '1' : '0');
+      fd.append('print_label', $('#walkinPrintLabel').is(':checked') ? '1' : '0');
+
+      $('#walkinSubmitBtn').prop('disabled', true).text('Registering...');
+      $('#walkinModal .btn-secondary').prop('disabled', true);
+
+      $.ajax({
+        url: '/register_walkin/' + surveyId + '/',
+        type: 'POST',
+        headers: { 'X-CSRFToken': getCSRFToken() },
+        data: fd,
+        processData: false,
+        contentType: false,
+        success: function (response) {
+          $('#walkinSubmitBtn').prop('disabled', false)
+            .html('<i class="material-symbols-rounded align-middle">how_to_reg</i> Register');
+          $('#walkinModal .btn-secondary').prop('disabled', false);
+          if (response.success) {
+            $('#walkinModal').modal('hide');
+            if (response.label) {
+              printWalkinLabel(response.label);
+            }
+            Swal.fire('Registered', response.message, 'success').then(() => location.reload());
+          } else {
+            Swal.fire('Error', response.message || 'Failed to register walk-in.', 'error');
+          }
+        },
+        error: function (xhr, status, error) {
+          $('#walkinSubmitBtn').prop('disabled', false)
+            .html('<i class="material-symbols-rounded align-middle">how_to_reg</i> Register');
+          $('#walkinModal .btn-secondary').prop('disabled', false);
+          commonAjaxErrorCallBack(xhr, status, error);
         }
       });
     });

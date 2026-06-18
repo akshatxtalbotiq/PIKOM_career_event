@@ -26,6 +26,7 @@ from .models import Registration, Player, Sponsorship,Campaign, Submission,Campa
 import re
 import uuid
 import json
+import base64
 import qrcode
 
 from django.views.decorators.csrf import csrf_exempt
@@ -2658,6 +2659,274 @@ def _send_qr_to_surveyuser(survey_user, files=None, request=None):
     except Exception as e:
         print(f"send_qr error for {survey_user.email}: {e}")
         return False
+
+
+def _qr_data_uri(value):
+    """Return a base64 PNG data-URI of a QR code for `value`. Used to embed the
+    check-in QR straight into the printable walk-in label (no file round-trip)."""
+    buf = BytesIO()
+    qrcode.make(str(value)).save(buf, format="PNG")
+    return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
+
+
+@login_required
+def register_walkin(request, survey_id):
+    """Register an on-site walk-in participant for a registration form.
+
+    POST: name (required), email, phone, organization, and three optional
+    toggles — send_qr, check_in, print_label — each defaulting to "yes". On
+    success the new delegate is created (auto-approved, since they're vetted in
+    person), then, per the toggles: the check-in QR is emailed, they're marked
+    checked-in, and a printable label payload (incl. an inline QR data-URI) is
+    returned for the browser to open in a print window.
+    """
+    survey = get_object_or_404(Survey, id=survey_id)
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
+
+    # Permission: superuser or a member of the campaign team (mirrors form_builder).
+    if not request.user.is_superuser:
+        team_member = CampaignTeam.objects.filter(
+            campaign=survey.fkcampaign, user=request.user
+        ).exists() if survey.fkcampaign else False
+        if not team_member:
+            return JsonResponse({"success": False, "message": "Not allowed."}, status=403)
+
+    def _toggle(key, default=True):
+        v = request.POST.get(key)
+        if v is None:
+            return default
+        return str(v).strip().lower() in ("1", "true", "yes", "on")
+
+    do_send_qr = _toggle("send_qr")
+    do_check_in = _toggle("check_in")
+    do_print_label = _toggle("print_label")
+
+    # The walk-in modal now renders the survey's full set of questions (the same
+    # identity + custom fields the public form collects) using `q_{id}` field
+    # names. Process those when present; otherwise fall back to the legacy
+    # flat name/email/phone/organization fields (forms with no questions).
+    questions = list(survey.questions.all())
+
+    if questions:
+        # Server-side enforcement of required questions (mirrors form_submit:
+        # the browser uses novalidate / JS validation that can be bypassed).
+        missing = []
+        for q in questions:
+            if not q.is_required:
+                continue
+            field = f"q_{q.id}"
+            if q.question_type == Question.TYPE_CHECKBOX:
+                picked = request.POST.getlist(field)
+                other = (request.POST.get(f"{field}_other") or "").strip() if q.allow_other else ""
+                has_value = bool([p for p in picked if p.strip()]) or bool(other)
+            elif q.question_type in (Question.TYPE_RADIO, Question.TYPE_SELECT):
+                picked = (request.POST.get(field) or "").strip()
+                other = (request.POST.get(f"{field}_other") or "").strip() if q.allow_other else ""
+                has_value = bool(picked) or bool(other)
+            else:
+                has_value = bool((request.POST.get(field) or "").strip())
+            if not has_value:
+                label = strip_tags(q.text or "").strip()
+                missing.append(label or f"Question {q.id}")
+        if missing:
+            return JsonResponse(
+                {"success": False,
+                 "message": "Please complete all required fields: " + ", ".join(missing)},
+                status=400,
+            )
+
+        identity_values = {}
+        for q in questions:
+            if q.question_type in Question.IDENTITY_TYPES:
+                target_field = Question.IDENTITY_TYPES[q.question_type]
+                identity_values[target_field] = (request.POST.get(f"q_{q.id}") or "").strip()
+
+        name = identity_values.get("name", "")
+        email = identity_values.get("email", "")
+        phone = identity_values.get("phone", "")
+        organization = identity_values.get("organization", "")
+    else:
+        name = (request.POST.get("name") or "").strip()
+        email = (request.POST.get("email") or "").strip()
+        phone = (request.POST.get("phone") or "").strip()
+        organization = (request.POST.get("organization") or "").strip()
+
+    if not name:
+        return JsonResponse({"success": False, "message": "Name is required."}, status=400)
+
+    if email:
+        try:
+            validate_email(email)
+        except ValidationError:
+            return JsonResponse(
+                {"success": False, "message": "Please enter a valid email address."},
+                status=400,
+            )
+
+    with transaction.atomic():
+        survey_user = SurveyUser.objects.create(
+            survey=survey,
+            name=name,
+            email=email,
+            phone=phone,
+            organization=organization,
+            # Walk-ins are vetted at the desk, so they're approved on the spot —
+            # this also makes them eligible to receive the check-in QR email.
+            approval_status=SurveyUser.STATUS_APPROVED,
+            approved_at=timezone.now(),
+            approved_by=request.user,
+        )
+        survey_user.reg_no = f"REG{survey_user.id:06d}"
+        update_fields = ["reg_no"]
+        if do_check_in:
+            survey_user.is_checked_in = True
+            update_fields.append("is_checked_in")
+        survey_user.save(update_fields=update_fields)
+
+        # Persist answers to non-identity custom questions (mirrors form_submit).
+        for q in questions:
+            if q.question_type in Question.IDENTITY_TYPES:
+                continue
+            field = f"q_{q.id}"
+
+            if q.question_type in (Question.TYPE_TEXT, Question.TYPE_TEXTAREA):
+                val = (request.POST.get(field) or "").strip()
+                if val:
+                    Answer.objects.create(
+                        survey=survey, question=q, user=survey_user, answer_text=val
+                    )
+
+            elif q.question_type in (Question.TYPE_RADIO, Question.TYPE_SELECT):
+                picked = request.POST.get(field, "")
+                other = (request.POST.get(f"{field}_other") or "").strip() if q.allow_other else ""
+                followups = {}
+                if picked and q.choice_followups and picked in q.choice_followups:
+                    fu_val = (request.POST.get(f"{field}_followup_{picked}") or "").strip()
+                    if fu_val:
+                        followups[picked] = fu_val
+                if picked:
+                    answer_text = None
+                    if picked == "Other" and other:
+                        answer_text = other
+                    elif followups:
+                        answer_text = json.dumps(followups, ensure_ascii=False)
+                    Answer.objects.create(
+                        survey=survey, question=q, user=survey_user,
+                        selected_options=[picked],
+                        answer_text=answer_text,
+                    )
+                elif q.allow_other and other:
+                    Answer.objects.create(
+                        survey=survey, question=q, user=survey_user,
+                        selected_options=["Other"], answer_text=other,
+                    )
+
+            elif q.question_type == Question.TYPE_CHECKBOX:
+                picked = request.POST.getlist(field)
+                other = (request.POST.get(f"{field}_other") or "").strip() if q.allow_other else ""
+                if q.max_checks and len(picked) > q.max_checks:
+                    picked = picked[: q.max_checks]
+                followups = {}
+                if q.choice_followups:
+                    for opt in picked:
+                        if opt in q.choice_followups:
+                            fu_val = (request.POST.get(f"{field}_followup_{opt}") or "").strip()
+                            if fu_val:
+                                followups[opt] = fu_val
+                if picked or other:
+                    if other and "Other" not in picked:
+                        picked.append("Other")
+                    if followups and not other:
+                        answer_text = json.dumps(followups, ensure_ascii=False)
+                    else:
+                        answer_text = other if other else None
+                    Answer.objects.create(
+                        survey=survey, question=q, user=survey_user,
+                        selected_options=picked,
+                        answer_text=answer_text,
+                    )
+
+    done = []
+    if do_check_in:
+        done.append("checked in")
+
+    qr_warning = None
+    if do_send_qr:
+        if not email:
+            qr_warning = "No email was provided, so the QR code could not be emailed."
+        elif _send_qr_to_surveyuser(survey_user, request=request):
+            done.append("QR emailed")
+        else:
+            qr_warning = "The QR email could not be sent."
+
+    payload = {
+        "success": True,
+        "reg_no": survey_user.reg_no,
+        "name": survey_user.name,
+    }
+
+    if do_print_label:
+        campaign = survey.fkcampaign
+        payload["label"] = {
+            "event": (campaign.title if campaign else survey.title) or "",
+            "name": survey_user.name or "",
+            "organization": survey_user.organization or "",
+            "reg_no": survey_user.reg_no or "",
+            "qr": _qr_data_uri(survey_user.registration_code),
+        }
+
+    msg = f"Walk-in registered: {survey_user.name} ({survey_user.reg_no})."
+    if done:
+        joined = ", ".join(done)
+        msg += f" {joined[0].upper()}{joined[1:]}."
+    if qr_warning:
+        msg += f" {qr_warning}"
+    payload["message"] = msg
+    return JsonResponse(payload)
+
+
+@login_required
+def survey_user_labels(request, survey_id):
+    """POST: ids=[...]. Return printable label data (incl. an inline QR
+    data-URI) for the selected registrations so an operator can (re)print
+    badges for participants who already registered."""
+    survey = get_object_or_404(Survey, id=survey_id)
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
+
+    try:
+        ids = json.loads(request.POST.get("ids") or "[]")
+    except json.JSONDecodeError:
+        ids = []
+    if not ids:
+        return JsonResponse({"success": False, "message": "No participants selected."}, status=400)
+
+    campaign = survey.fkcampaign
+    event = (campaign.title if campaign else survey.title) or ""
+
+    users = SurveyUser.objects.filter(survey=survey, id__in=ids)
+    # Preserve the order the operator selected the rows in.
+    by_id = {u.id: u for u in users}
+    labels = []
+    for uid in ids:
+        try:
+            u = by_id.get(int(uid))
+        except (TypeError, ValueError):
+            u = None
+        if not u:
+            continue
+        labels.append({
+            "event": event,
+            "name": u.name or "",
+            "organization": u.organization or "",
+            "reg_no": u.reg_no or "",
+            "qr": _qr_data_uri(u.registration_code),
+        })
+
+    if not labels:
+        return JsonResponse({"success": False, "message": "No matching participants found."}, status=404)
+    return JsonResponse({"success": True, "labels": labels})
 
 
 @login_required
