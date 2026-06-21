@@ -696,7 +696,27 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
             return tip ? html.replace('title="', `title="${tip.trim()} — `) : html;
           },
         });
-        cols.push({ data: 'is_checked_in',  className: 'text-center', render: boolRender });
+        // Check-in is an interactive toggle, but styled like the QR Sent tick
+        // (green check when in, faint circle when not) instead of a raw
+        // checkbox. Operators click it to check people in straight from the
+        // list (for those without their QR / who won't dig through email).
+        // Export/sort still get plain Yes/No.
+        const checkinIcon = (on) => {
+          const icon = on ? 'check_circle' : 'radio_button_unchecked';
+          const cls = on ? 'text-success' : 'text-muted';
+          const style = 'cursor:pointer;' + (on ? '' : 'opacity:0.3;');
+          return `<i class="material-symbols-rounded checkin-toggle ${cls}" role="button" tabindex="0" `
+            + `data-checked="${on ? 1 : 0}" title="Click to check ${on ? 'out' : 'in'}" `
+            + `style="${style}">${icon}</i>`;
+        };
+        cols.push({
+          data: 'is_checked_in',
+          className: 'text-center',
+          render: (v, type, row) => {
+            if (type !== 'display') return v ? 'Yes' : 'No';
+            return checkinIcon(!!v).replace('class="', `data-id="${row.id}" class="`);
+          },
+        });
         cols.push({ data: 'qr_sent',        className: 'text-center', render: boolRender });
         cols.push({ data: 'reminder_sent',  className: 'text-center', render: boolRender });
         // --- Identity + custom answers ---
@@ -1086,6 +1106,43 @@ table.on('draw.dt', function () {
       $('#select-all').prop('checked', total === checked && total > 0);
       $('#select-all').prop('indeterminate', checked > 0 && checked < total);
       if (window.updateBulkButtons) window.updateBulkButtons();
+    });
+
+    // Manual check-in toggle directly from the list (click the green tick).
+    $('#entries tbody').on('click', '.checkin-toggle', function () {
+      const el = this;
+      const id = $(el).data('id');
+      const current = String($(el).data('checked')) === '1';
+      const next = !current;
+      el.style.pointerEvents = 'none';
+      $.ajax({
+        url: '/set_survey_user_checkin/' + '{{ survey.id }}' + '/',
+        type: 'POST',
+        headers: { 'X-CSRFToken': getCSRFToken() },
+        data: { id: id, checked: next ? '1' : '0' },
+      }).done(function (r) {
+        el.style.pointerEvents = '';
+        if (r && r.success) {
+          const on = !!r.is_checked_in;
+          el.textContent = on ? 'check_circle' : 'radio_button_unchecked';
+          el.className = 'material-symbols-rounded checkin-toggle ' + (on ? 'text-success' : 'text-muted');
+          el.style.cssText = 'cursor:pointer;' + (on ? '' : 'opacity:0.3;');
+          el.title = 'Click to check ' + (on ? 'out' : 'in');
+          $(el).data('checked', on ? 1 : 0);
+          // Keep the header counter and the DataTable's cached row data in sync
+          // so a later sort/search/redraw shows the correct state.
+          if (typeof r.checked_in_total !== 'undefined') $('#checkedIn').text(r.checked_in_total);
+          try {
+            const d = $('#entries').DataTable().row($(el).closest('tr')).data();
+            if (d) d.is_checked_in = on;
+          } catch (e) { /* table not ready — visual state already correct */ }
+        } else {
+          Swal.fire('Error', (r && r.message) || 'Could not update check-in.', 'error');
+        }
+      }).fail(function (xhr) {
+        el.style.pointerEvents = '';
+        commonAjaxErrorCallBack(xhr, '', '');
+      });
     });
 
   // // Handle select-all click

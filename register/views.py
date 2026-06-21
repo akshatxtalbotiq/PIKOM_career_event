@@ -2182,12 +2182,26 @@ def _resolve_survey_by_identifier(identifier):
         raise Http404("Form not found")
 
 
+def _registration_open(survey):
+    """Registration is open only when the form itself is active AND (if it
+    belongs to a campaign) the campaign is active. Toggling the form to
+    Inactive — or deactivating the whole campaign — closes registration and
+    makes the public URL show the 'Registration Closed' page."""
+    if not survey.is_active:
+        return False
+    campaign = survey.fkcampaign
+    if campaign and not campaign.is_active:
+        return False
+    return True
+
+
 def form_public(request, survey_code):
     # `survey_code` is named for backwards compat with reverse() callers, but it
     # may be either a slug ("cio-conference-2026") or a UUID.
     survey = _resolve_survey_by_identifier(survey_code)
     return render(request, "register/form_public.html", {
         "survey": survey,
+        "registration_closed": not _registration_open(survey),
     })
 
 
@@ -2211,7 +2225,7 @@ def form_preview(request, survey_id):
 @csrf_exempt
 def form_initial_submit(request, survey_id):
     survey = get_object_or_404(Survey, pk=survey_id)
-    if request.method != "POST" or not survey.is_active:
+    if request.method != "POST" or not _registration_open(survey):
         return redirect("form_public", survey_code=survey.survey_code)
 
     survey_user = SurveyUser.objects.create(
@@ -2244,6 +2258,12 @@ def form_submit(request, survey_id):
     survey = get_object_or_404(Survey, pk=survey_id)
     if request.method != "POST":
         return redirect("form_public", survey_code=survey.survey_code)
+
+    # Reject submissions once registration is closed — guards against a stale
+    # form left open in a tab, or a direct POST, after the form/campaign was
+    # toggled off. The redirect lands on the "Registration Closed" page.
+    if not _registration_open(survey):
+        return redirect("form_public", survey_code=(survey.slug or str(survey.survey_code)))
 
     # Server-side enforcement of required questions. The browser uses
     # `novalidate`, and JS validation can be bypassed (curl, JS disabled),
@@ -3151,6 +3171,37 @@ def set_survey_user_status(request, survey_id):
     return JsonResponse({
         "success": True,
         "message": f"{qs.count()} entr{'y' if qs.count() == 1 else 'ies'} marked {label}.",
+    })
+
+
+@login_required
+def set_survey_user_checkin(request, survey_id):
+    """POST: id=<survey_user_id>, checked=0|1. Manually check a participant in
+    or out from the registrations list — for attendees who don't have their QR
+    code handy. Returns the new state and the updated checked-in total so the
+    list counter can refresh."""
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
+    survey = get_object_or_404(Survey, id=survey_id)
+    try:
+        user_id = int(request.POST.get("id") or 0)
+    except (TypeError, ValueError):
+        user_id = 0
+    su = SurveyUser.objects.filter(survey=survey, id=user_id).first()
+    if not su:
+        return JsonResponse({"success": False, "message": "Participant not found."}, status=404)
+
+    checked = str(request.POST.get("checked") or "").strip().lower() in ("1", "true", "yes", "on")
+    if su.is_checked_in != checked:
+        su.is_checked_in = checked
+        su.save(update_fields=["is_checked_in"])
+
+    checked_in_total = SurveyUser.objects.filter(survey=survey, is_checked_in=True).count()
+    return JsonResponse({
+        "success": True,
+        "is_checked_in": su.is_checked_in,
+        "checked_in_total": checked_in_total,
+        "message": f"{su.name or 'Participant'} checked {'in' if su.is_checked_in else 'out'}.",
     })
 
 
