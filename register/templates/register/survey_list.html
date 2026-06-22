@@ -108,12 +108,10 @@
                               <i class="material-symbols-rounded">visibility</i>
                             </a>-->
 
-                            {% if perms.register.change_survey %}
-                              <a href="javascript:void(0);" class="text-body p-0 edit-survey-btn" 
+                            <a href="javascript:void(0);" class="text-body p-0 edit-survey-btn"
                               data-id="{{ survey.id }}" title="Edit">
                               <i class="material-symbols-rounded">edit</i>
                             </a>
-                            {% endif %}
                             
                             <!-- {% if campaign.need_qr and campaign.is_active %}
                               <a href="{% url 'scan' campaign.campaign_code %}" target="_blank" class="text-body p-0" title="QR Code">
@@ -141,20 +139,16 @@
                             <a href="{% url 'consolidated_report' survey.survey_code %}" class="text-body p-0" title="Consolidated Report">
                                 <i class="material-symbols-rounded">Report</i>
                             </a>
-                            {% if perms.register.add_survey %}
-                              <a href="javascript:void(0);" class="text-body p-0 clone-survey-btn"
-                                 data-id="{{ survey.id }}" data-title="{{ survey.title }}"
-                                 data-campaign="{{ survey.fkcampaign_id|default:'' }}" title="Clone form (copy questions to another campaign)">
-                                <i class="material-symbols-rounded">content_copy</i>
-                              </a>
-                            {% endif %}
-                            {% if perms.register.delete_survey %}
-                              <a href="javascript:void(0);" class="text-danger p-0 delete-survey-btn"
-                                 data-id="{{ survey.id }}" data-title="{{ survey.title }}"
-                                 data-count="{{ survey.survey_users.count }}" title="Delete form">
-                                <i class="material-symbols-rounded">delete</i>
-                              </a>
-                            {% endif %}
+                            <a href="javascript:void(0);" class="text-body p-0 clone-survey-btn"
+                               data-id="{{ survey.id }}" data-title="{{ survey.title }}"
+                               data-campaign="{{ survey.fkcampaign_id|default:'' }}" title="Clone form (copy questions to another campaign)">
+                              <i class="material-symbols-rounded">content_copy</i>
+                            </a>
+                            <a href="javascript:void(0);" class="text-danger p-0 delete-survey-btn"
+                               data-id="{{ survey.id }}" data-title="{{ survey.title }}"
+                               data-count="{{ survey.survey_users.count }}" title="Delete form">
+                              <i class="material-symbols-rounded">delete</i>
+                            </a>
                           </div>
                         </td>
 

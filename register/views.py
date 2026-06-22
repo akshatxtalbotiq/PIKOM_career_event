@@ -1136,16 +1136,28 @@ def _unique_slug(title, exclude_id=None):
     return slug
 
 
+def _can_manage_survey(request, survey):
+    """Superusers, or members of the survey's campaign team, may manage
+    (edit / clone / delete) a form. Mirrors form_builder access so any team
+    member who can see a form in their list can also act on it."""
+    if request.user.is_superuser:
+        return True
+    campaign = survey.fkcampaign if survey else None
+    if not campaign:
+        return False
+    return CampaignTeam.objects.filter(campaign=campaign, user=request.user).exists()
+
+
 @login_required
 def clone_survey(request, survey_id):
     """Clone a form/survey together with all its questions, optionally
     assigning the copy to a different campaign. Submissions are NOT copied."""
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'POST required'}, status=405)
-    if not request.user.has_perm('register.add_survey'):
-        return JsonResponse({'success': False, 'error': 'Permission denied'}, status=403)
 
     source = get_object_or_404(Survey, id=survey_id)
+    if not _can_manage_survey(request, source):
+        return JsonResponse({'success': False, 'error': 'Permission denied'}, status=403)
 
     title = (request.POST.get('title') or '').strip() or f"Copy of {source.title}"
     campaign_id = request.POST.get('campaign_id')
@@ -1205,10 +1217,10 @@ def delete_survey(request, survey_id):
     """Delete a form/survey. Cascades to its questions, submissions and answers."""
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'POST required'}, status=405)
-    if not request.user.has_perm('register.delete_survey'):
-        return JsonResponse({'success': False, 'error': 'Permission denied'}, status=403)
 
     survey = get_object_or_404(Survey, id=survey_id)
+    if not _can_manage_survey(request, survey):
+        return JsonResponse({'success': False, 'error': 'Permission denied'}, status=403)
     survey.delete()
     return JsonResponse({'success': True})
 
