@@ -2467,14 +2467,26 @@ from django.utils.html import escape as _html_escape
 from django.template.defaultfilters import date as _date_filter
 
 _INTRO_ALLOWED_TAGS = ["p", "br", "strong", "em", "u", "s", "ol", "ul", "li", "a", "span"]
-_INTRO_ALLOWED_ATTRS = {"a": ["href"], "span": ["style"], "p": ["style"]}
+# `style` is allowed on the block + inline tags the editor writes alignment and
+# font-size onto.
+_INTRO_ALLOWED_ATTRS = {
+    "a": ["href"],
+    "span": ["style"],
+    "p": ["style"],
+    "li": ["style"],
+    "ol": ["style"],
+    "ul": ["style"],
+}
 
-# Allow font colour / highlight authored with the editor's colour pickers.
-# bleach >= 5 needs an explicit CSS sanitizer (tinycss2) to keep style attrs;
-# without it the style attribute is stripped, which is the safe degradation.
+# Allow font colour / highlight / font-size / alignment authored with the
+# editor's toolbar. bleach >= 5 needs an explicit CSS sanitizer (tinycss2) to
+# keep style attrs; without it the style attribute is stripped, which is the
+# safe degradation.
 try:
     from bleach.css_sanitizer import CSSSanitizer
-    _INTRO_CSS_SANITIZER = CSSSanitizer(allowed_css_properties=["color", "background-color"])
+    _INTRO_CSS_SANITIZER = CSSSanitizer(
+        allowed_css_properties=["color", "background-color", "font-size", "text-align"]
+    )
 except Exception:
     _INTRO_CSS_SANITIZER = None
 

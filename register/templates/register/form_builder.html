@@ -1060,10 +1060,22 @@
       });
     });
 
-    // Rich-text editors — colour pickers for font colour & highlight included
+    // Register inline-STYLE attributors for size & alignment (Quill defaults to
+    // CSS classes, which don't carry to the public page or emails). Writing them
+    // as inline style="font-size:..."/"text-align:..." makes them render
+    // everywhere, and the server-side sanitiser allows those properties.
+    const SizeStyle = Quill.import('attributors/style/size');
+    SizeStyle.whitelist = ['12px', '14px', '16px', '18px', '24px', '32px'];
+    Quill.register(SizeStyle, true);
+    const AlignStyle = Quill.import('attributors/style/align');
+    Quill.register(AlignStyle, true);
+
+    // Rich-text editors — font size, colour, alignment, lists and links.
     const toolbar = [
+      [{ size: SizeStyle.whitelist }],
       ['bold', 'italic', 'underline', 'strike'],
       [{ color: [] }, { background: [] }],
+      [{ align: [] }],
       [{ list: 'ordered' }, { list: 'bullet' }],
       ['link', 'clean'],
     ];
