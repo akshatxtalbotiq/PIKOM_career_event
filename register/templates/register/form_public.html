@@ -97,9 +97,14 @@
           <div class="card-body p-5">
             <div style="font-size:48px; line-height:1; margin-bottom:.5rem;">&#128274;</div>
             <h3 class="fw-bold mb-2" style="color:var(--theme);">Registration Closed</h3>
-            <p class="text-muted mb-3" style="font-size:15px;">
-              Registration for <strong>{{ survey.title }}</strong> is now closed and we are no longer accepting new submissions.
-            </p>
+            {% if registration_closed_message %}
+              <div class="form-desc text-start d-inline-block mb-3" style="font-size:15px;">{{ registration_closed_message|safe }}</div>
+            {% else %}
+              <p class="text-muted mb-3" style="font-size:15px;">
+                Registration for <strong>{{ survey.title }}</strong> is now closed and we are no longer accepting new submissions.
+              </p>
+            {% endif %}
+            {% comment %}
             {% if survey.fkcampaign.pic_email %}
               <p class="mb-0" style="font-size:15px;">
                 Need assistance or believe this is a mistake? Please contact the organiser at
@@ -110,6 +115,7 @@
                 Please contact the event organiser if you need assistance.
               </p>
             {% endif %}
+            {% endcomment %}
           </div>
         </div>
       {% else %}

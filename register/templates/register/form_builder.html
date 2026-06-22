@@ -274,6 +274,7 @@
           <li><button type="button" class="email-tab active" data-tab="ty">Thank-you</button></li>
           <li><button type="button" class="email-tab" data-tab="qr">QR confirmation</button></li>
           <li><button type="button" class="email-tab" data-tab="rem">Attendance reminder</button></li>
+          <li><button type="button" class="email-tab" data-tab="closed">Registration closed</button></li>
         </ul>
 
         <div class="email-pane d-none" data-pane="qr">
@@ -408,11 +409,36 @@
         </div>
         </div><!-- /ty pane -->
 
+        <div class="email-pane d-none" data-pane="closed">
+        <div class="mb-4">
+          <label class="form-label d-flex justify-content-between align-items-center">
+            <span>Registration closed page</span>
+            <a href="{% url 'form_public' survey.slug|default:survey.survey_code %}" target="_blank"
+               class="btn btn-sm btn-outline-warning mb-0 py-1">
+              <i class="material-symbols-rounded align-middle" style="font-size:16px;">visibility</i> Open form
+            </a>
+          </label>
+          <small class="text-muted d-block mb-2">
+            Shown on the public form when it's switched to <strong>Inactive</strong>. The page already
+            shows a "Registration Closed" heading and the PIC contact email — this is the message in between.
+            Leave blank to use the default wording.
+          </small>
+          <div class="mb-1">
+            <small class="text-muted me-1">Insert:</small>
+            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 merge-tag" data-target="closed" data-tag="[Event]">Event</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 merge-tag" data-target="closed" data-tag="[Date]">Date</button>
+          </div>
+          <div class="intro-editor"><div id="closedIntroEditor"></div></div>
+          <div id="closedIntroInit" style="display:none;">{{ survey.fkcampaign.registration_closed_intro|safe }}</div>
+        </div>
+        </div><!-- /closed pane -->
+
         <!-- Default body copy, loaded into an editor when its saved value is blank -->
         <div id="emailDefaults" style="display:none;">
           <div id="qrIntroDefault"><p>Thanks for registering for <strong>[Event]</strong>, [Name].</p></div>
           <div id="remIntroDefault"><p>Hi [Name],</p><p>This is a friendly reminder that <strong>[Event]</strong> is coming up on [Date]. We look forward to seeing you there!</p></div>
           <div id="tyIntroDefault"><p>Dear [Name],</p><p>Thank you for registering for <strong>[Event]</strong>. Your registration has been received and is currently being reviewed.</p><ol><li>We have successfully received your registration and it is currently under review.</li><li>Please keep an eye out for your registration confirmation email with the QR code.</li><li>For any additional requirements, our team will reach out to you.</li></ol><p>Confirmation emails with the QR code are sent only after our team has vetted the registrations. This usually takes about one week.</p></div>
+          <div id="closedIntroDefault"><p>Registration for <strong>[Event]</strong> is now closed and we are no longer accepting new submissions.</p></div>
         </div>
 
         <hr class="my-3">
@@ -1044,7 +1070,8 @@
     const qrQuill = new Quill('#qrIntroEditor', { theme: 'snow', modules: { toolbar } });
     const remQuill = new Quill('#remIntroEditor', { theme: 'snow', modules: { toolbar } });
     const tyQuill = new Quill('#tyIntroEditor', { theme: 'snow', modules: { toolbar } });
-    const quillByTarget = { qr: qrQuill, rem: remQuill, ty: tyQuill };
+    const closedQuill = new Quill('#closedIntroEditor', { theme: 'snow', modules: { toolbar } });
+    const quillByTarget = { qr: qrQuill, rem: remQuill, ty: tyQuill, closed: closedQuill };
     // Sign-off: small editor — bold/italic/underline + font colour are enough.
     const signoffQuill = new Quill('#signoffEditor', {
       theme: 'snow',
@@ -1061,6 +1088,7 @@
     loadEditor(qrQuill, 'qrIntroInit', 'qrIntroDefault');
     loadEditor(remQuill, 'remIntroInit', 'remIntroDefault');
     loadEditor(tyQuill, 'tyIntroInit', 'tyIntroDefault');
+    loadEditor(closedQuill, 'closedIntroInit', 'closedIntroDefault');
     const signoffInit = document.getElementById('signoffInit').innerHTML.trim();
     if (signoffInit) signoffQuill.clipboard.dangerouslyPasteHTML(signoffInit);
 
@@ -1155,6 +1183,7 @@
         qr_email_intro: qrQuill.root.innerHTML,
         reminder_intro: remQuill.root.innerHTML,
         thankyou_intro: tyQuill.root.innerHTML,
+        registration_closed_intro: closedQuill.getText().trim() ? closedQuill.root.innerHTML : '',
         email_signoff: signoffQuill.getText().trim() ? signoffQuill.root.innerHTML : '',
         qr_email_subject: document.getElementById('qrSubject').value,
         reminder_subject: document.getElementById('remSubject').value,

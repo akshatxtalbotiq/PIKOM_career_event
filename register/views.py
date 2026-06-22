@@ -1938,6 +1938,7 @@ def save_email_content(request, campaign_id):
     campaign.qr_email_intro = _sanitize_intro(data.get("qr_email_intro"))
     campaign.reminder_intro = _sanitize_intro(data.get("reminder_intro"))
     campaign.thankyou_intro = _sanitize_intro(data.get("thankyou_intro"))
+    campaign.registration_closed_intro = _sanitize_intro(data.get("registration_closed_intro"))
     campaign.email_signoff = _sanitize_intro(data.get("email_signoff"))
     # Subjects are plain text; collapse whitespace to a single line.
     campaign.qr_email_subject = " ".join((data.get("qr_email_subject") or "").split())[:200]
@@ -1950,7 +1951,8 @@ def save_email_content(request, campaign_id):
     campaign.show_banner_reminder = bool(data.get("show_banner_reminder", True))
     campaign.show_banner_thankyou = bool(data.get("show_banner_thankyou", True))
     campaign.save(update_fields=[
-        "qr_email_intro", "reminder_intro", "thankyou_intro", "email_signoff",
+        "qr_email_intro", "reminder_intro", "thankyou_intro", "registration_closed_intro",
+        "email_signoff",
         "qr_email_subject", "reminder_subject", "thankyou_subject",
         "show_details_qr", "show_details_reminder", "show_details_thankyou",
         "show_banner_qr", "show_banner_reminder", "show_banner_thankyou",
@@ -2239,9 +2241,25 @@ def form_public(request, survey_code):
     # `survey_code` is named for backwards compat with reverse() callers, but it
     # may be either a slug ("cio-conference-2026") or a UUID.
     survey = _resolve_survey_by_identifier(survey_code)
+    closed = not _registration_open(survey)
+
+    # Per-event "registration closed" message (configured in the form builder).
+    # Falls back to a default sentence when blank. [Event]/[Date] merge tags are
+    # filled in here so the public page shows finished copy.
+    closed_message = ""
+    if closed:
+        campaign = survey.fkcampaign
+        title = (campaign.title if campaign else survey.title) or ""
+        date = ""
+        if campaign and campaign.end_date:
+            date = campaign.end_date.strftime("%A, %d %B %Y")
+        raw = (campaign.registration_closed_intro if campaign else "") or ""
+        closed_message = raw.replace("[Event]", title).replace("[Date]", date)
+
     return render(request, "register/form_public.html", {
         "survey": survey,
-        "registration_closed": not _registration_open(survey),
+        "registration_closed": closed,
+        "registration_closed_message": closed_message,
     })
 
 

@@ -161,6 +161,9 @@ class Campaign(models.Model):
     qr_email_intro = models.TextField(blank=True, default="")    # body HTML of QR confirmation email
     reminder_intro = models.TextField(blank=True, default="")    # body HTML of attendance reminder
     thankyou_intro = models.TextField(blank=True, default="")    # body HTML of "thank you for submission" email
+    # Body HTML shown on the public "Registration Closed" page when the form is
+    # turned off. Supports the [Event]/[Date] merge tags. Blank = default copy.
+    registration_closed_intro = models.TextField(blank=True, default="")
     # Subject lines (plain text, support the same [Event]/[Date]/... merge tags).
     # Blank = use the built-in default subject.
     qr_email_subject = models.CharField(max_length=200, blank=True, default="")
