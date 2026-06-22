@@ -1067,10 +1067,22 @@ def _surveys_for_user(request, purpose):
     return qs.order_by('-created_at')
 
 
+def _campaigns_for_user(request, active_only=True):
+    """Campaigns the current user may assign forms to: superusers get all,
+    everyone else only the campaigns whose team they belong to. Used to scope
+    the 'assign to campaign' dropdowns in the form list/clone dialogs."""
+    qs = Campaign.objects.all()
+    if active_only:
+        qs = qs.filter(is_active=True)
+    if not request.user.is_superuser:
+        qs = qs.filter(campaign_teams__user=request.user)
+    return qs.distinct().order_by('-start_date')
+
+
 @login_required
 def survey_list(request):
     current_user = request.user
-    campaigns = Campaign.objects.filter(is_active=True).order_by('-start_date')
+    campaigns = _campaigns_for_user(request)
     campaign_list = [{"id": str(c.id), "title": c.title} for c in campaigns]
 
     users = User.objects.all()
@@ -1094,7 +1106,7 @@ def survey_list(request):
 @login_required
 def registration_form_list(request):
     current_user = request.user
-    campaigns = Campaign.objects.filter(is_active=True).order_by('-start_date')
+    campaigns = _campaigns_for_user(request)
     campaign_list = [{"id": str(c.id), "title": c.title} for c in campaigns]
 
     users = User.objects.all()
@@ -1162,6 +1174,11 @@ def clone_survey(request, survey_id):
     title = (request.POST.get('title') or '').strip() or f"Copy of {source.title}"
     campaign_id = request.POST.get('campaign_id')
     campaign = get_object_or_404(Campaign, id=campaign_id) if campaign_id else None
+
+    # Don't let a team member clone a form into a campaign they're not on
+    # (the dropdown is already scoped, this enforces it server-side).
+    if campaign and not _can_edit_campaign(request, campaign):
+        return JsonResponse({'success': False, 'error': 'Permission denied for that campaign'}, status=403)
 
     with transaction.atomic():
         clone = Survey.objects.create(
