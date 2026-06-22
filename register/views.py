@@ -1256,7 +1256,15 @@ def create_survey(request):
         description = request.POST.get("description")
         campaign_id = request.POST.get('campaign_id')
         campaign = get_object_or_404(Campaign, id=campaign_id) if campaign_id else None
-        
+
+        # Non-superusers may only create/assign forms within a campaign whose
+        # team they belong to. The campaign dropdown is already scoped to their
+        # campaigns; this enforces the same rule server-side.
+        if not request.user.is_superuser and (campaign is None or not _can_edit_campaign(request, campaign)):
+            return JsonResponse(
+                {'success': False, 'error': 'You can only create or assign forms within your own campaigns.'},
+                status=403,
+            )
 
         purpose = request.POST.get('purpose') or Survey.PURPOSE_REGISTRATION
         if purpose not in {c[0] for c in Survey.PURPOSE_CHOICES}:
@@ -1268,6 +1276,9 @@ def create_survey(request):
 
         if id:
             survey = get_object_or_404(Survey, id=id)
+            # Must be able to manage the form being edited (its current campaign).
+            if not _can_manage_survey(request, survey):
+                return JsonResponse({'success': False, 'error': 'Permission denied'}, status=403)
             survey.title = title
             survey.start_date = start_date
             survey.end_date = end_date
