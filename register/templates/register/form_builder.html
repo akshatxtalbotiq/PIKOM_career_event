@@ -51,6 +51,27 @@
   .intro-editor .ql-container { border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; }
   .intro-editor .ql-toolbar { border-top-left-radius: 6px; border-top-right-radius: 6px; }
   .signoff-editor .ql-editor { min-height: 60px; }
+  /* The Quill size picker uses inline-style px values; its snow CSS labels every
+     unknown value as "Normal", so we supply the labels (and preview each option
+     at its real size). The collapsed label shows "Normal" when nothing's set. */
+  .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="12px"]::before,
+  .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="12px"]::before { content: "12"; }
+  .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="14px"]::before,
+  .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="14px"]::before { content: "14"; }
+  .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="16px"]::before,
+  .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="16px"]::before { content: "16"; }
+  .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="18px"]::before,
+  .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="18px"]::before { content: "18"; }
+  .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="24px"]::before,
+  .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="24px"]::before { content: "24"; }
+  .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="32px"]::before,
+  .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="32px"]::before { content: "32"; }
+  .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="12px"]::before { font-size: 12px; }
+  .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="14px"]::before { font-size: 14px; }
+  .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="16px"]::before { font-size: 16px; }
+  .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="18px"]::before { font-size: 18px; }
+  .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="24px"]::before { font-size: 24px; }
+  .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="32px"]::before { font-size: 32px; }
   /* Auto-added event-details block shown under the editor when the toggle is on.
      Reads as a continuation of the email body, but is not editable here. */
   .ev-details-preview {
