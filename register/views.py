@@ -343,6 +343,167 @@ def campaign_list(request):
 
     return render(request, 'register/campaign_list.html', {'user': current_user, 'campaigns': campaigns, 'users': user_data})
 
+
+def _user_can_view_campaign(user, campaign):
+    """Same gating the campaign list uses: superusers see everything, everyone
+    else only campaigns they're on the team for."""
+    if user.is_superuser:
+        return True
+    return CampaignTeam.objects.filter(campaign=campaign, user=user).exists()
+
+
+@login_required
+def campaign_dashboard(request, id=None):
+    """Summary dashboard for a single campaign (works for any campaign).
+
+    Aggregates the registrations captured through the campaign's registration
+    form(s) (SurveyUser rows) into headline KPIs, a stage funnel, a sign-up
+    timeline, and audience breakdowns. Everything is computed server-side and
+    handed to the template as JSON for Chart.js — no extra DB columns needed.
+    """
+    from collections import Counter
+
+    campaign = get_object_or_404(Campaign, id=id)
+    if not _user_can_view_campaign(request.user, campaign):
+        return HttpResponse("You don't have access to this campaign.", status=403)
+
+    # Registration forms attached to this campaign (the new SurveyUser flow).
+    reg_surveys = list(
+        campaign.surveys.filter(purpose=Survey.PURPOSE_REGISTRATION)
+    )
+    reg_survey_ids = [s.id for s in reg_surveys]
+
+    registrants = list(
+        SurveyUser.objects.filter(survey_id__in=reg_survey_ids)
+        if reg_survey_ids else SurveyUser.objects.none()
+    )
+
+    # ---- Headline KPIs ----
+    total = len(registrants)
+    approved = sum(1 for r in registrants if r.approval_status == SurveyUser.STATUS_APPROVED)
+    pending = sum(1 for r in registrants if r.approval_status == SurveyUser.STATUS_PENDING)
+    rejected = sum(1 for r in registrants if r.approval_status == SurveyUser.STATUS_REJECTED)
+    qr_sent = sum(1 for r in registrants if r.qr_sent)
+    reminder_sent = sum(1 for r in registrants if r.reminder_sent)
+    checked_in = sum(1 for r in registrants if r.is_checked_in)
+    no_show = max(approved - checked_in, 0)
+
+    def pct(part, whole):
+        return round(part * 100.0 / whole, 1) if whole else 0.0
+
+    kpis = {
+        "total": total,
+        "approved": approved,
+        "pending": pending,
+        "rejected": rejected,
+        "qr_sent": qr_sent,
+        "reminder_sent": reminder_sent,
+        "checked_in": checked_in,
+        "no_show": no_show,
+        "approval_rate": pct(approved, total),
+        "turnout_rate": pct(checked_in, approved),
+    }
+
+    # ---- Funnel (registration -> attendance) ----
+    funnel = [
+        {"label": "Registered", "value": total},
+        {"label": "Approved", "value": approved},
+        {"label": "QR sent", "value": qr_sent},
+        {"label": "Reminder sent", "value": reminder_sent},
+        {"label": "Checked in", "value": checked_in},
+    ]
+
+    # ---- Registration timeline (daily + cumulative) ----
+    per_day = Counter()
+    for r in registrants:
+        if r.created_at:
+            d = timezone.localtime(r.created_at).date()
+            per_day[d] += 1
+    timeline_labels, timeline_daily, timeline_cumulative = [], [], []
+    running = 0
+    for d in sorted(per_day.keys()):
+        running += per_day[d]
+        timeline_labels.append(d.strftime("%d %b"))
+        timeline_daily.append(per_day[d])
+        timeline_cumulative.append(running)
+
+    # ---- Audience: top organizations ----
+    # Only surface this if the Organization identity field is marked visible in
+    # the registrations list (the same "show in list" gate used elsewhere) for
+    # at least one of the campaign's registration forms.
+    org_in_list = any(
+        item.get("key") == "organization" and item.get("visible", True)
+        for s in reg_surveys
+        for item in merge_identity_field_config(s.identity_field_config)
+    )
+    org_labels, org_values = [], []
+    if org_in_list:
+        org_counter = Counter()
+        for r in registrants:
+            org = (r.organization or "").strip()
+            if org:
+                org_counter[org] += 1
+        top_orgs = org_counter.most_common(10)
+        org_labels = [o for o, _ in top_orgs]
+        org_values = [c for _, c in top_orgs]
+
+    # ---- Audience: distribution of choice-type questions ----
+    # Limited to questions the organiser chose to surface as list columns
+    # (show_in_list=True), so the dashboard mirrors the registrations list.
+    choice_types = {Question.TYPE_RADIO, Question.TYPE_CHECKBOX, Question.TYPE_SELECT}
+    choice_questions = list(
+        Question.objects.filter(
+            survey_id__in=reg_survey_ids,
+            question_type__in=choice_types,
+            show_in_list=True,
+        ).order_by("survey_id", "number")
+    ) if reg_survey_ids else []
+
+    answers_by_q = {}
+    if choice_questions:
+        ans_qs = Answer.objects.filter(question_id__in=[q.id for q in choice_questions])
+        for a in ans_qs:
+            answers_by_q.setdefault(a.question_id, []).append(a)
+
+    question_charts = []
+    for q in choice_questions:
+        counter = Counter()
+        for a in answers_by_q.get(q.id, []):
+            opts = a.selected_options if a.selected_options else (
+                [a.answer_text] if a.answer_text else []
+            )
+            for opt in opts:
+                label = str(opt).strip()
+                if label:
+                    counter[label] += 1
+        if not counter:
+            continue
+        items = counter.most_common(12)
+        question_charts.append({
+            "title": (q.list_column_label or q.text)[:80],
+            "labels": [k for k, _ in items],
+            "values": [v for _, v in items],
+        })
+
+    context = {
+        "user": request.user,
+        "campaign": campaign,
+        "has_data": total > 0,
+        "kpis": kpis,
+        "funnel_json": json.dumps(funnel),
+        "timeline_json": json.dumps({
+            "labels": timeline_labels,
+            "daily": timeline_daily,
+            "cumulative": timeline_cumulative,
+        }),
+        "show_orgs": bool(org_labels),
+        "orgs_json": json.dumps({"labels": org_labels, "values": org_values}),
+        "question_charts_json": json.dumps(question_charts),
+        "theme_color": campaign.theme,
+    }
+    return render(request, "register/campaign_dashboard.html", context)
+
+
 @login_required
 def create_campaign(request):
 

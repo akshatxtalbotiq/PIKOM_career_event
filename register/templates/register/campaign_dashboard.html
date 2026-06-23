@@ -1,0 +1,252 @@
+{% extends 'register/base.html' %}
+{% load static %}
+
+{% block extracss %}
+<style>
+  .kpi-card { border: none; }
+  .kpi-card .kpi-value { font-size: 1.9rem; font-weight: 700; line-height: 1.1; }
+  .kpi-card .kpi-label { font-size: .8rem; text-transform: uppercase; letter-spacing: .03em; }
+  .kpi-card .kpi-sub { font-size: .78rem; }
+  .dash-chart-card { border: none; }
+  .dash-chart-card .card-header { background: transparent; border-bottom: 1px solid #f0f0f0; }
+  .funnel-row { display: flex; align-items: center; gap: .75rem; margin-bottom: .6rem; }
+  .funnel-row .funnel-label { width: 120px; font-size: .82rem; font-weight: 600; color: #344767; }
+  .funnel-row .funnel-bar-wrap { flex: 1; background: #f0f2f5; border-radius: 6px; overflow: hidden; height: 26px; }
+  .funnel-row .funnel-bar { height: 100%; display: flex; align-items: center; justify-content: flex-end;
+                            padding-right: 8px; color: #fff; font-size: .78rem; font-weight: 600; border-radius: 6px;
+                            min-width: 32px; transition: width .4s ease; }
+  .empty-state { padding: 4rem 1rem; text-align: center; color: #8392ab; }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+  <div class="container-fluid py-3">
+
+    <!-- Header -->
+    <div class="row align-items-center mb-2">
+      <div class="col-lg-8">
+        <div class="ms-1">
+          <h3 class="mb-0 h4 font-weight-bolder opacity-7">
+            <i class="material-symbols-rounded align-middle">monitoring</i>
+            {{ campaign.title }} — Dashboard
+          </h3>
+          <nav aria-label="breadcrumb">
+            <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0">
+              <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="{% url 'campaign_list' %}">Campaigns</a></li>
+              <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Dashboard</li>
+            </ol>
+          </nav>
+        </div>
+      </div>
+      <div class="col-lg-4 text-lg-end mt-2 mt-lg-0">
+        <span class="text-xs text-secondary">
+          {{ campaign.start_date|date:"d M Y" }} &ndash; {{ campaign.end_date|date:"d M Y" }}
+          {% if campaign.is_active %}
+            <span class="badge badge-sm bg-gradient-success ms-1">Active</span>
+          {% else %}
+            <span class="badge badge-sm bg-gradient-secondary ms-1">Completed</span>
+          {% endif %}
+        </span>
+      </div>
+    </div>
+
+    {% if not has_data %}
+      <div class="card mt-3">
+        <div class="card-body empty-state">
+          <i class="material-symbols-rounded" style="font-size:48px;">inbox</i>
+          <p class="mt-2 mb-0">No registrations captured for this campaign yet.</p>
+        </div>
+      </div>
+    {% else %}
+
+    <!-- KPI cards -->
+    <div class="row g-3 mb-1">
+      <div class="col-6 col-md-3">
+        <div class="card kpi-card shadow-sm h-100">
+          <div class="card-body py-3">
+            <div class="kpi-label text-secondary">Registrations</div>
+            <div class="kpi-value text-dark">{{ kpis.total }}</div>
+            <div class="kpi-sub text-secondary">{{ kpis.pending }} pending · {{ kpis.rejected }} rejected</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card kpi-card shadow-sm h-100">
+          <div class="card-body py-3">
+            <div class="kpi-label text-secondary">Approved</div>
+            <div class="kpi-value text-success">{{ kpis.approved }}</div>
+            <div class="kpi-sub text-secondary">{{ kpis.approval_rate }}% of registrations</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card kpi-card shadow-sm h-100">
+          <div class="card-body py-3">
+            <div class="kpi-label text-secondary">Checked in</div>
+            <div class="kpi-value text-info">{{ kpis.checked_in }}</div>
+            <div class="kpi-sub text-secondary">{{ kpis.turnout_rate }}% turnout of approved</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card kpi-card shadow-sm h-100">
+          <div class="card-body py-3">
+            <div class="kpi-label text-secondary">No-shows</div>
+            <div class="kpi-value text-danger">{{ kpis.no_show }}</div>
+            <div class="kpi-sub text-secondary">approved but not checked in</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3 mt-0">
+      <!-- Funnel -->
+      <div class="col-lg-5">
+        <div class="card dash-chart-card shadow-sm h-100">
+          <div class="card-header py-3"><h6 class="mb-0">Registration funnel</h6></div>
+          <div class="card-body" id="funnelContainer"></div>
+        </div>
+      </div>
+      <!-- Timeline -->
+      <div class="col-lg-7">
+        <div class="card dash-chart-card shadow-sm h-100">
+          <div class="card-header py-3"><h6 class="mb-0">Registrations over time</h6></div>
+          <div class="card-body"><canvas id="timelineChart" height="120"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3 mt-0">
+      {% if show_orgs %}
+      <!-- Top organizations -->
+      <div class="col-lg-6">
+        <div class="card dash-chart-card shadow-sm h-100">
+          <div class="card-header py-3"><h6 class="mb-0">Top organizations</h6></div>
+          <div class="card-body"><canvas id="orgsChart" height="220"></canvas></div>
+        </div>
+      </div>
+      {% endif %}
+      <!-- Status split -->
+      <div class="{% if show_orgs %}col-lg-6{% else %}col-lg-12{% endif %}">
+        <div class="card dash-chart-card shadow-sm h-100">
+          <div class="card-header py-3"><h6 class="mb-0">Approval status</h6></div>
+          <div class="card-body d-flex justify-content-center"><canvas id="statusChart" height="220"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Per-question audience breakdown -->
+    <div class="row g-3 mt-0" id="questionChartsRow"></div>
+
+    {% endif %}
+  </div>
+</main>
+{% endblock %}
+
+{% block extrajs %}
+{% if has_data %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+  const THEME = "{{ theme_color|escapejs }}" || "#198754";
+  const funnel = {{ funnel_json|safe }};
+  const timeline = {{ timeline_json|safe }};
+  const orgs = {{ orgs_json|safe }};
+  const questionCharts = {{ question_charts_json|safe }};
+  const KPI = { approved: {{ kpis.approved }}, pending: {{ kpis.pending }}, rejected: {{ kpis.rejected }} };
+
+  // A repeatable palette derived around the theme + supporting hues.
+  const PALETTE = [THEME, "#5e72e4", "#11cdef", "#fb6340", "#f5365c", "#2dce89",
+                   "#ffd600", "#8965e0", "#8392ab", "#344767", "#e14eca", "#00bcd4"];
+
+  // ---- Funnel (horizontal bars, relative widths) ----
+  (function () {
+    const wrap = document.getElementById("funnelContainer");
+    const max = Math.max.apply(null, funnel.map(s => s.value).concat([1]));
+    funnel.forEach((s, i) => {
+      const w = max ? Math.max((s.value / max) * 100, 2) : 2;
+      const row = document.createElement("div");
+      row.className = "funnel-row";
+      row.innerHTML =
+        '<div class="funnel-label">' + s.label + '</div>' +
+        '<div class="funnel-bar-wrap"><div class="funnel-bar" style="width:' + w +
+        '%;background:' + PALETTE[i % PALETTE.length] + ';">' + s.value + '</div></div>';
+      wrap.appendChild(row);
+    });
+  })();
+
+  // ---- Timeline (daily bars + cumulative line) ----
+  new Chart(document.getElementById("timelineChart"), {
+    data: {
+      labels: timeline.labels,
+      datasets: [
+        { type: "bar", label: "Per day", data: timeline.daily,
+          backgroundColor: THEME + "cc", borderRadius: 4, order: 2 },
+        { type: "line", label: "Cumulative", data: timeline.cumulative,
+          borderColor: "#5e72e4", backgroundColor: "#5e72e4", tension: .3,
+          pointRadius: 2, yAxisID: "y1", order: 1 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      interaction: { mode: "index", intersect: false },
+      scales: {
+        y: { beginAtZero: true, title: { display: true, text: "Per day" } },
+        y1: { beginAtZero: true, position: "right", grid: { drawOnChartArea: false },
+              title: { display: true, text: "Cumulative" } }
+      },
+      plugins: { legend: { position: "bottom" } }
+    }
+  });
+
+  // ---- Top organizations (horizontal bar) ----
+  if (orgs.labels.length) {
+    new Chart(document.getElementById("orgsChart"), {
+      type: "bar",
+      data: { labels: orgs.labels,
+              datasets: [{ label: "Registrants", data: orgs.values,
+                           backgroundColor: THEME, borderRadius: 4 }] },
+      options: { indexAxis: "y", responsive: true,
+                 plugins: { legend: { display: false } },
+                 scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
+    });
+  }
+
+  // ---- Approval status (doughnut) ----
+  new Chart(document.getElementById("statusChart"), {
+    type: "doughnut",
+    data: {
+      labels: ["Approved", "Pending", "Rejected"],
+      datasets: [{ data: [KPI.approved, KPI.pending, KPI.rejected],
+                   backgroundColor: ["#2dce89", "#ffd600", "#f5365c"] }]
+    },
+    options: { responsive: true, maintainAspectRatio: true,
+               plugins: { legend: { position: "bottom" } } }
+  });
+
+  // ---- Per-question breakdowns ----
+  const row = document.getElementById("questionChartsRow");
+  questionCharts.forEach((qc, idx) => {
+    const col = document.createElement("div");
+    col.className = "col-lg-6";
+    col.innerHTML =
+      '<div class="card dash-chart-card shadow-sm h-100">' +
+      '<div class="card-header py-3"><h6 class="mb-0">' + qc.title.replace(/</g, "&lt;") + '</h6></div>' +
+      '<div class="card-body"><canvas id="qChart' + idx + '" height="200"></canvas></div></div>';
+    row.appendChild(col);
+    new Chart(col.querySelector("canvas"), {
+      type: "bar",
+      data: { labels: qc.labels,
+              datasets: [{ label: "Responses", data: qc.values,
+                           backgroundColor: qc.labels.map((_, i) => PALETTE[i % PALETTE.length]),
+                           borderRadius: 4 }] },
+      options: { indexAxis: "y", responsive: true,
+                 plugins: { legend: { display: false } },
+                 scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
+    });
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}
