@@ -1481,22 +1481,29 @@ def create_survey(request):
                 fkcampaign=campaign,
                 purpose=purpose,
             )
-            # For a new registration form, seed the 4 default identity Question
+            # For a new registration form, seed the default identity Question
             # rows so the form is immediately usable end-to-end.
             if purpose == Survey.PURPOSE_REGISTRATION:
                 defaults = [
                     (Question.TYPE_IDENTITY_NAME,         "Name",         True),
+                    # Fixed participant-type picklist (Organizer/Delegate/...)
+                    # collected alongside the core identity fields.
+                    (Question.TYPE_IDENTITY_PARTICIPANT_TYPE, "Participant Type", True),
                     (Question.TYPE_IDENTITY_EMAIL,        "Email",        True),
                     (Question.TYPE_IDENTITY_PHONE,        "Phone",        False),
                     (Question.TYPE_IDENTITY_ORGANIZATION, "Organization", False),
                 ]
                 for idx, (qtype, label, req) in enumerate(defaults, start=1):
+                    choices = None
+                    if qtype == Question.TYPE_IDENTITY_PARTICIPANT_TYPE:
+                        choices = [c[0] for c in SurveyUser.PARTICIPANT_TYPE_CHOICES]
                     Question.objects.create(
                         survey=survey,
                         number=idx,
                         text=label,
                         question_type=qtype,
                         is_required=req,
+                        choices=choices,
                     )
 
         return JsonResponse({'success': True, 'id': survey.id})
@@ -1557,7 +1564,7 @@ def get_survey_submission_list(request):
                     'title': (item.get('label') or item['key'].title()),
                 }
                 for item in ident_cfg
-                if item.get('visible', True) and item.get('key') in {'name', 'email', 'phone', 'organization'}
+                if item.get('visible', True) and item.get('key') in {'name', 'participant_type', 'email', 'phone', 'organization'}
             ]
 
             # Custom questions the admin chose to surface as list columns
@@ -1643,6 +1650,7 @@ def get_survey_submission_list(request):
                     'id': s.id,
                     'reg_no': s.reg_no or '',
                     'name': s.name,
+                    'participant_type': s.participant_type,
                     'email': s.email,
                     'phone': s.phone,
                     'organization': s.organization,
@@ -1712,7 +1720,7 @@ def survey_answer_view(request, survey_id, user_id):
     for q_id, ans in answer_dict.items():
         ans.question.text = strip_tags(ans.question.text)
 
-    # Identity questions (Name/Email/Phone/Organization) are already displayed
+    # Identity questions (Name/Participant Type/Email/Phone/Organization) are already displayed
     # in the Respondent Information card at the top, and their answers live on
     # the SurveyUser row — not in Answer. Filter them out of the lower section
     # so we don't repeat the same fields with "no answer" placeholders.
@@ -1987,7 +1995,7 @@ def save_identity_config(request, survey_id):
     if not isinstance(config, list):
         return JsonResponse({"success": False, "message": "config must be a list"}, status=400)
 
-    allowed_keys = {"name", "email", "phone", "organization"}
+    allowed_keys = {"name", "participant_type", "email", "phone", "organization"}
     cleaned = []
     seen = set()
     for item in config:
@@ -2008,7 +2016,7 @@ def save_identity_config(request, survey_id):
     # wasn't in the posted payload — e.g. on an older form — isn't silently
     # hidden from the registrations list.
     defaults = {f["key"]: f for f in default_identity_field_config()}
-    for k in ["name", "email", "phone", "organization"]:
+    for k in ["name", "participant_type", "email", "phone", "organization"]:
         if k not in seen:
             cleaned.append(dict(defaults[k]))
 
@@ -2266,6 +2274,12 @@ def save_question(request):
         allow_other = False
         choice_followups = None
 
+    # Identity participant type always uses the fixed model-level choice list.
+    if question_type == Question.TYPE_IDENTITY_PARTICIPANT_TYPE:
+        choices = [c[0] for c in SurveyUser.PARTICIPANT_TYPE_CHOICES]
+        allow_other = False
+        choice_followups = None
+
     if max_checks not in (None, ""):
         try:
             max_checks = int(max_checks)
@@ -2286,7 +2300,7 @@ def save_question(request):
         question.max_checks = max_checks if question_type == Question.TYPE_CHECKBOX else None
         question.choices = choices
         question.choice_followups = choice_followups
-        # Identity questions are always implicitly in the list (Name/Email columns)
+        # Identity questions are always implicitly in the list (identity columns).
         question.show_in_list = show_in_list and not is_identity
         question.list_column_label = list_column_label
         question.save()
@@ -2450,6 +2464,7 @@ def form_initial_submit(request, survey_id):
     survey_user = SurveyUser.objects.create(
         survey=survey,
         name=(request.POST.get("name") or "").strip(),
+        participant_type=(request.POST.get("participant_type") or SurveyUser.PARTICIPANT_TYPE_DELEGATE).strip(),
         email=(request.POST.get("email") or "").strip(),
         phone=(request.POST.get("phone") or "").strip(),
         organization=(request.POST.get("organization") or "").strip(),
@@ -2525,6 +2540,7 @@ def form_submit(request, survey_id):
         survey_user = SurveyUser.objects.create(
             survey=survey,
             name=identity_values.get("name", ""),
+            participant_type=identity_values.get("participant_type", SurveyUser.PARTICIPANT_TYPE_DELEGATE),
             email=identity_values.get("email", ""),
             phone=identity_values.get("phone", ""),
             organization=identity_values.get("organization", ""),
@@ -3000,11 +3016,13 @@ def register_walkin(request, survey_id):
                 identity_values[target_field] = (request.POST.get(f"q_{q.id}") or "").strip()
 
         name = identity_values.get("name", "")
+        participant_type = identity_values.get("participant_type", SurveyUser.PARTICIPANT_TYPE_DELEGATE)
         email = identity_values.get("email", "")
         phone = identity_values.get("phone", "")
         organization = identity_values.get("organization", "")
     else:
         name = (request.POST.get("name") or "").strip()
+        participant_type = (request.POST.get("participant_type") or SurveyUser.PARTICIPANT_TYPE_DELEGATE).strip()
         email = (request.POST.get("email") or "").strip()
         phone = (request.POST.get("phone") or "").strip()
         organization = (request.POST.get("organization") or "").strip()
@@ -3025,6 +3043,7 @@ def register_walkin(request, survey_id):
         survey_user = SurveyUser.objects.create(
             survey=survey,
             name=name,
+            participant_type=participant_type,
             email=email,
             phone=phone,
             organization=organization,

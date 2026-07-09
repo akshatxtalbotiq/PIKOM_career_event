@@ -381,6 +381,13 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
                 {# ---------- Identity types ---------- #}
                 {% if q.question_type == 'identity_name' %}
                   <input type="text" class="form-control" id="wq{{ q.id }}" name="q_{{ q.id }}" {% if q.is_required %}required{% endif %}>
+                {% elif q.question_type == 'identity_participant_type' %}
+                  <select class="form-select" id="wq{{ q.id }}" name="q_{{ q.id }}" {% if q.is_required %}required{% endif %}>
+                    <option value="" disabled selected>Choose participant type...</option>
+                    {% for opt in q.choices %}
+                      <option value="{{ opt }}">{{ opt }}</option>
+                    {% endfor %}
+                  </select>
                 {% elif q.question_type == 'identity_email' %}
                   <input type="email" class="form-control" id="wq{{ q.id }}" name="q_{{ q.id }}" {% if q.is_required %}required{% endif %}>
                   <small class="text-muted">Required to email the QR code.</small>
@@ -615,6 +622,7 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
         const customCols = payload.columns || [];
         const identityCols = payload.identity_cols || [
           { key: 'name', title: 'Name' },
+          { key: 'participant_type', title: 'Participant Type' },
           { key: 'email', title: 'Email' },
           { key: 'phone', title: 'Phone' },
           { key: 'organization', title: 'Organization' },

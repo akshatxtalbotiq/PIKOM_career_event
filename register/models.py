@@ -246,6 +246,9 @@ def default_identity_field_config():
     so reordering one form doesn't affect another."""
     return [
         {"key": "name",         "label": "Name",         "visible": True, "required": True},
+        # Participant type is a first-class identity field captured on every
+        # registration using a fixed select list.
+        {"key": "participant_type", "label": "Participant Type", "visible": True, "required": True},
         {"key": "email",        "label": "Email",        "visible": True, "required": True},
         {"key": "phone",        "label": "Phone",        "visible": True, "required": False},
         {"key": "organization", "label": "Organization", "visible": True, "required": False},
@@ -336,12 +339,14 @@ class Question(models.Model):
     # table. They participate in the regular question ordering so they can be
     # interleaved with custom questions (e.g. "Salutation" before "Name").
     TYPE_IDENTITY_NAME = "identity_name"
+    TYPE_IDENTITY_PARTICIPANT_TYPE = "identity_participant_type"
     TYPE_IDENTITY_EMAIL = "identity_email"
     TYPE_IDENTITY_PHONE = "identity_phone"
     TYPE_IDENTITY_ORGANIZATION = "identity_organization"
 
     IDENTITY_TYPES = {
         TYPE_IDENTITY_NAME: "name",
+        TYPE_IDENTITY_PARTICIPANT_TYPE: "participant_type",
         TYPE_IDENTITY_EMAIL: "email",
         TYPE_IDENTITY_PHONE: "phone",
         TYPE_IDENTITY_ORGANIZATION: "organization",
@@ -355,6 +360,7 @@ class Question(models.Model):
         (TYPE_SELECT, "Dropdown"),
         (TYPE_MATRIX_ROLES, "Roles & Skills Matrix (Section C - Q6)"),
         (TYPE_IDENTITY_NAME, "Identity — Name"),
+        (TYPE_IDENTITY_PARTICIPANT_TYPE, "Identity — Participant Type"),
         (TYPE_IDENTITY_EMAIL, "Identity — Email"),
         (TYPE_IDENTITY_PHONE, "Identity — Phone"),
         (TYPE_IDENTITY_ORGANIZATION, "Identity — Organization"),
@@ -401,9 +407,28 @@ class SurveyUser(models.Model):
         (STATUS_REJECTED, "Rejected"),
     ]
 
+    # Participant grouping used across registration forms and list columns.
+    PARTICIPANT_TYPE_ORGANIZER = "Organizer"
+    PARTICIPANT_TYPE_DELEGATE = "Delegate"
+    PARTICIPANT_TYPE_SPONSOR = "Sponsor"
+    PARTICIPANT_TYPE_EXHIBITOR = "Exhibitor"
+    PARTICIPANT_TYPE_SPEAKER = "Speaker"
+    PARTICIPANT_TYPE_CHOICES = [
+        (PARTICIPANT_TYPE_ORGANIZER, "Organizer"),
+        (PARTICIPANT_TYPE_DELEGATE, "Delegate"),
+        (PARTICIPANT_TYPE_SPONSOR, "Sponsor"),
+        (PARTICIPANT_TYPE_EXHIBITOR, "Exhibitor"),
+        (PARTICIPANT_TYPE_SPEAKER, "Speaker"),
+    ]
+
     id = models.AutoField(primary_key=True)
     survey = models.ForeignKey(Survey, on_delete=models.CASCADE, related_name="survey_users")
     name = models.CharField(max_length=500, null=True, blank=True)
+    participant_type = models.CharField(
+        max_length=32,
+        choices=PARTICIPANT_TYPE_CHOICES,
+        default=PARTICIPANT_TYPE_DELEGATE,
+    )
     email = models.EmailField(null=True, blank=True)
     phone = models.CharField(max_length=50, null=True, blank=True)
     organization = models.CharField(max_length=500, null=True, blank=True)

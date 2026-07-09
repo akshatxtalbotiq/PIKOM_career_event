@@ -59,6 +59,7 @@
           {% if sub.survey_user %}
             <div class="info-grid">
               {% if sub.survey_user.name %}<div class="info-item"><b>Name:</b> {{ sub.survey_user.name }}</div>{% endif %}
+              {% if sub.survey_user.participant_type %}<div class="info-item"><b>Participant Type:</b> {{ sub.survey_user.participant_type }}</div>{% endif %}
               {% if sub.survey_user.email %}<div class="info-item"><b>Email:</b> {{ sub.survey_user.email }}</div>{% endif %}
               {% if sub.survey_user.phone %}<div class="info-item"><b>Phone:</b> {{ sub.survey_user.phone }}</div>{% endif %}
               {% if sub.survey_user.organization %}<div class="info-item"><b>Organization:</b> {{ sub.survey_user.organization }}</div>{% endif %}

@@ -192,6 +192,13 @@
                   {# ---------- Identity types (special inputs, no Answer row) ---------- #}
                   {% if q.question_type == 'identity_name' %}
                     <input type="text" class="form-control" name="q_{{ q.id }}" {% if q.is_required %}required{% endif %}>
+                  {% elif q.question_type == 'identity_participant_type' %}
+                    <select class="form-select" name="q_{{ q.id }}" {% if q.is_required %}required{% endif %}>
+                      <option value="" disabled selected>Choose participant type...</option>
+                      {% for opt in q.choices %}
+                        <option value="{{ opt }}">{{ opt }}</option>
+                      {% endfor %}
+                    </select>
                   {% elif q.question_type == 'identity_email' %}
                     <input type="email" class="form-control" name="q_{{ q.id }}" {% if q.is_required %}required{% endif %}>
                   {% elif q.question_type == 'identity_phone' %}
