@@ -36,6 +36,8 @@ from email.mime.image import MIMEImage
 import os
 from weasyprint import HTML
 
+from django.template.loader import render_to_string
+
 
 # Create your views here.
 def index(request):
@@ -3157,6 +3159,191 @@ def register_walkin(request, survey_id):
 
 
 @login_required
+def get_survey_user_edit(request, survey_id, user_id):
+    """Return one registration's identity fields + answers so the list page
+    can open the edit modal pre-filled with the current values."""
+    survey = get_object_or_404(Survey, id=survey_id)
+    survey_user = get_object_or_404(SurveyUser, id=user_id, survey=survey)
+
+    answers = {}
+    for ans in Answer.objects.filter(survey=survey, user=survey_user).select_related("question"):
+        key = f"q_{ans.question_id}"
+        payload = {}
+        if ans.selected_options:
+            payload["selected_options"] = ans.selected_options
+        if ans.answer_text:
+            payload["answer_text"] = ans.answer_text
+
+        # answer_text is overloaded: plain text for "Other", JSON dict for
+        # follow-up inputs. Split those into separate fields so the edit form
+        # can re-populate the right controls.
+        parsed = None
+        if ans.answer_text:
+            try:
+                parsed = json.loads(ans.answer_text)
+            except (TypeError, ValueError, json.JSONDecodeError):
+                parsed = None
+        if isinstance(parsed, dict):
+            payload["followups"] = parsed
+        elif ans.answer_text and ans.selected_options and "Other" in ans.selected_options:
+            payload["other"] = ans.answer_text
+
+        answers[key] = payload
+
+    return JsonResponse({
+        "success": True,
+        "survey_user": {
+            "id": survey_user.id,
+            "name": survey_user.name or "",
+            "participant_type": survey_user.participant_type or SurveyUser.PARTICIPANT_TYPE_DELEGATE,
+            "email": survey_user.email or "",
+            "phone": survey_user.phone or "",
+            "organization": survey_user.organization or "",
+            "is_checked_in": survey_user.is_checked_in,
+        },
+        "answers": answers,
+    })
+
+
+@login_required
+def update_survey_user(request, survey_id, user_id):
+    """Update one registration from the list-page edit modal. Reuses the same
+    validation rules as walk-in creation so required fields stay enforced."""
+    survey = get_object_or_404(Survey, id=survey_id)
+    survey_user = get_object_or_404(SurveyUser, id=user_id, survey=survey)
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
+
+    questions = list(survey.questions.all())
+    if questions:
+        missing = []
+        for q in questions:
+            if not q.is_required:
+                continue
+            field = f"q_{q.id}"
+            if q.question_type == Question.TYPE_CHECKBOX:
+                picked = request.POST.getlist(field)
+                other = (request.POST.get(f"{field}_other") or "").strip() if q.allow_other else ""
+                has_value = bool([p for p in picked if p.strip()]) or bool(other)
+            elif q.question_type in (Question.TYPE_RADIO, Question.TYPE_SELECT):
+                picked = (request.POST.get(field) or "").strip()
+                other = (request.POST.get(f"{field}_other") or "").strip() if q.allow_other else ""
+                has_value = bool(picked) or bool(other)
+            else:
+                has_value = bool((request.POST.get(field) or "").strip())
+            if not has_value:
+                label = strip_tags(q.text or "").strip()
+                missing.append(label or f"Question {q.id}")
+        if missing:
+            return JsonResponse(
+                {"success": False, "message": "Please complete all required fields: " + ", ".join(missing)},
+                status=400,
+            )
+
+        identity_values = {}
+        for q in questions:
+            if q.question_type in Question.IDENTITY_TYPES:
+                target_field = Question.IDENTITY_TYPES[q.question_type]
+                identity_values[target_field] = (request.POST.get(f"q_{q.id}") or "").strip()
+
+        name = identity_values.get("name", "")
+        participant_type = identity_values.get("participant_type", SurveyUser.PARTICIPANT_TYPE_DELEGATE)
+        email = identity_values.get("email", "")
+        phone = identity_values.get("phone", "")
+        organization = identity_values.get("organization", "")
+    else:
+        name = (request.POST.get("name") or "").strip()
+        participant_type = (request.POST.get("participant_type") or SurveyUser.PARTICIPANT_TYPE_DELEGATE).strip()
+        email = (request.POST.get("email") or "").strip()
+        phone = (request.POST.get("phone") or "").strip()
+        organization = (request.POST.get("organization") or "").strip()
+
+    if not name:
+        return JsonResponse({"success": False, "message": "Name is required."}, status=400)
+    if participant_type not in {c[0] for c in SurveyUser.PARTICIPANT_TYPE_CHOICES}:
+        return JsonResponse({"success": False, "message": "Invalid participant type."}, status=400)
+    if email:
+        try:
+            validate_email(email)
+        except ValidationError:
+            return JsonResponse({"success": False, "message": "Please enter a valid email address."}, status=400)
+
+    with transaction.atomic():
+        survey_user.name = name
+        survey_user.participant_type = participant_type
+        survey_user.email = email
+        survey_user.phone = phone
+        survey_user.organization = organization
+        survey_user.save(update_fields=["name", "participant_type", "email", "phone", "organization"])
+
+        # Replace existing non-identity answers wholesale so the stored state
+        # always matches the current edit form exactly.
+        Answer.objects.filter(survey=survey, user=survey_user, question__survey=survey).exclude(
+            question__question_type__in=Question.IDENTITY_TYPES.keys()
+        ).delete()
+
+        for q in questions:
+            if q.question_type in Question.IDENTITY_TYPES:
+                continue
+            field = f"q_{q.id}"
+
+            if q.question_type in (Question.TYPE_TEXT, Question.TYPE_TEXTAREA):
+                val = (request.POST.get(field) or "").strip()
+                if val:
+                    Answer.objects.create(survey=survey, question=q, user=survey_user, answer_text=val)
+
+            elif q.question_type in (Question.TYPE_RADIO, Question.TYPE_SELECT):
+                picked = request.POST.get(field, "")
+                other = (request.POST.get(f"{field}_other") or "").strip() if q.allow_other else ""
+                followups = {}
+                if picked and q.choice_followups and picked in q.choice_followups:
+                    fu_val = (request.POST.get(f"{field}_followup_{picked}") or "").strip()
+                    if fu_val:
+                        followups[picked] = fu_val
+                if picked:
+                    answer_text = None
+                    if picked == "Other" and other:
+                        answer_text = other
+                    elif followups:
+                        answer_text = json.dumps(followups, ensure_ascii=False)
+                    Answer.objects.create(
+                        survey=survey, question=q, user=survey_user,
+                        selected_options=[picked], answer_text=answer_text,
+                    )
+                elif q.allow_other and other:
+                    Answer.objects.create(
+                        survey=survey, question=q, user=survey_user,
+                        selected_options=["Other"], answer_text=other,
+                    )
+
+            elif q.question_type == Question.TYPE_CHECKBOX:
+                picked = request.POST.getlist(field)
+                other = (request.POST.get(f"{field}_other") or "").strip() if q.allow_other else ""
+                if q.max_checks and len(picked) > q.max_checks:
+                    picked = picked[: q.max_checks]
+                followups = {}
+                if q.choice_followups:
+                    for opt in picked:
+                        if opt in q.choice_followups:
+                            fu_val = (request.POST.get(f"{field}_followup_{opt}") or "").strip()
+                            if fu_val:
+                                followups[opt] = fu_val
+                if picked or other:
+                    if other and "Other" not in picked:
+                        picked.append("Other")
+                    if followups and not other:
+                        answer_text = json.dumps(followups, ensure_ascii=False)
+                    else:
+                        answer_text = other if other else None
+                    Answer.objects.create(
+                        survey=survey, question=q, user=survey_user,
+                        selected_options=picked, answer_text=answer_text,
+                    )
+
+    return JsonResponse({"success": True, "message": f"Updated {survey_user.name or 'participant'}."})
+
+
+@login_required
 def survey_user_labels(request, survey_id):
     """POST: ids=[...]. Return printable label data (incl. an inline QR
     data-URI) for the selected registrations so an operator can (re)print
@@ -3209,42 +3396,47 @@ def _label_print_html(labels):
     prints itself on load."""
     from django.utils.html import escape
 
-    cards = []
+    #cards = []
     for lb in labels:
         event = escape((lb.get("event") or "")).upper()
         name = escape(lb.get("name") or "")
         org = escape(lb.get("organization") or "")
-        cards.append(
-            '<div class="label">'
-            + (f'<div class="event">{event}</div>' if event else "")
-            + f'<div class="name">{name}</div>'
-            + (f'<div class="org">{org}</div>' if org else "")
-            + "</div>"
-        )
+        #cards.append(
+        #    '<div class="label">'
+        #    + (f'<div class="event">{event}</div>' if event else "")
+        #    + f'<div class="name">{name}</div>'
+        #    + (f'<div class="org">{org}</div>' if org else "")
+        #    + "</div>"
+        #)
+
+    #get html template from register/templates/register/label_print.html
+    
+    html = render_to_string("register/print_label.html", {"name": name.upper(), "event": event, "org": org})
 
     return (
-        "<!doctype html><html><head><meta charset='utf-8'><title>Label</title><style>"
-        "@page{size:70mm 50mm;margin:0;}"
-        "html,body{margin:0;padding:0;}"
-        "*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}"
-        "body{font-family:Arial,Helvetica,sans-serif;color:#000;}"
-        ".label{width:70mm;height:50mm;box-sizing:border-box;padding:3mm;"
-        "display:flex;flex-direction:column;align-items:center;justify-content:center;"
-        "text-align:center;overflow:hidden;page-break-after:always;}"
-        ".label:last-child{page-break-after:auto;}"
-        ".event{font-size:8pt;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2mm;}"
-        ".name{font-size:20pt;font-weight:700;line-height:1.05;word-break:break-word;}"
-        ".org{font-size:9pt;margin-top:2mm;word-break:break-word;}"
-        "</style></head><body>"
-        + "".join(cards)
-        + "<script>window.onload=function(){"
-          "document.querySelectorAll('.name').forEach(function(el){"
-            "var s=20;el.style.fontSize=s+'pt';"
-            "while(el.scrollWidth>el.clientWidth&&s>9){s-=0.5;el.style.fontSize=s+'pt';}"
-          "});"
-          "try{window.focus();window.print();}catch(e){}"
-        "};</script>"
-        "</body></html>"
+        html
+        # "<!doctype html><html><head><meta charset='utf-8'><title>Label</title><style>"
+        # "@page{size:70mm 50mm;margin:0;}"
+        # "html,body{margin:0;padding:0;}"
+        # "*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}"
+        # "body{font-family:Arial,Helvetica,sans-serif;color:#000;}"
+        # ".label{width:70mm;height:50mm;box-sizing:border-box;padding:3mm;"
+        # "display:flex;flex-direction:column;align-items:center;justify-content:center;"
+        # "text-align:center;overflow:hidden;page-break-after:always;}"
+        # ".label:last-child{page-break-after:auto;}"
+        # ".event{font-size:8pt;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2mm;}"
+        # ".name{font-size:20pt;font-weight:700;line-height:1.05;word-break:break-word;}"
+        # ".org{font-size:9pt;margin-top:2mm;word-break:break-word;}"
+        # "</style></head><body>"
+        # + "".join(cards)
+        # + "<script>window.onload=function(){"
+        #   "document.querySelectorAll('.name').forEach(function(el){"
+        #     "var s=20;el.style.fontSize=s+'pt';"
+        #     "while(el.scrollWidth>el.clientWidth&&s>9){s-=0.5;el.style.fontSize=s+'pt';}"
+        #   "});"
+        #   "try{window.focus();window.print();}catch(e){}"
+        # "};</script>"
+        # "</body></html>"
     )
 
 

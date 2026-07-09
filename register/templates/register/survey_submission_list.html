@@ -141,6 +141,8 @@
 #entries_wrapper .dt-buttons .btn-grp-send:hover    { background-color: #158463 !important; }
 #entries_wrapper .dt-buttons .btn-grp-more    { background-color: #5a6b8c !important; }
 #entries_wrapper .dt-buttons .btn-grp-more:hover    { background-color: #4a5a78 !important; }
+#entries_wrapper .dt-buttons .btn-grp-edit  { background-color: #E0115F !important; }
+#entries_wrapper .dt-buttons .btn-grp-edit:hover  { background-color: #C7003B !important; }
 
 /* Disabled (e.g. Status before any row is selected) reads as greyed-out. */
 #entries_wrapper .dt-buttons .btn-grp.disabled,
@@ -365,11 +367,12 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
           Enter the participant's details below. These are the same fields the public registration form collects.
         </p>
         <form id="walkinForm" novalidate>
+          <input type="hidden" id="walkinEditId" value="">
 
           {% if survey.questions.all %}
             {# Render the exact same fields (identity + custom) as the public form. #}
             {% for q in survey.questions.all %}
-              <div class="walkin-question">
+              <div class="walkin-question" data-question-type="{{ q.question_type }}" data-question-id="{{ q.id }}">
                 <label class="form-label">
                   {% if q.is_required %}<span class="text-danger">*</span> {% endif %}
                   {{ q.text|safe }}
@@ -606,7 +609,7 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
         $('#select-all').prop('indeterminate', checked > 0 && checked < total);
       }
 
-      const FEEDBACK_SURVEY_EXISTS = {% if feedback_survey %}true{% else %}false{% endif %};
+      const FEEDBACK_SURVEY_EXISTS = "{{ feedback_survey|yesno:'true,false' }}" === 'true';
       const tickHtml = (on) => on
         ? '<i class="material-symbols-rounded text-success" title="Yes">check_circle</i>'
         : '<i class="material-symbols-rounded text-muted" title="No" style="opacity:0.3;">radio_button_unchecked</i>';
@@ -772,6 +775,12 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
             className: 'btn btn-sm btn-grp btn-grp-walkin',
             action: function () { openWalkinModal(); },
           },
+          {
+            text: '<i class="material-symbols-rounded align-middle">edit</i> Edit',
+            name: 'editBtn',
+            className: 'btn btn-sm btn-grp btn-grp-edit',
+            action: function () { openEditModal(); },
+          },
 
           // --- Status group: the three mutually-related status changes. ---
           // Every item here acts on the ticked rows, so the whole menu is
@@ -930,6 +939,7 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
       window.updateBulkButtons = function () {
         const n = $('#entries tbody input.row-checkbox:checked').length;
         try { table.button('statusBtn:name').enable(n > 0); } catch (e) {}
+        try { table.button('editBtn:name').enable(n === 1); } catch (e) {}
         const $badge = $('#selectedCountBadge');
         if (n > 0) { $badge.text(n + ' selected on this page').show(); }
         else { $badge.hide(); }
@@ -1068,9 +1078,13 @@ table.on('draw.dt', function () {
       // actions toggled on by default).
       window.openWalkinModal = function () {
         $('#walkinForm')[0].reset();
+        $('#walkinEditId').val('');
+        $('#walkinModal .modal-title').html('<i class="material-symbols-rounded me-2">person_add</i> Register Walk-in');
+        $('#walkinSubmitBtn').html('<i class="material-symbols-rounded align-middle">how_to_reg</i> Register');
         $('#walkinSendQR').prop('checked', true);
         $('#walkinCheckIn').prop('checked', true);
         $('#walkinPrintLabel').prop('checked', true);
+        $('#walkinModal .walkin-options-block').show();
         // Hide and de-require any conditional follow-up / "Other" inputs so a
         // reopened modal starts clean.
         $('#walkinForm .followup-box, #walkinForm [id$="_other_box"]').each(function () {
@@ -1079,6 +1093,127 @@ table.on('draw.dt', function () {
         });
         const m = new bootstrap.Modal(document.getElementById('walkinModal'));
         m.show();
+      };
+
+      function setFieldByName(fieldName, value) {
+        return $('#walkinForm').find('[name]').filter(function () {
+          return this.name === fieldName;
+        }).first().val(value);
+      }
+
+      function populateEditForm(su, answers) {
+        $('#walkinForm .walkin-question').each(function () {
+          const $question = $(this);
+          const qType = $question.data('question-type');
+          const questionId = $question.data('question-id');
+          const fieldName = 'q_' + questionId;
+          const answer = answers[fieldName] || {};
+
+          if (qType === 'identity_name') {
+            setFieldByName(fieldName, su.name || '');
+            return;
+          }
+          if (qType === 'identity_participant_type') {
+            setFieldByName(fieldName, su.participant_type || '');
+            return;
+          }
+          if (qType === 'identity_email') {
+            setFieldByName(fieldName, su.email || '');
+            return;
+          }
+          if (qType === 'identity_phone') {
+            setFieldByName(fieldName, su.phone || '');
+            return;
+          }
+          if (qType === 'identity_organization') {
+            setFieldByName(fieldName, su.organization || '');
+            return;
+          }
+
+          if (qType === 'text' || qType === 'textarea') {
+            setFieldByName(fieldName, answer.answer_text || '');
+            return;
+          }
+
+          if (qType === 'select') {
+            const selected = (answer.selected_options || [])[0] || '';
+            setFieldByName(fieldName, selected).trigger('change');
+            if (selected === 'Other' && answer.other) {
+              setFieldByName(fieldName + '_other', answer.other);
+            }
+            Object.entries(answer.followups || {}).forEach(([opt, val]) => {
+              setFieldByName(fieldName + '_followup_' + opt, val);
+            });
+            return;
+          }
+
+          if (qType === 'radio') {
+            const selected = (answer.selected_options || [])[0] || '';
+            $question.find('input[type="radio"]').each(function () {
+              if (this.value === selected) {
+                this.checked = true;
+                $(this).trigger('change');
+              }
+            });
+            if (selected === 'Other' && answer.other) {
+              setFieldByName(fieldName + '_other', answer.other);
+            }
+            Object.entries(answer.followups || {}).forEach(([opt, val]) => {
+              setFieldByName(fieldName + '_followup_' + opt, val);
+            });
+            return;
+          }
+
+          if (qType === 'checkbox') {
+            const picked = answer.selected_options || [];
+            $question.find('input[type="checkbox"]').each(function () {
+              if (picked.includes(this.value)) {
+                this.checked = true;
+                $(this).trigger('change');
+              }
+            });
+            if (picked.includes('Other') && answer.other) {
+              setFieldByName(fieldName + '_other', answer.other);
+            }
+            Object.entries(answer.followups || {}).forEach(([opt, val]) => {
+              setFieldByName(fieldName + '_followup_' + opt, val);
+            });
+          }
+        });
+      }
+
+      // Edit reuses the same modal as walk-in registration so the required
+      // fields and question rendering stay perfectly in sync.
+      window.openEditModal = function () {
+        const ids = selectedIds();
+        if (ids.length !== 1) {
+          Swal.fire({ icon: 'warning', title: 'Select one row',
+                      text: 'Please select exactly one participant to edit.', confirmButtonColor: '#198754' });
+          return;
+        }
+        const userId = ids[0];
+        openWalkinModal();
+        $('#walkinModal .modal-title').html('<i class="material-symbols-rounded me-2">edit</i> Edit Participant');
+        $('#walkinSubmitBtn').html('<i class="material-symbols-rounded align-middle">save</i> Save Changes');
+        // Edit mode doesn't re-run walk-in side effects (send QR/check-in/print).
+        $('#walkinModal .walkin-options-block').hide();
+        $('#walkinEditId').val(userId);
+
+        $.ajax({
+          url: '/get_survey_user_edit/' + surveyId + '/' + userId + '/',
+          type: 'GET',
+          headers: { 'X-CSRFToken': getCSRFToken() },
+        }).done(function (response) {
+          if (!response || !response.success) {
+            Swal.fire('Error', (response && response.message) || 'Could not load participant data.', 'error');
+            return;
+          }
+          const su = response.survey_user || {};
+          const answers = response.answers || {};
+          populateEditForm(su, answers);
+        }).fail(function (xhr) {
+          commonAjaxErrorCallBack(xhr, '', '');
+        });
       };
 
       // (Re)print labels for the selected, already-registered participants —
@@ -1379,6 +1514,8 @@ table.on('draw.dt', function () {
     $('#walkinSubmitBtn').on('click', function () {
       const surveyId = '{{survey.id}}';
       const formEl = document.getElementById('walkinForm');
+      const editId = ($('#walkinEditId').val() || '').trim();
+      const isEditMode = !!editId;
 
       // Native validation for required text/email/phone/radio/select fields.
       if (!formEl.checkValidity()) {
@@ -1406,15 +1543,19 @@ table.on('draw.dt', function () {
 
       // FormData(formEl) captures every named field — identity + custom answers.
       const fd = new FormData(formEl);
-      fd.append('send_qr', $('#walkinSendQR').is(':checked') ? '1' : '0');
-      fd.append('check_in', $('#walkinCheckIn').is(':checked') ? '1' : '0');
-      fd.append('print_label', $('#walkinPrintLabel').is(':checked') ? '1' : '0');
+      if (!isEditMode) {
+        fd.append('send_qr', $('#walkinSendQR').is(':checked') ? '1' : '0');
+        fd.append('check_in', $('#walkinCheckIn').is(':checked') ? '1' : '0');
+        fd.append('print_label', $('#walkinPrintLabel').is(':checked') ? '1' : '0');
+      }
 
-      $('#walkinSubmitBtn').prop('disabled', true).text('Registering...');
+      $('#walkinSubmitBtn').prop('disabled', true).text(isEditMode ? 'Saving...' : 'Registering...');
       $('#walkinModal .btn-secondary').prop('disabled', true);
 
       $.ajax({
-        url: '/register_walkin/' + surveyId + '/',
+        url: isEditMode
+          ? '/update_survey_user/' + surveyId + '/' + editId + '/'
+          : '/register_walkin/' + surveyId + '/',
         type: 'POST',
         headers: { 'X-CSRFToken': getCSRFToken() },
         data: fd,
@@ -1422,21 +1563,25 @@ table.on('draw.dt', function () {
         contentType: false,
         success: function (response) {
           $('#walkinSubmitBtn').prop('disabled', false)
-            .html('<i class="material-symbols-rounded align-middle">how_to_reg</i> Register');
+            .html(isEditMode
+              ? '<i class="material-symbols-rounded align-middle">save</i> Save Changes'
+              : '<i class="material-symbols-rounded align-middle">how_to_reg</i> Register');
           $('#walkinModal .btn-secondary').prop('disabled', false);
           if (response.success) {
             $('#walkinModal').modal('hide');
-            if (response.print_label && response.id) {
+            if (!isEditMode && response.print_label && response.id) {
               autoPrintLabel([response.id]);
             }
-            Swal.fire('Registered', response.message, 'success').then(() => location.reload());
+            Swal.fire(isEditMode ? 'Saved' : 'Registered', response.message, 'success').then(() => location.reload());
           } else {
-            Swal.fire('Error', response.message || 'Failed to register walk-in.', 'error');
+            Swal.fire('Error', response.message || (isEditMode ? 'Failed to save changes.' : 'Failed to register walk-in.'), 'error');
           }
         },
         error: function (xhr, status, error) {
           $('#walkinSubmitBtn').prop('disabled', false)
-            .html('<i class="material-symbols-rounded align-middle">how_to_reg</i> Register');
+            .html(isEditMode
+              ? '<i class="material-symbols-rounded align-middle">save</i> Save Changes'
+              : '<i class="material-symbols-rounded align-middle">how_to_reg</i> Register');
           $('#walkinModal .btn-secondary').prop('disabled', false);
           commonAjaxErrorCallBack(xhr, status, error);
         }
