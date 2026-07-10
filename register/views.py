@@ -1490,7 +1490,7 @@ def create_survey(request):
                     (Question.TYPE_IDENTITY_NAME,         "Name",         True),
                     # Fixed participant-type picklist (Organizer/Delegate/...)
                     # collected alongside the core identity fields.
-                    (Question.TYPE_IDENTITY_PARTICIPANT_TYPE, "Participant Type", True),
+                    (Question.TYPE_IDENTITY_PARTICIPANT_TYPE, "Participant Type", False),
                     (Question.TYPE_IDENTITY_EMAIL,        "Email",        True),
                     (Question.TYPE_IDENTITY_PHONE,        "Phone",        False),
                     (Question.TYPE_IDENTITY_ORGANIZATION, "Organization", False),
@@ -2242,12 +2242,20 @@ def save_question(request):
     if not text:
         return JsonResponse({"success": False, "message": "Question text is required"}, status=400)
 
+    question = get_object_or_404(Question, id=qid) if qid else None
+
     valid_types = {choice[0] for choice in Question.QUESTION_TYPES}
     # matrix_roles is reserved for the legacy PIKOM survey; identity types
     # are only created automatically (when the survey is created) and via
     # the data-migration backfill — not via the builder modal.
     valid_types.discard(Question.TYPE_MATRIX_ROLES)
     is_identity = question_type in Question.IDENTITY_TYPES
+    existing_identity_type = question.question_type if question and question.question_type in Question.IDENTITY_TYPES else None
+    if existing_identity_type:
+        # Identity questions are locked: keep their field type even when the
+        # editor changes other properties such as required/help text.
+        question_type = existing_identity_type
+        is_identity = True
     if not qid and is_identity:
         # New questions can't pick an identity type from the builder modal.
         return JsonResponse({"success": False, "message": "Invalid question type"}, status=400)
@@ -2293,7 +2301,6 @@ def save_question(request):
         max_checks = None
 
     if qid:
-        question = get_object_or_404(Question, id=qid)
         question.text = text
         question.help_text = help_text
         question.question_type = question_type

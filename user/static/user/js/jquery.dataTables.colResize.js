@@ -309,6 +309,18 @@
             return this.s.dt.aoColumns;
         },
         _fnGetColumnHeader: function (column) {
+            // In scrollX/scrollY mode DataTables renders a visible header clone
+            // in .dataTables_scrollHead and keeps the original nTHead hidden.
+            // Bind resize handlers to the visible header so edge drag works.
+            let tableNode = this.s.dt.nTable;
+            let wrapper = tableNode ? tableNode.closest('.dt-container, .dataTables_wrapper') : null;
+            if (wrapper) {
+                let visibleHeader = wrapper.querySelectorAll('.dt-scroll-head thead th, .dataTables_scrollHead thead th');
+                if (visibleHeader && visibleHeader.length > column.idx) {
+                    return visibleHeader[column.idx];
+                }
+            }
+
             return this.s.dt.nTHead.querySelectorAll('th')[column.idx];
         },
         _fnGetColumnHeader$: function (column) {
@@ -356,26 +368,27 @@
 
             //change table size
             let $table = element.closest('table');
-            let shouldChangeTableWidth = element.closest('.dataTables_scroll').length > 0 &&
-                ($table.width() + changedWidth) > element.closest('.dataTables_scroll').width();
+            let $scrollWrap = element.closest('.dt-scroll, .dataTables_scroll');
+            let shouldChangeTableWidth = $scrollWrap.length > 0 &&
+                ($table.width() + changedWidth) > $scrollWrap.width();
             if (shouldChangeTableWidth) {
                 $table.width(self.s.state.originalTableWidth + changedWidth);
             }
 
             // possible body table
-            let scrollBodyTh = element.closest('.dataTables_scroll').find('.dataTables_scrollBody table th:nth-child(' + (element.index() + 1) + ')');
+            let scrollBodyTh = $scrollWrap.find('.dt-scroll-body table th:nth-child(' + (element.index() + 1) + '), .dataTables_scrollBody table th:nth-child(' + (element.index() + 1) + ')');
             scrollBodyTh.outerWidth((thWidth) + 'px');
             let $bodyTable = scrollBodyTh.closest('table');
             $bodyTable.width($table.width());
 
             // possible footer table
-            let scrollFooterTh = element.closest('.dataTables_scroll').find('.dataTables_scrollFoot table th:nth-child(' + (element.index() + 1) + ')');
+            let scrollFooterTh = $scrollWrap.find('.dt-scroll-foot table th:nth-child(' + (element.index() + 1) + '), .dataTables_scrollFoot table th:nth-child(' + (element.index() + 1) + ')');
             scrollFooterTh.outerWidth((thWidth) + 'px');
             let $footerTable = scrollFooterTh.closest('table');
             $footerTable.width($table.width());
 
             // HTML table can force columns to be wider than max-width and smaller than min-width. Overwrite style properties to look the same as the header
-            if (element.closest('.dataTables_scroll').length > 0) {
+            if ($scrollWrap.length > 0) {
                 let additionalStylesForHiddenThRows = ';padding-top: 0px;padding-bottom: 0px;border-top-width: 0px;border-bottom-width: 0px;height: 0px;';
                 this._fnGetAllColumns().forEach(function (column) {
                     let $hbTh = self._fnGetColumnHeader$(column);
@@ -383,10 +396,10 @@
                     let currentStyles = $hbTh.attr('style') + additionalStylesForHiddenThRows;
 
                     //body table
-                    let $sbTh = element.closest('.dataTables_scroll').find('.dataTables_scrollBody table th:nth-child(' + (currentIndex + 1) + ')');
+                    let $sbTh = $scrollWrap.find('.dt-scroll-body table th:nth-child(' + (currentIndex + 1) + '), .dataTables_scrollBody table th:nth-child(' + (currentIndex + 1) + ')');
                     $sbTh.attr('style', currentStyles);
                     //footer table
-                    let $sfTh = element.closest('.dataTables_scroll').find('.dataTables_scrollFoot table th:nth-child(' + (currentIndex + 1) + ')');
+                    let $sfTh = $scrollWrap.find('.dt-scroll-foot table th:nth-child(' + (currentIndex + 1) + '), .dataTables_scrollFoot table th:nth-child(' + (currentIndex + 1) + ')');
                     $sfTh.attr('style', currentStyles);
                 });
             }

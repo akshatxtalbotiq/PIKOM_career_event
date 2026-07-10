@@ -187,6 +187,33 @@ div.dt-button-collection .dt-danger-item.dt-button {
 }
 div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; }
 
+/* Manual resize handle fallback so column edges stay draggable even when
+   DataTables clone/fixed header wrappers interfere with plugin hit testing. */
+#entries_wrapper .manual-col-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -5px;
+  width: 10px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 3;
+  user-select: none;
+  touch-action: none;
+}
+#entries_wrapper .manual-col-resize-handle::before {
+  content: '';
+  position: absolute;
+  top: 20%;
+  bottom: 20%;
+  right: 4px;
+  width: 2px;
+  /* background: rgba(120, 130, 150, 0.55); */
+  border-radius: 1px;
+}
+#entries_wrapper .manual-col-resize-active {
+  background: rgba(94, 114, 228, 0.08);
+}
+
 </style>
 {% endblock %}
 
@@ -753,6 +780,287 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
         customCols.forEach(col => cols.push({ data: col.key, defaultContent: '' }));
         cols.push({ data: 'submitted_date' });
 
+        // ColResize's preInit hook can run before DataTables finishes building
+        // scroll/fixed headers, which leaves drag handlers bound to the wrong
+        // header node. We attach it manually after init so resizing works.
+        function attachColResize(dtApi) {
+          try {
+            const settings = dtApi.settings()[0];
+            if (!settings) return;
+
+            // If any instance was attached previously, clear it first.
+            if (settings._colResize) {
+              settings._colResize.fnDisable();
+              settings._colResize = null;
+            }
+
+            new $.fn.dataTable.ColResize(settings, {
+              isEnabled: true,
+              // Keep startup widths content-driven instead of restoring old
+              // drag widths from localStorage.
+              saveState: false,
+              hasBoundCheck: true,
+            });
+          } catch (err) {
+            console.warn('ColResize init failed:', err);
+          }
+        }
+
+        // Compute a practical startup width for each visible column from
+        // header + current page cell content, then apply to scroll head/body.
+        function optimizeInitialColumnWidths(dtApi) {
+          const $container = $(dtApi.table().container());
+          const $scrollWrap = $container.find('.dt-scroll, .dataTables_scroll').first();
+          if (!$scrollWrap.length) return;
+
+          const $headThs = $scrollWrap.find('.dt-scroll-head thead th, .dataTables_scrollHead thead th');
+          if (!$headThs.length) return;
+
+          const measurer = document.createElement('span');
+          measurer.style.position = 'absolute';
+          measurer.style.visibility = 'hidden';
+          measurer.style.whiteSpace = 'nowrap';
+          measurer.style.left = '-99999px';
+          measurer.style.top = '-99999px';
+          document.body.appendChild(measurer);
+
+          const calcTextWidth = function (text, sourceEl) {
+            if (sourceEl) {
+              const css = window.getComputedStyle(sourceEl);
+              measurer.style.fontFamily = css.fontFamily;
+              measurer.style.fontSize = css.fontSize;
+              measurer.style.fontWeight = css.fontWeight;
+              measurer.style.letterSpacing = css.letterSpacing;
+              measurer.style.textTransform = css.textTransform;
+            }
+            measurer.textContent = String(text || '');
+            return Math.ceil(measurer.getBoundingClientRect().width);
+          };
+
+          const widthByCol = [];
+          $headThs.each(function (idx) {
+            const $th = $(this);
+            const headerText = $th.text().trim();
+            const headerKey = headerText.toLowerCase();
+
+            // Keep checkbox selector narrow and stable.
+            if (idx === 0) {
+              widthByCol[idx] = 44;
+              return;
+            }
+
+            // Indicator columns should stay compact and sized only by header
+            // text (the body is icon-only), so they don't waste horizontal
+            // space in the table.
+            if (headerKey === 'check-in' || headerKey === 'qr sent' || headerKey === 'reminder') {
+              const compact = calcTextWidth(headerText, this) + 18;
+              widthByCol[idx] = Math.max(68, Math.min(104, compact));
+              return;
+            }
+            let maxPx = calcTextWidth(headerText, this) + 34;
+
+            const cells = dtApi.cells(null, idx, { page: 'current' }).nodes().toArray();
+            const sampleLimit = Math.min(cells.length, 40);
+            for (let i = 0; i < sampleLimit; i++) {
+              const cell = cells[i];
+              const text = (cell && cell.textContent ? cell.textContent : '').replace(/\s+/g, ' ').trim();
+              if (!text) continue;
+              const candidate = calcTextWidth(text, cell) + 26;
+              if (candidate > maxPx) maxPx = candidate;
+            }
+
+            // Guardrails: avoid unusably tiny columns or single-column sprawl.
+            widthByCol[idx] = Math.max(90, Math.min(420, maxPx));
+          });
+
+          const $allTables = $scrollWrap.find(
+            '.dt-scroll-head table, .dt-scroll-body table, .dt-scroll-foot table, ' +
+            '.dataTables_scrollHead table, .dataTables_scrollBody table, .dataTables_scrollFoot table'
+          );
+
+          const totalWidth = widthByCol.reduce((sum, w) => sum + (w || 0), 0);
+          widthByCol.forEach(function (w, idx) {
+            if (!w) return;
+            const col = idx + 1;
+            const selector =
+              'thead th:nth-child(' + col + '), ' +
+              'tbody td:nth-child(' + col + '), ' +
+              'tfoot th:nth-child(' + col + '), ' +
+              'tfoot td:nth-child(' + col + ')';
+
+            $allTables.each(function () {
+              $(this).find(selector).css({
+                width: w + 'px',
+                minWidth: w + 'px',
+                maxWidth: w + 'px'
+              });
+              $(this).css('width', totalWidth + 'px');
+            });
+          });
+
+          try { dtApi.columns.adjust(); } catch (err) {}
+          measurer.remove();
+        }
+
+        // ── Column width persistence ──────────────────────────────────────────────
+        // Keys are stored as  survey_{id}_col_{headerTitle}  so dynamic columns
+        // that appear/disappear between loads each carry their own independent
+        // width, and columns missing on load simply get no entry (auto-width).
+        function colWidthKey(surveyId, headerTitle) {
+          return 'survey_' + surveyId + '_col_' + headerTitle.trim().toLowerCase();
+        }
+
+        function saveColumnWidths(dtApi, surveyId) {
+          const $container = $(dtApi.table().container());
+          const $headThs = $container.find('.dt-scroll-head thead th, .dataTables_scrollHead thead th');
+          $headThs.each(function () {
+            const title = $(this).text().trim();
+            if (!title) return; // skip the checkbox column
+            try {
+              localStorage.setItem(colWidthKey(surveyId, title), $(this).outerWidth());
+            } catch (e) {}
+          });
+        }
+
+        function restoreColumnWidths(dtApi, surveyId) {
+          const $container = $(dtApi.table().container());
+          const $scrollWrap = $container.find('.dt-scroll, .dataTables_scroll').first();
+          if (!$scrollWrap.length) return;
+
+          const $allTables = $scrollWrap.find(
+            '.dt-scroll-head table, .dt-scroll-body table, .dt-scroll-foot table, ' +
+            '.dataTables_scrollHead table, .dataTables_scrollBody table, .dataTables_scrollFoot table'
+          );
+
+          const $headThs = $scrollWrap.find('.dt-scroll-head thead th, .dataTables_scrollHead thead th');
+          let anyRestored = false;
+          let totalWidth = 0;
+
+          // First pass: collect widths (saved or current)
+          const widths = [];
+          $headThs.each(function (idx) {
+            const title = $(this).text().trim();
+            const saved = title ? localStorage.getItem(colWidthKey(surveyId, title)) : null;
+            const w = saved ? parseInt(saved, 10) : $(this).outerWidth();
+            widths.push(w);
+            totalWidth += w;
+            if (saved) anyRestored = true;
+          });
+
+          if (!anyRestored) return; // nothing saved yet — leave auto-widths alone
+
+          // Second pass: apply
+          widths.forEach(function (w, idx) {
+            const col = idx + 1;
+            const selector =
+              'thead th:nth-child(' + col + '), ' +
+              'tbody td:nth-child(' + col + '), ' +
+              'tfoot th:nth-child(' + col + '), ' +
+              'tfoot td:nth-child(' + col + ')';
+            $allTables.each(function () {
+              $(this).find(selector).css({ width: w + 'px', minWidth: w + 'px', maxWidth: w + 'px' });
+              $(this).css('width', totalWidth + 'px');
+            });
+          });
+
+          try { dtApi.columns.adjust(); } catch (e) {}
+        }
+
+
+        // Guaranteed fallback: add explicit drag handles on visible header
+        // edges and propagate widths to scroll head/body/footer tables.
+        function enableManualColumnResize(dtApi) {
+          const $container = $(dtApi.table().container());
+          const $scrollWrap = $container.find('.dt-scroll, .dataTables_scroll').first();
+          if (!$scrollWrap.length) return;
+
+          const dtSettings = dtApi.settings()[0];
+          const setSortingEnabled = function (enabled) {
+            if (!dtSettings || !dtSettings.aoColumns) return;
+            dtSettings.aoColumns.forEach(function (col) {
+              col.bSortable = !!enabled;
+            });
+          };
+
+          const $headerThs = $scrollWrap.find('.dt-scroll-head thead th, .dataTables_scrollHead thead th');
+          if (!$headerThs.length) return;
+
+          $headerThs.each(function () {
+            const $th = $(this);
+            $th.css('position', 'relative');
+            $th.find('.manual-col-resize-handle').remove();
+
+            // Keep first checkbox column fixed width; resizing it causes
+            // awkward selection UX and gains little value.
+            if ($th.index() === 0) return;
+
+            const $handle = $('<span class="manual-col-resize-handle" aria-hidden="true"></span>');
+            $th.append($handle);
+
+            // Clicking the resize handle itself must never bubble into header
+            // sort handlers.
+            $handle.on('click dblclick', function (e) {
+              e.preventDefault();
+              e.stopPropagation();
+            });
+
+            $handle.on('mousedown', function (e) {
+              e.preventDefault();
+              e.stopPropagation();
+
+              const startX = e.pageX;
+              const colIndex = $th.index() + 1;
+              const startWidth = $th.outerWidth();
+              const minWidth = 70;
+              const $allTables = $scrollWrap.find(
+                '.dt-scroll-head table, .dt-scroll-body table, .dt-scroll-foot table, ' +
+                '.dataTables_scrollHead table, .dataTables_scrollBody table, .dataTables_scrollFoot table'
+              );
+              const tableStartWidths = $allTables.map(function () {
+                return $(this).outerWidth();
+              }).get();
+
+              $th.addClass('manual-col-resize-active');
+              setSortingEnabled(false);
+
+              $(document).on('mousemove.manualColResize', function (ev) {
+                const delta = ev.pageX - startX;
+                const nextWidth = Math.max(minWidth, startWidth + delta);
+                const widthDelta = nextWidth - startWidth;
+
+                const selector =
+                  'thead th:nth-child(' + colIndex + '), ' +
+                  'tbody td:nth-child(' + colIndex + '), ' +
+                  'tfoot th:nth-child(' + colIndex + '), ' +
+                  'tfoot td:nth-child(' + colIndex + ')';
+
+                $allTables.each(function (idx) {
+                  const $tbl = $(this);
+                  $tbl.find(selector).css({
+                    width: nextWidth + 'px',
+                    minWidth: nextWidth + 'px',
+                    maxWidth: nextWidth + 'px'
+                  });
+                  $tbl.css('width', Math.max(0, tableStartWidths[idx] + widthDelta) + 'px');
+                });
+              });
+
+              $(document).on('mouseup.manualColResize', function () {
+                $(document).off('.manualColResize');
+                $th.removeClass('manual-col-resize-active');
+                // Delay restore so the click generated by mouseup on the
+                // handle/header cannot trigger ordering.
+                setTimeout(function () { setSortingEnabled(true); }, 180);
+                try { dtApi.columns.adjust(); } catch (err) {}
+
+                // ── persist widths after drag ──
+                saveColumnWidths(dtApi, surveyId);
+
+              });
+            });
+          });
+        }
+
         let table = new DataTable('#entries', {
         responsive: false,
         paging: true,
@@ -760,6 +1068,8 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
         searching: true,
         pageLength: 10,
         colReorder: true,
+        // Disable auto hook and initialize manually in initComplete.
+        colResize: false,
         scrollY: '60vh',
         scrollX: true,
         data: data,
@@ -922,8 +1232,18 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
         },
 
         initComplete: function () {
+          optimizeInitialColumnWidths(this.api());
+          attachColResize(this.api());
+          enableManualColumnResize(this.api());
+          restoreColumnWidths(this.api(), surveyId);   // ← NEW: overlay saved widths
           console.log('DataTable initialized and loaded via AJAX');
         }
+      });
+
+      // Keep resize handles healthy after users reorder columns.
+      table.on('column-reorder.dt', function () {
+        attachColResize(table);
+        enableManualColumnResize(table);
       });
 
       // Inject a small "N selected" badge into the buttons toolbar so it's

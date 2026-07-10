@@ -179,11 +179,14 @@
           <div class="card shadow-sm rounded mb-3">
             <div class="card-body p-4">
 
-              {% for q in survey.questions.all %}
+              {% for q in survey.questions.all %}              
+                {% if q.question_type != 'identity_participant_type' %}
                 <div class="mb-4">
                   <label class="form-label fw-bold">
-                    {% if q.is_required %}<span class="text-danger">*</span> {% endif %}
-                    {{ q.text|safe }}
+                    
+                      {% if q.is_required %}<span class="text-danger">*</span> {% endif %}
+                      {{ q.text|safe }}
+                    
                   </label>
                   {% if q.help_text %}
                     <div class="text-muted small mb-2">{{ q.help_text|safe }}</div>
@@ -290,6 +293,7 @@
                     </div>
                   {% endif %}
                 </div>
+                {% endif %}
               {% endfor %}
 
             </div>

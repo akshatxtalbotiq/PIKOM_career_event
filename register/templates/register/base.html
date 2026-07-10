@@ -63,6 +63,230 @@
       overflow-y: auto;
     }
 
+    /* ── Sidebar collapse/expand ── */
+
+    /* ── Main content margin adjustment ── */
+    body.sidenav-collapsed .main-content {
+      margin-left: calc(var(--sidenav-mini-width) + 1rem) !important;
+    }
+
+    body:not(.sidenav-collapsed) .main-content {
+      margin-left: calc(var(--sidenav-full-width) + 1rem) !important;
+    }
+
+    :root {
+      --sidenav-full-width: 250px;
+      --sidenav-mini-width: 68px;
+      --sidenav-transition: 0.25s ease;
+    }
+
+    #sidenav-main {
+      width: var(--sidenav-full-width);
+      transition: width var(--sidenav-transition);
+      overflow: hidden !important; /* kill x-scroll at all times */
+    }
+
+    /* ── Collapsed state ── */
+    #sidenav-main.sidenav-mini {
+      width: var(--sidenav-mini-width) !important;
+    }
+
+    /* Hide text, hr, brand name instantly on collapse */
+    #sidenav-main.sidenav-mini .nav-link-text,
+    #sidenav-main.sidenav-mini .navbar-brand span:not(.visually-hidden),
+    #sidenav-main.sidenav-mini hr.horizontal {
+      display: none !important;
+    }
+
+    /* Center the logo area */
+    #sidenav-main.sidenav-mini .sidenav-header {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 0.5rem 0;
+    }
+
+    #sidenav-main.sidenav-mini .navbar-brand {
+      padding: 0.5rem !important;
+      margin: 0 auto !important;
+      display: flex;
+      justify-content: center;
+    }
+
+    /* Scale down logo image in mini mode */
+    #sidenav-main.sidenav-mini .navbar-brand-img {
+      width: 36px;
+      height: 36px;
+      object-fit: contain;
+    }
+
+    /* Center nav items and remove extra padding */
+    #sidenav-main.sidenav-mini .navbar-nav {
+      align-items: center;
+      width: 100%;
+    }
+
+    #sidenav-main.sidenav-mini .nav-item {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+
+    #sidenav-main.sidenav-mini .nav-link {
+      display: flex !important;
+      justify-content: center !important;
+      align-items: center !important;
+      padding: 0.75rem 0 !important;
+      width: 44px;
+      border-radius: 8px;
+    }
+
+    /* Make icon fully visible (remove opacity-5 effect) */
+    #sidenav-main.sidenav-mini .nav-link i.material-symbols-rounded {
+      opacity: 1 !important;
+      font-size: 1.4rem;
+      margin: 0 !important;
+    }
+
+    /* Hide the logout section divider text neatly */
+    #sidenav-main.sidenav-mini .mt-4 {
+      margin-top: 0.5rem !important;
+    }
+
+    /* Toggle button: hide in mini, show on hover */
+    #sidenavToggleBtn i {
+      transition: transform var(--sidenav-transition);
+    }
+
+    #sidenav-main.sidenav-mini #sidenavToggleBtn i {
+      transform: rotate(180deg);
+    }
+
+    #sidenav-main.sidenav-mini #sidenavToggleBtn {
+      opacity: 0;
+      transition: opacity var(--sidenav-transition);
+      right: 0.25rem !important;
+    }
+
+    #sidenav-main.sidenav-mini:hover #sidenavToggleBtn {
+      opacity: 1;
+    }
+
+    /* ── Hover expand when collapsed ── */
+    /* ── Hover expand when collapsed ── */
+    #sidenav-main.sidenav-mini:hover {
+      width: var(--sidenav-full-width) !important;
+    }
+
+    #sidenav-main.sidenav-mini:hover .nav-link-text {
+      display: inline !important;
+    }
+
+    #sidenav-main.sidenav-mini:hover hr.horizontal {
+      display: block !important;
+    }
+
+    /* Restore nav items layout */
+    #sidenav-main.sidenav-mini:hover .navbar-nav {
+      align-items: unset;
+    }
+
+    #sidenav-main.sidenav-mini:hover .nav-item {
+      justify-content: unset;
+    }
+
+    /* Restore nav-link to original */
+    #sidenav-main.sidenav-mini:hover .nav-link {
+      display: flex !important;
+      justify-content: flex-start !important;
+      align-items: center !important;
+      padding: 0.75rem 1rem !important;
+      width: auto !important;
+      border-radius: 8px;
+    }
+
+    /* Restore icon opacity */
+    #sidenav-main.sidenav-mini:hover .nav-link i.material-symbols-rounded {
+      opacity: 0.5 !important;
+    }
+
+    /* Restore logo to full size */
+    #sidenav-main.sidenav-mini:hover .navbar-brand {
+      padding: 0.75rem 1.5rem !important;
+      margin: 0 !important;
+      justify-content: flex-start;
+      display: flex;
+    }
+
+    #sidenav-main.sidenav-mini:hover .navbar-brand-img {
+      width: unset !important;
+      height: unset !important;
+    }
+
+    /* Restore header alignment */
+    #sidenav-main.sidenav-mini:hover .sidenav-header {
+      justify-content: flex-start;
+      padding: unset;
+    }
+
+    /* Restore logout margin */
+    #sidenav-main.sidenav-mini:hover .mt-4 {
+      margin-top: 1.5rem !important;
+    }
+
+    /* Restore text/hr on hover */
+    #sidenav-main.sidenav-mini:hover .nav-link-text,
+    #sidenav-main.sidenav-mini:hover hr.horizontal {
+      display: inline !important;
+    }
+
+    /* Restore nav-link layout on hover */
+    #sidenav-main.sidenav-mini:hover .nav-link {
+      display: flex !important;
+      justify-content: flex-start !important;
+      padding: 0.75rem 1rem !important;
+      width: auto;
+    }
+
+    /* Restore logo on hover */
+    #sidenav-main.sidenav-mini:hover .navbar-brand {
+      padding: 0.75rem 1rem !important;
+      justify-content: flex-start;
+    }
+
+    #sidenav-main.sidenav-mini:hover .navbar-brand-img {
+      width: 32px;
+      height: 32px;
+    }
+
+    #sidenav-main.sidenav-mini:hover .sidenav-header {
+      justify-content: flex-start;
+    }
+
+    /* Smooth content push */
+    .main-content {
+      transition: margin-left var(--sidenav-transition);
+    }
+
+
+    /* ── Active nav-link: light blue gradient ── */
+    #sidenav-main .nav-link.active {
+      background: linear-gradient(195deg, #89d4f5, #3a9fd6) !important;
+      box-shadow: 0 4px 12px rgba(58, 159, 214, 0.35) !important;
+    }
+
+    /* Keep icon and text white when active */
+    #sidenav-main .nav-link.active i.material-symbols-rounded {
+      opacity: 1 !important;
+      color: #fff !important;
+    }
+
+    #sidenav-main .nav-link.active .nav-link-text {
+      color: #fff !important;
+    }
+
+    
+
   </style>
 
   {% block extra_head %}
@@ -91,7 +315,12 @@
         <a class="navbar-brand px-4 py-3 m-0" href="">             
             <img src="{% static 'user/img/PIKOM.png' %}" class="navbar-brand-img" alt="main_logo">             
             <span class="ms-1 text-sm text-dark visually-hidden">PIKOM</span>         
-        </a>         
+        </a>   
+        
+        <button id="sidenavToggleBtn" class="btn btn-link p-0 position-absolute" 
+              style="top: 1rem; right: 0.75rem; z-index: 10; border: none; background: none;">
+          <i class="material-symbols-rounded text-dark" style="font-size: 1.25rem;">menu_open</i>
+      </button>
     </div>         
     <hr class="horizontal dark mt-0 mb-2">         
     
@@ -194,13 +423,42 @@
       
       if (currentPath.endsWith('survey_list')) {
         document.getElementById('survey_list').classList.add('active');
-
       } else if (currentPath.endsWith('campaign_list')) {
         document.getElementById('campaign_list').classList.add('active');
+      } else if (currentPath.endsWith('registration_forms')) {
+        const el = document.getElementById('registration_form_list');
+        if (el) el.classList.add('active');
       } else if (currentPath.endsWith('users')) {
         const el = document.getElementById('user_list');
         if (el) el.classList.add('active');
-    }
+      }
+
+      // ── Sidebar collapse toggle ──
+      const sidenav = document.getElementById('sidenav-main');
+      const toggleBtn = document.getElementById('sidenavToggleBtn');
+
+      function applyCollapsed(collapsed) {
+        if (collapsed) {
+          sidenav.classList.add('sidenav-mini');
+          document.body.classList.add('sidenav-collapsed');
+        } else {
+          sidenav.classList.remove('sidenav-mini');
+          document.body.classList.remove('sidenav-collapsed');
+        }
+      }
+
+      // Restore saved state on load
+      applyCollapsed(localStorage.getItem('sidenavCollapsed') === 'true');
+
+      toggleBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        const isCollapsed = !sidenav.classList.contains('sidenav-mini');
+        applyCollapsed(isCollapsed);
+        localStorage.setItem('sidenavCollapsed', isCollapsed);
+      });
+
+
+
     });
 
   </script>
