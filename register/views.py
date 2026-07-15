@@ -1966,8 +1966,8 @@ def upload_banner(request, survey_id):
     if not banner.content_type.startswith("image/"):
         return JsonResponse({"success": False, "message": "File must be an image"}, status=400)
     # Replace any existing banner
-    if survey.banner:
-        survey.banner.delete(save=False)
+    # if survey.banner:
+    #     survey.banner.delete(save=False)
     survey.banner = banner
     survey.save(update_fields=["banner"])
     return JsonResponse({"success": True, "url": survey.banner.url})
