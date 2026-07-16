@@ -15,7 +15,7 @@ from .views import index, save_registration, thankyou, sponsorship, save_sponsor
     send_survey_qr, send_survey_event_reminder, send_survey_feedback_reminder, delete_survey_users, \
     set_survey_user_status, set_survey_user_checkin, save_event_details, save_email_content, preview_email, clone_survey, delete_survey, \
     get_survey_user_edit, update_survey_user, \
-    register_walkin, survey_user_labels, survey_user_label_pdf, campaign_dashboard
+    register_walkin, survey_user_labels, survey_user_label_pdf, campaign_dashboard,set_survey_user_participant_type
 
 urlpatterns = [
     path('', campaign_list, name='campaign_list'),
@@ -88,6 +88,7 @@ urlpatterns = [
     path('send_survey_feedback_reminder/<int:survey_id>/', send_survey_feedback_reminder, name='send_survey_feedback_reminder'),
     path('delete_survey_users/<int:survey_id>/', delete_survey_users, name='delete_survey_users'),
     path('set_survey_user_status/<int:survey_id>/', set_survey_user_status, name='set_survey_user_status'),
+    path('set_survey_user_participant_type/<int:survey_id>/', set_survey_user_participant_type, name='set_survey_user_participant_type'),
     path('set_survey_user_checkin/<int:survey_id>/', set_survey_user_checkin, name='set_survey_user_checkin'),
     path('get_survey_user_edit/<int:survey_id>/<int:user_id>/', get_survey_user_edit, name='get_survey_user_edit'),
     path('update_survey_user/<int:survey_id>/<int:user_id>/', update_survey_user, name='update_survey_user'),

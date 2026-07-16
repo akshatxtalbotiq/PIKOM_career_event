@@ -143,6 +143,8 @@
 #entries_wrapper .dt-buttons .btn-grp-more:hover    { background-color: #4a5a78 !important; }
 #entries_wrapper .dt-buttons .btn-grp-edit  { background-color: #E0115F !important; }
 #entries_wrapper .dt-buttons .btn-grp-edit:hover  { background-color: #C7003B !important; }
+#entries_wrapper .dt-buttons .btn-grp-partitype  { background-color: #877f98 !important; }
+#entries_wrapper .dt-buttons .btn-grp-partitype:hover  { background-color: #6e6784 !important; }
 
 /* Disabled (e.g. Status before any row is selected) reads as greyed-out. */
 #entries_wrapper .dt-buttons .btn-grp.disabled,
@@ -268,6 +270,8 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
           </div>
         </div>
       </div>
+
+      <input type="hidden" id="partiTypeList" value="{{ participant_type_choices_str }}">
 
       <div class="col-12">
         <div class="card my-2">
@@ -571,7 +575,7 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
 
 
 
-
+  
   <script>
     function getCSRFToken() {
           let name = 'csrftoken';
@@ -1123,6 +1127,31 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
             ],
           },
 
+          {
+            extend: 'collection',
+            name: 'partiTypeBtn',
+            text: '<i class="material-symbols-rounded align-middle">person</i> Participant Type <i class="material-symbols-rounded align-middle" style="font-size:18px;">expand_more</i>',
+            className: 'btn btn-sm btn-grp btn-grp-partitype',
+            autoClose: true,
+            // Right-align the menu so it opens back toward the toolbar instead
+            // of running off the right edge of the screen.
+            align: 'button-right',          
+            buttons: (function() {
+              let buttons = [];
+              let partiTypeList = document.getElementById("partiTypeList").value.split(";");
+              partiTypeList.forEach(function (partiType) {
+                if (partiType.trim() !== "") {
+                  buttons.push({
+                    text: partiType.trim(),
+                    className: 'dt-menu-item',
+                    action: function () { bulkAction('set_participant_type', partiType.trim()); },
+                  });
+                }
+              });
+              return buttons;
+            })(),
+          },
+
           // --- Send group: outbound messages. "Send QR code" works with or
           // without a selection (falls back to all approved), so this menu
           // stays enabled; the reminders warn if nothing is selected. ---
@@ -1260,6 +1289,7 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
         const n = $('#entries tbody input.row-checkbox:checked').length;
         try { table.button('statusBtn:name').enable(n > 0); } catch (e) {}
         try { table.button('editBtn:name').enable(n === 1); } catch (e) {}
+        try { table.button('partiTypeBtn:name').enable(n > 0); } catch (e) {}
         const $badge = $('#selectedCountBadge');
         if (n > 0) { $badge.text(n + ' selected on this page').show(); }
         else { $badge.hide(); }
@@ -1327,6 +1357,10 @@ table.on('draw.dt', function () {
                 : kind === 'reject'
                   ? ' Rejected delegates will NOT receive a QR code.'
                   : '');
+        } else if (kind === 'set_participant_type') {
+          url = `/set_survey_user_participant_type/${surveyId}/`;
+          extraData.participant_type = arguments[1] || '';
+          confirmText = `Set participant type to "${extraData.participant_type}" for ${ids.length} entr${ids.length === 1 ? 'y' : 'ies'}?`;
         } else {
           return;
         }
@@ -1346,7 +1380,7 @@ table.on('draw.dt', function () {
             Swal.fire({ icon: r.success ? 'success' : 'error',
                         title: r.success ? 'Done' : 'Failed',
                         text: r.message || '' }).then(() => {
-              if (r.success && (kind === 'remove' || kind === 'approve' || kind === 'reject' || kind === 'reset')) {
+              if (r.success && (kind === 'remove' || kind === 'approve' || kind === 'reject' || kind === 'reset' || kind === 'set_participant_type')) {
                 location.reload();
               }
             });

@@ -1542,11 +1542,16 @@ def survey_submission_list(request, id=None):
                   .order_by('-created_at')
                   .first()
         )
+   
+    participant_type_choices = dict(SurveyUser.PARTICIPANT_TYPE_CHOICES)   
+    participant_type_choices_str = ";".join(participant_type_choices.values())
+    
     return render(request, 'register/survey_submission_list.html', {
         'user': current_user,
         'survey': survey,
         'campaign': survey.fkcampaign,
-        'feedback_survey': feedback_survey,
+        'feedback_survey': feedback_survey,       
+        'participant_type_choices_str': participant_type_choices_str,
     })
 
 @login_required
@@ -3622,6 +3627,33 @@ def set_survey_user_status(request, survey_id):
         "message": f"{qs.count()} entr{'y' if qs.count() == 1 else 'ies'} marked {label}.",
     })
 
+@login_required
+def set_survey_user_participant_type(request, survey_id):
+    """POST: ids=[...], participant_type=delegate|speaker|sponsor. Bulk-set the
+    participant type for the selected registrations of this form."""
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
+    survey = get_object_or_404(Survey, id=survey_id)
+    new_type = (request.POST.get("participant_type") or "").strip()
+    valid_types = {c[0] for c in SurveyUser.PARTICIPANT_TYPE_CHOICES}
+    print(f"set_survey_user_participant_type: new_type={new_type}, valid_types={valid_types}")
+    if new_type not in valid_types:
+        return JsonResponse({"success": False, "message": "Invalid participant type."}, status=400)
+    try:
+        ids = json.loads(request.POST.get("ids") or "[]")
+    except json.JSONDecodeError:
+        ids = []
+    if not ids:
+        return JsonResponse({"success": False, "message": "No participants selected"}, status=400)
+
+    qs = SurveyUser.objects.filter(survey=survey, id__in=ids)
+    qs.update(participant_type=new_type)
+
+    label = dict(SurveyUser.PARTICIPANT_TYPE_CHOICES).get(new_type, new_type)
+    return JsonResponse({
+        "success": True,
+        "message": f"{qs.count()} entr{'y' if qs.count() == 1 else 'ies'} marked as {label}.",
+    })
 
 @login_required
 def set_survey_user_checkin(request, survey_id):
