@@ -3905,3 +3905,17 @@ def survey_consolidated_pdf(request, survey_id):
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     return response
 
+
+# ---------------------------------------------------------------------------
+# User manual
+# ---------------------------------------------------------------------------
+@login_required
+def user_manual(request):
+    """Screenshot walkthrough for creating a campaign and a registration form.
+
+    Rendered through base.html so it carries the app's own styling and sidebar.
+    Its screenshots live in register/static/register/manual/, and the page
+    carries a print stylesheet that strips the chrome for Save-as-PDF.
+    """
+    return render(request, 'register/user_manual.html')
+
