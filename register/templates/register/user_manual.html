@@ -4,7 +4,7 @@
 {% block extracss %}
 <style>
   /* ── User manual ───────────────────────────────────────────────────────── */
-  .manual-wrap { max-width: 1040px; }
+  .manual-wrap { max-width: 1400px; }
 
   .manual-card { border: none; }
   .manual-card .card-header { background: transparent; border-bottom: 1px solid #f0f0f0; }
@@ -14,8 +14,11 @@
   .manual-card .card-body li { margin-bottom: .2rem; }
   .manual-card .card-body strong { color: #344767; }
 
-  .manual-step { color: #344767; font-weight: 700; margin: 1.6rem 0 .35rem; }
-  .manual-step:first-child { margin-top: .25rem; }
+  /* Each step is fenced off with a hairline so a heading, its text and its
+     screenshots read as one block and the eye doesn't drift into the next. */
+  .manual-step { color: #344767; font-weight: 700; margin: 2rem 0 .5rem;
+                 padding-top: 1.15rem; border-top: 1px solid #eef0f4; }
+  .manual-step:first-child { margin-top: .25rem; padding-top: 0; border-top: none; }
   .step-pill { display: inline-block; background: #fdeaf1; color: #e91e63; font-size: .68rem;
                font-weight: 700; letter-spacing: .03em; text-transform: uppercase;
                border-radius: 20px; padding: .15rem .6rem; margin-right: .5rem;
@@ -25,7 +28,10 @@
 
   figure.manual-fig { margin: .75rem 0 1.25rem; }
   figure.manual-fig img { width: 100%; height: auto; border: 1px solid #e9ecef; }
-  figure.manual-fig img.icon-strip { width: auto; max-width: 100%; border: none; box-shadow: none !important; }
+  /* Icon close-ups: capped by width, not height, so the rule keeps working if
+     the strip images are re-exported at a different aspect ratio. */
+  figure.manual-fig img.icon-strip { width: auto; max-width: min(100%, 620px); height: auto;
+                                     border: none; box-shadow: none !important; }
   /* Screenshots narrower than the column: keep them at natural size instead of
      upscaling them into a blur. */
   figure.manual-fig img.img-natural { width: auto; max-width: 100%; }
@@ -46,12 +52,34 @@
   .manual-toc ol { columns: 2; column-gap: 2.5rem; }
   .manual-toc a { color: #344767; }
 
+  /* Anchor jumps land with a little breathing room, not flush to the top. */
+  .manual-col > .card { scroll-margin-top: 1rem; }
+
+  /* Sticky "On this page" rail: the reader can always see where they are. */
+  .manual-nav { position: sticky; top: .5rem; border: none; }
+  .manual-nav-list { list-style: none; margin: 0; padding: 0; }
+  .manual-nav-list a { display: block; padding: .3rem .6rem; border-left: 2px solid #eef0f4;
+                       color: #67748e; font-size: .8rem; line-height: 1.35; text-decoration: none; }
+  .manual-nav-list a:hover { color: #344767; background: #f8f9fa; }
+  .manual-nav-list a.active { color: #e91e63; border-left-color: #e91e63; font-weight: 600; }
+
+  /* Back to top */
+  .manual-top { position: fixed; right: 1.5rem; bottom: 1.5rem; z-index: 20;
+                width: 42px; height: 42px; padding: 0; border-radius: 50%;
+                display: flex; align-items: center; justify-content: center;
+                opacity: 0; pointer-events: none; transition: opacity .2s ease; }
+  .manual-top.show { opacity: 1; pointer-events: auto; }
+
   /* ── Print / Save as PDF ──────────────────────────────────────────────────
      The theme locks the page to 100vh with an internally scrolling
      .main-content, so printing needs the layout unlocked and the chrome
      removed. */
   @media print {
     #sidenav-main, .no-print, .breadcrumb { display: none !important; }
+    /* The contents list is hidden on wide screens (the rail replaces it) but
+       is wanted on paper. */
+    .manual-toc-card { display: block !important; }
+    .manual-col { width: 100% !important; flex: 0 0 100% !important; max-width: 100% !important; }
     html, body { height: auto !important; overflow: visible !important; background: #fff !important; }
     body .main-content { height: auto !important; max-height: none !important; overflow: visible !important; }
     /* Same specificity as the two sidenav margin rules in base.html, declared
@@ -99,8 +127,11 @@
       </div>
     </div>
 
+    <div class="row">
+    <div class="col-xl-9 manual-col">
+
     <!-- Contents -->
-    <div class="card manual-card my-2">
+    <div class="card manual-card my-2 manual-toc-card d-xl-none">
       <div class="card-body py-3 manual-toc">
         <h6 class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 mb-2">What this covers</h6>
         <ol class="text-sm mb-0">
@@ -225,8 +256,12 @@
         <p>Once the campaign exists, its row carries the icons below. Which ones appear depends on whether a
           registration form is attached yet.</p>
         <figure class="manual-fig">
-          <img src="{% static 'register/manual/a7_icons.jpg' %}" class="icon-strip" alt="Campaign row action icons">
-          <figcaption>Action icons on a campaign that already has a registration form.</figcaption>
+          <img src="{% static 'register/manual/a8_icons_where.jpg' %}" class="border-radius-lg shadow-sm" alt="Where the action icons sit on the Campaigns list">
+          <figcaption><strong>Where they are:</strong> the right-hand end of every row, after the status badge.</figcaption>
+        </figure>
+        <figure class="manual-fig">
+          <img src="{% static 'register/manual/a7_icons.jpg' %}" class="icon-strip" alt="Campaign row action icons close-up">
+          <figcaption><strong>Close-up, left to right</strong> — a campaign that already has a registration form.</figcaption>
         </figure>
           <table class="table align-items-center mb-0 manual-table">
             <thead>
@@ -325,8 +360,12 @@
 
         <h6 class="manual-step"><span class="step-pill">Step B4</span>Row icons on the forms list</h6>
         <figure class="manual-fig">
-          <img src="{% static 'register/manual/b0_icons.jpg' %}" class="icon-strip" alt="Registration form row action icons">
-          <figcaption>Action icons on a registration form row.</figcaption>
+          <img src="{% static 'register/manual/b15_icons_where.jpg' %}" class="border-radius-lg shadow-sm" alt="Where the action icons sit on the Registration Forms list">
+          <figcaption><strong>Where they are:</strong> the right-hand end of every row on the Registration Forms list.</figcaption>
+        </figure>
+        <figure class="manual-fig">
+          <img src="{% static 'register/manual/b0_icons.jpg' %}" class="icon-strip" alt="Registration form row action icons close-up">
+          <figcaption><strong>Close-up, left to right.</strong></figcaption>
         </figure>
           <table class="table align-items-center mb-0 manual-table">
             <thead>
@@ -616,6 +655,74 @@
       titles, participant names and contact details are blurred in this manual.
     </p>
 
+    </div><!-- /.manual-col -->
+
+    <!-- On-this-page rail (screen only) -->
+    <aside class="col-xl-3 d-none d-xl-block no-print">
+      <nav class="manual-nav card manual-card" aria-label="On this page">
+        <div class="card-body py-3">
+          <h6 class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 mb-2">On this page</h6>
+          <ul class="manual-nav-list">
+            <li><a href="#before">1. Before you begin</a></li>
+            <li><a href="#concepts">2. How the pieces fit together</a></li>
+            <li><a href="#partA">3. Create a campaign</a></li>
+            <li><a href="#partB">4. Create a registration form</a></li>
+            <li><a href="#partC">5. Set up the form</a></li>
+            <li><a href="#clone">6. Clone a form</a></li>
+            <li><a href="#golive">7. Test and go live</a></li>
+            <li><a href="#checklist">8. Pre-launch checklist</a></li>
+            <li><a href="#trouble">9. Troubleshooting</a></li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    </div><!-- /.row -->
+
+    <button type="button" id="manualTop" class="manual-top btn bg-gradient-dark text-white no-print" title="Back to top">
+      <i class="material-symbols-rounded align-middle">arrow_upward</i>
+    </button>
+
   </div>
 </main>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+  // The theme scrolls .main-content rather than the window, so both the
+  // on-this-page highlight and the back-to-top button work off that element.
+  document.addEventListener('DOMContentLoaded', function () {
+    var scroller = document.querySelector('.main-content');
+    var links = Array.prototype.slice.call(document.querySelectorAll('.manual-nav-list a'));
+    var topBtn = document.getElementById('manualTop');
+    if (!scroller) return;
+
+    var sections = links
+      .map(function (a) { return document.querySelector(a.getAttribute('href')); })
+      .filter(Boolean);
+
+    function onScroll() {
+      if (sections.length) {
+        var edge = scroller.getBoundingClientRect().top + 140;
+        var current = sections[0];
+        sections.forEach(function (sec) {
+          if (sec.getBoundingClientRect().top <= edge) { current = sec; }
+        });
+        links.forEach(function (a) {
+          a.classList.toggle('active', a.getAttribute('href') === '#' + current.id);
+        });
+      }
+      if (topBtn) { topBtn.classList.toggle('show', scroller.scrollTop > 400); }
+    }
+
+    scroller.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    if (topBtn) {
+      topBtn.addEventListener('click', function () {
+        scroller.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
+  });
+</script>
 {% endblock %}
