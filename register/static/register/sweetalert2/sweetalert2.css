@@ -1099,6 +1099,31 @@ body.swal2-toast-shown .swal2-container.swal2-bottom-end, body.swal2-toast-shown
 .swal2-container .popover {
   z-index: 1091;
 }
+/* ---------------------------------------------------------------------------
+   Fallbacks for the Bootstrap-flavoured skin below.
+
+   That skin styles the popup with --bs-* variables, but Bootstrap only defines
+   --bs-modal-bg / --bs-modal-box-shadow inside `.modal`, and several others
+   (--bs-paper-bg, --bs-base-color, --bs-primary-contrast, --bs-progress-*) are
+   not part of stock Bootstrap at all. A SweetAlert2 popup has no `.modal`
+   ancestor, so those var() lookups resolved to nothing — and an unresolved
+   var() invalidates the whole declaration. That is why `background-color:
+   var(--bs-modal-bg)` computed to transparent and the popup rendered
+   see-through on every page that loads this file.
+
+   Declaring the defaults on .swal2-container keeps the fix scoped to the popup
+   and leaves the rest of the page untouched.
+   --------------------------------------------------------------------------- */
+.swal2-container {
+  --bs-modal-bg: var(--bs-body-bg, #fff);
+  --bs-modal-box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  --bs-paper-bg: var(--bs-body-bg, #fff);
+  --bs-base-color: var(--bs-body-color, #212529);
+  --bs-primary-contrast: #fff;
+  --bs-progress-bg-amount: 30%;
+  --bs-progress-mix-bg: var(--bs-gray-100, #f8f9fa);
+}
+
 .swal2-container.swal2-shown {
   background: rgba(151, 149, 158, 0.5);
 }

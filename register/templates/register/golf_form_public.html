@@ -1,0 +1,1071 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ form.title }}</title>
+  <link rel="stylesheet" href="{% static 'register/assets/css/bootstrap.css' %}">
+  <link rel="stylesheet" href="{% static 'register/assets/css/style.css' %}">
+  <link rel="stylesheet" href="{% static 'register/sweetalert2/sweetalert2.css' %}">
+  <style>
+    :root {
+      --theme: {{ form.theme }};
+      --theme-soft: {{ form.theme_soft }};
+    }
+    body { background: #f5f7fb; }
+    .form-card { max-width: 980px; margin: 0 auto; }
+
+    .form-title { font-size: 1.75rem; line-height: 1.2; }
+    .btn-theme { background: var(--theme); border-color: var(--theme); color: #fff; }
+    .btn-theme:hover, .btn-theme:focus { background: var(--theme); border-color: var(--theme); color: #fff; filter: brightness(.92); }
+
+    .section-head {
+      font-size: .78rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em; color: var(--theme);
+    }
+
+    /* Rich text authored in the builder (intro + note + item descriptions) */
+    .rt { color: #444; font-size: 15px; }
+    .rt p { margin: 0 0 .5rem 0; }
+    .rt p:last-child { margin-bottom: 0; }
+    .rt ul, .rt ol { padding-left: 1.4rem; margin: 0 0 .5rem 0; }
+    .rt li { margin-bottom: .25rem; }
+    .rt strong { color: #222; }
+    .rt a { color: var(--theme); font-weight: 600; }
+    .rt h1, .rt h2, .rt h3, .rt h4 { font-size: 1.05rem; font-weight: 700; color: var(--theme); margin: .75rem 0 .35rem 0; }
+    .rt blockquote {
+      margin: .5rem 0; padding: .6rem .9rem; background: var(--theme-soft);
+      border-left: 4px solid var(--theme); border-radius: .25rem; color: #333;
+    }
+
+    /* Player blocks */
+    .player-block { border: 1px solid #e6e9ef; border-radius: .6rem; }
+    .player-block .player-head {
+      background: var(--theme-soft); color: var(--theme);
+      font-weight: 700; font-size: .9rem;
+      padding: .55rem .9rem; border-radius: .55rem .55rem 0 0;
+    }
+    .optional-pill {
+      background: #eef2f7; color: #52616f; font-weight: 600;
+      font-size: .68rem; padding: 1px 8px; border-radius: 999px;
+    }
+
+    /* ── Required-field highlighting on a failed submit ──
+       Plain inputs/selects use Bootstrap's own .is-invalid look. Everything
+       else that represents a "control" (a player block, an item card, a
+       radio/checkbox question) gets the same red border treatment applied
+       to its own box, since there's no single input to mark. */
+    .form-control.is-invalid, .form-select.is-invalid {
+      border-color: #dc3545;
+    }
+    .form-control.is-invalid:focus, .form-select.is-invalid:focus {
+      border-color: #dc3545; box-shadow: 0 0 0 .25rem rgba(220, 53, 69, .25);
+    }
+    .field-invalid {
+      border-color: #dc3545 !important;
+      box-shadow: 0 0 0 3px rgba(220, 53, 69, .18) !important;
+    }
+    /* These containers have no border of their own to recolor, so draw the
+       highlight as an outline instead — it doesn't shift any layout. */
+    [data-radio-group].field-invalid,
+    [data-checkbox-group].field-invalid,
+    .item-rows.field-invalid {
+      outline: 2px solid #dc3545;
+      outline-offset: 6px;
+      border-radius: .5rem;
+    }
+
+    /* ── Sponsor packages: one full-width row each ──
+       Image on the left, text in the middle, Select on the far right. The whole
+       row is the control (no checkbox): click to select, click again to unselect. */
+    .item-rows { display: flex; flex-direction: column; gap: .85rem; }
+    .item-row {
+      position: relative; display: flex; align-items: stretch; overflow: hidden;
+      border: 2px solid #e6e9ef; border-radius: .7rem; background: #fff;
+      transition: border-color .15s, box-shadow .15s, background .15s;
+    }
+    .item-row:not(.item-taken) { cursor: pointer; }
+    .item-row:not(.item-taken):hover { border-color: var(--theme); }
+    .item-row:not(.item-taken):focus-visible {
+      outline: none; border-color: var(--theme); box-shadow: 0 0 0 3px var(--theme-soft);
+    }
+    .item-row.selected { border-color: var(--theme); box-shadow: 0 0 0 3px var(--theme-soft); }
+
+    /* Fixed height so the image never stretches with the text column; when the
+       description wraps and makes the row taller, align-self centers this
+       300px block in the extra space instead of letting it grow. */
+    .ir-media { flex: 0 0 210px; height: 300px; align-self: center; }
+    .ir-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .ir-img-empty {
+      width: 100%; height: 100%; background: #f2f4f7;
+      display: flex; align-items: center; justify-content: center;
+      color: #c3cad3; font-size: 40px;
+    }
+
+    .ir-body { flex: 1 1 auto; padding: 1rem 1.1rem; min-width: 0; }
+    .ir-name { font-size: 1.05rem; margin-bottom: .15rem; }
+    .ir-price { font-size: 1.1rem; margin-bottom: .5rem; }
+    .ir-desc { font-size: .875rem; }
+
+    .ir-action {
+      flex: 0 0 160px; display: flex; flex-direction: column; gap: .3rem;
+      align-items: center; justify-content: center;
+      border-left: 1px dashed #e6e9ef; padding: 1rem .75rem;
+    }
+    .ir-btn {
+      display: inline-block; padding: .5rem 1.35rem; border-radius: 999px;
+      border: 2px solid var(--theme); color: var(--theme);
+      font-weight: 700; font-size: .9rem; white-space: nowrap;
+    }
+    .item-row:hover .ir-btn { background: var(--theme); color: #fff; }
+
+    /* The big green tick — shown in place of the Select button once selected. */
+    .ir-tick {
+      display: none; width: 62px; height: 62px; border-radius: 50%;
+      background: var(--theme); color: #fff;
+      align-items: center; justify-content: center;
+      font-size: 38px; font-weight: 700; line-height: 1;
+      box-shadow: 0 2px 8px rgba(0,0,0,.22);
+    }
+    .ir-tick-label {
+      display: none; font-size: .72rem; font-weight: 700; letter-spacing: .06em;
+      text-transform: uppercase; color: var(--theme);
+    }
+    .item-row.selected .ir-btn { display: none; }
+    .item-row.selected .ir-tick { display: flex; }
+    .item-row.selected .ir-tick-label { display: block; }
+
+    /* Sold out: inert row, buyer's logo (or NOT AVAILABLE) in the top-right corner. */
+    .item-row.item-taken { opacity: .8; background: #fbfbfc; }
+    .item-row.item-taken .ir-img, .item-row.item-taken .ir-img-empty { filter: grayscale(1); }
+    .ir-corner {
+      position: absolute; top: 12px; right: 12px; z-index: 3;
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      background: rgba(255,255,255,.96); border: 1px solid #e6e9ef;
+      border-radius: .45rem; padding: 6px 10px; box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    }
+    /* Fixed height with width:auto so a small upload still reads at a glance,
+       and a large one is scaled down — object-fit keeps the aspect ratio either way. */
+    .ir-corner-logo {
+      height: 40px; width: auto; max-width: 160px;
+      object-fit: contain; display: block;
+    }
+    .ir-corner-caption {
+      font-size: .62rem; font-weight: 700; letter-spacing: .07em;
+      text-transform: uppercase; color: #98a2b3;
+    }
+    .ir-corner-na {
+      font-weight: 800; letter-spacing: .07em; font-size: .8rem; color: #b3261e;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 767.98px) {
+      .item-row { flex-direction: column; }
+      .ir-media { flex: 0 0 auto; height: auto; align-self: auto; }
+      .ir-img, .ir-img-empty { height: 160px; min-height: 0; }
+      .ir-action {
+        flex: 0 0 auto; flex-direction: row; gap: .6rem;
+        border-left: 0; border-top: 1px dashed #e6e9ef; padding: .8rem;
+      }
+      .ir-tick { width: 48px; height: 48px; font-size: 29px; }
+      .ir-corner { top: 8px; right: 8px; }
+    }
+
+    /* Selectable item cards (participant add-ons) */
+    .item {
+      position: relative; border: 2px solid #e6e9ef; border-radius: .7rem;
+      background: #fff; overflow: hidden; height: 100%;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .item:not(.item-taken) { cursor: pointer; }
+    .item:not(.item-taken):hover { border-color: var(--theme); }
+    .item.selected { border-color: var(--theme); box-shadow: 0 0 0 3px var(--theme-soft); }
+    .item-corner {
+      position: absolute; top: 8px; right: 8px; z-index: 3;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .tick {
+      display: none; width: 38px; height: 38px; border-radius: 50%;
+      background: var(--theme); color: #fff; align-items: center; justify-content: center;
+      font-size: 24px; font-weight: 700; line-height: 1;
+      box-shadow: 0 2px 6px rgba(0,0,0,.25);
+    }
+    .item.selected .tick { display: flex; }
+    .item-img { width: 100%; height: 150px; object-fit: cover; background: #f2f4f7; display: block; }
+    .item-img-empty {
+      width: 100%; height: 150px; background: #f2f4f7; display: flex;
+      align-items: center; justify-content: center; color: #c3cad3; font-size: 40px;
+    }
+    .item-body { padding: .8rem .9rem; }
+    .item-name { font-weight: 700; font-size: .95rem; color: #1f2937; }
+    .item-price { font-weight: 700; color: var(--theme); }
+
+    /* Taken (once-only) items */
+    .item-taken { opacity: .75; background: #fbfbfc; }
+    .item-taken .item-img, .item-taken .item-img-empty { filter: grayscale(1); }
+    .taken-bar {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: .5rem; border-top: 1px dashed #e6e9ef; background: #fff;
+    }
+    .taken-bar img { max-height: 40px; max-width: 150px; object-fit: contain; }
+    .taken-label { font-weight: 800; letter-spacing: .06em; font-size: .78rem; color: #b3261e; }
+    .taken-caption { font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; color: #98a2b3; }
+
+    /* Totals */
+    .total-row { display: flex; justify-content: space-between; gap: 1rem; padding: .3rem 0; font-size: .92rem; }
+    .total-row.grand { border-top: 2px solid var(--theme); margin-top: .5rem; padding-top: .6rem; font-size: 1.05rem; font-weight: 700; }
+    .total-row.grand .amount { color: var(--theme); }
+
+    .form-control, .form-select { font-size: 16px; }
+    .form-check-label { word-break: break-word; }
+    .event-details-table td { padding: 4px 0; font-size: 15px; color: #333; vertical-align: top; }
+    .event-details-table .ed-icon { padding-right: 12px; white-space: nowrap; }
+
+    @media (max-width: 575.98px) {
+      .container-xl { padding-left: 12px; padding-right: 12px; }
+      .py-5 { padding-top: 1.25rem !important; padding-bottom: 1.25rem !important; }
+      .form-card .card-body { padding: 1rem !important; }
+      .form-title { font-size: 1.3rem; }
+      .btn-lg { padding: .75rem 1.25rem; font-size: 1rem; }
+    }
+  </style>
+</head>
+<body>
+  {% if preview_mode %}
+    <div class="alert alert-warning text-center mb-0 rounded-0" style="position:sticky;top:0;z-index:1030;">
+      <strong>&#128065; PREVIEW MODE</strong> — this is exactly what entrants will see. Submissions are <strong>NOT saved</strong>.
+      <a href="{% url 'golf_form_builder' form.id %}" class="alert-link ms-2">← Back to builder</a>
+    </div>
+  {% endif %}
+
+  <div class="container-xl py-5">
+    <div class="form-card">
+
+      {% if messages %}
+        <div class="alert alert-danger shadow-sm">
+          <strong>Please complete the following before submitting:</strong>
+          <ul class="mb-0 mt-2 ps-3">
+            {% for message in messages %}<li>{{ message }}</li>{% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+
+      {% if form.banner %}
+        <div class="mb-3 rounded overflow-hidden shadow-sm">
+          <img src="{{ form.banner.url }}" alt="{{ form.title }}" class="img-fluid w-100">
+        </div>
+      {% endif %}
+
+      {% if registration_closed and not preview_mode %}
+        <div class="card shadow-sm rounded mb-3 text-center">
+          <div class="card-body p-5">
+            <div style="font-size:48px; line-height:1; margin-bottom:.5rem;">&#128274;</div>
+            <h3 class="fw-bold mb-2" style="color:var(--theme);">
+              {% if form.is_sponsor %}Sponsorship Closed{% else %}Registration Closed{% endif %}
+            </h3>
+            {% if registration_closed_message %}
+              <div class="rt text-center mb-3">{{ registration_closed_message|safe }}</div>
+            {% else %}
+              <p class="text-muted mb-3" style="font-size:15px;">
+                {% if form.is_sponsor %}Sponsorship{% else %}Registration{% endif %} for
+                <strong>{{ event.title|default:form.title }}</strong> is now closed and we are no longer accepting new submissions.
+              </p>
+            {% endif %}
+          </div>
+        </div>
+      {% else %}
+
+      <div class="card shadow-sm rounded mb-3">
+        <div class="card-body p-4">
+          <h3 class="form-title fw-bold mb-2">{{ form.title }}</h3>
+          {% if form.description %}
+            <div class="rt">{{ form.description|safe }}</div>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if form.show_event_details and event %}
+        {% if event.end_date or event.event_time or event.venue or event.dress_code or event.extra_info %}
+        <div class="card shadow-sm rounded mb-3">
+          <div class="card-body p-4">
+            <div class="section-head mb-3">Event Details</div>
+            <table class="event-details-table">
+              {% if event.end_date %}
+                <tr><td class="ed-icon">&#128197;</td><td>{{ event.end_date|date:"l, j F Y" }}</td></tr>
+              {% endif %}
+              {% if event.event_time %}
+                <tr><td class="ed-icon">&#128338;</td><td>{{ event.event_time }}</td></tr>
+              {% endif %}
+              {% if event.venue %}
+                <tr><td class="ed-icon">&#128205;</td><td>{{ event.venue|linebreaksbr }}</td></tr>
+              {% endif %}
+              {% if event.dress_code %}
+                <tr><td class="ed-icon">&#128085;</td><td>{{ event.dress_code }}</td></tr>
+              {% endif %}
+              {% for row in event.extra_info %}
+                <tr>
+                  <td class="ed-icon">{{ row.icon }}</td>
+                  <td>{% if row.label %}<strong>{{ row.label }}</strong> {% endif %}{% if row.link %}<a href="{{ row.link }}" target="_blank" rel="noopener" class="fw-semibold" style="color:var(--theme);">{{ row.value|default:row.link }}</a>{% else %}{{ row.value }}{% endif %}</td>
+                </tr>
+              {% endfor %}
+            </table>
+          </div>
+        </div>
+        {% endif %}
+      {% endif %}
+
+      <form action="{% if preview_mode %}#{% else %}{% url 'golf_form_submit' form.id %}{% endif %}"
+            method="post" id="golfForm" novalidate data-preview="{% if preview_mode %}1{% else %}0{% endif %}">
+        {% csrf_token %}
+
+        {% if form.is_participant %}
+        <!-- ── Players ── -->
+        <div class="card shadow-sm rounded mb-3">
+          <div class="card-body p-4">
+            <div class="section-head mb-1">Player Details</div>
+            <p class="text-muted small mb-4">
+              {% if required_players >= player_slots|length %}
+                All {{ player_slots|length }} player{{ player_slots|length|pluralize }} must be completed.
+              {% elif required_players %}
+                The first {{ required_players }} player{{ required_players|pluralize }} are required; the rest may be left blank.
+              {% else %}
+                Complete as many players as you are registering.
+              {% endif %}
+            </p>
+
+            {% for slot in player_slots %}
+              <div class="player-block mb-3" data-slot="{{ slot }}">
+                <div class="player-head d-flex align-items-center justify-content-between">
+                  <span>Player {{ slot }}</span>
+                  {% if slot > required_players %}<span class="optional-pill">Optional</span>{% endif %}
+                </div>
+                <div class="p-3">
+                  <div class="row g-3">
+                    {% for pf in player_fields %}
+
+                      {% if pf.key == 'salutation' %}
+                        {# Salutation renders inline with the Name row below, so nothing here. #}
+
+                      {% elif pf.key == 'name' %}
+                        <div class="col-12">
+                          <label class="form-label fw-bold mb-1">
+                            {% if pf.required %}<span class="text-danger">*</span> {% endif %}{{ pf.label }}
+                          </label>
+                          {% if field_map.salutation.visible %}
+                            <div class="d-flex flex-wrap align-items-center gap-3 mb-2">
+                              {% for sal in salutations %}
+                                <div class="form-check mb-0">
+                                  <input class="form-check-input sal-radio" type="radio"
+                                         name="p{{ slot }}_salutation" id="p{{ slot }}_sal{{ forloop.counter }}"
+                                         value="{{ sal }}" data-slot="{{ slot }}">
+                                  <label class="form-check-label" for="p{{ slot }}_sal{{ forloop.counter }}">{{ sal }}</label>
+                                </div>
+                              {% endfor %}
+                              <div class="form-check mb-0">
+                                <input class="form-check-input sal-radio" type="radio"
+                                       name="p{{ slot }}_salutation" id="p{{ slot }}_salOther"
+                                       value="Others" data-slot="{{ slot }}">
+                                <label class="form-check-label" for="p{{ slot }}_salOther">Others:</label>
+                              </div>
+                              <input type="text" class="form-control form-control-sm sal-other"
+                                     style="max-width:200px;" name="p{{ slot }}_salutation_other"
+                                     id="p{{ slot }}_salOtherText" placeholder="Please specify" disabled>
+                            </div>
+                          {% endif %}
+                          <input type="text" class="form-control player-name" name="p{{ slot }}_name"
+                                 placeholder="Full name as per IC/passport" {% if pf.required %}data-req="1"{% endif %}>
+                        </div>
+
+                      {% elif pf.key == 'handicap' %}
+                        <div class="col-md-4">
+                          <label class="form-label fw-bold mb-1">
+                            {% if pf.required %}<span class="text-danger">*</span> {% endif %}{{ pf.label }}
+                          </label>
+                          <input type="text" class="form-control" name="p{{ slot }}_handicap"
+                                 placeholder="e.g. 18" {% if pf.required %}data-req="1"{% endif %}>
+                        </div>
+
+                      {% elif pf.key == 'tgcc_member' %}
+                        <div class="col-md-8">
+                          <label class="form-label fw-bold mb-1">{{ pf.label }}</label>
+                          <div class="d-flex flex-wrap align-items-center gap-3">
+                            <div class="form-check mb-0">
+                              <input class="form-check-input tgcc-check" type="checkbox"
+                                     name="p{{ slot }}_tgcc_member" id="p{{ slot }}_tgcc"
+                                     value="yes" data-slot="{{ slot }}">
+                              <label class="form-check-label" for="p{{ slot }}_tgcc">Yes</label>
+                            </div>
+                            <input type="text" class="form-control form-control-sm tgcc-no"
+                                   style="max-width:260px;" name="p{{ slot }}_tgcc_membership_no"
+                                   id="p{{ slot }}_tgccNo" placeholder="Membership number" disabled>
+                          </div>
+                        </div>
+
+                      {% elif pf.key == 'organisation' %}
+                        <div class="col-md-6">
+                          <label class="form-label fw-bold mb-1">
+                            {% if pf.required %}<span class="text-danger">*</span> {% endif %}{{ pf.label }}
+                          </label>
+                          <input type="text" class="form-control player-org" name="p{{ slot }}_organisation"
+                                 {% if pf.required %}data-req="1"{% endif %}>
+                        </div>
+
+                      {% elif pf.key == 'designation' %}
+                        <div class="col-md-6">
+                          <label class="form-label fw-bold mb-1">
+                            {% if pf.required %}<span class="text-danger">*</span> {% endif %}{{ pf.label }}
+                          </label>
+                          <input type="text" class="form-control player-designation" name="p{{ slot }}_designation"
+                                 {% if pf.required %}data-req="1"{% endif %}>
+                        </div>
+
+                      {% elif pf.key == 'mobile' %}
+                        <div class="col-md-4">
+                          <label class="form-label fw-bold mb-1">
+                            {% if pf.required %}<span class="text-danger">*</span> {% endif %}{{ pf.label }}
+                          </label>
+                          <input type="tel" class="form-control player-mobile" name="p{{ slot }}_mobile"
+                                 placeholder="+60 12 345 6789" {% if pf.required %}data-req="1"{% endif %}>
+                        </div>
+
+                      {% elif pf.key == 'email' %}
+                        <div class="col-md-4">
+                          <label class="form-label fw-bold mb-1">
+                            {% if pf.required %}<span class="text-danger">*</span> {% endif %}{{ pf.label }}
+                          </label>
+                          <input type="email" class="form-control player-email" name="p{{ slot }}_email"
+                                 {% if pf.required %}data-req="1"{% endif %}>
+                        </div>
+
+                      {% elif pf.key == 'tshirt_size' %}
+                        <div class="col-md-4">
+                          <label class="form-label fw-bold mb-1">
+                            {% if pf.required %}<span class="text-danger">*</span> {% endif %}{{ pf.label }}
+                          </label>
+                          <select class="form-select" name="p{{ slot }}_tshirt_size" {% if pf.required %}data-req="1"{% endif %}>
+                            <option value="">Choose a size...</option>
+                            {% for size in tshirt_sizes %}
+                              <option value="{{ size }}">{{ size }}</option>
+                            {% endfor %}
+                          </select>
+                        </div>
+                      {% endif %}
+
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        {% if items %}
+        <!-- ── Sponsor items / add-ons ── -->
+        <div class="card shadow-sm rounded mb-3">
+          <div class="card-body p-4">
+            <div class="section-head mb-1">
+              {% if items_are_addons %}Optional Add-ons{% else %}Sponsorship Items{% endif %}
+            </div>
+            <p class="text-muted small mb-4">
+              {% if items_are_addons %}
+                Tick anything you would like to add to your entry. A green tick marks your choices.
+              {% else %}
+                Click a package to select it, click again to unselect. A green tick marks your
+                choices. Packages marked <strong>NOT AVAILABLE</strong> have already been taken.
+              {% endif %}
+            </p>
+
+            {% if items_are_addons %}
+              {% comment %}Participant page: compact card grid of optional add-ons, priced at
+              the special (add-on) price.{% endcomment %}
+              <div class="row g-3">
+                {% for item in items %}
+                  <div class="col-md-6 col-lg-4">
+                    <div class="item {% if item.taken %}item-taken{% endif %}"
+                         data-item-id="{{ item.id }}" data-price="{{ item.addon_price }}"
+                         {% if not item.taken %}role="button" tabindex="0" aria-pressed="false"{% endif %}>
+                      <div class="item-corner">
+                        <span class="tick" aria-hidden="true">&#10003;</span>
+                      </div>
+
+                      {% if item.image %}
+                        <img src="{{ item.image.url }}" alt="{{ item.name }}" class="item-img">
+                      {% else %}
+                        <div class="item-img-empty"><i>&#9971;</i></div>
+                      {% endif %}
+
+                      <div class="item-body">
+                        <div class="item-name mb-2">{{ item.name }}</div>
+                        <div class="mb-2">
+                          <span class="item-price">{{ currency }} {{ item.addon_price|floatformat:2|intcomma }}</span>
+                        </div>
+                        {% if item.description %}
+                          <div class="rt" style="font-size:.85rem;">{{ item.description|safe }}</div>
+                        {% endif %}
+                      </div>
+
+                      {% if item.taken %}
+                        <div class="taken-bar">
+                          {% if item.logo %}
+                            <span class="taken-caption">Taken by</span>
+                            <img src="{{ item.logo.url }}" alt="Sponsor logo">
+                          {% else %}
+                            <span class="taken-label">NOT AVAILABLE</span>
+                          {% endif %}
+                        </div>
+                      {% endif %}
+
+                      {% comment %}Hidden but still submitted — the visible control is the
+                      card itself.{% endcomment %}
+                      <input type="checkbox" class="item-check" name="items" value="{{ item.id }}"
+                             id="item{{ item.id }}" hidden {% if item.taken %}disabled{% endif %}>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+
+            {% else %}
+              {% comment %}Sponsor page: one full-width row per package — image on the left,
+              text in the middle, Select button on the far right. No checkbox: the whole row
+              toggles. A sold-out row is inert and credits its buyer's logo (or says NOT
+              AVAILABLE) in the top-right corner.{% endcomment %}
+              <div class="item-rows">
+                {% for item in items %}
+                  <div class="item-row {% if item.taken %}item-taken{% endif %}"
+                       data-item-id="{{ item.id }}" data-price="{{ item.sponsor_price }}"
+                       {% if not item.taken %}role="button" tabindex="0" aria-pressed="false"{% endif %}>
+
+                    <div class="ir-media">
+                      {% if item.image %}
+                        <img src="{{ item.image.url }}" alt="{{ item.name }}" class="ir-img">
+                      {% else %}
+                        <div class="ir-img-empty"><span>&#9971;</span></div>
+                      {% endif %}
+                    </div>
+
+                    <div class="ir-body">
+                      <div class="item-name ir-name">{{ item.name }}</div>
+                      <div class="item-price ir-price">
+                        {{ currency }} {{ item.sponsor_price|floatformat:2|intcomma }}
+                      </div>
+                      {% if item.description %}
+                        <div class="rt ir-desc">{{ item.description|safe }}</div>
+                      {% endif %}
+                    </div>
+
+                    {% comment %}Sold-out rows have no action column at all — the greyed
+                    row plus the top-right corner (buyer logo, or NOT AVAILABLE) already
+                    says everything, and a second "taken" label just duplicated it.{% endcomment %}
+                    {% if not item.taken %}
+                      <div class="ir-action">
+                        <span class="ir-btn">Select</span>
+                        <span class="ir-tick" aria-hidden="true">&#10003;</span>
+                        <span class="ir-tick-label">Selected</span>
+                      </div>
+                    {% endif %}
+
+                    {% if item.taken %}
+                      <div class="ir-corner">
+                        {% if item.logo %}
+                          <span class="ir-corner-caption">Taken by</span>
+                          <img src="{{ item.logo.url }}" alt="Sponsor logo" class="ir-corner-logo">
+                        {% else %}
+                          <span class="ir-corner-na">NOT AVAILABLE</span>
+                        {% endif %}
+                      </div>
+                    {% endif %}
+
+                    <input type="checkbox" class="item-check" name="items" value="{{ item.id }}"
+                           id="item{{ item.id }}" hidden {% if item.taken %}disabled{% endif %}>
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- ── Contact details ── -->
+        <div class="card shadow-sm rounded mb-3">
+          <div class="card-body p-4">
+            <div class="section-head mb-1">Contact Details</div>
+            <p class="text-muted small mb-3">
+              Who we should reach out to about this
+              {% if form.is_sponsor %}sponsorship{% else %}registration{% endif %}.
+            </p>
+
+            {% if form.is_participant %}
+              <div class="mb-3" style="max-width:340px;">
+                <label class="form-label fw-bold mb-1">Use details from</label>
+                <select class="form-select" id="contactSource">
+                  <option value="">New entry (type below)</option>
+                  {% for slot in player_slots %}
+                    <option value="{{ slot }}">Player {{ slot }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            {% endif %}
+
+            <div class="row g-3">
+              {% for key, label, kind, required in contact_spec %}
+                <div class="col-md-6">
+                  <label class="form-label fw-bold mb-1">
+                    {% if required %}<span class="text-danger">*</span> {% endif %}{{ label }}
+                  </label>
+                  <input type="{{ kind }}" class="form-control contact-field" name="{{ key }}" id="f_{{ key }}"
+                         {% if required %}data-req="1"{% endif %}>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Billing details ── -->
+        <div class="card shadow-sm rounded mb-3">
+          <div class="card-body p-4">
+            <div class="section-head mb-1">Billing Details</div>
+            <p class="text-muted small mb-3">Used for the invoice{% if not form.is_sponsor %} and e-Invoice submission{% endif %}.</p>
+            <div class="row g-3">
+              {% for key, label, kind, required in billing_spec %}
+                <div class="{% if kind == 'textarea' %}col-12{% else %}col-md-6{% endif %}">
+                  <label class="form-label fw-bold mb-1">
+                    {% if required %}<span class="text-danger">*</span> {% endif %}{{ label }}
+                  </label>
+                  {% if kind == 'textarea' %}
+                    <textarea class="form-control" name="{{ key }}" id="f_{{ key }}" rows="3"
+                              {% if required %}data-req="1"{% endif %}></textarea>
+                  {% else %}
+                    <input type="{{ kind }}" class="form-control" name="{{ key }}" id="f_{{ key }}"
+                           {% if required %}data-req="1"{% endif %}>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        {% if questions %}
+        <!-- ── Extra questions ── -->
+        <div class="card shadow-sm rounded mb-3">
+          <div class="card-body p-4">
+            <div class="section-head mb-3">Additional Information</div>
+            {% for q in questions %}
+              <div class="mb-4">
+                <label class="form-label fw-bold">
+                  {% if q.is_required %}<span class="text-danger">*</span> {% endif %}{{ q.text|safe }}
+                </label>
+                {% if q.help_text %}<div class="text-muted small mb-2">{{ q.help_text|safe }}</div>{% endif %}
+
+                {% if q.question_type == 'text' %}
+                  <input type="text" class="form-control" name="q_{{ q.id }}" {% if q.is_required %}data-req="1"{% endif %}>
+
+                {% elif q.question_type == 'textarea' %}
+                  <textarea class="form-control" name="q_{{ q.id }}" rows="4" {% if q.is_required %}data-req="1"{% endif %}></textarea>
+
+                {% elif q.question_type == 'select' %}
+                  <select class="form-select q-select" name="q_{{ q.id }}" id="q{{ q.id }}" {% if q.is_required %}data-req="1"{% endif %}>
+                    <option value="">Choose...</option>
+                    {% for opt in q.choices %}<option value="{{ opt }}">{{ opt }}</option>{% endfor %}
+                    {% if q.allow_other %}<option value="Other">Other</option>{% endif %}
+                  </select>
+                  {% if q.allow_other %}
+                    <div id="q{{ q.id }}_other_box" class="mt-2" style="display:none;">
+                      <input type="text" class="form-control" name="q_{{ q.id }}_other" placeholder="Please specify">
+                    </div>
+                  {% endif %}
+
+                {% elif q.question_type == 'radio' %}
+                  <div data-radio-group="q_{{ q.id }}" data-required="{% if q.is_required %}1{% else %}0{% endif %}">
+                    {% for opt in q.choices %}
+                      <div class="form-check">
+                        <input class="form-check-input" type="radio" name="q_{{ q.id }}"
+                               id="q{{ q.id }}_{{ forloop.counter }}" value="{{ opt }}">
+                        <label class="form-check-label" for="q{{ q.id }}_{{ forloop.counter }}">{{ opt }}</label>
+                      </div>
+                    {% endfor %}
+                    {% if q.allow_other %}
+                      <div class="d-flex align-items-center mt-2">
+                        <div class="form-check me-2">
+                          <input class="form-check-input" type="radio" name="q_{{ q.id }}" id="q{{ q.id }}_other" value="Other">
+                          <label class="form-check-label" for="q{{ q.id }}_other">Other:</label>
+                        </div>
+                        <input type="text" class="form-control form-control-sm" style="max-width:280px;" name="q_{{ q.id }}_other">
+                      </div>
+                    {% endif %}
+                  </div>
+
+                {% elif q.question_type == 'checkbox' %}
+                  <div data-checkbox-group="q_{{ q.id }}" data-required="{% if q.is_required %}1{% else %}0{% endif %}">
+                    {% for opt in q.choices %}
+                      <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="q_{{ q.id }}"
+                               id="q{{ q.id }}_{{ forloop.counter }}" value="{{ opt }}">
+                        <label class="form-check-label" for="q{{ q.id }}_{{ forloop.counter }}">{{ opt }}</label>
+                      </div>
+                    {% endfor %}
+                    {% if q.allow_other %}
+                      <div class="form-check d-flex align-items-center mt-2">
+                        <input class="form-check-input me-2" type="checkbox" name="q_{{ q.id }}" id="q{{ q.id }}_other_chk" value="Other">
+                        <label class="form-check-label me-2" for="q{{ q.id }}_other_chk">Other:</label>
+                        <input type="text" class="form-control form-control-sm" style="max-width:280px;" name="q_{{ q.id }}_other">
+                      </div>
+                    {% endif %}
+                    {% if q.max_checks %}
+                      <div class="form-text" data-max="{{ q.max_checks }}">Select up to {{ q.max_checks }}.</div>
+                    {% endif %}
+                  </div>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- ── Summary ── -->
+        <div class="card shadow-sm rounded mb-3">
+          <div class="card-body p-4">
+            <div class="section-head mb-3">Summary</div>
+            {% if package_price is not None %}
+              <div class="total-row">
+                <span>{{ package_label }}</span>
+                <span class="amount">{{ currency }} {{ package_price|floatformat:2|intcomma }}</span>
+              </div>
+            {% endif %}
+            <div id="selectedLines"></div>
+            <div class="total-row grand">
+              <span>Total</span>
+              <span class="amount"><span id="grandTotal">{{ currency }} 0.00</span></span>
+            </div>
+            <small class="text-muted d-block mt-2">
+              Indicative total based on your selections. The organiser will confirm the final invoice.
+            </small>
+          </div>
+        </div>
+
+        {% if form.note %}
+        <!-- ── Note (authored in the builder) ── -->
+        <div class="card shadow-sm rounded mb-3" style="border-left:4px solid var(--theme);">
+          <div class="card-body p-4">
+            <div class="rt">{{ form.note|safe }}</div>
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="text-center mb-5">
+          <button type="submit" class="btn btn-lg btn-theme px-5">
+            {% if preview_mode %}
+              Submit (Preview)
+            {% elif form.is_sponsor %}
+              Submit Sponsorship
+            {% else %}
+              Submit Registration
+            {% endif %}
+          </button>
+        </div>
+      </form>
+
+      {% endif %}
+
+      <div class="text-center pb-4" style="font-size:.78rem; color:#9aa3ad; letter-spacing:.02em;">
+        Powered by <span style="font-weight:600; color:#8a93a0;">Talbotiq Technologies</span>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="{% static 'register/assets/libraries/js/bootstrap.bundle.min.js' %}"></script>
+  <script src="{% static 'register/sweetalert2/sweetalert2.js' %}"></script>
+  <script>
+  (function () {
+    const CURRENCY = "{{ currency|escapejs }}";
+    const BASE_PRICE = {% if package_price is not None %}{{ package_price }}{% else %}0{% endif %};
+    const REQUIRED_PLAYERS = {{ required_players|default:0 }};
+    const IS_SPONSOR = {% if form.is_sponsor %}true{% else %}false{% endif %};
+    const themeColor = getComputedStyle(document.documentElement).getPropertyValue('--theme').trim() || '#198754';
+
+    function money(n) {
+      return CURRENCY + ' ' + Number(n).toLocaleString('en-MY', {
+        minimumFractionDigits: 2, maximumFractionDigits: 2,
+      });
+    }
+
+    // ── Item cards: click anywhere on the card to toggle; tick + total follow ──
+    function refreshTotals() {
+      let total = BASE_PRICE;
+      const lines = [];
+      document.querySelectorAll('.item-check:checked').forEach(cb => {
+        const card = cb.closest('[data-item-id]');
+        const price = parseFloat(card.dataset.price || '0') || 0;
+        total += price;
+        lines.push(
+          '<div class="total-row"><span>' +
+          card.querySelector('.item-name').textContent.trim() +
+          '</span><span class="amount">' + money(price) + '</span></div>'
+        );
+      });
+      const box = document.getElementById('selectedLines');
+      if (box) box.innerHTML = lines.join('');
+      const grand = document.getElementById('grandTotal');
+      if (grand) grand.textContent = money(total);
+    }
+
+    // The card / row IS the control — there is no visible checkbox. The hidden
+    // checkbox inside it is what the form actually posts. Click toggles; a sold-out
+    // item has a disabled checkbox and is skipped entirely, so it can't be picked.
+    document.querySelectorAll('[data-item-id]').forEach(card => {
+      const cb = card.querySelector('.item-check');
+      if (!cb || cb.disabled) return;
+
+      function sync() {
+        card.classList.toggle('selected', cb.checked);
+        card.setAttribute('aria-pressed', cb.checked ? 'true' : 'false');
+        refreshTotals();
+      }
+
+      card.addEventListener('click', function (e) {
+        // Let links inside a package description behave as links.
+        if (e.target.closest('a')) return;
+        cb.checked = !cb.checked;
+        sync();
+      });
+
+      // Keyboard parity with a real button.
+      card.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+        e.preventDefault();
+        cb.checked = !cb.checked;
+        sync();
+      });
+
+      sync();
+    });
+    refreshTotals();
+
+    // ── Salutation "Others" free text ──
+    document.querySelectorAll('.sal-radio').forEach(radio => {
+      radio.addEventListener('change', function () {
+        const box = document.getElementById('p' + this.dataset.slot + '_salOtherText');
+        if (!box) return;
+        const isOther = this.value === 'Others' && this.checked;
+        box.disabled = !isOther;
+        if (!isOther) box.value = '';
+        else box.focus();
+      });
+    });
+
+    // ── TGCC membership number ──
+    document.querySelectorAll('.tgcc-check').forEach(cb => {
+      cb.addEventListener('change', function () {
+        const box = document.getElementById('p' + this.dataset.slot + '_tgccNo');
+        if (!box) return;
+        box.disabled = !this.checked;
+        if (!this.checked) box.value = '';
+        else box.focus();
+      });
+    });
+
+    // ── Contact details: copy from a player, or type a new entry ──
+    const contactSource = document.getElementById('contactSource');
+    if (contactSource) {
+      contactSource.addEventListener('change', function () {
+        const slot = this.value;
+        const set = (id, value) => {
+          const el = document.getElementById(id);
+          if (el) el.value = value || '';
+        };
+        if (!slot) {
+          set('f_contact_person', ''); set('f_contact_designation', '');
+          set('f_contact_number', ''); set('f_contact_email', '');
+          return;
+        }
+        const block = document.querySelector(`.player-block[data-slot="${slot}"]`);
+        if (!block) return;
+        const pick = sel => { const el = block.querySelector(sel); return el ? el.value : ''; };
+        set('f_contact_person', pick('.player-name'));
+        set('f_contact_designation', pick('.player-designation'));
+        set('f_contact_number', pick('.player-mobile'));
+        set('f_contact_email', pick('.player-email'));
+      });
+    }
+
+    // ── "Other" free-text on dropdown questions ──
+    document.querySelectorAll('.q-select').forEach(sel => {
+      sel.addEventListener('change', () => {
+        const box = document.getElementById(sel.id + '_other_box');
+        if (box) box.style.display = sel.value === 'Other' ? 'block' : 'none';
+      });
+    });
+
+    // ── Validation ──
+    function blockFilled(block) {
+      let filled = false;
+      block.querySelectorAll('input, select, textarea').forEach(el => {
+        if (el.type === 'checkbox' || el.type === 'radio') {
+          if (el.checked) filled = true;
+        } else if ((el.value || '').trim()) {
+          filled = true;
+        }
+      });
+      return filled;
+    }
+
+    // Plain inputs/selects/textareas get Bootstrap's own .is-invalid border;
+    // everything else that stands in for a "control" (a whole player block,
+    // an item card/row, a radio or checkbox question) gets .field-invalid
+    // on its own box instead, since there's no single input to mark there.
+    function markInvalid(el) {
+      if (!el) return;
+      if (typeof el.matches === 'function' && el.matches('input, select, textarea')) {
+        el.classList.add('is-invalid');
+      } else {
+        el.classList.add('field-invalid');
+      }
+    }
+    function clearInvalid() {
+      document.querySelectorAll('.is-invalid, .field-invalid').forEach(el => {
+        el.classList.remove('is-invalid', 'field-invalid');
+      });
+    }
+
+    function validate() {
+      clearInvalid();
+      const problems = [];
+      const firstBad = [];
+
+      // Players
+      document.querySelectorAll('.player-block').forEach(block => {
+        const slot = parseInt(block.dataset.slot, 10);
+        const required = slot <= REQUIRED_PLAYERS;
+        const filled = blockFilled(block);
+        if (!filled) {
+          if (required) {
+            problems.push('Player ' + slot + ': all details are required.');
+            markInvalid(block);
+            firstBad.push(block);
+          }
+          return;
+        }
+        block.querySelectorAll('[data-req="1"]').forEach(el => {
+          if (!(el.value || '').trim()) {
+            problems.push('Player ' + slot + ': please complete every required field.');
+            markInvalid(el);
+            firstBad.push(el);
+          }
+        });
+        const salOther = block.querySelector('.sal-other');
+        if (salOther && !salOther.disabled && !salOther.value.trim()) {
+          problems.push('Player ' + slot + ': please specify the salutation.');
+          markInvalid(salOther);
+          firstBad.push(salOther);
+        }
+        const tgccNo = block.querySelector('.tgcc-no');
+        if (tgccNo && !tgccNo.disabled && !tgccNo.value.trim()) {
+          problems.push('Player ' + slot + ': TGCC membership number is required.');
+          markInvalid(tgccNo);
+          firstBad.push(tgccNo);
+        }
+      });
+
+      // Contact / billing / questions
+      document.querySelectorAll('form#golfForm > .card [data-req="1"]').forEach(el => {
+        if (el.closest('.player-block')) return;
+        if (!(el.value || '').trim()) {
+          const label = el.closest('div').querySelector('.form-label');
+          problems.push((label ? label.textContent.replace('*', '').trim() : 'A required field') + ' is required.');
+          markInvalid(el);
+          firstBad.push(el);
+        }
+      });
+
+      document.querySelectorAll('[data-radio-group][data-required="1"]').forEach(g => {
+        if (!g.querySelector('input[type=radio]:checked')) {
+          problems.push('Please answer every required question.');
+          markInvalid(g);
+          firstBad.push(g);
+        }
+      });
+      document.querySelectorAll('[data-checkbox-group]').forEach(g => {
+        const checked = g.querySelectorAll('input[type=checkbox]:checked').length;
+        if (g.dataset.required === '1' && checked === 0) {
+          problems.push('Please select at least one option for every required question.');
+          markInvalid(g);
+          firstBad.push(g);
+        }
+        const hint = g.querySelector('.form-text[data-max]');
+        if (hint && checked > parseInt(hint.dataset.max, 10)) {
+          problems.push('You can only select up to ' + hint.dataset.max + ' options.');
+          markInvalid(g);
+          firstBad.push(g);
+        }
+      });
+
+      // Sponsor entries must take at least one item
+      if (IS_SPONSOR && !document.querySelectorAll('.item-check:checked').length) {
+        problems.push('Please select at least one sponsorship item.');
+        const itemsBox = document.querySelector('.item-rows');
+        markInvalid(itemsBox);
+        firstBad.push(itemsBox);
+      }
+
+      // Basic email sanity on anything typed into an email field
+      document.querySelectorAll('input[type=email]').forEach(el => {
+        const v = (el.value || '').trim();
+        if (v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) {
+          problems.push('"' + v + '" is not a valid email address.');
+          markInvalid(el);
+          firstBad.push(el);
+        }
+      });
+
+      return { problems: [...new Set(problems)], firstBad: firstBad };
+    }
+
+    const formEl = document.getElementById('golfForm');
+    if (formEl) {
+      formEl.addEventListener('submit', function (e) {
+        const { problems, firstBad } = validate();
+
+        if (problems.length) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          // The topmost marked control in the page, regardless of the order
+          // the checks above ran in — so "scroll to that area" always lands
+          // on the first problem the entrant would actually reach.
+          const target = formEl.querySelector('.is-invalid, .field-invalid') || firstBad[0];
+
+          Swal.fire({
+            icon: 'warning',
+            title: 'Almost there',
+            html: '<div style="text-align:left"><ul style="padding-left:1.1rem;margin:0">' +
+                  problems.slice(0, 10).map(p => '<li>' + p + '</li>').join('') +
+                  '</ul>' + (problems.length > 10 ? '<p class="mt-2 mb-0">…and ' + (problems.length - 10) + ' more.</p>' : '') +
+                  '</div>',
+            confirmButtonColor: themeColor,
+          }).then(() => {
+            if (!target) return;
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            if (typeof target.focus === 'function') target.focus({ preventScroll: true });
+          });
+          return;
+        }
+
+        if (formEl.dataset.preview === '1') {
+          e.preventDefault();
+          e.stopPropagation();
+          Swal.fire({
+            icon: 'success',
+            title: 'Preview submission OK',
+            html: 'All required fields look good.<br>Nothing was saved — this is preview mode.',
+            confirmButtonColor: themeColor,
+          });
+        }
+      });
+    }
+  })();
+  </script>
+</body>
+</html>

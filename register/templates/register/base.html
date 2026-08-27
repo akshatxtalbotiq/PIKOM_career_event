@@ -192,6 +192,7 @@
     }
 
     #sidenav-main.sidenav-mini:hover .nav-item {
+      display: block;
       justify-content: unset;
     }
 
@@ -285,7 +286,176 @@
       color: #fff !important;
     }
 
-    
+    /* ── Form controls: visible bottom border ──
+       The Material Dashboard theme ships a second `.form-control { border: none }`
+       rule that wins by source order, so inputs, selects and textareas render with
+       no visible edge and read as plain text. Give every control an underline so
+       it's obvious it can be typed into, and let it pick up the accent colour on
+       focus. `!important` is needed to beat that theme rule.
+
+       Opted out: `.border-0` (deliberately borderless, e.g. the read-only
+       shareable-link box) and `.border` (already carries a full box border, as the
+       campaign / form / event modals do). */
+    .form-control:not(.border-0):not(.border),
+    .form-select:not(.border-0):not(.border),
+    textarea.form-control:not(.border-0):not(.border) {
+      border-bottom: 1px solid #d2d6da !important;
+    }
+
+    /* Focus: thicker underline in the system accent blue. */
+    .form-control:not(.border-0):not(.border):focus,
+    .form-select:not(.border-0):not(.border):focus,
+    textarea.form-control:not(.border-0):not(.border):focus {
+      border-bottom: 2px solid #3a9fd6 !important;
+      box-shadow: none;
+    }
+
+    /* Read-only / disabled: dashed and lighter, so it doesn't invite typing. */
+    .form-control:not(.border-0):not(.border)[readonly],
+    .form-control:not(.border-0):not(.border):disabled,
+    .form-select:not(.border-0):not(.border):disabled {
+      border-bottom: 1px dashed #dfe3e8 !important;
+    }
+
+    /* Keep Bootstrap's validation colours on the underline. */
+    .form-control.is-invalid, .form-select.is-invalid,
+    .was-validated .form-control:invalid, .was-validated .form-select:invalid {
+      border-bottom-color: #fd5c70 !important;
+    }
+
+    .form-control.is-valid, .form-select.is-valid,
+    .was-validated .form-control:valid, .was-validated .form-select:valid {
+      border-bottom-color: #66d432 !important;
+    }
+
+    /* ── Scrollable modals ──
+       `modal-dialog-centered` makes the dialog a ROW-direction flex container, so
+       `.modal-content` is a flex item on the horizontal axis and its height never
+       becomes definite. The column flex inside it then has nothing to distribute:
+       `.modal-body` keeps its full content height, the overflow is silently clipped
+       by `overflow:hidden`, and the footer (Save / Cancel) is pushed off-screen.
+
+       Turning the dialog into a COLUMN flex container puts the content on the
+       vertical axis, where it can shrink to the dialog's height — which makes the
+       height definite and lets the body scroll. `align-items: stretch` keeps the
+       modal full width (column direction would otherwise shrink-wrap it). */
+    .modal-dialog-scrollable.modal-dialog-centered {
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: center;
+    }
+
+    .modal-dialog-scrollable .modal-content {
+      max-height: 100%;
+      min-height: 0;
+    }
+
+    /* Second half of the problem: the modals here wrap header/body/footer in a
+       <form>, so the FORM is the flex item, not the body — which breaks the chain
+       Bootstrap's scrollable variant relies on. Make the wrapper a flex column too
+       so the sizing runs unbroken from .modal-content down to .modal-body. */
+    .modal-dialog-scrollable .modal-content > form {
+      display: flex;
+      flex-direction: column;
+      flex: 1 1 auto;
+      min-height: 0;
+      max-height: 100%;
+    }
+
+    .modal-dialog-scrollable .modal-body {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+
+    /* Header and footer must never give up space to the body. */
+    .modal-dialog-scrollable .modal-header,
+    .modal-dialog-scrollable .modal-footer {
+      flex: 0 0 auto;
+    }
+
+    /* ── Submenu (Golf Event) ── */
+    #sidenav-main .nav-sm .nav-link {
+      padding: 0.5rem 0.75rem !important;
+      font-size: 0.85rem;
+    }
+
+    #sidenav-main .nav-sm .nav-link i.material-symbols-rounded {
+      font-size: 1.1rem;
+    }
+
+    /* Caret flips when the group is open */
+    #sidenav-main .submenu-caret {
+      transition: transform var(--sidenav-transition);
+    }
+
+    #sidenav-main .nav-link[aria-expanded="true"] .submenu-caret {
+      transform: rotate(180deg);
+    }
+
+    /* Parent row of an open group: tinted, not the full active gradient, so the
+       selected child still stands out. */
+    #sidenav-main .nav-link.submenu-open {
+      background: #eaf6fd !important;
+    }
+
+    /* In mini mode the submenu and caret would have nowhere to render. */
+    #sidenav-main.sidenav-mini:not(:hover) .nav-sm,
+    #sidenav-main.sidenav-mini:not(:hover) .submenu-caret,
+    #sidenav-main.sidenav-mini:not(:hover) #golfSubmenu {
+      display: none !important;
+    }
+
+    /* Mini mode, hovered: the rail expands back to full width, and from
+       there the submenu should behave exactly like it does in expanded
+       mode — closed until you click it (or already open if you're on one
+       of its sub-pages), not forced open. No extra rule needed here: once
+       ":not(:hover)" above stops matching, the submenu simply falls back
+       to its normal expanded-mode display state. */
+
+    /* The theme's default caret for a collapse toggle (a Font Awesome glyph)
+       renders as a stray tofu box here because Font Awesome's font isn't
+       loaded on this page. We already show our own chevron via
+       .submenu-caret, so drop the theme's pseudo-element entirely. */
+    #sidenav-main .nav-link[data-bs-toggle="collapse"]:after {
+      content: none !important;
+    }
+
+    /* The theme's own rule for these nested links (.navbar-nav .nav-item
+       .collapse .nav .nav-item .nav-link) sets a pale rgba(206,212,218,.7)
+       grey meant for a dark sidebar. This sidenav is white, so that rule
+       reads as barely-there text — override it here, darker and legible. */
+    #sidenav-main .navbar-nav .nav-item .collapse .nav .nav-item .nav-link,
+    #sidenav-main .navbar-nav .nav-item .collapsing .nav .nav-item .nav-link {
+      color: #495569 !important;
+    }
+
+    #sidenav-main .navbar-nav .nav-item .collapse .nav .nav-item .nav-link i.material-symbols-rounded,
+    #sidenav-main .navbar-nav .nav-item .collapsing .nav .nav-item .nav-link i.material-symbols-rounded {
+      opacity: 1 !important;
+    }
+
+    #sidenav-main .navbar-nav .nav-item .collapse .nav .nav-item .nav-link:hover,
+    #sidenav-main .navbar-nav .nav-item .collapsing .nav .nav-item .nav-link:hover {
+      color: #1f2937 !important;
+      background-color: #f4f6f9;
+      border-radius: 0.375rem;
+    }
+
+    /* Current sub-page: bold dark text on the same tint used for the open
+       parent row, so it's unmistakably the selected one. */
+    #sidenav-main .navbar-nav .nav-item .collapse .nav .nav-item .nav-link.active,
+    #sidenav-main .navbar-nav .nav-item .collapsing .nav .nav-item .nav-link.active,
+    #sidenav-main .navbar-nav .nav-item .collapse .nav .nav-item.active .nav-link,
+    #sidenav-main .navbar-nav .nav-item .collapsing .nav .nav-item.active .nav-link {
+      color: #1f2937 !important;
+      font-weight: 700;
+      background-color: #eaf6fd;
+      border-radius: 0.375rem;
+    }
+
+
 
   </style>
 
@@ -349,6 +519,37 @@
                     <i class="material-symbols-rounded opacity-5">quiz</i>
                     <span class="nav-link-text ms-1">Post-event Surveys</span>
                 </a>
+            </li>
+            <!-- Golf Event: a collapsible parent with its own sub-pages -->
+            <li class="nav-item has-submenu" id="golf_menu">
+                <a class="nav-link d-flex align-items-center" href="#golfSubmenu" data-bs-toggle="collapse"
+                   role="button" aria-expanded="false" aria-controls="golfSubmenu" id="golf_menu_toggle">
+                    <i class="material-symbols-rounded opacity-5">golf_course</i>
+                    <span class="nav-link-text ms-1">Golf Event</span>
+                    <i class="material-symbols-rounded ms-auto submenu-caret opacity-5" style="font-size:1.1rem;">expand_more</i>
+                </a>
+                <div class="collapse" id="golfSubmenu">
+                    <ul class="nav nav-sm flex-column ps-3">
+                        <li class="nav-item">
+                            <a id="golf_event_list" class="nav-link" href="{% url 'golf_event_list' %}">
+                                <i class="material-symbols-rounded opacity-5">event</i>
+                                <span class="nav-link-text ms-1">Event</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a id="golf_participant_form_list" class="nav-link" href="{% url 'golf_participant_form_list' %}">
+                                <i class="material-symbols-rounded opacity-5">how_to_reg</i>
+                                <span class="nav-link-text ms-1">Registration Form</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a id="golf_sponsor_form_list" class="nav-link" href="{% url 'golf_sponsor_form_list' %}">
+                                <i class="material-symbols-rounded opacity-5">handshake</i>
+                                <span class="nav-link-text ms-1">Sponsor Form</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </li>
             {% if user.is_superuser %}
             <li class="nav-item">
@@ -437,6 +638,44 @@
       } else if (currentPath.endsWith('users')) {
         const el = document.getElementById('user_list');
         if (el) el.classList.add('active');
+      }
+
+      // ── Golf Event submenu: highlight the current page and keep the group open ──
+      const golfPages = {
+        'golf_events': 'golf_event_list',
+        'golf_registration_forms': 'golf_participant_form_list',
+        'golf_sponsor_forms': 'golf_sponsor_form_list',
+      };
+      // Builder / entries pages live under the group too, so the parent stays
+      // open and the owning submenu item stays highlighted while you work.
+      const golfSubPages = [
+        ['golf_form_builder', 'golf_form_preview', 'golf_submission_list'],
+      ];
+      let golfActiveId = null;
+      for (const [slug, elId] of Object.entries(golfPages)) {
+        if (currentPath.endsWith(slug)) { golfActiveId = elId; break; }
+      }
+      const inGolfSection = golfActiveId !== null
+        || /\/golf_(form_builder|form_preview|submission_list|submission_detail)\//.test(currentPath + '/');
+      if (golfActiveId) {
+        const el = document.getElementById(golfActiveId);
+        if (el) el.classList.add('active');
+      }
+      if (inGolfSection) {
+        const submenu = document.getElementById('golfSubmenu');
+        const toggle = document.getElementById('golf_menu_toggle');
+        if (submenu) submenu.classList.add('show');
+        if (toggle) {
+          toggle.setAttribute('aria-expanded', 'true');
+          toggle.classList.add('submenu-open');
+        }
+      }
+      // Keep the parent tint in sync when the user opens/closes it by hand.
+      const golfSub = document.getElementById('golfSubmenu');
+      const golfToggle = document.getElementById('golf_menu_toggle');
+      if (golfSub && golfToggle) {
+        golfSub.addEventListener('shown.bs.collapse', () => golfToggle.classList.add('submenu-open'));
+        golfSub.addEventListener('hidden.bs.collapse', () => golfToggle.classList.remove('submenu-open'));
       }
 
       // ── Sidebar collapse toggle ──

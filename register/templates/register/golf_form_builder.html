@@ -1,0 +1,1355 @@
+{% extends 'register/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block extracss %}
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
+<style>
+  .public-url-box { background: #f0f4f8; }
+  .type-pill {
+    display: inline-block; padding: 1px 8px; border-radius: 999px;
+    background: #eef2f7; color: #52616f; font-size: .7rem; font-weight: 600;
+  }
+  .required-pill {
+    display: inline-block; padding: 1px 8px; border-radius: 999px;
+    background: #fdecea; color: #b3261e; font-size: .7rem; font-weight: 600;
+  }
+  .drag-handle { cursor: grab; color: #98a2b3; }
+  .question-card, .item-card, .pf-row { border: 1px solid #e6e9ef; }
+  .pf-row { border-radius: .5rem; background: #fff; }
+  .pf-row.pf-hidden { opacity: .55; }
+  .pf-locked .form-check-input { pointer-events: none; opacity: .5; }
+
+  /* Sponsor item cards */
+  .item-card { border-radius: .6rem; position: relative; overflow: hidden; }
+  .item-card .item-logo {
+    position: absolute; top: 8px; right: 8px; max-height: 34px; max-width: 90px;
+    background: #fff; border-radius: 4px; padding: 2px;
+  }
+  .item-thumb {
+    width: 88px; height: 62px; object-fit: cover; border-radius: .4rem; background: #f2f4f7;
+  }
+  .item-thumb-empty {
+    width: 88px; height: 62px; border-radius: .4rem; background: #f2f4f7;
+    display: flex; align-items: center; justify-content: center; color: #b6bec9;
+  }
+  .badge-taken { background: #fdecea; color: #b3261e; }
+  .badge-once { background: #fff3cd; color: #7c5e00; }
+  .badge-addon { background: #e7f4ec; color: #198754; }
+  .item-desc { font-size: .8rem; color: #667085; }
+  .item-desc p { margin: 0 0 .25rem 0; }
+
+  .ql-container { background: #fff; }
+  .ql-editor { min-height: 120px; }
+  .cfg-card .form-label { font-weight: 600; font-size: .85rem; }
+  .extra-row .form-control { font-size: .85rem; }
+  /* Modal form sections — a long form stays scannable when it is grouped and each
+     group is labelled. */
+  .fs-group { padding: 0 0 1.1rem; margin-bottom: 1.1rem; border-bottom: 1px solid #eef1f5; }
+  .fs-group-last { border-bottom: 0; margin-bottom: 0; padding-bottom: .25rem; }
+  .fs-legend {
+    font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em;
+    color: #3a9fd6; margin-bottom: .75rem;
+  }
+  #itemModal .modal-body .form-label { font-weight: 600; font-size: .82rem; margin-bottom: .25rem; }
+  .fs-help { display: block; font-size: .74rem; color: #8a94a3; line-height: 1.45; margin-top: .3rem; }
+  .fs-optional {
+    font-size: .64rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+    color: #98a2b3; background: #f1f4f8; border-radius: 999px; padding: 1px 7px;
+    vertical-align: middle;
+  }
+  .fs-toggle { padding: .6rem .8rem; border: 1px solid #eef1f5; border-radius: .5rem; margin-bottom: .6rem; }
+  .fs-toggle:last-child { margin-bottom: 0; }
+  .fs-toggle .fs-help { margin-top: .2rem; margin-left: 2.6rem; }
+
+  /* The description editor was tall enough to push the rest of the form out of view. */
+  #itDescEditor .ql-editor { min-height: 110px; max-height: 220px; }
+
+  #itemModal .modal-header { align-items: flex-start; }
+
+  /* Visible upload control (replaces the near-invisible native file input) */
+  .upload-box {
+    border: 2px dashed #cfd6e0; border-radius: .6rem; background: #fafbfc;
+    padding: .9rem; text-align: center; cursor: pointer; transition: .15s ease;
+  }
+  .upload-box:hover { border-color: #3a9fd6; background: #f4faff; }
+  .upload-box.has-file { border-style: solid; border-color: #d7dde5; background: #fff; }
+  .upload-preview { max-height: 96px; max-width: 100%; border-radius: .4rem; margin-bottom: .6rem; }
+  .upload-preview-logo { max-height: 56px; background: #fff; padding: 2px; }
+  .upload-empty { color: #98a2b3; padding: .25rem 0 .6rem; }
+  .upload-icon { font-size: 34px; opacity: .55; }
+  .upload-hint { font-size: .78rem; }
+  .upload-actions { display: flex; gap: .5rem; justify-content: center; flex-wrap: wrap; }
+  .upload-filename {
+    font-size: .72rem; color: #667085; margin-top: .5rem;
+    word-break: break-all; min-height: 1em;
+  }
+
+  .merge-tag {
+    display: inline-block; padding: 1px 6px; margin-right: 4px; border-radius: 4px;
+    background: #eef2f7; color: #344054; font-family: monospace; font-size: .75rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="main-content position-relative border-radius-lg" style="min-height:100vh;">
+  <div class="container-fluid py-2">
+    {% comment %}Guarantees Django sets the csrftoken cookie, so the AJAX saves
+    on this page work even in a session that never posted a form.{% endcomment %}
+    <form id="csrfHolder" style="display:none">{% csrf_token %}</form>
+
+    <div class="row">
+      <div class="col-12 col-md-8 d-flex align-items-center gap-2">
+        <div class="ms-3">
+          <h3 class="mb-0 h4 font-weight-bolder opacity-7">
+            <i class="ti ti-forms"></i>
+            {% if form.is_sponsor %}Sponsor Form Builder{% else %}Registration Form Builder{% endif %}
+          </h3>
+          <nav aria-label="breadcrumb m-0">
+            <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
+              <li class="breadcrumb-item text-sm">
+                <a class="opacity-5 text-dark" href="{% url list_url %}">
+                  {% if form.is_sponsor %}Sponsor Forms{% else %}Registration Forms{% endif %}
+                </a>
+              </li>
+              <li class="breadcrumb-item text-sm text-dark active" aria-current="page">{{ form.title }}</li>
+            </ol>
+          </nav>
+        </div>
+      </div>
+      <div class="col-12 col-md-4 d-flex justify-content-end align-items-center gap-2">
+        <a href="{% url 'golf_submission_list' form.id %}" class="btn btn-sm btn-outline-primary mb-0">
+          <i class="material-symbols-rounded align-middle">list_alt</i> Entries
+        </a>
+        <a href="{% url list_url %}" class="btn btn-sm btn-outline-secondary mb-0">
+          <i class="material-symbols-rounded align-middle">arrow_back</i> Back
+        </a>
+      </div>
+    </div>
+
+    <!-- Shareable link -->
+    <div class="card my-2">
+      <div class="card-body">
+        <div class="text-xs text-uppercase text-secondary font-weight-bolder mb-1">Shareable link</div>
+        <div class="public-url-box p-2 rounded d-flex align-items-center gap-2 flex-wrap">
+          <input type="text" id="publicUrl" class="form-control form-control-sm border-0 bg-transparent" value="{{ public_url }}" readonly>
+          <button type="button" id="copyUrlBtn" class="btn btn-sm btn-primary mb-0">
+            <i class="material-symbols-rounded align-middle">content_copy</i> Copy
+          </button>
+          <a href="{% url 'golf_form_preview' form.id %}" target="_blank" class="btn btn-sm btn-warning mb-0">
+            <i class="material-symbols-rounded align-middle">visibility</i> Preview
+          </a>
+          <a href="{{ public_url }}" target="_blank" class="btn btn-sm btn-outline-success mb-0">
+            <i class="material-symbols-rounded align-middle">open_in_new</i> Open live
+          </a>
+        </div>
+        <small class="text-muted">
+          Send this link to {% if form.is_sponsor %}prospective sponsors{% else %}participants{% endif %}.
+          {% if not form.is_active %}
+            <span class="text-danger fw-bold">This form is currently INACTIVE — turn it on from the forms list to accept entries.</span>
+          {% elif event and not event.is_active %}
+            <span class="text-danger fw-bold">The golf event is INACTIVE — the public page is closed.</span>
+          {% endif %}
+        </small>
+      </div>
+    </div>
+
+    <!-- Banner -->
+    <div class="card my-2">
+      <div class="card-header pb-0 d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">Banner image</h6>
+        <div>
+          <label for="bannerInput" class="btn btn-sm btn-primary mb-0">
+            <i class="material-symbols-rounded align-middle">upload</i>
+            <span id="bannerLabel">{% if form.banner %}Replace banner{% else %}Upload banner{% endif %}</span>
+          </label>
+          <input type="file" id="bannerInput" accept="image/*" hidden>
+          <button type="button" id="removeBannerBtn" class="btn btn-sm btn-outline-danger mb-0" {% if not form.banner %}style="display:none;"{% endif %}>
+            <i class="material-symbols-rounded align-middle">delete</i> Remove
+          </button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="bannerPreview" class="text-center">
+          {% if form.banner %}
+            <img id="bannerImg" src="{{ form.banner.url }}" alt="Banner preview" class="img-fluid rounded" style="max-height:180px;">
+          {% else %}
+            <div id="bannerEmpty" class="text-muted py-3">
+              <i class="material-symbols-rounded" style="font-size:48px;opacity:0.5;">image</i>
+              <div>No banner uploaded. The public page will display without one.</div>
+            </div>
+          {% endif %}
+        </div>
+        <small class="text-muted">PNG / JPG / WebP up to 5 MB. Shown at the top of the public page.</small>
+      </div>
+    </div>
+
+    {% if event %}
+    <!-- Event details (event-level) -->
+    <div class="card my-2 cfg-card">
+      <div class="card-header pb-0">
+        <h6 class="mb-0">Event details</h6>
+        <small class="text-muted">
+          Shown in the confirmation email and, when the toggle below is on, at the top of
+          the public page. Applies to the whole golf event (all its forms).
+        </small>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Date</label>
+            <input type="text" class="form-control" value="{{ event.end_date|date:'l, j F Y' }}" readonly>
+            <small class="text-muted">Taken from the golf event's Event Day.</small>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Time</label>
+            <input type="text" class="form-control" id="evTime" value="{{ event.event_time }}" placeholder="7:00am – 6:00pm">
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Venue</label>
+            <textarea class="form-control" id="evVenue" rows="2" placeholder="Tropicana Golf &amp; Country Resort">{{ event.venue }}</textarea>
+          </div>
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Dress code</label>
+            <input type="text" class="form-control" id="evDress" value="{{ event.dress_code }}" placeholder="Proper golf attire">
+          </div>
+        </div>
+
+        <label class="form-label">Extra rows</label>
+        <small class="text-muted d-block mb-2">
+          Anything else worth listing — parking, flight schedule, prize giving. The icon is an emoji;
+          fill in the link only if the row should be clickable.
+        </small>
+        <div id="extraRows"></div>
+        <button type="button" id="addExtraRowBtn" class="btn btn-sm btn-outline-primary mb-0">
+          <i class="material-symbols-rounded align-middle">add</i> Add row
+        </button>
+
+        <div class="form-check form-switch mt-3">
+          <input class="form-check-input" type="checkbox" id="showOnForm" {% if form.show_event_details %}checked{% endif %}>
+          <label class="form-check-label" for="showOnForm">Show this event-details block at the top of the public page</label>
+        </div>
+
+        <div class="mt-3">
+          <button type="button" id="saveEventDetailsBtn" class="btn btn-sm btn-primary mb-0">
+            <i class="material-symbols-rounded align-middle">save</i> Save event details
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirmation email -->
+    <div class="card my-2 cfg-card">
+      <div class="card-header pb-0">
+        <h6 class="mb-0">Email content</h6>
+        <small class="text-muted">
+          Wording of the confirmation email sent to the contact person right after an entry is submitted,
+          plus the copy shown when the form is closed. Merge tags:
+          <span class="merge-tag">[Name]</span><span class="merge-tag">[Event]</span>
+          <span class="merge-tag">[Date]</span><span class="merge-tag">[Reg no]</span>
+        </small>
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <label class="form-label">Confirmation email subject</label>
+          <input type="text" class="form-control" id="confSubject" maxlength="200"
+                 value="{{ event.confirmation_subject }}"
+                 placeholder="Thank you for your registration — [Event]">
+          <small class="text-muted">Leave blank to use the built-in default subject.</small>
+        </div>
+
+        <label class="form-label">Confirmation email message</label>
+        <div id="confIntroEditor"></div>
+        <small class="text-muted d-block mb-3">Leave blank to use the built-in default wording.</small>
+
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" id="confShowDetails" {% if event.show_details_confirmation %}checked{% endif %}>
+          <label class="form-check-label" for="confShowDetails">Include the event details block (date, venue, etc.) in this email</label>
+        </div>
+        <div class="form-check form-switch mb-3">
+          <input class="form-check-input" type="checkbox" id="confShowBanner" {% if event.show_banner_confirmation %}checked{% endif %}>
+          <label class="form-check-label" for="confShowBanner">Include the banner image at the top of this email</label>
+        </div>
+
+        <label class="form-label">Email sign-off</label>
+        <div id="signoffEditor"></div>
+        <small class="text-muted d-block mb-3">Leave blank to use "&lt;Event&gt; Team".</small>
+
+        <label class="form-label">"Registration Closed" page message</label>
+        <div id="closedEditor"></div>
+        <small class="text-muted d-block mb-3">
+          Shown on the public page once the form or the event is switched off. Leave blank for the default sentence.
+        </small>
+
+        <button type="button" id="saveEmailBtn" class="btn btn-sm btn-primary mb-0">
+          <i class="material-symbols-rounded align-middle">save</i> Save email content
+        </button>
+      </div>
+    </div>
+    {% else %}
+    <div class="card my-2">
+      <div class="card-body text-muted">
+        <h6 class="mb-1">Event details &amp; email content</h6>
+        Attach this form to a golf event to configure event details and email wording.
+      </div>
+    </div>
+    {% endif %}
+
+    {% if form.is_participant %}
+    <!-- Package & players -->
+    <div class="card my-2 cfg-card">
+      <div class="card-header pb-0">
+        <h6 class="mb-0">Package &amp; players</h6>
+        <small class="text-muted">
+          One base price covers the whole entry (all player slots). Add-ons picked on the
+          public page are added on top of it.
+        </small>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-3 mb-3">
+            <label class="form-label">Currency</label>
+            <input type="text" class="form-control" id="fsCurrency" maxlength="8" value="{{ form.currency|default:'RM' }}">
+          </div>
+          <div class="col-md-5 mb-3">
+            <label class="form-label">Package label</label>
+            <input type="text" class="form-control" id="fsPackageLabel" maxlength="200"
+                   value="{{ form.package_label }}" placeholder="Participation Package (4 players)">
+          </div>
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Package price</label>
+            <input type="number" class="form-control" id="fsPackagePrice" step="0.01" min="0"
+                   value="{% if form.package_price is not None %}{{ form.package_price }}{% endif %}"
+                   placeholder="e.g. 8000.00">
+            <small class="text-muted">Leave blank to show no price on the public page.</small>
+          </div>
+          <div class="col-md-3 mb-3">
+            <label class="form-label">Player slots</label>
+            <input type="number" class="form-control" id="fsPlayerSlots" min="1" max="12" value="{{ form.player_slots }}">
+            <small class="text-muted">A flight is 4.</small>
+          </div>
+          <div class="col-md-3 mb-3">
+            <label class="form-label">Players required</label>
+            <input type="number" class="form-control" id="fsRequiredPlayers" min="0" max="12" value="{{ form.required_players }}">
+            <small class="text-muted">Slots beyond this may be left blank.</small>
+          </div>
+          <div class="col-md-3 mb-3">
+            <label class="form-label">Salutation options</label>
+            <input type="text" class="form-control" id="fsSalutations"
+                   value="{{ form.salutation_options|join:', ' }}" placeholder="Mr, Ms">
+            <small class="text-muted">Comma-separated. "Others" is always offered with a free-text box.</small>
+          </div>
+          <div class="col-md-3 mb-3">
+            <label class="form-label">T-shirt sizes (Asian)</label>
+            <input type="text" class="form-control" id="fsTshirtSizes"
+                   value="{{ form.tshirt_sizes|join:', ' }}" placeholder="S, M, L, XL, 2XL, 3XL, 4XL, 5XL">
+            <small class="text-muted">Comma-separated, in display order.</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Player fields (fixed identity fields for each player) -->
+    <div class="card my-2">
+      <div class="card-header pb-0">
+        <h6 class="mb-0">Player Fields</h6>
+        <small class="text-muted">
+          Asked for every player slot. Drag to reorder, rename the label, or hide a field you
+          don't collect. <strong>Name</strong> is always required.
+        </small>
+      </div>
+      <div class="card-body">
+        <div id="playerFieldList">
+          {% for pf in player_fields %}
+            <div class="pf-row d-flex align-items-center gap-2 p-2 mb-2 {% if not pf.visible %}pf-hidden{% endif %}{% if pf.key == 'name' %} pf-locked{% endif %}"
+                 data-key="{{ pf.key }}">
+              <span class="drag-handle material-symbols-rounded">drag_indicator</span>
+              <span class="type-pill">{{ pf.key }}</span>
+              <input type="text" class="form-control form-control-sm pf-label" style="max-width:280px;"
+                     value="{{ pf.label }}" maxlength="100">
+              <div class="form-check form-switch mb-0 ms-auto">
+                <input class="form-check-input pf-visible" type="checkbox" {% if pf.visible %}checked{% endif %}>
+                <label class="form-check-label text-xs">Visible</label>
+              </div>
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input pf-required" type="checkbox" {% if pf.required %}checked{% endif %}>
+                <label class="form-check-label text-xs">Required</label>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+        <small class="text-muted d-block mb-2">
+          <strong>Member of TGCC</strong> renders as a Yes/No with a membership-number box that becomes
+          required when Yes is picked. <strong>Salutation</strong> renders as Mr / Ms / Others with a free-text box.
+        </small>
+      </div>
+    </div>
+
+    <div class="text-end mb-2">
+      <button type="button" id="saveFormSettingsBtn" class="btn btn-sm btn-primary mb-0">
+        <i class="material-symbols-rounded align-middle">save</i> Save package, players &amp; note
+      </button>
+    </div>
+    {% endif %}
+
+    {% if form.is_sponsor %}
+    <!-- Sponsor items (replaces "Form Fields" on a sponsor form) -->
+    <div class="card my-2">
+      <div class="card-header pb-0 d-flex justify-content-between align-items-center">
+        <div>
+          <h6 class="mb-0">Sponsor Items</h6>
+          <small class="text-muted">
+            Drag to reorder. Sponsors can pick more than one item; a green tick marks their choices.
+          </small>
+        </div>
+        <button type="button" id="addItemBtn" class="btn btn-sm btn-primary mb-0">
+          <i class="material-symbols-rounded align-middle">add</i> Add Item
+        </button>
+      </div>
+      <div class="card-body">
+        <div class="row mb-3">
+          <div class="col-md-3">
+            <label class="form-label">Currency</label>
+            <input type="text" class="form-control" id="fsCurrency" maxlength="8" value="{{ form.currency|default:'RM' }}">
+          </div>
+        </div>
+
+        <div id="itemList">
+          {% for item in sponsor_items %}
+            <div class="item-card p-2 mb-2 d-flex align-items-center gap-3" data-id="{{ item.id }}">
+              <span class="drag-handle material-symbols-rounded">drag_indicator</span>
+              {% if item.image %}
+                <img src="{{ item.image.url }}" alt="{{ item.name }}" class="item-thumb">
+              {% else %}
+                <div class="item-thumb-empty"><i class="material-symbols-rounded">image</i></div>
+              {% endif %}
+              <div class="flex-grow-1">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                  <span class="badge bg-secondary">{{ item.number }}</span>
+                  <strong class="text-sm">{{ item.name }}</strong>
+                  {% comment %}Item price is what the sponsor page shows; the special
+                  price is the participant add-on price and is labelled as such.{% endcomment %}
+                  <span class="text-sm fw-bold">{{ form.currency|default:'RM' }} {{ item.price|floatformat:2|intcomma }}</span>
+                  {% if item.once_only %}<span class="badge badge-once text-xxs">Once only</span>{% endif %}
+                  {% if item.show_in_participant %}
+                    <span class="badge badge-addon text-xxs">
+                      Participant add-on · {{ form.currency|default:'RM' }} {{ item.special_price|floatformat:2|intcomma }}
+                    </span>
+                  {% elif item.special_price is not None %}
+                    <span class="badge bg-light text-dark text-xxs"
+                          title="Only used when the item is shown on the participant page">
+                      Add-on price set · {{ form.currency|default:'RM' }} {{ item.special_price|floatformat:2|intcomma }} (unused)
+                    </span>
+                  {% endif %}
+                  {% if item.taken %}<span class="badge badge-taken text-xxs">TAKEN — no longer available</span>{% endif %}
+                  {% if not item.is_active %}<span class="badge bg-secondary text-xxs">Hidden</span>{% endif %}
+                </div>
+                {% if item.description %}
+                  <div class="item-desc mt-1">{{ item.description|safe|truncatewords_html:24 }}</div>
+                {% endif %}
+              </div>
+              {% if item.logo %}
+                <div class="text-center" style="min-width:96px;"
+                     title="Buyer's logo — shown on the public card once this item is sold out">
+                  <img src="{{ item.logo.url }}" alt="Buyer logo"
+                       style="max-height:30px;max-width:90px;object-fit:contain;">
+                  <div class="text-xxs text-secondary">buyer logo</div>
+                </div>
+              {% elif item.once_only %}
+                <div class="text-center text-xxs text-secondary" style="min-width:96px;"
+                     title="No buyer logo set — the public card will show NOT AVAILABLE once sold out">
+                  no buyer logo
+                </div>
+              {% endif %}
+              <button type="button" class="btn btn-sm btn-link text-body p-1 edit-item-btn" data-id="{{ item.id }}" title="Edit">
+                <i class="material-symbols-rounded">edit</i>
+              </button>
+              <button type="button" class="btn btn-sm btn-link text-danger p-1 delete-item-btn" data-id="{{ item.id }}" title="Delete">
+                <i class="material-symbols-rounded">delete</i>
+              </button>
+            </div>
+          {% endfor %}
+        </div>
+        <div id="itemEmptyState" class="text-center text-muted py-4" {% if sponsor_items %}style="display:none"{% endif %}>
+          <i class="material-symbols-rounded" style="font-size:48px;opacity:0.5;">redeem</i>
+          <p class="mb-0">No sponsor items yet. Click <strong>Add Item</strong> to start building the sponsorship deck.</p>
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <!-- Add-ons the participant page will offer (read-only mirror of the sponsor form) -->
+    <div class="card my-2">
+      <div class="card-header pb-0">
+        <h6 class="mb-0">Add-ons offered on this page</h6>
+        <small class="text-muted">
+          Pulled automatically from this golf event's sponsor form — every item flagged
+          <em>"Show in participant page"</em> appears here. Edit them on the sponsor form builder.
+        </small>
+      </div>
+      <div class="card-body">
+        {% if addon_items %}
+          {% for item in addon_items %}
+            <div class="item-card p-2 mb-2 d-flex align-items-center gap-3">
+              {% if item.image %}
+                <img src="{{ item.image.url }}" alt="{{ item.name }}" class="item-thumb">
+              {% else %}
+                <div class="item-thumb-empty"><i class="material-symbols-rounded">image</i></div>
+              {% endif %}
+              <div class="flex-grow-1">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                  <strong class="text-sm">{{ item.name }}</strong>
+                  <span class="text-sm fw-bold">{{ form.currency|default:'RM' }} {{ item.addon_price|floatformat:2|intcomma }}</span>
+                  {% if item.once_only %}<span class="badge badge-once text-xxs">Once only</span>{% endif %}
+                  {% if item.taken %}<span class="badge badge-taken text-xxs">TAKEN</span>{% endif %}
+                </div>
+                <div class="text-xxs text-secondary">from {{ item.form.title }}</div>
+              </div>
+              <a href="{% url 'golf_form_builder' item.form.id %}" class="btn btn-sm btn-link text-body p-1" title="Edit on the sponsor form">
+                <i class="material-symbols-rounded">open_in_new</i>
+              </a>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="text-muted">
+            No add-ons yet. On this event's sponsor form, tick
+            <strong>"Show in participant page"</strong> on any item you want to offer here
+            (its special price becomes mandatory).
+          </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Custom questions -->
+    <div class="card my-2">
+      <div class="card-header pb-0 d-flex justify-content-between align-items-center">
+        <div>
+          <h6 class="mb-0">{% if form.is_sponsor %}Additional Questions{% else %}Form Fields{% endif %}</h6>
+          <small class="text-muted">
+            Asked once per entry, after the
+            {% if form.is_sponsor %}sponsor items{% else %}player details{% endif %}. Optional.
+          </small>
+        </div>
+        <button type="button" id="addQuestionBtn" class="btn btn-sm btn-primary mb-0">
+          <i class="material-symbols-rounded align-middle">add</i> Add Question
+        </button>
+      </div>
+      <div class="card-body">
+        <div id="questionList">
+          {% for q in questions %}
+            <div class="card mb-2 question-card" data-id="{{ q.id }}" data-type="{{ q.question_type }}">
+              <div class="card-body py-2 px-3">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="drag-handle material-symbols-rounded">drag_indicator</span>
+                  <span class="badge bg-secondary q-number">{{ q.number }}</span>
+                  <span class="type-pill">{{ q.get_question_type_display }}</span>
+                  {% if q.is_required %}<span class="required-pill">Required</span>{% endif %}
+                  {% if q.show_in_list %}
+                    <span class="type-pill" style="background:#e7f4ec; color:#198754;"
+                          title="This answer appears as a column in the entries list">
+                      <i class="material-symbols-rounded align-middle" style="font-size:14px;">view_column</i>
+                      List col: <strong>{{ q.list_column_label|default:q.text|striptags|truncatechars:30 }}</strong>
+                    </span>
+                  {% endif %}
+                  <div class="flex-grow-1 ms-2 text-truncate">{{ q.text|striptags }}</div>
+                  <button type="button" class="btn btn-sm btn-link text-body p-1 edit-q-btn" data-id="{{ q.id }}" title="Edit">
+                    <i class="material-symbols-rounded">edit</i>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-link text-danger p-1 delete-q-btn" data-id="{{ q.id }}" title="Delete">
+                    <i class="material-symbols-rounded">delete</i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+        <div id="emptyState" class="text-center text-muted py-4" {% if questions %}style="display:none"{% endif %}>
+          <i class="material-symbols-rounded" style="font-size:48px;opacity:0.5;">quiz</i>
+          <p class="mb-0">No extra questions. Click <strong>Add Question</strong> if you need any.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Note before the submit button -->
+    <div class="card my-2 cfg-card">
+      <div class="card-header pb-0">
+        <h6 class="mb-0">Note</h6>
+        <small class="text-muted">
+          Shown at the bottom of the public page, directly above the Submit button.
+          Good spot for payment instructions, cancellation terms or a closing date.
+        </small>
+      </div>
+      <div class="card-body">
+        <div id="noteEditor"></div>
+        <div class="mt-3">
+          <button type="button" id="saveNoteBtn" class="btn btn-sm btn-primary mb-0">
+            <i class="material-symbols-rounded align-middle">save</i> Save note
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Add / Edit Question -->
+<div class="modal fade" id="questionModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <form id="questionForm" novalidate>
+        <div class="modal-header">
+          <h5 class="modal-title">Question</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="qId">
+          <div class="mb-3">
+            <label class="form-label">Question text <span class="text-danger">*</span></label>
+            <textarea id="qText" class="form-control" rows="2" placeholder="e.g. Any dietary requirements for the gala dinner?" required></textarea>
+            <small class="text-muted">HTML allowed.</small>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Help text (optional)</label>
+            <input type="text" id="qHelp" class="form-control" placeholder="Short hint shown under the question">
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Type</label>
+              <select id="qType" class="form-select">
+                <option value="text">Short text</option>
+                <option value="textarea">Long text (paragraph)</option>
+                <option value="select">Dropdown</option>
+                <option value="radio">Single choice (radio)</option>
+                <option value="checkbox">Multiple choice (checkbox)</option>
+              </select>
+            </div>
+            <div class="col-md-6 mb-3 d-flex align-items-center gap-3">
+              <div class="form-check form-switch mt-3">
+                <input class="form-check-input" type="checkbox" id="qRequired" checked>
+                <label class="form-check-label" for="qRequired">Required</label>
+              </div>
+              <div class="form-check form-switch mt-3">
+                <input class="form-check-input" type="checkbox" id="qShowInList">
+                <label class="form-check-label" for="qShowInList">Show in list</label>
+              </div>
+            </div>
+          </div>
+          <div class="mb-3" id="qColumnLabelWrap">
+            <label class="form-label" for="qColumnLabel">Column header for the entries list <span class="text-muted small">(optional)</span></label>
+            <input type="text" id="qColumnLabel" class="form-control" maxlength="60" placeholder="e.g. Dietary, Buggy">
+            <small class="text-muted">Only applies when <strong>Show in list</strong> is on.</small>
+          </div>
+          <div id="choicesBlock" style="display:none;">
+            <label class="form-label">Choices</label>
+            <div id="choicesList"></div>
+            <button type="button" id="addChoiceBtn" class="btn btn-sm btn-outline-primary mb-2">
+              <i class="material-symbols-rounded align-middle">add</i> Add choice
+            </button>
+            <div class="row align-items-center mt-2">
+              <div class="col-md-6">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="qAllowOther">
+                  <label class="form-check-label" for="qAllowOther">Include an "Other" free-text input</label>
+                </div>
+              </div>
+              <div class="col-md-6" id="maxChecksWrap" style="display:none;">
+                <label class="form-label mb-0">Max selections (optional)</label>
+                <input type="number" id="qMaxChecks" class="form-control form-control-sm" min="1" placeholder="No limit">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Question</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% if form.is_sponsor %}
+<!-- Add / Edit Sponsor Item -->
+<div class="modal fade" id="itemModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <form id="itemForm" novalidate>
+        <div class="modal-header">
+          <div>
+            <h5 class="modal-title mb-0">Sponsor Item</h5>
+            <small class="text-muted">A package sponsors can take up on the public sponsor page.</small>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <input type="hidden" id="itId">
+
+          {% comment %}Grouped into four labelled sections so a long form stays
+          scannable: what it is, what it costs, how it looks, when it's offered.{% endcomment %}
+
+          <!-- 1. Item -->
+          <div class="fs-group">
+            <div class="fs-legend">Item</div>
+            <div class="row g-3">
+              <div class="col-md-8">
+                <label class="form-label" for="itName">Item name <span class="text-danger">*</span></label>
+                <input type="text" id="itName" class="form-control" maxlength="255" required
+                       placeholder="e.g. PLATINUM SPONSOR">
+                <div class="invalid-feedback">Item name is required.</div>
+              </div>
+              <div class="col-md-4 d-flex align-items-end">
+                <div class="form-check form-switch mb-1">
+                  <input class="form-check-input" type="checkbox" id="itActive" checked>
+                  <label class="form-check-label" for="itActive">Visible on the sponsor page</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Pricing -->
+          <div class="fs-group">
+            <div class="fs-legend">Pricing</div>
+            <div class="row g-3">
+              <div class="col-md-6">
+                {% comment %}Plain inputs rather than an input-group: this theme positions
+                .input-group-text absolutely on the RIGHT, so a currency prefix would render
+                after the number. The currency lives in the label instead.{% endcomment %}
+                <label class="form-label" for="itPrice">
+                  Item price (<span id="itCurrencyA">{{ form.currency|default:'RM' }}</span>)
+                  <span class="text-danger">*</span>
+                </label>
+                <input type="number" id="itPrice" class="form-control" step="0.01" min="0" required
+                       placeholder="50000.00">
+                <div class="invalid-feedback">A valid price is required.</div>
+                <small class="fs-help">Shown and charged on the <strong>sponsor</strong> page.</small>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="itSpecialPrice">
+                  Item special price (<span id="itCurrencyB">{{ form.currency|default:'RM' }}</span>)
+                </label>
+                <input type="number" id="itSpecialPrice" class="form-control" step="0.01" min="0"
+                       placeholder="45000.00">
+                <small class="fs-help" id="itSpecialHint">
+                  Shown and charged on the <strong>participant</strong> page only. May be higher
+                  or lower than the item price.
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Presentation -->
+          <div class="fs-group">
+            <div class="fs-legend">Presentation</div>
+
+            <label class="form-label" for="itDescEditor">Item description</label>
+            <div id="itDescEditor"></div>
+            <small class="fs-help mb-3 d-block">
+              Shown on the item card. Bold, lists and links are supported.
+            </small>
+
+            {% comment %}The native file input renders as a nearly invisible
+            "Choose File / No file chosen" strip, so both uploads use an explicit
+            drop-box with a real button. The input itself is hidden and driven by
+            the label / box click.{% endcomment %}
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Package image</label>
+                <div class="upload-box" id="itImageBox">
+                  <input type="file" id="itImage" accept="image/*" hidden>
+                  <img id="itImagePreview" src="" alt="" class="upload-preview" style="display:none;">
+                  <div class="upload-empty" id="itImageEmpty">
+                    <i class="material-symbols-rounded upload-icon">add_photo_alternate</i>
+                    <div class="upload-hint">No image chosen</div>
+                  </div>
+                  <div class="upload-actions">
+                    <label for="itImage" class="btn btn-sm btn-primary mb-0">
+                      <i class="material-symbols-rounded align-middle">upload</i>
+                      <span id="itImageBtnLabel">Choose image</span>
+                    </label>
+                    <button type="button" id="itRemoveImage" class="btn btn-sm btn-outline-danger mb-0"
+                            style="display:none;">
+                      <i class="material-symbols-rounded align-middle">delete</i> Remove
+                    </button>
+                  </div>
+                  <div class="upload-filename" id="itImageName"></div>
+                </div>
+                <small class="fs-help">
+                  The main picture on the item card. PNG / JPG / WebP, up to 5 MB.
+                </small>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">
+                  Logo image <span class="fs-optional">optional</span>
+                </label>
+                <div class="upload-box" id="itLogoBox">
+                  <input type="file" id="itLogo" accept="image/*" hidden>
+                  <img id="itLogoPreview" src="" alt="" class="upload-preview upload-preview-logo"
+                       style="display:none;">
+                  <div class="upload-empty" id="itLogoEmpty">
+                    <i class="material-symbols-rounded upload-icon">branding_watermark</i>
+                    <div class="upload-hint">No logo chosen</div>
+                  </div>
+                  <div class="upload-actions">
+                    <label for="itLogo" class="btn btn-sm btn-primary mb-0">
+                      <i class="material-symbols-rounded align-middle">upload</i>
+                      <span id="itLogoBtnLabel">Choose logo</span>
+                    </label>
+                    <button type="button" id="itRemoveLogo" class="btn btn-sm btn-outline-danger mb-0"
+                            style="display:none;">
+                      <i class="material-symbols-rounded align-middle">delete</i> Remove
+                    </button>
+                  </div>
+                  <div class="upload-filename" id="itLogoName"></div>
+                </div>
+                <small class="fs-help">
+                  The <strong>buyer's</strong> logo, shown top-right once the item is sold out.
+                  Leave empty and the card says <strong>NOT AVAILABLE</strong>.
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. Availability -->
+          <div class="fs-group fs-group-last">
+            <div class="fs-legend">Availability</div>
+            <div class="fs-toggle">
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" id="itOnceOnly">
+                <label class="form-check-label fw-bold" for="itOnceOnly">Available only once</label>
+              </div>
+              <small class="fs-help">
+                After the first entry takes it, the card becomes unclickable and credits the
+                buyer's logo — or shows <strong>NOT AVAILABLE</strong> when no logo is set.
+              </small>
+            </div>
+            <div class="fs-toggle">
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" id="itShowInParticipant">
+                <label class="form-check-label fw-bold" for="itShowInParticipant">Show in participant page</label>
+              </div>
+              <small class="fs-help">
+                Also offer it as a paid add-on on this event's registration form. The
+                <strong>special price</strong> becomes mandatory — it is the only price that page shows.
+              </small>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary mb-0" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary mb-0">
+            <i class="material-symbols-rounded align-middle">save</i> Save Item
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+  const FORM_ID = "{{ form.id }}";
+  const EVENT_ID = "{{ event.id|default:'' }}";
+  const IS_SPONSOR = {% if form.is_sponsor %}true{% else %}false{% endif %};
+
+  function csrf() {
+    const m = document.cookie.match(/csrftoken=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+  function postJSON(url, payload) {
+    return fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+      body: JSON.stringify(payload),
+    }).then(r => r.json());
+  }
+  function toast(title, icon) {
+    Swal.fire({ icon: icon || 'success', title: title, timer: 1600, showConfirmButton: false });
+  }
+  function quillHtml(editor) {
+    const html = editor.root.innerHTML;
+    return (html === '<p><br></p>') ? '' : html;
+  }
+  const TOOLBAR = [
+    [{ header: [1, 2, 3, false] }],
+    ['bold', 'italic', 'underline'],
+    [{ color: [] }, { background: [] }],
+    [{ list: 'ordered' }, { list: 'bullet' }],
+    [{ align: [] }],
+    ['link', 'blockquote'],
+    ['clean'],
+  ];
+  function makeQuill(sel, html) {
+    const q = new Quill(sel, { theme: 'snow', modules: { toolbar: TOOLBAR } });
+    if (html) q.root.innerHTML = html;
+    return q;
+  }
+
+  // ── Copy public URL ──
+  document.getElementById('copyUrlBtn').addEventListener('click', () => {
+    const input = document.getElementById('publicUrl');
+    navigator.clipboard.writeText(input.value).then(() => {
+      const btn = document.getElementById('copyUrlBtn');
+      const orig = btn.innerHTML;
+      btn.innerHTML = '<i class="material-symbols-rounded align-middle">check</i> Copied';
+      setTimeout(() => btn.innerHTML = orig, 1500);
+    });
+  });
+
+  // ── Banner ──
+  const bannerInput = document.getElementById('bannerInput');
+  bannerInput.addEventListener('change', () => {
+    const file = bannerInput.files[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('banner', file);
+    fetch(`/golf_upload_banner/${FORM_ID}/`, { method: 'POST', headers: { 'X-CSRFToken': csrf() }, body: fd })
+      .then(r => r.json())
+      .then(d => {
+        if (!d.success) { Swal.fire({ icon: 'error', title: 'Upload failed', text: d.message || '' }); return; }
+        const preview = document.getElementById('bannerPreview');
+        preview.innerHTML = `<img id="bannerImg" src="${d.url}" class="img-fluid rounded" style="max-height:180px;">`;
+        document.getElementById('bannerLabel').textContent = 'Replace banner';
+        document.getElementById('removeBannerBtn').style.display = '';
+        toast('Banner uploaded');
+      });
+  });
+  document.getElementById('removeBannerBtn').addEventListener('click', () => {
+    fetch(`/golf_delete_banner/${FORM_ID}/`, { method: 'POST', headers: { 'X-CSRFToken': csrf() } })
+      .then(r => r.json())
+      .then(() => {
+        document.getElementById('bannerPreview').innerHTML =
+          '<div class="text-muted py-3"><i class="material-symbols-rounded" style="font-size:48px;opacity:0.5;">image</i>' +
+          '<div>No banner uploaded. The public page will display without one.</div></div>';
+        document.getElementById('bannerLabel').textContent = 'Upload banner';
+        document.getElementById('removeBannerBtn').style.display = 'none';
+        bannerInput.value = '';
+      });
+  });
+
+  // ── Note editor (both form kinds) ──
+  const noteEditor = makeQuill('#noteEditor');
+  noteEditor.root.innerHTML = (document.getElementById('noteSeed').innerHTML || '').trim();
+
+  document.getElementById('saveNoteBtn').addEventListener('click', () => {
+    saveFormSettings(true);
+  });
+
+  function collectPlayerConfig() {
+    const rows = document.querySelectorAll('#playerFieldList .pf-row');
+    return Array.from(rows).map(row => ({
+      key: row.dataset.key,
+      label: row.querySelector('.pf-label').value,
+      visible: row.querySelector('.pf-visible').checked,
+      required: row.querySelector('.pf-required').checked,
+    }));
+  }
+
+  function splitList(value) {
+    return (value || '').split(',').map(s => s.trim()).filter(Boolean);
+  }
+
+  function saveFormSettings(noteOnly) {
+    const payload = { note: quillHtml(noteEditor) };
+    const showOnForm = document.getElementById('showOnForm');
+    const currencyEl = document.getElementById('fsCurrency');
+    if (currencyEl) payload.currency = currencyEl.value;
+
+    // Always send the participant settings so a note-only save never resets them.
+    if (!IS_SPONSOR) {
+      payload.package_label = document.getElementById('fsPackageLabel').value;
+      payload.package_price = document.getElementById('fsPackagePrice').value;
+      payload.player_slots = document.getElementById('fsPlayerSlots').value;
+      payload.required_players = document.getElementById('fsRequiredPlayers').value;
+      payload.salutation_options = splitList(document.getElementById('fsSalutations').value);
+      payload.tshirt_sizes = splitList(document.getElementById('fsTshirtSizes').value);
+    }
+    if (showOnForm) payload.show_event_details = showOnForm.checked;
+
+    const settings = postJSON(`/save_golf_form_settings/${FORM_ID}/`, payload);
+    if (IS_SPONSOR || noteOnly) {
+      return settings.then(d => {
+        if (d.success) toast(noteOnly ? 'Note saved' : 'Settings saved');
+        else Swal.fire({ icon: 'error', title: 'Could not save', text: d.message || '' });
+      });
+    }
+    // Participant form: the player-field config lives on its own endpoint.
+    return Promise.all([
+      settings,
+      postJSON(`/save_golf_player_config/${FORM_ID}/`, { config: collectPlayerConfig() }),
+    ]).then(([a, b]) => {
+      if (a.success && b.success) { toast('Saved'); setTimeout(() => location.reload(), 900); }
+      else Swal.fire({ icon: 'error', title: 'Could not save', text: (a.message || b.message || '') });
+    });
+  }
+
+  const saveSettingsBtn = document.getElementById('saveFormSettingsBtn');
+  if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', () => saveFormSettings(false));
+
+  // ── Player fields: reorder + live dimming ──
+  const pfList = document.getElementById('playerFieldList');
+  if (pfList) {
+    Sortable.create(pfList, { handle: '.drag-handle', animation: 150 });
+    pfList.querySelectorAll('.pf-visible').forEach(cb => {
+      cb.addEventListener('change', function () {
+        this.closest('.pf-row').classList.toggle('pf-hidden', !this.checked);
+        if (!this.checked) {
+          const req = this.closest('.pf-row').querySelector('.pf-required');
+          if (req) req.checked = false;
+        }
+      });
+    });
+  }
+
+  {% if event %}
+  // ── Event details ──
+  const extraRows = document.getElementById('extraRows');
+  function addExtraRow(row) {
+    row = row || { icon: '', label: '', value: '', link: '' };
+    const div = document.createElement('div');
+    div.className = 'extra-row d-flex align-items-center gap-2 mb-2';
+    div.innerHTML = `
+      <input type="text" class="form-control form-control-sm ex-icon" style="max-width:70px;" maxlength="4" placeholder="🅿️" value="${row.icon || ''}">
+      <input type="text" class="form-control form-control-sm ex-label" style="max-width:170px;" placeholder="Label (optional)" value="${(row.label || '').replace(/"/g, '&quot;')}">
+      <input type="text" class="form-control form-control-sm ex-value" placeholder="Text" value="${(row.value || '').replace(/"/g, '&quot;')}">
+      <input type="text" class="form-control form-control-sm ex-link" placeholder="https:// (optional)" value="${(row.link || '').replace(/"/g, '&quot;')}">
+      <button type="button" class="btn btn-sm btn-link text-danger p-1 ex-del"><i class="material-symbols-rounded">delete</i></button>`;
+    div.querySelector('.ex-del').addEventListener('click', () => div.remove());
+    extraRows.appendChild(div);
+  }
+  (JSON.parse(document.getElementById('extraInfoSeed').textContent || '[]') || []).forEach(addExtraRow);
+  document.getElementById('addExtraRowBtn').addEventListener('click', () => addExtraRow());
+
+  document.getElementById('saveEventDetailsBtn').addEventListener('click', () => {
+    const rows = Array.from(extraRows.querySelectorAll('.extra-row')).map(r => ({
+      icon: r.querySelector('.ex-icon').value,
+      label: r.querySelector('.ex-label').value,
+      value: r.querySelector('.ex-value').value,
+      link: r.querySelector('.ex-link').value,
+    }));
+    postJSON(`/save_golf_event_details/${EVENT_ID}/`, {
+      event_time: document.getElementById('evTime').value,
+      venue: document.getElementById('evVenue').value,
+      dress_code: document.getElementById('evDress').value,
+      extra_info: rows,
+      form_id: FORM_ID,
+      show_on_form: document.getElementById('showOnForm').checked,
+    }).then(d => {
+      if (d.success) toast('Event details saved');
+      else Swal.fire({ icon: 'error', title: 'Could not save', text: d.message || '' });
+    });
+  });
+
+  // ── Email content ──
+  const confIntro = makeQuill('#confIntroEditor');
+  const signoff = makeQuill('#signoffEditor');
+  const closed = makeQuill('#closedEditor');
+  confIntro.root.innerHTML = (document.getElementById('confIntroSeed').innerHTML || '').trim();
+  signoff.root.innerHTML = (document.getElementById('signoffSeed').innerHTML || '').trim();
+  closed.root.innerHTML = (document.getElementById('closedSeed').innerHTML || '').trim();
+
+  document.getElementById('saveEmailBtn').addEventListener('click', () => {
+    postJSON(`/save_golf_email_content/${EVENT_ID}/`, {
+      confirmation_subject: document.getElementById('confSubject').value,
+      confirmation_intro: quillHtml(confIntro),
+      email_signoff: quillHtml(signoff),
+      registration_closed_intro: quillHtml(closed),
+      show_details_confirmation: document.getElementById('confShowDetails').checked,
+      show_banner_confirmation: document.getElementById('confShowBanner').checked,
+    }).then(d => {
+      if (d.success) toast('Email content saved');
+      else Swal.fire({ icon: 'error', title: 'Could not save', text: d.message || '' });
+    });
+  });
+  {% endif %}
+
+  // ── Questions ──
+  const qList = document.getElementById('questionList');
+  Sortable.create(qList, {
+    handle: '.drag-handle',
+    animation: 150,
+    onEnd: () => {
+      renumber('#questionList .question-card', '.q-number');
+      const order = Array.from(qList.querySelectorAll('.question-card')).map(el => parseInt(el.dataset.id, 10));
+      postJSON(`/reorder_golf_questions/${FORM_ID}/`, { order });
+    },
+  });
+
+  function renumber(sel, badgeSel) {
+    document.querySelectorAll(sel).forEach((card, idx) => {
+      const badge = card.querySelector(badgeSel);
+      if (badge) badge.textContent = (idx + 1);
+    });
+  }
+
+  const qModalEl = document.getElementById('questionModal');
+  const qModal = new bootstrap.Modal(qModalEl);
+
+  function addChoiceInput(value) {
+    const wrap = document.createElement('div');
+    wrap.className = 'input-group input-group-sm mb-1';
+    wrap.innerHTML = `<input type="text" class="form-control choice-input" value="${(value || '').replace(/"/g, '&quot;')}" placeholder="Option text">
+      <button type="button" class="btn btn-outline-danger remove-choice"><i class="material-symbols-rounded align-middle" style="font-size:16px;">close</i></button>`;
+    wrap.querySelector('.remove-choice').addEventListener('click', () => wrap.remove());
+    document.getElementById('choicesList').appendChild(wrap);
+  }
+
+  function syncQTypeUI() {
+    const t = document.getElementById('qType').value;
+    const needsChoices = ['radio', 'checkbox', 'select'].includes(t);
+    document.getElementById('choicesBlock').style.display = needsChoices ? 'block' : 'none';
+    document.getElementById('maxChecksWrap').style.display = (t === 'checkbox') ? 'block' : 'none';
+  }
+  document.getElementById('qType').addEventListener('change', syncQTypeUI);
+  document.getElementById('addChoiceBtn').addEventListener('click', () => addChoiceInput(''));
+
+  function openQuestionModal(data) {
+    document.getElementById('qId').value = data.id || '';
+    document.getElementById('qText').value = data.text || '';
+    document.getElementById('qHelp').value = data.help_text || '';
+    document.getElementById('qType').value = data.question_type || 'text';
+    document.getElementById('qRequired').checked = data.id ? !!data.is_required : true;
+    document.getElementById('qShowInList').checked = !!data.show_in_list;
+    document.getElementById('qColumnLabel').value = data.list_column_label || '';
+    document.getElementById('qAllowOther').checked = !!data.allow_other;
+    document.getElementById('qMaxChecks').value = data.max_checks || '';
+    document.getElementById('choicesList').innerHTML = '';
+    (data.choices || []).forEach(addChoiceInput);
+    if (!(data.choices || []).length) { addChoiceInput(''); addChoiceInput(''); }
+    syncQTypeUI();
+    document.getElementById('questionForm').classList.remove('was-validated');
+    qModal.show();
+  }
+
+  document.getElementById('addQuestionBtn').addEventListener('click', () => openQuestionModal({}));
+
+  function bindQuestionRow(card) {
+    const id = card.dataset.id;
+    const edit = card.querySelector('.edit-q-btn');
+    const del = card.querySelector('.delete-q-btn');
+    if (edit) edit.addEventListener('click', () => {
+      fetch(`/get_golf_question/${id}/`).then(r => r.json()).then(openQuestionModal);
+    });
+    if (del) del.addEventListener('click', () => {
+      Swal.fire({
+        icon: 'warning', title: 'Delete this question?',
+        text: 'Any answers already collected for it will be removed too.',
+        showCancelButton: true, confirmButtonText: 'Delete', confirmButtonColor: '#d9534f',
+      }).then(res => {
+        if (!res.isConfirmed) return;
+        fetch(`/delete_golf_question/${id}/`, { method: 'POST', headers: { 'X-CSRFToken': csrf() } })
+          .then(r => r.json()).then(d => { if (d.success) location.reload(); });
+      });
+    });
+  }
+  document.querySelectorAll('#questionList .question-card').forEach(bindQuestionRow);
+
+  document.getElementById('questionForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const f = e.target;
+    if (!f.checkValidity()) { f.classList.add('was-validated'); return; }
+    const choices = Array.from(document.querySelectorAll('.choice-input'))
+      .map(i => i.value.trim()).filter(Boolean);
+    postJSON('/save_golf_question', {
+      id: document.getElementById('qId').value || null,
+      form_id: FORM_ID,
+      text: document.getElementById('qText').value,
+      help_text: document.getElementById('qHelp').value,
+      question_type: document.getElementById('qType').value,
+      is_required: document.getElementById('qRequired').checked,
+      show_in_list: document.getElementById('qShowInList').checked,
+      list_column_label: document.getElementById('qColumnLabel').value,
+      allow_other: document.getElementById('qAllowOther').checked,
+      max_checks: document.getElementById('qMaxChecks').value,
+      choices: choices,
+    }).then(d => {
+      if (d.success) location.reload();
+      else Swal.fire({ icon: 'error', title: 'Could not save', text: d.message || '' });
+    });
+  });
+
+  {% if form.is_sponsor %}
+  // ── Sponsor items ──
+  const itList = document.getElementById('itemList');
+  Sortable.create(itList, {
+    handle: '.drag-handle',
+    animation: 150,
+    onEnd: () => {
+      const order = Array.from(itList.querySelectorAll('.item-card')).map(el => parseInt(el.dataset.id, 10));
+      postJSON(`/reorder_golf_sponsor_items/${FORM_ID}/`, { order })
+        .then(() => location.reload());
+    },
+  });
+
+  const itDesc = makeQuill('#itDescEditor');
+  const itModal = new bootstrap.Modal(document.getElementById('itemModal'));
+  let removeImage = false, removeLogo = false;
+
+  // One upload box = hidden input + preview + empty state + button label + filename.
+  const UPLOADS = {
+    image: { box: 'itImageBox', input: 'itImage', preview: 'itImagePreview',
+             empty: 'itImageEmpty', remove: 'itRemoveImage', label: 'itImageBtnLabel',
+             name: 'itImageName', verb: 'image' },
+    logo:  { box: 'itLogoBox', input: 'itLogo', preview: 'itLogoPreview',
+             empty: 'itLogoEmpty', remove: 'itRemoveLogo', label: 'itLogoBtnLabel',
+             name: 'itLogoName', verb: 'logo' },
+  };
+
+  function renderUpload(kind, url, filename) {
+    const u = UPLOADS[kind];
+    const box = document.getElementById(u.box);
+    const img = document.getElementById(u.preview);
+    const empty = document.getElementById(u.empty);
+    const remove = document.getElementById(u.remove);
+    const label = document.getElementById(u.label);
+    const nameEl = document.getElementById(u.name);
+    const has = !!url;
+    img.src = has ? url : '';
+    img.style.display = has ? '' : 'none';
+    empty.style.display = has ? 'none' : '';
+    remove.style.display = has ? '' : 'none';
+    box.classList.toggle('has-file', has);
+    label.textContent = has ? `Replace ${u.verb}` : `Choose ${u.verb}`;
+    nameEl.textContent = filename || '';
+  }
+
+  // Clicking anywhere in the box opens the file picker — except the Remove button
+  // and the label itself (the label already targets the input, so letting the box
+  // handler fire too would open the picker twice).
+  Object.keys(UPLOADS).forEach(kind => {
+    const u = UPLOADS[kind];
+    document.getElementById(u.box).addEventListener('click', function (e) {
+      if (e.target.closest('button') || e.target.closest('label')) return;
+      document.getElementById(u.input).click();
+    });
+  });
+
+  function syncSpecialRequired() {
+    const needed = document.getElementById('itShowInParticipant').checked;
+    const el = document.getElementById('itSpecialPrice');
+    el.required = needed;
+    document.getElementById('itSpecialHint').innerHTML = needed
+      ? '<strong class="text-danger">Required</strong> — this is the price the participant page shows and charges.'
+      : 'Only shown on the <strong>participant</strong> page. May be higher or lower than the item price.';
+  }
+  document.getElementById('itShowInParticipant').addEventListener('change', syncSpecialRequired);
+
+  function openItemModal(data) {
+    data = data || {};
+    document.getElementById('itId').value = data.id || '';
+    document.getElementById('itName').value = data.name || '';
+    document.getElementById('itPrice').value = data.price || '';
+    document.getElementById('itSpecialPrice').value = data.special_price || '';
+    document.getElementById('itOnceOnly').checked = !!data.once_only;
+    document.getElementById('itShowInParticipant').checked = !!data.show_in_participant;
+    document.getElementById('itActive').checked = data.id ? !!data.is_active : true;
+    itDesc.root.innerHTML = data.description || '';
+    document.getElementById('itImage').value = '';
+    document.getElementById('itLogo').value = '';
+    removeImage = false; removeLogo = false;
+    renderUpload('image', data.image_url || '');
+    renderUpload('logo', data.logo_url || '');
+    syncSpecialRequired();
+    document.getElementById('itemForm').classList.remove('was-validated');
+    itModal.show();
+  }
+
+  document.getElementById('addItemBtn').addEventListener('click', () => openItemModal({}));
+  document.getElementById('itRemoveImage').addEventListener('click', () => {
+    removeImage = true; renderUpload('image', '');
+  });
+  document.getElementById('itRemoveLogo').addEventListener('click', () => {
+    removeLogo = true; renderUpload('logo', '');
+  });
+  document.getElementById('itImage').addEventListener('change', function () {
+    if (this.files[0]) {
+      removeImage = false;
+      renderUpload('image', URL.createObjectURL(this.files[0]), this.files[0].name);
+    }
+  });
+  document.getElementById('itLogo').addEventListener('change', function () {
+    if (this.files[0]) {
+      removeLogo = false;
+      renderUpload('logo', URL.createObjectURL(this.files[0]), this.files[0].name);
+    }
+  });
+
+  document.querySelectorAll('.edit-item-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+      fetch(`/get_golf_sponsor_item/${this.dataset.id}/`).then(r => r.json()).then(openItemModal);
+    });
+  });
+
+  document.querySelectorAll('.delete-item-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const id = this.dataset.id;
+      Swal.fire({
+        icon: 'warning', title: 'Delete this sponsor item?',
+        text: 'Entries that already took it keep their record, but the item disappears from both public pages.',
+        showCancelButton: true, confirmButtonText: 'Delete', confirmButtonColor: '#d9534f',
+      }).then(res => {
+        if (!res.isConfirmed) return;
+        fetch(`/delete_golf_sponsor_item/${id}/`, { method: 'POST', headers: { 'X-CSRFToken': csrf() } })
+          .then(r => r.json()).then(d => { if (d.success) location.reload(); });
+      });
+    });
+  });
+
+  document.getElementById('itemForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const f = e.target;
+    if (!f.checkValidity()) { f.classList.add('was-validated'); return; }
+
+    const fd = new FormData();
+    fd.append('id', document.getElementById('itId').value);
+    fd.append('form_id', FORM_ID);
+    fd.append('name', document.getElementById('itName').value);
+    fd.append('price', document.getElementById('itPrice').value);
+    fd.append('special_price', document.getElementById('itSpecialPrice').value);
+    fd.append('description', quillHtml(itDesc));
+    fd.append('once_only', document.getElementById('itOnceOnly').checked ? 'true' : 'false');
+    fd.append('show_in_participant', document.getElementById('itShowInParticipant').checked ? 'true' : 'false');
+    fd.append('is_active', document.getElementById('itActive').checked ? 'true' : 'false');
+    fd.append('remove_image', removeImage ? 'true' : 'false');
+    fd.append('remove_logo', removeLogo ? 'true' : 'false');
+    const img = document.getElementById('itImage').files[0];
+    const logo = document.getElementById('itLogo').files[0];
+    if (img) fd.append('image', img);
+    if (logo) fd.append('logo', logo);
+
+    fetch('/save_golf_sponsor_item', { method: 'POST', headers: { 'X-CSRFToken': csrf() }, body: fd })
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) location.reload();
+        else Swal.fire({ icon: 'error', title: 'Could not save item', text: d.message || '' });
+      });
+  });
+
+  // Keep the currency prefixes in the item modal in sync with the field above.
+  const curEl = document.getElementById('fsCurrency');
+  if (curEl) {
+    curEl.addEventListener('input', () => {
+      document.getElementById('itCurrencyA').textContent = curEl.value || 'RM';
+      document.getElementById('itCurrencyB').textContent = curEl.value || 'RM';
+    });
+  }
+  {% endif %}
+
+});
+</script>
+
+{# Rich-text seeds: kept out of JS string literals so quotes and markup survive. #}
+{% if event %}
+{{ event.extra_info|json_script:"extraInfoSeed" }}
+<div id="confIntroSeed" style="display:none">{{ event.confirmation_intro|safe }}</div>
+<div id="signoffSeed" style="display:none">{{ event.email_signoff|safe }}</div>
+<div id="closedSeed" style="display:none">{{ event.registration_closed_intro|safe }}</div>
+{% endif %}
+<div id="noteSeed" style="display:none">{{ form.note|safe }}</div>
+{% endblock %}

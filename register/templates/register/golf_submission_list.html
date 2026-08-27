@@ -1,0 +1,406 @@
+{% extends 'register/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block extracss %}
+<style>
+  .kpi { border: 1px solid #e6e9ef; border-radius: .6rem; padding: .75rem 1rem; background: #fff; }
+  .kpi .kpi-label { font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; color: #98a2b3; font-weight: 700; }
+  .kpi .kpi-value { font-size: 1.35rem; font-weight: 700; color: #1f2937; line-height: 1.2; }
+  .status-pill { font-size: .68rem; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
+  .status-pending { background: #fff3cd; color: #7c5e00; }
+  .status-approved { background: #e7f4ec; color: #198754; }
+  .status-rejected { background: #fdecea; color: #b3261e; }
+  #detailDrawer .offcanvas-body { font-size: .9rem; }
+  .detail-section {
+    font-size: .72rem; text-transform: uppercase; letter-spacing: .06em;
+    font-weight: 700; color: #667085; margin: 1.25rem 0 .5rem;
+  }
+  .detail-row { display: flex; gap: .75rem; padding: .3rem 0; border-bottom: 1px solid #f2f4f7; }
+  .detail-row .k { min-width: 190px; color: #667085; }
+  .detail-row .v { font-weight: 600; color: #1f2937; word-break: break-word; }
+  .remarks-input { min-width: 160px; }
+  #golfEntries input.form-check-input {
+    border: 1px solid #98a2b3;
+  }
+
+  /* ---------- Toolbar action buttons (same look as survey_submission_list) ---------- */
+  #golfEntries_wrapper .dt-buttons { display: inline-flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  #golfEntries_wrapper .dt-buttons .btn { display: inline-flex; align-items: center; gap: 4px; }
+  #golfSelCountBadge { font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: 8px; }
+
+  #golfEntries_wrapper .dt-buttons .btn-grp {
+    color: #fff !important;
+    border: none !important;
+    background-image: none !important;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-weight: 600;
+    box-shadow: 0 2px 5px rgba(20, 30, 50, 0.12);
+    transition: background-color .15s ease, box-shadow .15s ease, transform .05s ease;
+  }
+  #golfEntries_wrapper .dt-buttons .btn-grp .material-symbols-rounded { color: #fff !important; }
+  #golfEntries_wrapper .dt-buttons .btn-grp:hover { box-shadow: 0 4px 10px rgba(20, 30, 50, 0.18); }
+  #golfEntries_wrapper .dt-buttons .btn-grp:active { transform: translateY(1px); }
+
+  #golfEntries_wrapper .dt-buttons .btn-grp-approve { background-color: #1aa179 !important; }
+  #golfEntries_wrapper .dt-buttons .btn-grp-approve:hover { background-color: #158463 !important; }
+  #golfEntries_wrapper .dt-buttons .btn-grp-reject  { background-color: #E0115F !important; }
+  #golfEntries_wrapper .dt-buttons .btn-grp-reject:hover  { background-color: #C7003B !important; }
+  #golfEntries_wrapper .dt-buttons .btn-grp-reset   { background-color: #5a6b8c !important; }
+  #golfEntries_wrapper .dt-buttons .btn-grp-reset:hover   { background-color: #4a5a78 !important; }
+  #golfEntries_wrapper .dt-buttons .btn-grp-delete  { background-color: #b3261e !important; }
+  #golfEntries_wrapper .dt-buttons .btn-grp-delete:hover  { background-color: #921e18 !important; }
+  #golfEntries_wrapper .dt-buttons .btn-grp-excel   { background-color: #5e72e4 !important; }
+  #golfEntries_wrapper .dt-buttons .btn-grp-excel:hover   { background-color: #4a5cd0 !important; }
+
+  /* Disabled (e.g. Approve/Reject before any row is selected) reads as greyed-out. */
+  #golfEntries_wrapper .dt-buttons .btn-grp.disabled,
+  #golfEntries_wrapper .dt-buttons .btn-grp:disabled {
+    background-color: #adb5bd !important;
+    box-shadow: none;
+    opacity: 1;
+    cursor: not-allowed;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+  <div class="container-fluid py-2">
+    {% comment %}Guarantees Django sets the csrftoken cookie, so the AJAX saves
+    on this page work even in a session that never posted a form.{% endcomment %}
+    <form id="csrfHolder" style="display:none">{% csrf_token %}</form>
+
+    <div class="row">
+      <div class="col-12 col-md-7 d-flex align-items-center gap-2">
+        <div class="ms-3">
+          <h3 class="mb-0 h4 font-weight-bolder opacity-7">
+            <i class="ti ti-list"></i>
+            {% if form.is_sponsor %}Sponsorship Entries{% else %}Flight Registrations{% endif %}
+          </h3>
+          <nav aria-label="breadcrumb m-0">
+            <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0">
+              <li class="breadcrumb-item text-sm">
+                <a class="opacity-5 text-dark" href="{% url list_url %}">
+                  {% if form.is_sponsor %}Sponsor Forms{% else %}Registration Forms{% endif %}
+                </a>
+              </li>
+              <li class="breadcrumb-item text-sm text-dark active" aria-current="page">{{ form.title }}</li>
+            </ol>
+          </nav>
+        </div>
+      </div>
+      <div class="col-12 col-md-5 d-flex justify-content-end align-items-center gap-2">
+        <a href="{% url 'golf_form_builder' form.id %}" class="btn btn-sm btn-outline-primary mb-0">
+          <i class="material-symbols-rounded align-middle">tune</i> Builder
+        </a>
+        <a href="{% url 'golf_form_public' form.public_ident %}" target="_blank" class="btn btn-sm btn-outline-success mb-0">
+          <i class="material-symbols-rounded align-middle">public</i> Public page
+        </a>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="row g-2 my-2">
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="kpi"><div class="kpi-label">Entries</div><div class="kpi-value">{{ counts.total }}</div></div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="kpi"><div class="kpi-label">Pending</div><div class="kpi-value">{{ counts.pending }}</div></div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="kpi"><div class="kpi-label">Approved</div><div class="kpi-value">{{ counts.approved }}</div></div>
+      </div>
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="kpi"><div class="kpi-label">Rejected</div><div class="kpi-value">{{ counts.rejected }}</div></div>
+      </div>
+      {% if form.is_participant %}
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="kpi"><div class="kpi-label">Players</div><div class="kpi-value">{{ counts.players }}</div></div>
+      </div>
+      {% endif %}
+      <div class="col-6 col-md-3 col-xl-2">
+        <div class="kpi">
+          <div class="kpi-label">Value{% if counts.rejected %} (excl. rejected){% endif %}</div>
+          <div class="kpi-value" style="font-size:1.05rem;">{{ currency }} {{ revenue|floatformat:2|intcomma }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="card my-2">
+        <div class="card-body px-0 pb-2">
+          <div class="table-responsive p-0">
+            <table id="golfEntries" class="table align-items-center mb-0">
+              <thead>
+                <tr>
+                  <th class="text-uppercase text-secondary text-sm font-weight-bolder">
+                    <input type="checkbox" class="form-check-input" id="checkAll">
+                  </th>
+                  <th class="text-uppercase text-secondary text-sm font-weight-bolder">Ref</th>
+                  <th class="text-uppercase text-secondary text-sm font-weight-bolder">Submitted</th>
+                  <th class="text-uppercase text-secondary text-sm font-weight-bolder">Contact</th>
+                  <th class="text-uppercase text-secondary text-sm font-weight-bolder">
+                    {% if form.is_sponsor %}Organisation{% else %}Company{% endif %}
+                  </th>
+                  {% if form.is_participant %}
+                    <th class="text-uppercase text-secondary text-sm font-weight-bolder">Players</th>
+                  {% endif %}
+                  <th class="text-uppercase text-secondary text-sm font-weight-bolder">
+                    {% if form.is_sponsor %}Items{% else %}Add-ons{% endif %}
+                  </th>
+                  <th class="text-uppercase text-secondary text-sm font-weight-bolder">Total</th>
+                  {% for q in list_questions %}
+                    <th class="text-uppercase text-secondary text-sm font-weight-bolder">
+                      {{ q.list_column_label|default:q.text|striptags|truncatechars:22 }}
+                    </th>
+                  {% endfor %}
+                  <th class="text-uppercase text-secondary text-sm font-weight-bolder">Remarks</th>
+                  <th class="text-uppercase text-secondary text-sm font-weight-bolder">Status</th>
+                  <th class="text-uppercase text-secondary text-sm font-weight-bolder"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for reg in registrations %}
+                  <tr>
+                    <td>
+                      <input type="checkbox" class="form-check-input row-check" value="{{ reg.id }}">
+                    </td>
+                    <td><p class="text-xs font-weight-bold mb-0">{{ reg.reg_no|default:reg.id }}</p></td>
+                    <td><p class="text-xs mb-0">{{ reg.submitted_at|date:"Y-m-d h:i A" }}</p></td>
+                    <td>
+                      <p class="text-xs font-weight-bold mb-0">{{ reg.contact_person }}</p>
+                      <p class="text-xxs text-secondary mb-0">{{ reg.contact_email }}</p>
+                    </td>
+                    <td><p class="text-xs mb-0">{{ reg.billing_company|truncatechars:40 }}</p></td>
+                    {% if form.is_participant %}
+                      <td class="text-center"><span class="text-xs font-weight-bold">{{ reg.player_count }}</span></td>
+                    {% endif %}
+                    <td>
+                      {% for s in reg.selections.all %}
+                        <span class="badge bg-light text-dark text-xxs d-block text-start mb-1">{{ s.item_name|truncatechars:30 }}</span>
+                      {% empty %}
+                        <span class="text-xxs text-secondary">—</span>
+                      {% endfor %}
+                    </td>
+                    <td><p class="text-xs font-weight-bold mb-0">{{ reg.currency }} {{ reg.total_amount|floatformat:2|intcomma }}</p></td>
+                    {% for value in reg.list_answers %}
+                      <td><p class="text-xs mb-0">{{ value|truncatechars:40 }}</p></td>
+                    {% endfor %}
+                    <td>
+                      <input type="text" class="form-control form-control-sm text-xs remarks-input"
+                             data-id="{{ reg.id }}" value="{{ reg.remarks }}" placeholder="Add a note...">
+                    </td>
+                    <td class="align-middle text-center">
+                      <span class="status-pill status-{{ reg.approval_status }}">
+                        {{ reg.get_approval_status_display }}
+                      </span>
+                    </td>
+                    <td class="align-middle">
+                      <a href="javascript:void(0);" class="text-body p-0 view-entry-btn" data-id="{{ reg.id }}" title="View full entry">
+                        <i class="material-symbols-rounded">visibility</i>
+                      </a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Entry detail drawer -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="detailDrawer" style="width:min(680px, 100%);">
+  <div class="offcanvas-header border-bottom">
+    <h5 class="offcanvas-title">Entry detail</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body" id="detailBody">
+    <div class="text-center text-muted py-5">Loading…</div>
+  </div>
+</div>
+
+<script>
+let golfTable;
+
+function golfCsrf() {
+  const m = document.cookie.match(/csrftoken=([^;]+)/);
+  return m ? decodeURIComponent(m[1]) : '';
+}
+function golfPostJSON(url, payload) {
+  return fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': golfCsrf() },
+    body: JSON.stringify(payload),
+  }).then(r => r.json());
+}
+function golfSelectedIds() {
+  return Array.from(document.querySelectorAll('.row-check:checked')).map(c => c.value);
+}
+
+// Keep the toolbar buttons + "N selected" badge in sync with the current
+// selection, the same pattern survey_submission_list uses.
+function updateGolfBulkButtons() {
+  const n = golfSelectedIds().length;
+  if (golfTable) {
+    ['approveBtn', 'rejectBtn', 'resetBtn', 'deleteBtn'].forEach(name => {
+      try { golfTable.button(name + ':name').enable(n > 0); } catch (e) {}
+    });
+  }
+  const badge = document.getElementById('golfSelCountBadge');
+  if (badge) {
+    if (n > 0) { badge.textContent = n + ' selected'; badge.style.display = ''; }
+    else { badge.style.display = 'none'; }
+  }
+}
+
+function golfBulkStatus(status) {
+  const FORM_ID = "{{ form.id }}";
+  const ids = golfSelectedIds();
+  if (!ids.length) return;
+  golfPostJSON(`/set_golf_registration_status/${FORM_ID}/`, { ids: ids, status: status })
+    .then(d => {
+      if (d.success) location.reload();
+      else Swal.fire({ icon: 'error', title: 'Could not update', text: d.message || '' });
+    });
+}
+
+function golfBulkDelete() {
+  const FORM_ID = "{{ form.id }}";
+  const ids = golfSelectedIds();
+  if (!ids.length) return;
+  Swal.fire({
+    icon: 'warning',
+    title: `Delete ${ids.length} entr${ids.length === 1 ? 'y' : 'ies'}?`,
+    text: 'Any once-only sponsor items they hold are released back to available. This cannot be undone.',
+    showCancelButton: true, confirmButtonText: 'Delete', confirmButtonColor: '#d9534f',
+  }).then(res => {
+    if (!res.isConfirmed) return;
+    golfPostJSON(`/delete_golf_registrations/${FORM_ID}/`, { ids: ids })
+      .then(d => {
+        if (d.success) location.reload();
+        else Swal.fire({ icon: 'error', title: 'Could not delete', text: d.message || '' });
+      });
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  const FORM_ID = "{{ form.id }}";
+
+  document.getElementById('checkAll').addEventListener('change', function () {
+    // Only the rows DataTables currently has in the DOM (i.e. the visible page).
+    document.querySelectorAll('.row-check').forEach(c => c.checked = this.checked);
+    updateGolfBulkButtons();
+  });
+  document.addEventListener('change', function (e) {
+    if (e.target.classList.contains('row-check')) updateGolfBulkButtons();
+  });
+
+  // ── Remarks: save on blur ──
+  document.querySelectorAll('.remarks-input').forEach(input => {
+    let last = input.value;
+    input.addEventListener('blur', function () {
+      if (this.value === last) return;
+      last = this.value;
+      golfPostJSON(`/update_golf_remarks/${FORM_ID}/`, { id: this.dataset.id, remarks: this.value })
+        .then(d => {
+          if (!d.success) Swal.fire({ icon: 'error', title: 'Could not save the remark' });
+        });
+    });
+  });
+
+  // ── Detail drawer ──
+  const drawer = new bootstrap.Offcanvas(document.getElementById('detailDrawer'));
+  document.querySelectorAll('.view-entry-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const body = document.getElementById('detailBody');
+      body.innerHTML = '<div class="text-center text-muted py-5">Loading…</div>';
+      drawer.show();
+      fetch(`/golf_submission_detail/${FORM_ID}/${this.dataset.id}/`)
+        .then(r => r.text())
+        .then(html => body.innerHTML = html)
+        .catch(() => body.innerHTML = '<div class="alert alert-danger">Could not load this entry.</div>');
+    });
+  });
+});
+
+$(document).ready(function () {
+  golfTable = new DataTable('#golfEntries', {
+    responsive: false,
+    paging: true,
+    lengthChange: true,
+    searching: true,
+    pageLength: 25,
+    lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+    scrollX: true,
+    scrollY: '55vh',
+    order: [[2, 'desc']],
+    columnDefs: [{ orderable: false, targets: [0, -1, -2, -3] }],
+    layout: {
+      topStart: [
+        { search: { className: 'form-control form-control-sm', placeholder: 'Search...', ariaLabel: 'Search' } },
+        'pageLength',
+      ],
+      topEnd: 'buttons',
+    },
+    // Styled and grouped to match the toolbar on survey_submission_list
+    // (.btn-grp colour chips) and placed in the same row as the search
+    // box / page-length select via layout.topEnd above.
+    buttons: [
+      {
+        text: '<i class="material-symbols-rounded align-middle">check_circle</i> Approve',
+        name: 'approveBtn',
+        className: 'btn btn-sm btn-grp btn-grp-approve',
+        action: function () { golfBulkStatus('approved'); },
+      },
+      {
+        text: '<i class="material-symbols-rounded align-middle">cancel</i> Reject',
+        name: 'rejectBtn',
+        className: 'btn btn-sm btn-grp btn-grp-reject',
+        action: function () { golfBulkStatus('rejected'); },
+      },
+      {
+        text: '<i class="material-symbols-rounded align-middle">history</i> Reset to pending',
+        name: 'resetBtn',
+        className: 'btn btn-sm btn-grp btn-grp-reset',
+        action: function () { golfBulkStatus('pending'); },
+      },
+      {
+        text: '<i class="material-symbols-rounded align-middle">delete</i> Delete',
+        name: 'deleteBtn',
+        className: 'btn btn-sm btn-grp btn-grp-delete',
+        action: function () { golfBulkDelete(); },
+      },
+      { extend: 'excelHtml5', text: '<i class="material-symbols-rounded align-middle">download</i> Excel',
+        className: 'btn btn-sm btn-grp btn-grp-excel',
+        title: '{{ form.title|escapejs }}',
+        exportOptions: { columns: ':not(:first-child):not(:last-child)' } },
+    ],
+    autoWidth: false,
+    scrollCollapse: true,
+    language: {
+      paginate: {
+        previous: '<i class="material-symbols-rounded">chevron_left</i>',
+        next: '<i class="material-symbols-rounded">chevron_right</i>',
+      },
+      emptyTable: "<p class='fs-6 fw-500 text-secondary py-4'>No entries yet. Share the public link to start collecting them.</p>",
+      infoEmpty: '0 Record',
+      zeroRecords: "<p class='fs-6 fw-500 text-secondary py-4'>No entry matches your search.</p>",
+    },
+    pagingTag: 'button',
+  });
+
+  // Inject a small "N selected" badge into the buttons toolbar, matching
+  // the pattern used on the survey submissions page.
+  $('<span id="golfSelCountBadge" class="badge bg-info text-white align-self-center me-2" style="display:none;"></span>')
+    .prependTo('#golfEntries_wrapper .dt-buttons');
+
+  updateGolfBulkButtons();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,458 @@
+{% extends 'register/base.html' %}
+{% load static %}
+
+{% comment %}
+Shared list page for both golf form menus. `list_kind` is 'participant' or
+'sponsor'; everything else that differs comes in as page_meta from the view.
+{% endcomment %}
+
+{% block content %}
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+  <div class="container-fluid py-2">
+
+    <input type="hidden" id="perm" value="True">
+    {% comment %}Guarantees Django sets the csrftoken cookie, so the AJAX saves
+    on this page work even in a session that never posted a form.{% endcomment %}
+    <form id="csrfHolder" style="display:none">{% csrf_token %}</form>
+
+    <input type="hidden" id="listKind" value="{{ list_kind }}">
+    <input type="hidden" id="autoOpenEvent" value="{{ auto_open_event_id }}">
+
+    <div class="row">
+      <div class="col-8 d-flex justify-content-start align-items-center gap-2">
+        <div class="ms-3">
+          <h3 class="mb-0 h4 font-weight-bolder opacity-7">
+            <i class="ti ti-forms"></i> {{ list_title }}
+          </h3>
+          <nav aria-label="breadcrumb m-0">
+            <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
+              <li class="breadcrumb-item text-sm">
+                <a class="opacity-5 text-dark" href="javascript:;">{{ list_subtitle }}</a>
+              </li>
+            </ol>
+          </nav>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="card my-2">
+        <div class="card-body px-0 pb-2">
+          <div class="table-responsive p-0">
+            <table id="golfForms" class="table align-items-center mb-0">
+              <thead>
+                <tr>
+                  <th class="text-uppercase text-secondary text-sm font-weight-bolder" style="width:8%;">ID</th>
+                  <th class="text-uppercase text-secondary text-sm font-weight-bolder" style="width:37%;">Form Title</th>
+                  <th class="text-uppercase text-secondary text-sm font-weight-bolder" style="width:22%;">Golf Event</th>
+                  <th class="text-uppercase text-secondary text-sm font-weight-bolder" style="width:13%;">Created At</th>
+                  <th class="text-uppercase text-secondary text-sm font-weight-bolder" style="width:8%;">Status</th>
+                  <th class="text-uppercase text-secondary text-sm font-weight-bolder" style="width:12%;"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for form in forms %}
+                  <tr>
+                    <td><p class="text-xs font-weight-bold mb-0">{{ form.id }}</p></td>
+                    <td>
+                      <div class="d-flex px-2 py-1">
+                        <div class="d-flex flex-column justify-content-center">
+                          <a href="{% url 'golf_submission_list' form.id %}" class="nav-link text-body p-0" title="View entries">
+                            <h6 class="mb-0 text-xs">{{ form.title }}</h6>
+                          </a>
+                          <span class="text-xxs text-secondary">/golf/{{ form.public_ident }}/</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      {% if form.fkevent %}
+                        <p class="text-xs mb-0">{{ form.fkevent.title }}</p>
+                      {% else %}
+                        <span class="badge badge-sm bg-gradient-secondary">Not assigned</span>
+                      {% endif %}
+                    </td>
+                    <td><p class="text-xs font-weight-bold mb-0">{{ form.created_at|date:"Y-m-d h:i A" }}</p></td>
+                    <td class="align-middle text-center text-sm">
+                      {% if form.is_active %}
+                        <span class="badge badge-sm bg-gradient-success">Active</span>
+                      {% else %}
+                        <span class="badge badge-sm bg-gradient-danger">Inactive</span>
+                      {% endif %}
+                    </td>
+                    <td class="align-middle">
+                      <div class="d-flex gap-2 align-items-center">
+                        <a href="javascript:void(0);" class="text-body p-0 edit-form-btn" data-id="{{ form.id }}" title="Edit form settings">
+                          <i class="material-symbols-rounded">edit</i>
+                        </a>
+                        <a href="{% url 'golf_form_builder' form.id %}" class="text-body p-0"
+                           title="{% if list_kind == 'sponsor' %}Build form (sponsor items){% else %}Build form (player fields &amp; questions){% endif %}">
+                          <i class="material-symbols-rounded">tune</i>
+                        </a>
+                        <a href="{% url 'golf_form_preview' form.id %}" target="_blank" class="text-body p-0" title="Preview (nothing saved)">
+                          <i class="material-symbols-rounded">visibility</i>
+                        </a>
+                        <a href="{% url 'golf_form_public' form.public_ident %}" target="_blank" class="text-body p-0" title="Open the public page">
+                          <i class="material-symbols-rounded">public</i>
+                        </a>
+                        <a href="javascript:void(0);" class="text-body p-0 copy-link-btn"
+                           data-link="{% url 'golf_form_public' form.public_ident %}" title="Copy public link">
+                          <i class="material-symbols-rounded">link</i>
+                        </a>
+                        <a href="javascript:void(0);" class="text-body p-0 clone-form-btn"
+                           data-id="{{ form.id }}" data-title="{{ form.title }}" title="Clone">
+                          <i class="material-symbols-rounded">content_copy</i>
+                        </a>
+                        <a href="javascript:void(0);" class="text-danger p-0 delete-form-btn"
+                           data-id="{{ form.id }}" data-title="{{ form.title }}" title="Delete">
+                          <i class="material-symbols-rounded">delete</i>
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Add / Edit form -->
+<div class="modal fade" id="golfFormModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <form id="golfFormForm" novalidate>
+        <div class="modal-header">
+          <input type="hidden" id="gfId">
+          <h5 class="modal-title" id="golfFormModalLabel">{{ modal_title }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <label for="gfTitle" class="form-label">Form Title</label>
+              <input type="text" class="form-control border border-1 rounded px-2 py-2" id="gfTitle" required
+                     placeholder="{% if list_kind == 'sponsor' %}e.g. Sponsorship Opportunities{% else %}e.g. Flight Registration{% endif %}">
+              <div class="invalid-feedback">Form title is required.</div>
+            </div>
+            <div class="col-12">
+              {% comment %}No input-group here: this theme positions .input-group-text
+              absolutely on the right, so a "/golf/" prefix would render after the field.
+              The path is shown in the label and the live preview below instead.{% endcomment %}
+              <label for="gfSlug" class="form-label">
+                Public URL <span class="text-muted small">— /golf/&lt;this&gt;/ (optional)</span>
+              </label>
+              <input type="text" class="form-control border border-1 rounded px-2 py-2" id="gfSlug"
+                     placeholder="pikom-golf-2026">
+              <small class="text-muted">
+                Leave blank to generate it from the title. Preview:
+                <code id="gfSlugPreview">/golf/&hellip;/</code>
+              </small>
+            </div>
+            <div class="col-12">
+              <label for="gfEvent" class="form-label">Golf Event</label>
+              <select id="gfEvent" class="form-select" required>
+                <option value="">Choose a golf event...</option>
+                {% for e in events %}
+                  <option value="{{ e.id }}">{{ e.title }}</option>
+                {% endfor %}
+              </select>
+              <div class="invalid-feedback">Please pick the golf event this form belongs to.</div>
+              {% if not events %}
+                <small class="text-danger">
+                  No active golf event yet — create one under <strong>Golf Event &gt; Event</strong> first.
+                </small>
+              {% endif %}
+            </div>
+            <div class="col-xl-6">
+              <label for="gfStartDate" class="form-label">Opens <span class="text-muted small">(optional)</span></label>
+              <input type="text" class="form-control border border-1 rounded px-2 py-2 timepicker" id="gfStartDate">
+            </div>
+            <div class="col-xl-6">
+              <label for="gfEndDate" class="form-label">Closes <span class="text-muted small">(optional)</span></label>
+              <input type="text" class="form-control border border-1 rounded px-2 py-2 timepicker" id="gfEndDate">
+            </div>
+            <div class="col-12">
+              <label for="gfDescription" class="form-label">Introduction <span class="text-muted small">(shown under the title on the public page)</span></label>
+              <div id="gfDescEditor" style="height:160px;background:#fff;"></div>
+              <input type="hidden" id="gfDescription">
+            </div>
+            <div class="col-12">
+              <div class="d-flex justify-content-between align-items-center">
+                <label class="form-check-label" for="gfActive">Active or Inactive the Form</label>
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" role="switch" id="gfActive" checked>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Clone form -->
+<div class="modal fade" id="golfCloneModal" data-bs-backdrop="static" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="golfCloneForm" novalidate>
+        <div class="modal-header">
+          <input type="hidden" id="gcSourceId">
+          <h5 class="modal-title">Clone Form</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="gcTitle" class="form-label">New form title</label>
+            <input type="text" class="form-control" id="gcTitle" required>
+            <div class="invalid-feedback">A title is required.</div>
+          </div>
+          <div class="mb-2">
+            <label for="gcEvent" class="form-label">Assign to golf event</label>
+            <select id="gcEvent" class="form-select">
+              <option value="">Leave unassigned</option>
+              {% for e in events %}
+                <option value="{{ e.id }}">{{ e.title }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <small class="text-muted">
+            {% if list_kind == 'sponsor' %}
+              Sponsor items are copied and start out available again. Entries are not copied.
+            {% else %}
+              Player fields, questions and settings are copied. Entries are not copied.
+            {% endif %}
+          </small>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Clone</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<script>
+  function golfCSRF() {
+    const m = document.cookie.match(/csrftoken=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    const LIST_KIND = document.getElementById('listKind').value;
+
+    const descEditor = new Quill('#gfDescEditor', {
+      theme: 'snow',
+      modules: {
+        toolbar: [
+          [{ header: [1, 2, 3, false] }],
+          ['bold', 'italic', 'underline'],
+          [{ list: 'ordered' }, { list: 'bullet' }],
+          ['link', 'blockquote'],
+          ['clean'],
+        ],
+      },
+    });
+
+    // ── Live preview of the public URL ──
+    const slugInput = document.getElementById('gfSlug');
+    const slugPreview = document.getElementById('gfSlugPreview');
+    function syncSlugPreview() {
+      const raw = (slugInput.value || '').trim()
+        .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      slugPreview.textContent = raw ? `/golf/${raw}/` : '/golf/\u2026/';
+    }
+    slugInput.addEventListener('input', syncSlugPreview);
+
+    function resetForm() {
+      document.getElementById('gfId').value = '';
+      document.getElementById('gfTitle').value = '';
+      document.getElementById('gfSlug').value = '';
+      syncSlugPreview();
+      document.getElementById('gfEvent').value = document.getElementById('autoOpenEvent').value || '';
+      document.getElementById('gfStartDate').value = '';
+      document.getElementById('gfEndDate').value = '';
+      document.getElementById('gfActive').checked = true;
+      descEditor.root.innerHTML = '';
+      document.getElementById('golfFormForm').classList.remove('was-validated');
+      document.getElementById('golfFormModalLabel').textContent = '{{ modal_title|escapejs }}';
+    }
+
+    // ── Copy public link ──
+    document.querySelectorAll('.copy-link-btn').forEach(btn => {
+      btn.addEventListener('click', function () {
+        navigator.clipboard.writeText(window.location.origin + this.dataset.link).then(() => {
+          const icon = this.querySelector('i');
+          const orig = icon.textContent;
+          icon.textContent = 'check';
+          setTimeout(() => icon.textContent = orig, 1500);
+        });
+      });
+    });
+
+    // ── Edit ──
+    document.querySelectorAll('.edit-form-btn').forEach(btn => {
+      btn.addEventListener('click', function () {
+        fetch(`/get_golf_form/${this.dataset.id}/`)
+          .then(r => r.json())
+          .then(d => {
+            if (d.error) { Swal.fire({ icon: 'error', title: 'Cannot edit', text: d.error }); return; }
+            document.getElementById('gfId').value = d.id;
+            document.getElementById('gfTitle').value = d.title || '';
+            document.getElementById('gfSlug').value = d.slug || '';
+            syncSlugPreview();
+            document.getElementById('gfEvent').value = d.event_id || '';
+            document.getElementById('gfStartDate').value = (d.start_date || '').slice(0, 16).replace('T', ' ');
+            document.getElementById('gfEndDate').value = (d.end_date || '').slice(0, 16).replace('T', ' ');
+            document.getElementById('gfActive').checked = d.active;
+            descEditor.root.innerHTML = d.description || '';
+            document.getElementById('golfFormModalLabel').textContent = 'Edit Form';
+            new bootstrap.Modal(document.getElementById('golfFormModal')).show();
+          })
+          .catch(() => Swal.fire({ icon: 'error', title: 'Failed to load the form.' }));
+      });
+    });
+
+    // ── Save ──
+    document.getElementById('golfFormForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const form = e.target;
+      if (!form.checkValidity()) { form.classList.add('was-validated'); return; }
+      form.classList.add('was-validated');
+
+      const start = document.getElementById('gfStartDate').value;
+      const end = document.getElementById('gfEndDate').value;
+
+      const fd = new FormData();
+      fd.append('id', document.getElementById('gfId').value);
+      fd.append('kind', LIST_KIND);
+      fd.append('title', document.getElementById('gfTitle').value);
+      fd.append('slug', document.getElementById('gfSlug').value);
+      fd.append('event_id', document.getElementById('gfEvent').value);
+      fd.append('start_date', start ? start.replace(' ', 'T') : '');
+      fd.append('end_date', end ? end.replace(' ', 'T') : '');
+      fd.append('is_active', document.getElementById('gfActive').checked ? 'true' : 'false');
+      const html = descEditor.root.innerHTML;
+      fd.append('description', (html === '<p><br></p>') ? '' : html);
+
+      fetch('/save_golf_form', { method: 'POST', headers: { 'X-CSRFToken': golfCSRF() }, body: fd })
+        .then(r => r.json())
+        .then(d => {
+          if (d.success) window.location.href = `/golf_form_builder/${d.id}/`;
+          else Swal.fire({ icon: 'error', title: 'Could not save', text: d.error || '' });
+        })
+        .catch(() => Swal.fire({ icon: 'error', title: 'Could not save the form.' }));
+    });
+
+    // ── Clone ──
+    document.querySelectorAll('.clone-form-btn').forEach(btn => {
+      btn.addEventListener('click', function () {
+        document.getElementById('gcSourceId').value = this.dataset.id;
+        document.getElementById('gcTitle').value = 'Copy of ' + this.dataset.title;
+        document.getElementById('golfCloneForm').classList.remove('was-validated');
+        new bootstrap.Modal(document.getElementById('golfCloneModal')).show();
+      });
+    });
+
+    document.getElementById('golfCloneForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const form = e.target;
+      if (!form.checkValidity()) { form.classList.add('was-validated'); return; }
+      const fd = new FormData();
+      fd.append('title', document.getElementById('gcTitle').value);
+      fd.append('event_id', document.getElementById('gcEvent').value);
+      fetch(`/clone_golf_form/${document.getElementById('gcSourceId').value}/`,
+        { method: 'POST', headers: { 'X-CSRFToken': golfCSRF() }, body: fd })
+        .then(r => r.json())
+        .then(d => {
+          if (d.success) window.location.href = `/golf_form_builder/${d.id}/`;
+          else Swal.fire({ icon: 'error', title: 'Clone failed', text: d.error || '' });
+        });
+    });
+
+    // ── Delete ──
+    document.querySelectorAll('.delete-form-btn').forEach(btn => {
+      btn.addEventListener('click', function () {
+        const id = this.dataset.id, title = this.dataset.title;
+        Swal.fire({
+          icon: 'warning',
+          title: 'Delete this form?',
+          html: `<strong>${title}</strong><br>Its questions, items and all submitted entries will be deleted too. This cannot be undone.`,
+          showCancelButton: true,
+          confirmButtonText: 'Delete',
+          confirmButtonColor: '#d9534f',
+        }).then(res => {
+          if (!res.isConfirmed) return;
+          fetch(`/delete_golf_form/${id}/`, { method: 'POST', headers: { 'X-CSRFToken': golfCSRF() } })
+            .then(r => r.json())
+            .then(d => {
+              if (d.success) location.reload();
+              else Swal.fire({ icon: 'error', title: 'Delete failed', text: d.error || '' });
+            });
+        });
+      });
+    });
+
+    window.golfResetFormModal = resetForm;
+
+    // Arriving from the Golf Event row's "+ Registration / + Sponsor" shortcut.
+    if (document.getElementById('autoOpenEvent').value) {
+      resetForm();
+      new bootstrap.Modal(document.getElementById('golfFormModal')).show();
+    }
+  });
+
+  $(document).ready(function () {
+    $('.timepicker').flatpickr({ enableTime: true, dateFormat: 'Y-m-d H:i' });
+
+    new DataTable('#golfForms', {
+      responsive: false,
+      paging: true,
+      lengthChange: true,
+      searching: true,
+      pageLength: 10,
+      lengthMenu: [[5, 10, 15, 50, 100], [5, 10, 15, 50, 100]],
+      scrollY: '60vh',
+      order: [[0, 'desc']],
+      columnDefs: [{ orderable: false, targets: [5] }],
+      layout: {
+        topStart: [
+          { search: { className: 'form-control form-control-sm', placeholder: 'Search...', ariaLabel: 'Search' } },
+          'pageLength',
+        ],
+        topEnd: 'buttons',
+      },
+      buttons: [{
+        text: '<i class="material-symbols-rounded align-middle">add</i> {{ new_button_label|escapejs }}',
+        className: 'btn btn-primary',
+        action: function () {
+          if (window.golfResetFormModal) window.golfResetFormModal();
+          new bootstrap.Modal(document.getElementById('golfFormModal')).show();
+        },
+      }],
+      autoWidth: true,
+      scrollCollapse: true,
+      language: {
+        paginate: {
+          previous: '<i class="material-symbols-rounded">chevron_left</i>',
+          next: '<i class="material-symbols-rounded">chevron_right</i>',
+        },
+        emptyTable: "<p class='fs-6 fw-500 text-secondary py-4'>No form yet. Click <strong>Add New</strong> to create one.</p>",
+        infoEmpty: '0 Record',
+        zeroRecords: "<p class='fs-6 fw-500 text-secondary py-4'>No form matches your search.</p>",
+      },
+      pagingTag: 'button',
+    });
+  });
+</script>
+{% endblock %}

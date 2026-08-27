@@ -1,0 +1,103 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thank you - {{ form.title }}</title>
+  <link rel="stylesheet" href="{% static 'register/assets/css/bootstrap.css' %}">
+  <link rel="stylesheet" href="{% static 'register/assets/css/style.css' %}">
+  <style>
+    :root {
+      --theme: {{ form.theme }};
+      --theme-soft: {{ form.theme_soft }};
+    }
+    body { background: #f5f7fb; }
+    .thanks-card { max-width: 660px; padding: 2.5rem; }
+    .review-steps { text-align: left; }
+    .review-steps li { padding: .35rem 0; }
+    .ref-pill {
+      display: inline-block; padding: .25rem .75rem; border-radius: 999px;
+      background: var(--theme-soft); color: var(--theme); font-weight: 600; font-size: .9rem;
+    }
+    .summary { text-align: left; border-top: 1px solid #e6e9ef; margin-top: 1.5rem; padding-top: 1rem; }
+    .summary-row { display: flex; justify-content: space-between; gap: 1rem; padding: .25rem 0; font-size: .9rem; }
+    .summary-row.grand { border-top: 2px solid var(--theme); margin-top: .4rem; padding-top: .5rem; font-weight: 700; }
+    .summary-row.grand .amount { color: var(--theme); }
+    @media (max-width: 575.98px) {
+      .thanks-card { padding: 1.5rem; }
+      h2 { font-size: 1.4rem; }
+    }
+  </style>
+</head>
+<body>
+  <section class="container-xl">
+    <div class="d-flex flex-column justify-content-center align-items-center text-center py-5" style="min-height:100dvh;">
+      <div class="bg-white rounded shadow thanks-card">
+        <div class="mb-3" style="font-size:64px; color:var(--theme);">&#10003;</div>
+
+        <h2 class="fw-bold mb-2">Thank you for your submission.</h2>
+        <p class="text-muted mb-3">
+          {% if registration.contact_person %}Hi <strong>{{ registration.contact_person }}</strong>,<br>{% endif %}
+          {% if form.is_sponsor %}
+            Your sponsorship submission for <strong>{{ event.title|default:form.title }}</strong> has been received.
+          {% else %}
+            Your flight registration for <strong>{{ event.title|default:form.title }}</strong> has been received.
+          {% endif %}
+        </p>
+
+        {% if registration.reg_no %}
+          <div class="mb-4">
+            Your reference number: <span class="ref-pill">{{ registration.reg_no }}</span>
+          </div>
+        {% endif %}
+
+        <ol class="review-steps mb-0">
+          <li>We have received your submission and it is currently under review.</li>
+          <li>A confirmation email has been sent to <strong>{{ registration.contact_email }}</strong>.</li>
+          <li>Our team will be in touch about payment and any further details.</li>
+        </ol>
+
+        <div class="summary">
+          {% if players %}
+            <div class="fw-bold mb-2" style="font-size:.85rem; text-transform:uppercase; letter-spacing:.05em; color:var(--theme);">
+              Players
+            </div>
+            {% for p in players %}
+              <div class="summary-row">
+                <span>Player {{ p.slot }}</span>
+                <span>{{ p.display_name }}{% if p.tshirt_size %} · {{ p.tshirt_size }}{% endif %}</span>
+              </div>
+            {% endfor %}
+          {% endif %}
+
+          <div class="fw-bold mt-3 mb-2" style="font-size:.85rem; text-transform:uppercase; letter-spacing:.05em; color:var(--theme);">
+            Amount
+          </div>
+          {% if registration.base_price %}
+            <div class="summary-row">
+              <span>{{ form.package_label|default:"Participation Package" }}</span>
+              <span class="amount">{{ registration.currency }} {{ registration.base_price|floatformat:2|intcomma }}</span>
+            </div>
+          {% endif %}
+          {% for s in selections %}
+            <div class="summary-row">
+              <span>{{ s.item_name }}</span>
+              <span class="amount">{{ registration.currency }} {{ s.unit_price|floatformat:2|intcomma }}</span>
+            </div>
+          {% endfor %}
+          <div class="summary-row grand">
+            <span>Total</span>
+            <span class="amount">{{ registration.currency }} {{ registration.total_amount|floatformat:2|intcomma }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="text-center mt-3" style="font-size:.78rem; color:#9aa3ad; letter-spacing:.02em;">
+        Powered by <span style="font-weight:600; color:#8a93a0;">Talbotiq Technologies</span>
+      </div>
+    </div>
+  </section>
+</body>
+</html>

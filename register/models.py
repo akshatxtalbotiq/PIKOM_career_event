@@ -476,3 +476,540 @@ class Answer(models.Model):
         return f"{who} Q{self.question.number}"
     
 
+# ===========================================================================
+# GOLF EVENT
+# ---------------------------------------------------------------------------
+# A self-contained stack for golf tournaments, deliberately kept separate from
+# Campaign / Survey so golf events never mix into the regular Campaigns list
+# and the legacy 2025 Registration / Player / Sponsorship rows stay untouched.
+#
+#   GolfEvent            the tournament (dates, venue, theme, email wording)
+#   GolfEventTeam        which users may manage it
+#   GolfForm             a participant form OR a sponsor form for the event
+#   GolfQuestion         extra custom questions on a form (asked once per entry)
+#   GolfSponsorItem      a sponsorship item authored on a sponsor form
+#   GolfRegistration     one submitted entry (participant or sponsor)
+#   GolfPlayer           a player slot inside a participant entry
+#   GolfSelection        a sponsor item picked on an entry (package or add-on)
+#   GolfAnswer           an answer to a GolfQuestion
+# ===========================================================================
+
+
+def default_golf_extra_info():
+    return []
+
+
+class GolfEvent(models.Model):
+    """A golf tournament. Plays the same role for the golf flow that Campaign
+    plays for the regular registration flow."""
+
+    THEME_DEFAULT = "#198754"
+
+    id = models.AutoField(primary_key=True)
+    event_code = models.UUIDField(default=uuid.uuid4, unique=True)
+    title = models.CharField(max_length=255)
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    # Comma-separated organiser addresses used as Reply-To on outgoing mail and
+    # notified when a new entry lands.
+    pic_email = models.TextField(blank=True, default="")
+
+    # --- Event details (shared by every form / email for this event) ---
+    # The date is derived from `end_date` (the event day), same convention the
+    # campaign emails use.
+    event_time = models.CharField(max_length=120, blank=True, default="")
+    venue = models.TextField(blank=True, default="")
+    dress_code = models.CharField(max_length=120, blank=True, default="")
+    # [{"icon": "\U0001f17f️", "label": "", "value": "Complimentary Parking", "link": ""}]
+    extra_info = models.JSONField(default=default_golf_extra_info, blank=True)
+
+    # --- Confirmation email (sanitised rich text, supports merge tags) ---
+    confirmation_subject = models.CharField(max_length=200, blank=True, default="")
+    confirmation_intro = models.TextField(blank=True, default="")
+    show_banner_confirmation = models.BooleanField(default=True)
+    show_details_confirmation = models.BooleanField(default=True)
+    email_signoff = models.TextField(blank=True, default="")
+
+    # Body HTML for the public "Registration Closed" page.
+    registration_closed_intro = models.TextField(blank=True, default="")
+
+    # Accent colour used on the public pages and in the emails.
+    theme_color = models.CharField(max_length=7, blank=True, default=THEME_DEFAULT)
+
+    class Meta:
+        ordering = ["-start_date"]
+
+    @property
+    def theme(self):
+        """Validated accent colour; falls back to the default green so a blank
+        or garbled value can never break a public page or an email."""
+        c = (self.theme_color or "").strip()
+        return c.lower() if re.fullmatch(r"#[0-9a-fA-F]{6}", c) else self.THEME_DEFAULT
+
+    @property
+    def theme_soft(self):
+        """90%-white tint of the accent colour, for pill / badge backgrounds."""
+        c = self.theme.lstrip("#")
+        r, g, b = (int(c[i:i + 2], 16) for i in (0, 2, 4))
+        return "#{:02x}{:02x}{:02x}".format(*(round(v + (255 - v) * 0.9) for v in (r, g, b)))
+
+    def __str__(self):
+        return self.title
+
+
+class GolfEventTeam(models.Model):
+    """Users allowed to manage a golf event (mirrors CampaignTeam)."""
+    id = models.AutoField(primary_key=True)
+    event = models.ForeignKey(GolfEvent, on_delete=models.CASCADE, related_name="event_teams")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="golf_event_user")
+
+    class Meta:
+        unique_together = ("event", "user")
+
+    def __str__(self):
+        return f"Team for {self.event.title} - {self.user.username}"
+
+
+def default_golf_player_field_config():
+    """Order / visibility / required state of the fixed player identity fields
+    on a golf participant form. Each form gets its own copy so editing one form
+    never affects another."""
+    return [
+        {"key": "salutation",   "label": "Salutation",         "visible": True, "required": True},
+        {"key": "name",         "label": "Name",               "visible": True, "required": True},
+        {"key": "handicap",     "label": "Handicap (USGA)",    "visible": True, "required": True},
+        {"key": "tgcc_member",  "label": "Member of TGCC",     "visible": True, "required": True},
+        {"key": "organisation", "label": "Organisation",       "visible": True, "required": True},
+        {"key": "designation",  "label": "Designation",        "visible": True, "required": True},
+        {"key": "mobile",       "label": "Mobile Number",      "visible": True, "required": True},
+        {"key": "email",        "label": "Email",              "visible": True, "required": True},
+        {"key": "tshirt_size",  "label": "T-Shirt Asian Size", "visible": True, "required": True},
+    ]
+
+
+GOLF_PLAYER_FIELD_KEYS = [f["key"] for f in default_golf_player_field_config()]
+
+
+def merge_golf_player_field_config(stored):
+    """Stored player-field config merged over the current defaults, in canonical
+    order. JSONField defaults only apply at row creation, so a form built before
+    a field existed would otherwise be missing it entirely."""
+    defaults = default_golf_player_field_config()
+    by_key = {i.get("key"): i for i in (stored or []) if isinstance(i, dict)}
+    merged, seen = [], set()
+    for d in defaults:
+        s = by_key.get(d["key"])
+        if s:
+            merged.append({
+                "key": d["key"],
+                "label": s.get("label") or d["label"],
+                "visible": s.get("visible", d["visible"]),
+                "required": s.get("required", d["required"]),
+            })
+        else:
+            merged.append(dict(d))
+        seen.add(d["key"])
+    for item in (stored or []):
+        if isinstance(item, dict) and item.get("key") not in seen:
+            merged.append(item)
+            seen.add(item.get("key"))
+    return merged
+
+
+def default_golf_salutations():
+    return ["Mr", "Ms"]
+
+
+def default_golf_tshirt_sizes():
+    return ["S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"]
+
+
+class GolfForm(models.Model):
+    """A public form belonging to a golf event: either the participant
+    (flight registration) form or the sponsor form."""
+
+    KIND_PARTICIPANT = "participant"
+    KIND_SPONSOR = "sponsor"
+    KIND_CHOICES = [
+        (KIND_PARTICIPANT, "Participant Form"),
+        (KIND_SPONSOR, "Sponsor Form"),
+    ]
+
+    id = models.AutoField(primary_key=True)
+    form_code = models.UUIDField(default=uuid.uuid4, unique=True)
+    kind = models.CharField(max_length=20, choices=KIND_CHOICES, default=KIND_PARTICIPANT)
+    title = models.CharField(max_length=255)
+    slug = models.SlugField(
+        max_length=80, unique=True, null=True, blank=True,
+        help_text="Human-friendly identifier used in the public URL "
+                  "(e.g. 'pikom-golf-2026'). Auto-generated from the title.",
+    )
+    description = models.TextField(blank=True)
+    fkevent = models.ForeignKey(
+        GolfEvent, on_delete=models.CASCADE, related_name="forms", null=True, blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    start_date = models.DateTimeField(null=True, blank=True)
+    end_date = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    banner = models.ImageField(upload_to="golf_banners/", null=True, blank=True)
+    show_event_details = models.BooleanField(
+        default=False,
+        help_text="Show the event's details block (date, time, venue, etc.) at "
+                  "the top of the public page.",
+    )
+
+    # Sanitised rich text shown at the very bottom of the public page, directly
+    # above the Submit button. Used for payment instructions, T&Cs, etc.
+    note = models.TextField(blank=True, default="")
+
+    # --- Participant-form only ---
+    player_slots = models.PositiveSmallIntegerField(
+        default=4, help_text="How many player sub-forms to show (a flight is 4)."
+    )
+    required_players = models.PositiveSmallIntegerField(
+        default=4, help_text="How many of those player sub-forms must be completed."
+    )
+    package_label = models.CharField(
+        max_length=200, blank=True, default="Participation Package",
+        help_text="Label shown next to the base package price.",
+    )
+    package_price = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True,
+        help_text="One base price for the whole entry (covers all player slots).",
+    )
+    currency = models.CharField(max_length=8, blank=True, default="RM")
+
+    # Fixed player identity fields: order / visibility / required / label.
+    player_field_config = models.JSONField(default=default_golf_player_field_config)
+    salutation_options = models.JSONField(default=default_golf_salutations)
+    tshirt_sizes = models.JSONField(default=default_golf_tshirt_sizes)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    @property
+    def is_participant(self):
+        return self.kind == self.KIND_PARTICIPANT
+
+    @property
+    def is_sponsor(self):
+        return self.kind == self.KIND_SPONSOR
+
+    @property
+    def public_ident(self):
+        """Identifier used in the public URL (slug preferred, UUID fallback)."""
+        return self.slug or str(self.form_code)
+
+    @property
+    def theme(self):
+        return self.fkevent.theme if self.fkevent else GolfEvent.THEME_DEFAULT
+
+    @property
+    def theme_soft(self):
+        return self.fkevent.theme_soft if self.fkevent else "#e7f4ec"
+
+    @property
+    def player_fields(self):
+        """Merged player-field config (always complete, canonical order)."""
+        return merge_golf_player_field_config(self.player_field_config)
+
+    def player_field_map(self):
+        """{key: config} for template / view lookups."""
+        return {f["key"]: f for f in self.player_fields}
+
+    def __str__(self):
+        return f"{self.title} ({self.get_kind_display()})"
+
+
+class GolfQuestion(models.Model):
+    """An extra custom question on a golf form. Asked once per entry (not per
+    player), and rendered after the player blocks."""
+
+    TYPE_TEXT = "text"
+    TYPE_TEXTAREA = "textarea"
+    TYPE_RADIO = "radio"
+    TYPE_CHECKBOX = "checkbox"
+    TYPE_SELECT = "select"
+    QUESTION_TYPES = [
+        (TYPE_TEXT, "Open Text"),
+        (TYPE_TEXTAREA, "Paragraph"),
+        (TYPE_RADIO, "Single Choice"),
+        (TYPE_CHECKBOX, "Multiple Choice"),
+        (TYPE_SELECT, "Dropdown"),
+    ]
+
+    form = models.ForeignKey(GolfForm, on_delete=models.CASCADE, related_name="questions")
+    number = models.PositiveIntegerField(help_text="Display order on the form.")
+    text = models.TextField()
+    help_text = models.TextField(blank=True)
+    question_type = models.CharField(max_length=32, choices=QUESTION_TYPES, default=TYPE_TEXT)
+    choices = models.JSONField(blank=True, null=True, help_text="Options for radio/checkbox/select.")
+    allow_other = models.BooleanField(default=False, help_text="Include an 'Other' free-text input.")
+    max_checks = models.PositiveIntegerField(blank=True, null=True, help_text="Optional limit for checkbox selections.")
+    is_required = models.BooleanField(default=True)
+    show_in_list = models.BooleanField(
+        default=False,
+        help_text="If True, this answer is shown as a column in the entries list.",
+    )
+    list_column_label = models.CharField(
+        max_length=60, blank=True,
+        help_text="Optional short column header for the entries list.",
+    )
+
+    class Meta:
+        ordering = ["number"]
+
+    def __str__(self):
+        return f"Q{self.number}: {self.text[:60]}"
+
+
+class GolfSponsorItem(models.Model):
+    """A sponsorship item (package) authored on a sponsor form. Items flagged
+    `show_in_participant` also appear as paid add-ons on the participant form of
+    the same golf event.
+
+    On the public sponsor page each item is one full-width row: package `image` on
+    the left, name / price / description in the middle, a Select control on the
+    right. A sold-out `once_only` item becomes unclickable and credits its buyer via
+    `logo` in the top-right corner (or shows 'NOT AVAILABLE' when no logo is set)."""
+
+    form = models.ForeignKey(GolfForm, on_delete=models.CASCADE, related_name="sponsor_items")
+    number = models.PositiveIntegerField(default=1, help_text="Display order on the sponsor page.")
+    image = models.ImageField(
+        upload_to="golf_sponsor_items/", null=True, blank=True,
+        help_text="The package image — the main picture on the item card.",
+    )
+    name = models.CharField(max_length=255)
+    price = models.DecimalField(
+        max_digits=12, decimal_places=2,
+        help_text="The item price. This is the only price shown on the sponsor page, "
+                  "and the amount a sponsor is charged for it.",
+    )
+    special_price = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True,
+        help_text="The participant add-on price — shown ONLY on the participant page, "
+                  "never on the sponsor page. Mandatory when `show_in_participant` is "
+                  "set. May be higher or lower than `price`.",
+    )
+    description = models.TextField(blank=True, help_text="Rich text shown on the item card.")
+    logo = models.ImageField(
+        upload_to="golf_sponsor_logos/", null=True, blank=True,
+        help_text="Optional. The logo of the sponsor who BOUGHT this item, uploaded by "
+                  "an organiser. Shown on the top-right corner of the card once the item "
+                  "is sold out; when absent the card shows 'NOT AVAILABLE' instead. Not "
+                  "displayed while the item is still available.",
+    )
+    once_only = models.BooleanField(
+        default=False,
+        help_text="Item can only be taken once. After the first entry the card becomes "
+                  "unclickable and credits the buyer's logo (or shows 'NOT AVAILABLE').",
+    )
+    show_in_participant = models.BooleanField(
+        default=False,
+        help_text="Also offer this item as a paid add-on on the participant form.",
+    )
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["number", "id"]
+
+    # Two prices, two audiences — never mixed:
+    #   sponsor page      -> `price`         (the item price)
+    #   participant page  -> `special_price` (the add-on price)
+    # `special_price` is not a "discount"; it may be higher or lower than `price`.
+
+    @property
+    def sponsor_price(self):
+        """What the sponsor page shows and charges."""
+        return self.price
+
+    @property
+    def addon_price(self):
+        """What the participant page shows and charges. Never None for an item
+        offered there — `show_in_participant` requires a special price."""
+        return self.special_price if self.special_price is not None else self.price
+
+    def price_for(self, form):
+        """The amount to charge for this item on `form`."""
+        return self.addon_price if form.is_participant else self.sponsor_price
+
+    @property
+    def taken_count(self):
+        return self.selections.count()
+
+    @property
+    def is_taken(self):
+        """A once-only item is unavailable as soon as one entry has claimed it."""
+        return bool(self.once_only and self.selections.exists())
+
+    def __str__(self):
+        return self.name
+
+
+class GolfRegistration(models.Model):
+    """One submitted entry against a golf form — a flight of players on a
+    participant form, or a sponsorship on a sponsor form."""
+
+    STATUS_PENDING = "pending"
+    STATUS_APPROVED = "approved"
+    STATUS_REJECTED = "rejected"
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "Pending review"),
+        (STATUS_APPROVED, "Approved"),
+        (STATUS_REJECTED, "Rejected"),
+    ]
+
+    id = models.AutoField(primary_key=True)
+    form = models.ForeignKey(GolfForm, on_delete=models.CASCADE, related_name="registrations")
+    reg_no = models.CharField(max_length=32, unique=True, null=True, blank=True)
+    registration_code = models.UUIDField(default=uuid.uuid4, unique=True)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    lastmodified = models.DateTimeField(auto_now=True)
+
+    # --- Contact details (both form kinds) ---
+    contact_person = models.CharField(max_length=255, blank=True, default="")
+    contact_designation = models.CharField(max_length=255, blank=True, default="")
+    contact_number = models.CharField(max_length=100, blank=True, default="")
+    contact_email = models.EmailField(blank=True, default="")
+
+    # --- Billing details ---
+    # Shared columns, labelled differently per form kind on the public page:
+    #   participant: Company Full Name (ROS/ROC) / Business Reg. No. /
+    #                Company Full Address / Contact person (e-Invoice) email
+    #   sponsor:     Organisation / (unused) / Billing Address / Email Address
+    #                + billing contact person, designation and contact number
+    billing_company = models.CharField(max_length=255, blank=True, default="")
+    billing_reg_no = models.CharField(max_length=100, blank=True, default="")
+    billing_address = models.TextField(blank=True, default="")
+    billing_email = models.EmailField(blank=True, default="")
+    billing_contact_person = models.CharField(max_length=255, blank=True, default="")
+    billing_designation = models.CharField(max_length=255, blank=True, default="")
+    billing_contact_number = models.CharField(max_length=100, blank=True, default="")
+
+    # --- Money (snapshotted at submission so later price edits don't rewrite
+    #     historical entries) ---
+    base_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    items_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    currency = models.CharField(max_length=8, blank=True, default="RM")
+
+    # --- Vetting ---
+    approval_status = models.CharField(
+        max_length=16, choices=STATUS_CHOICES, default=STATUS_PENDING,
+        help_text="Organiser review state of this entry.",
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    approved_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="golf_registration_approvals",
+    )
+    confirmation_sent = models.BooleanField(default=False)
+    remarks = models.TextField(blank=True, default="")
+
+    class Meta:
+        ordering = ["-submitted_at"]
+
+    def recalc_totals(self, save=True):
+        """Recompute items_total / total_amount from the linked selections."""
+        from decimal import Decimal
+        items = sum((s.unit_price or Decimal("0")) for s in self.selections.all())
+        self.items_total = items
+        self.total_amount = (self.base_price or Decimal("0")) + items
+        if save:
+            self.save(update_fields=["items_total", "total_amount"])
+        return self.total_amount
+
+    def __str__(self):
+        return f"{self.reg_no or self.id} - {self.contact_person}"
+
+
+class GolfPlayer(models.Model):
+    """One player slot inside a participant entry."""
+
+    SALUTATION_OTHER = "Others"
+
+    registration = models.ForeignKey(
+        GolfRegistration, on_delete=models.CASCADE, related_name="players"
+    )
+    slot = models.PositiveSmallIntegerField(default=1, help_text="Player 1..4 within the entry.")
+    salutation = models.CharField(max_length=50, blank=True, default="")
+    salutation_other = models.CharField(
+        max_length=100, blank=True, default="",
+        help_text="Free text captured when the salutation is 'Others'.",
+    )
+    name = models.CharField(max_length=255, blank=True, default="")
+    handicap = models.CharField(max_length=50, blank=True, default="", help_text="USGA handicap.")
+    is_tgcc_member = models.BooleanField(default=False)
+    tgcc_membership_no = models.CharField(max_length=100, blank=True, default="")
+    organisation = models.CharField(max_length=255, blank=True, default="")
+    designation = models.CharField(max_length=255, blank=True, default="")
+    mobile = models.CharField(max_length=100, blank=True, default="")
+    email = models.EmailField(blank=True, default="")
+    tshirt_size = models.CharField(max_length=10, blank=True, default="")
+    registration_code = models.UUIDField(default=uuid.uuid4, unique=True)
+    is_checked_in = models.BooleanField(default=False)
+    remarks = models.TextField(blank=True, default="")
+
+    class Meta:
+        ordering = ["slot"]
+        unique_together = ("registration", "slot")
+
+    @property
+    def display_salutation(self):
+        if self.salutation == self.SALUTATION_OTHER and self.salutation_other:
+            return self.salutation_other
+        return self.salutation
+
+    @property
+    def display_name(self):
+        sal = self.display_salutation
+        return f"{sal} {self.name}".strip() if sal else self.name
+
+    def __str__(self):
+        return self.display_name or f"Player {self.slot}"
+
+
+class GolfSelection(models.Model):
+    """A sponsor item claimed by an entry — a package on the sponsor form, or a
+    paid add-on on the participant form. Name and price are snapshotted so the
+    entry keeps reading correctly after the item is edited or removed."""
+
+    registration = models.ForeignKey(
+        GolfRegistration, on_delete=models.CASCADE, related_name="selections"
+    )
+    item = models.ForeignKey(
+        GolfSponsorItem, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="selections",
+    )
+    item_name = models.CharField(max_length=255, blank=True, default="")
+    unit_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    is_addon = models.BooleanField(
+        default=False, help_text="True when picked as an add-on on the participant form."
+    )
+
+    class Meta:
+        ordering = ["id"]
+
+    def __str__(self):
+        return f"{self.item_name} ({self.unit_price})"
+
+
+class GolfAnswer(models.Model):
+    """An answer to a GolfQuestion."""
+
+    form = models.ForeignKey(GolfForm, on_delete=models.CASCADE, related_name="answers")
+    question = models.ForeignKey(GolfQuestion, on_delete=models.CASCADE, related_name="answers")
+    registration = models.ForeignKey(
+        GolfRegistration, on_delete=models.CASCADE, null=True, blank=True, related_name="answers"
+    )
+    answer_text = models.TextField(blank=True, null=True)
+    selected_options = models.JSONField(blank=True, null=True)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.registration_id} Q{self.question.number}"
