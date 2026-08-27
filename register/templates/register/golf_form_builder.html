@@ -36,6 +36,11 @@
   .badge-taken { background: #fdecea; color: #b3261e; }
   .badge-once { background: #fff3cd; color: #7c5e00; }
   .badge-addon { background: #e7f4ec; color: #198754; }
+  .item-card.item-closed { background: #fbfbfc; }
+  .item-card.item-closed .item-thumb, .item-card.item-closed .item-thumb-empty { filter: grayscale(1); }
+  .avail-label { color: #98a2b3; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; }
+  .avail-label.is-open { color: #198754; }
+  .avail-label.is-closed { color: #b3261e; }
   .item-desc { font-size: .8rem; color: #667085; }
   .item-desc p { margin: 0 0 .25rem 0; }
 
@@ -401,6 +406,7 @@
           <h6 class="mb-0">Sponsor Items</h6>
           <small class="text-muted">
             Drag to reorder. Sponsors can pick more than one item; a green tick marks their choices.
+            Use the <strong>Available</strong> switch to close an item by hand.
           </small>
         </div>
         <button type="button" id="addItemBtn" class="btn btn-sm btn-primary mb-0">
@@ -442,7 +448,13 @@
                       Add-on price set · {{ form.currency|default:'RM' }} {{ item.special_price|floatformat:2|intcomma }} (unused)
                     </span>
                   {% endif %}
-                  {% if item.taken %}<span class="badge badge-taken text-xxs">TAKEN — no longer available</span>{% endif %}
+                  {% if item.claimed %}
+                    <span class="badge badge-taken text-xxs"
+                          title="A sponsor has already taken this once-only item">TAKEN — claimed</span>
+                  {% elif item.closed_by_organiser %}
+                    <span class="badge badge-taken text-xxs"
+                          title="Closed by hand with the Available switch">CLOSED BY ORGANISER</span>
+                  {% endif %}
                   {% if not item.is_active %}<span class="badge bg-secondary text-xxs">Hidden</span>{% endif %}
                 </div>
                 {% if item.description %}
@@ -456,12 +468,30 @@
                        style="max-height:30px;max-width:90px;object-fit:contain;">
                   <div class="text-xxs text-secondary">buyer logo</div>
                 </div>
-              {% elif item.once_only %}
+              {% elif item.once_only or not item.is_available %}
                 <div class="text-center text-xxs text-secondary" style="min-width:96px;"
-                     title="No buyer logo set — the public card will show NOT AVAILABLE once sold out">
+                     title="No buyer logo set — the public card will show TAKEN once closed">
                   no buyer logo
                 </div>
               {% endif %}
+              {% comment %}Availability switch, right on the row so an organiser can close
+              an item without opening the modal. A once-only item that has already been
+              claimed is locked on: switching it back would not reopen it.{% endcomment %}
+              <div class="avail-cell text-center" style="min-width:104px;">
+                <div class="form-check form-switch d-inline-block mb-0">
+                  <input class="form-check-input avail-toggle" type="checkbox"
+                         data-id="{{ item.id }}"
+                         {% if item.is_available %}checked{% endif %}
+                         {% if item.claimed %}disabled{% endif %}
+                         aria-label="Available for selection">
+                </div>
+                <div class="avail-label text-xxs" data-id="{{ item.id }}">
+                  {% if item.claimed %}Claimed
+                  {% elif item.is_available %}Available
+                  {% else %}Not available
+                  {% endif %}
+                </div>
+              </div>
               <button type="button" class="btn btn-sm btn-link text-body p-1 edit-item-btn" data-id="{{ item.id }}" title="Edit">
                 <i class="material-symbols-rounded">edit</i>
               </button>
@@ -805,7 +835,7 @@
                 </div>
                 <small class="fs-help">
                   The <strong>buyer's</strong> logo, shown top-right once the item is sold out.
-                  Leave empty and the card says <strong>NOT AVAILABLE</strong>.
+                  Leave empty and the card says <strong>TAKEN</strong>.
                 </small>
               </div>
             </div>
@@ -816,12 +846,23 @@
             <div class="fs-legend">Availability</div>
             <div class="fs-toggle">
               <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" id="itAvailable" checked>
+                <label class="form-check-label fw-bold" for="itAvailable">Available for selection</label>
+              </div>
+              <small class="fs-help" id="itAvailableHint">
+                On by default. Switch it off to close the item by hand — it stays listed on
+                the sponsor page but the card becomes unclickable and shows the buyer's logo,
+                or <strong>TAKEN</strong> when no logo is set.
+              </small>
+            </div>
+            <div class="fs-toggle">
+              <div class="form-check form-switch mb-0">
                 <input class="form-check-input" type="checkbox" id="itOnceOnly">
                 <label class="form-check-label fw-bold" for="itOnceOnly">Available only once</label>
               </div>
               <small class="fs-help">
-                After the first entry takes it, the card becomes unclickable and credits the
-                buyer's logo — or shows <strong>NOT AVAILABLE</strong> when no logo is set.
+                Closes the item automatically after the first entry takes it — same result as
+                switching <em>Available for selection</em> off, but without anyone having to do it.
               </small>
             </div>
             <div class="fs-toggle">
@@ -1247,6 +1288,8 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('itPrice').value = data.price || '';
     document.getElementById('itSpecialPrice').value = data.special_price || '';
     document.getElementById('itOnceOnly').checked = !!data.once_only;
+    // New items default to available; existing ones use their stored value.
+    document.getElementById('itAvailable').checked = data.id ? !!data.is_available : true;
     document.getElementById('itShowInParticipant').checked = !!data.show_in_participant;
     document.getElementById('itActive').checked = data.id ? !!data.is_active : true;
     itDesc.root.innerHTML = data.description || '';
@@ -1256,6 +1299,19 @@ document.addEventListener('DOMContentLoaded', function () {
     renderUpload('image', data.image_url || '');
     renderUpload('logo', data.logo_url || '');
     syncSpecialRequired();
+    const availBox = document.getElementById('itAvailable');
+    const availHint = document.getElementById('itAvailableHint');
+    if (data.claimed) {
+      availBox.checked = false;
+      availBox.disabled = true;
+      availHint.innerHTML = 'A sponsor has already taken this once-only item, so it is ' +
+        'closed for good. Switching this back on would not reopen it.';
+    } else {
+      availBox.disabled = false;
+      availHint.innerHTML = 'On by default. Switch it off to close the item by hand — it ' +
+        "stays listed on the sponsor page but the card becomes unclickable and shows the " +
+        "buyer's logo, or <strong>TAKEN</strong> when no logo is set.";
+    }
     document.getElementById('itemForm').classList.remove('was-validated');
     itModal.show();
   }
@@ -1278,6 +1334,44 @@ document.addEventListener('DOMContentLoaded', function () {
       removeLogo = false;
       renderUpload('logo', URL.createObjectURL(this.files[0]), this.files[0].name);
     }
+  });
+
+  // Inline availability switch — saves immediately, no modal, no page reload.
+  function paintAvail(id, available, claimed) {
+    const label = document.querySelector(`.avail-label[data-id="${id}"]`);
+    const row = document.querySelector(`#itemList .item-card[data-id="${id}"]`);
+    if (label) {
+      label.textContent = claimed ? 'Claimed' : (available ? 'Available' : 'Not available');
+      label.classList.toggle('is-open', !claimed && available);
+      label.classList.toggle('is-closed', claimed || !available);
+    }
+    if (row) row.classList.toggle('item-closed', claimed || !available);
+  }
+
+  document.querySelectorAll('.avail-toggle').forEach(box => {
+    const id = box.dataset.id;
+    paintAvail(id, box.checked, box.disabled);
+    box.addEventListener('change', function () {
+      const wanted = this.checked;
+      this.disabled = true;
+      postJSON(`/set_golf_item_availability/${id}/`, { available: wanted })
+        .then(d => {
+          this.disabled = false;
+          if (!d.success) {
+            this.checked = !wanted;
+            Swal.fire({ icon: 'error', title: 'Could not update', text: d.message || '' });
+            return;
+          }
+          this.checked = d.is_available;
+          paintAvail(id, d.is_available, d.claimed);
+          toast(d.is_available ? 'Item is now available' : 'Item closed for selection');
+        })
+        .catch(() => {
+          this.disabled = false;
+          this.checked = !wanted;
+          Swal.fire({ icon: 'error', title: 'Could not reach the server' });
+        });
+    });
   });
 
   document.querySelectorAll('.edit-item-btn').forEach(btn => {
@@ -1314,6 +1408,7 @@ document.addEventListener('DOMContentLoaded', function () {
     fd.append('special_price', document.getElementById('itSpecialPrice').value);
     fd.append('description', quillHtml(itDesc));
     fd.append('once_only', document.getElementById('itOnceOnly').checked ? 'true' : 'false');
+    fd.append('is_available', document.getElementById('itAvailable').checked ? 'true' : 'false');
     fd.append('show_in_participant', document.getElementById('itShowInParticipant').checked ? 'true' : 'false');
     fd.append('is_active', document.getElementById('itActive').checked ? 'true' : 'false');
     fd.append('remove_image', removeImage ? 'true' : 'false');

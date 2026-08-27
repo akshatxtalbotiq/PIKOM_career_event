@@ -170,18 +170,25 @@ def _sponsor_items_for_event(event, addons_only=False):
 
 
 def _annotate_availability(items):
-    """Attach `taken` to each item once, so templates don't fire a query per
-    card. A once-only item is taken as soon as any entry has claimed it."""
+    """Attach `taken` to each item once, so templates don't fire a query per card.
+
+    An item is closed for selection when EITHER an organiser switched it off by
+    hand (`is_available = False`) OR it is a once-only item that some entry has
+    already claimed. Everything downstream — the public pages, the builder's
+    add-on mirror, and submit-time validation — reads this one flag, so both
+    routes to "unavailable" behave identically."""
     items = list(items)
     once_ids = [i.id for i in items if i.once_only]
-    taken_ids = set()
+    claimed_ids = set()
     if once_ids:
-        taken_ids = set(
+        claimed_ids = set(
             GolfSelection.objects.filter(item_id__in=once_ids)
             .values_list("item_id", flat=True)
         )
     for i in items:
-        i.taken = i.id in taken_ids
+        i.claimed = i.id in claimed_ids          # closed automatically
+        i.closed_by_organiser = not i.is_available
+        i.taken = i.claimed or i.closed_by_organiser
     return items
 
 
@@ -544,6 +551,7 @@ def clone_golf_form(request, id):
                 description=item.description,
                 once_only=item.once_only,
                 show_in_participant=item.show_in_participant,
+                is_available=item.is_available,
                 is_active=item.is_active,
             )
             new_item.save()
@@ -1016,6 +1024,9 @@ def save_golf_sponsor_item(request):
     show_in_participant = request.POST.get("show_in_participant") == "true"
     once_only = request.POST.get("once_only") == "true"
     is_active = request.POST.get("is_active", "true") == "true"
+    # Defaults to available, so an older client that omits the field can never
+    # accidentally close an item.
+    is_available = request.POST.get("is_available", "true") == "true"
     description = _sanitize_intro(request.POST.get("description"))
 
     # The participant page only ever shows the special price, so an item
@@ -1038,6 +1049,7 @@ def save_golf_sponsor_item(request):
     item.description = description
     item.once_only = once_only
     item.show_in_participant = show_in_participant
+    item.is_available = is_available
     item.is_active = is_active
 
     if request.POST.get("remove_image") == "true" and item.image:
@@ -1080,8 +1092,36 @@ def get_golf_sponsor_item(request, item_id):
         "logo_url": item.logo.url if item.logo else "",
         "once_only": item.once_only,
         "show_in_participant": item.show_in_participant,
+        "is_available": item.is_available,
         "is_active": item.is_active,
-        "taken": item.is_taken,
+        "claimed": item.is_taken,
+        "sold_out": item.is_sold_out,
+    })
+
+
+@login_required
+def set_golf_item_availability(request, item_id):
+    """Flip a sponsor item's availability from the builder's item list, without
+    opening the edit modal."""
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
+    item = get_object_or_404(GolfSponsorItem, id=item_id)
+    if not _can_manage_golf_form(request, item.form):
+        return JsonResponse({"success": False, "message": "Permission denied"}, status=403)
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"success": False, "message": "Invalid JSON"}, status=400)
+
+    item.is_available = bool(data.get("available"))
+    item.save(update_fields=["is_available"])
+    return JsonResponse({
+        "success": True,
+        "is_available": item.is_available,
+        # A once-only item that has already been claimed stays closed regardless,
+        # so the UI can explain why switching it back on changed nothing.
+        "claimed": item.is_taken,
+        "sold_out": item.is_sold_out,
     })
 
 

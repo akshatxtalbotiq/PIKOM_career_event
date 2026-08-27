@@ -807,13 +807,26 @@ class GolfSponsorItem(models.Model):
     once_only = models.BooleanField(
         default=False,
         help_text="Item can only be taken once. After the first entry the card becomes "
-                  "unclickable and credits the buyer's logo (or shows 'NOT AVAILABLE').",
+                  "unclickable and credits the buyer's logo (or shows 'TAKEN').",
     )
     show_in_participant = models.BooleanField(
         default=False,
         help_text="Also offer this item as a paid add-on on the participant form.",
     )
-    is_active = models.BooleanField(default=True)
+    is_available = models.BooleanField(
+        default=True,
+        help_text="Organiser switch for whether this item can still be taken. Turn it "
+                  "off to close the item by hand (e.g. sold offline): it stays listed "
+                  "but the card becomes unclickable and shows the buyer's logo — or "
+                  "'TAKEN' when no logo is set. Independent of `once_only`, which "
+                  "closes the item automatically after the first entry.",
+    )
+    # NOTE: `is_active` is a different thing — it hides the item from the public
+    # page entirely. `is_available` keeps it listed but closes it for selection.
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Whether the item appears on the public page at all.",
+    )
 
     class Meta:
         ordering = ["number", "id"]
@@ -844,8 +857,15 @@ class GolfSponsorItem(models.Model):
 
     @property
     def is_taken(self):
-        """A once-only item is unavailable as soon as one entry has claimed it."""
+        """A once-only item is closed as soon as one entry has claimed it."""
         return bool(self.once_only and self.selections.exists())
+
+    @property
+    def is_sold_out(self):
+        """Not selectable on the public page, for either reason: an organiser
+        switched it off by hand, or it is a once-only item that has been claimed.
+        This is what the public pages render as unavailable."""
+        return (not self.is_available) or self.is_taken
 
     def __str__(self):
         return self.name

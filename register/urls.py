@@ -28,7 +28,7 @@ from .golf_views import (
     save_golf_event_details, save_golf_email_content,
     save_golf_question, get_golf_question, delete_golf_question, reorder_golf_questions,
     save_golf_sponsor_item, get_golf_sponsor_item, delete_golf_sponsor_item,
-    reorder_golf_sponsor_items,
+    reorder_golf_sponsor_items, set_golf_item_availability,
     golf_form_public, golf_form_submit, golf_form_thankyou,
     golf_submission_list, golf_submission_detail, set_golf_registration_status,
     update_golf_remarks, delete_golf_registrations,
@@ -166,6 +166,7 @@ urlpatterns = [
     path('get_golf_sponsor_item/<int:item_id>/', get_golf_sponsor_item, name='get_golf_sponsor_item'),
     path('delete_golf_sponsor_item/<int:item_id>/', delete_golf_sponsor_item, name='delete_golf_sponsor_item'),
     path('reorder_golf_sponsor_items/<int:form_id>/', reorder_golf_sponsor_items, name='reorder_golf_sponsor_items'),
+    path('set_golf_item_availability/<int:item_id>/', set_golf_item_availability, name='set_golf_item_availability'),
 
     # Golf entries (admin)
     path('golf_submission_list/<int:form_id>/', golf_submission_list, name='golf_submission_list'),

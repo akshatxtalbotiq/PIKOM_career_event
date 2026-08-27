@@ -137,7 +137,7 @@
     .item-row.selected .ir-tick { display: flex; }
     .item-row.selected .ir-tick-label { display: block; }
 
-    /* Sold out: inert row, buyer's logo (or NOT AVAILABLE) in the top-right corner. */
+    /* Closed: inert row, buyer's logo (or TAKEN) in the top-right corner. */
     .item-row.item-taken { opacity: .8; background: #fbfbfc; }
     .item-row.item-taken .ir-img, .item-row.item-taken .ir-img-empty { filter: grayscale(1); }
     .ir-corner {
@@ -474,7 +474,7 @@
                 Tick anything you would like to add to your entry. A green tick marks your choices.
               {% else %}
                 Click a package to select it, click again to unselect. A green tick marks your
-                choices. Packages marked <strong>NOT AVAILABLE</strong> have already been taken.
+                choices. Packages marked <strong>TAKEN</strong> are no longer available.
               {% endif %}
             </p>
 
@@ -513,7 +513,7 @@
                             <span class="taken-caption">Taken by</span>
                             <img src="{{ item.logo.url }}" alt="Sponsor logo">
                           {% else %}
-                            <span class="taken-label">NOT AVAILABLE</span>
+                            <span class="taken-label">TAKEN</span>
                           {% endif %}
                         </div>
                       {% endif %}
@@ -557,7 +557,7 @@
                     </div>
 
                     {% comment %}Sold-out rows have no action column at all — the greyed
-                    row plus the top-right corner (buyer logo, or NOT AVAILABLE) already
+                    row plus the top-right corner (buyer logo, or TAKEN) already
                     says everything, and a second "taken" label just duplicated it.{% endcomment %}
                     {% if not item.taken %}
                       <div class="ir-action">
@@ -573,7 +573,7 @@
                           <span class="ir-corner-caption">Taken by</span>
                           <img src="{{ item.logo.url }}" alt="Sponsor logo" class="ir-corner-logo">
                         {% else %}
-                          <span class="ir-corner-na">NOT AVAILABLE</span>
+                          <span class="ir-corner-na">TAKEN</span>
                         {% endif %}
                       </div>
                     {% endif %}
