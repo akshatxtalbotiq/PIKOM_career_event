@@ -689,6 +689,8 @@ def save_golf_player_config(request, form_id):
             "label": (item.get("label") or defaults[key]["label"]).strip()[:100],
             "visible": bool(item.get("visible", True)),
             "required": bool(item.get("required", False)),
+            # Own column on the entries table (/golf_submission_list/).
+            "in_list": bool(item.get("in_list", True)),
         })
     # Name always stays visible and required — an entry with a nameless player
     # is not usable, and it is the only field the entries list can key on.
@@ -1631,7 +1633,23 @@ def golf_submission_list(request, form_id):
 
     list_questions = list(form.questions.filter(show_in_list=True).order_by("number"))
 
-    # Flatten the answers each row needs into the shape the template renders.
+    # Player identity fields the organiser switched on for the table. Only the
+    # participant form has players, so the sponsor form never gets these.
+    list_player_fields = []
+    if form.is_participant:
+        list_player_fields = [
+            f for f in form.player_fields if f.get("in_list", True)
+        ]
+
+    contact_spec = CONTACT_LABELS
+    billing_spec = _billing_spec(form)
+
+    # The table carries one row per participant, so every registration-level
+    # value (ref, contact, billing, items, total, answers) is resolved once per
+    # registration and then repeated on each of its player rows. Repeating
+    # rather than spanning keeps sorting, searching and the Excel export honest
+    # — a rowspan would come apart the moment the table is re-ordered.
+    entry_rows = []
     for reg in registrations:
         by_question = {}
         for a in reg.answers.all():
@@ -1643,7 +1661,37 @@ def golf_submission_list(request, form_id):
                 value = a.answer_text or ""
             by_question[a.question_id] = value
         reg.list_answers = [by_question.get(q.id, "") for q in list_questions]
-        reg.player_count = len(reg.players.all())
+        reg.contact_cells = [str(getattr(reg, f[0], "") or "") for f in contact_spec]
+        reg.billing_cells = [str(getattr(reg, f[0], "") or "") for f in billing_spec]
+
+        players = sorted(reg.players.all(), key=lambda p: p.slot)
+        reg.player_count = len(players)
+
+        if list_player_fields and players:
+            for idx, p in enumerate(players):
+                entry_rows.append({
+                    "reg": reg,
+                    "player": p,
+                    # Server order (newest entry first, then slot order) as a
+                    # sort key, so the table can pin an entry's rows together
+                    # in slot order no matter which column it is sorted by.
+                    "seq": len(entry_rows),
+                    # Only the entry's first row carries the bulk-select
+                    # checkbox and the editable remarks box; the bulk actions
+                    # act on the whole entry, not on one player.
+                    "is_first": idx == 0,
+                    "seat": f"{idx + 1} of {len(players)}",
+                    "player_cells": [p.field_value(f["key"]) for f in list_player_fields],
+                })
+        else:
+            # Sponsor entries (no players), and participant entries whose
+            # player columns are all switched off, stay a single row.
+            entry_rows.append({
+                "reg": reg, "player": None, "is_first": True,
+                "seq": len(entry_rows),
+                "seat": str(len(players)) if players else "—",
+                "player_cells": [],
+            })
 
     counts = {
         "total": len(registrations),
@@ -1660,15 +1708,17 @@ def golf_submission_list(request, form_id):
         "form": form,
         "event": form.fkevent,
         "registrations": registrations,
+        "entry_rows": entry_rows,
         "list_questions": list_questions,
+        "list_player_fields": list_player_fields,
         "counts": counts,
         "revenue": revenue,
         "currency": form.currency or "RM",
         "list_url": (
             "golf_participant_form_list" if form.is_participant else "golf_sponsor_form_list"
         ),
-        "billing_spec": _billing_spec(form),
-        "contact_spec": CONTACT_LABELS,
+        "billing_spec": billing_spec,
+        "contact_spec": contact_spec,
     })
 
 

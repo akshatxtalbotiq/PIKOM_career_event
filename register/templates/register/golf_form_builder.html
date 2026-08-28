@@ -362,6 +362,8 @@
         <small class="text-muted">
           Asked for every player slot. Drag to reorder, rename the label, or hide a field you
           don't collect. <strong>Name</strong> is always required.
+          <strong>Show in table</strong> gives the field its own column on the
+          <a href="{% url 'golf_submission_list' form.id %}">entries table</a> — switched on for every field by default.
         </small>
       </div>
       <div class="card-body">
@@ -380,6 +382,10 @@
               <div class="form-check form-switch mb-0">
                 <input class="form-check-input pf-required" type="checkbox" {% if pf.required %}checked{% endif %}>
                 <label class="form-check-label text-xs">Required</label>
+              </div>
+              <div class="form-check form-switch mb-0" title="Give this field its own column on the entries table">
+                <input class="form-check-input pf-in-list" type="checkbox" {% if pf.in_list %}checked{% endif %}>
+                <label class="form-check-label text-xs">Show in table</label>
               </div>
             </div>
           {% endfor %}
@@ -989,6 +995,7 @@ document.addEventListener('DOMContentLoaded', function () {
       label: row.querySelector('.pf-label').value,
       visible: row.querySelector('.pf-visible').checked,
       required: row.querySelector('.pf-required').checked,
+      in_list: row.querySelector('.pf-in-list').checked,
     }));
   }
 
@@ -1044,6 +1051,8 @@ document.addEventListener('DOMContentLoaded', function () {
           const req = this.closest('.pf-row').querySelector('.pf-required');
           if (req) req.checked = false;
         }
+        // "Show in table" is left alone on purpose: a field hidden today can
+        // still hold values from entries collected while it was visible.
       });
     });
   }

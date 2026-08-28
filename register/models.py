@@ -577,17 +577,20 @@ class GolfEventTeam(models.Model):
 def default_golf_player_field_config():
     """Order / visibility / required state of the fixed player identity fields
     on a golf participant form. Each form gets its own copy so editing one form
-    never affects another."""
+    never affects another.
+
+    ``in_list`` controls whether the field also gets its own column on the
+    entries table (/golf_submission_list/). Every field starts switched on."""
     return [
-        {"key": "salutation",   "label": "Salutation",         "visible": True, "required": True},
-        {"key": "name",         "label": "Name",               "visible": True, "required": True},
-        {"key": "handicap",     "label": "Handicap (USGA)",    "visible": True, "required": True},
-        {"key": "tgcc_member",  "label": "Member of TGCC",     "visible": True, "required": True},
-        {"key": "organisation", "label": "Organisation",       "visible": True, "required": True},
-        {"key": "designation",  "label": "Designation",        "visible": True, "required": True},
-        {"key": "mobile",       "label": "Mobile Number",      "visible": True, "required": True},
-        {"key": "email",        "label": "Email",              "visible": True, "required": True},
-        {"key": "tshirt_size",  "label": "T-Shirt Asian Size", "visible": True, "required": True},
+        {"key": "salutation",   "label": "Salutation",         "visible": True, "required": True, "in_list": True},
+        {"key": "name",         "label": "Name",               "visible": True, "required": True, "in_list": True},
+        {"key": "handicap",     "label": "Handicap (USGA)",    "visible": True, "required": True, "in_list": True},
+        {"key": "tgcc_member",  "label": "Member of TGCC",     "visible": True, "required": True, "in_list": True},
+        {"key": "organisation", "label": "Organisation",       "visible": True, "required": True, "in_list": True},
+        {"key": "designation",  "label": "Designation",        "visible": True, "required": True, "in_list": True},
+        {"key": "mobile",       "label": "Mobile Number",      "visible": True, "required": True, "in_list": True},
+        {"key": "email",        "label": "Email",              "visible": True, "required": True, "in_list": True},
+        {"key": "tshirt_size",  "label": "T-Shirt Asian Size", "visible": True, "required": True, "in_list": True},
     ]
 
 
@@ -609,6 +612,9 @@ def merge_golf_player_field_config(stored):
                 "label": s.get("label") or d["label"],
                 "visible": s.get("visible", d["visible"]),
                 "required": s.get("required", d["required"]),
+                # Forms saved before the column switch existed keep every
+                # field on the entries table, which is the stated default.
+                "in_list": s.get("in_list", d["in_list"]),
             })
         else:
             merged.append(dict(d))
@@ -989,6 +995,18 @@ class GolfPlayer(models.Model):
     def display_name(self):
         sal = self.display_salutation
         return f"{sal} {self.name}".strip() if sal else self.name
+
+    def field_value(self, key):
+        """Human-readable value of one player-identity field, addressed by the
+        same key the form's ``player_field_config`` uses. Used to build the
+        per-field columns on the entries table."""
+        if key == "salutation":
+            return self.display_salutation or ""
+        if key == "tgcc_member":
+            if not self.is_tgcc_member:
+                return "No"
+            return f"Yes ({self.tgcc_membership_no})" if self.tgcc_membership_no else "Yes"
+        return str(getattr(self, key, "") or "")
 
     def __str__(self):
         return self.display_name or f"Player {self.slot}"

@@ -20,6 +20,36 @@
   .detail-row .k { min-width: 190px; color: #667085; }
   .detail-row .v { font-weight: 600; color: #1f2937; word-break: break-word; }
   .remarks-input { min-width: 160px; }
+
+  /* ---------- One row per participant ----------
+     Each row is a full record (player + registration + contact + billing), so
+     the table is wide and the entry a row belongs to has to stay obvious:
+     alternating bands per entry, a hover that lights the whole entry, and a
+     tint that separates the player / contact / billing column groups. */
+  #golfEntries tbody td { vertical-align: middle; }
+  #golfEntries tbody td p { white-space: nowrap; }
+  #golfEntries tbody tr.entry-band > td { background-color: #fafbfc; }
+  #golfEntries tbody tr.entry-cont > td:nth-child(-n+3) { color: #98a2b3; }
+  #golfEntries tbody tr.entry-hover > td { background-color: #f1f6fb !important; }
+  #golfEntries tbody tr.entry-selected > td { background-color: #e8f2fd !important; }
+  /* A hair-line above each entry's first row marks where one entry ends. */
+  #golfEntries tbody tr.entry-start > td { border-top: 1px solid #e6e9ef; }
+  #golfEntries tbody tr.entry-cont > td { border-top: 0; }
+
+  /* Contact / billing headers are full labels, so let them wrap in two lines
+     instead of stretching the column to the width of the sentence. */
+  #golfEntries thead th.col-contact, #golfEntries thead th.col-billing {
+    white-space: normal; max-width: 190px; line-height: 1.25;
+  }
+  #golfEntries thead th.col-player { white-space: normal; }
+  .grp-tag {
+    display: block; font-size: .58rem; letter-spacing: .08em; font-weight: 700;
+    color: #b0b7c3; line-height: 1.1; margin-bottom: 1px;
+  }
+  #golfEntries .col-player  { min-width: 120px; }
+  #golfEntries .col-contact { min-width: 130px; background-color: rgba(94, 114, 228, .035); }
+  #golfEntries .col-billing { min-width: 140px; background-color: rgba(26, 161, 121, .035); }
+  .remarks-echo { white-space: nowrap; }
   #golfEntries input.form-check-input {
     border: 1px solid #98a2b3;
   }
@@ -138,15 +168,46 @@
                   <th class="text-uppercase text-secondary text-sm font-weight-bolder">
                     <input type="checkbox" class="form-check-input" id="checkAll">
                   </th>
+                  {% comment %}
+                    Hidden ordering anchor: the server's row order (newest entry
+                    first, then slot order). Used as a fixed secondary sort so an
+                    entry's rows never scramble — DataTables reverses tied rows
+                    on a descending sort, which would show a flight as 4,3,2,1.
+                  {% endcomment %}
+                  <th class="col-seq"></th>
                   <th class="text-uppercase text-secondary text-sm font-weight-bolder">Ref</th>
                   <th class="text-uppercase text-secondary text-sm font-weight-bolder">Submitted</th>
-                  <th class="text-uppercase text-secondary text-sm font-weight-bolder">Contact</th>
-                  <th class="text-uppercase text-secondary text-sm font-weight-bolder">
-                    {% if form.is_sponsor %}Organisation{% else %}Company{% endif %}
-                  </th>
+                  {% comment %}
+                    One row per participant. Every registration-level value is
+                    repeated on each of the entry's rows so that each row reads
+                    as a complete record — and so sorting, searching and the
+                    Excel export all stay correct.
+                  {% endcomment %}
                   {% if form.is_participant %}
-                    <th class="text-uppercase text-secondary text-sm font-weight-bolder">Players</th>
+                    <th class="text-uppercase text-secondary text-sm font-weight-bolder">Player</th>
+                    {% for pf in list_player_fields %}
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder col-player">
+                        <span class="grp-tag">Player</span>{{ pf.label|striptags|truncatechars:22 }}
+                      </th>
+                    {% endfor %}
                   {% endif %}
+                  {% comment %}
+                    Labels are kept whole (they wrap) rather than truncated, so
+                    the Excel export carries the same wording as the form. The
+                    group tag above each label is what tells the two
+                    "Designation" columns — player and contact — apart, and the
+                    export re-reads it to qualify the heading in the workbook.
+                  {% endcomment %}
+                  {% for f in contact_spec %}
+                    <th class="text-uppercase text-secondary text-sm font-weight-bolder col-contact">
+                      <span class="grp-tag">Contact</span>{{ f.1 }}
+                    </th>
+                  {% endfor %}
+                  {% for f in billing_spec %}
+                    <th class="text-uppercase text-secondary text-sm font-weight-bolder col-billing">
+                      <span class="grp-tag">Billing</span>{{ f.1 }}
+                    </th>
+                  {% endfor %}
                   <th class="text-uppercase text-secondary text-sm font-weight-bolder">
                     {% if form.is_sponsor %}Items{% else %}Add-ons{% endif %}
                   </th>
@@ -162,21 +223,30 @@
                 </tr>
               </thead>
               <tbody>
-                {% for reg in registrations %}
-                  <tr>
+                {% for row in entry_rows %}
+                  {% with reg=row.reg %}
+                  <tr data-reg="{{ reg.id }}" class="{% if row.is_first %}entry-start{% else %}entry-cont{% endif %}">
                     <td>
-                      <input type="checkbox" class="form-check-input row-check" value="{{ reg.id }}">
+                      {% if row.is_first %}
+                        <input type="checkbox" class="form-check-input row-check" value="{{ reg.id }}"
+                               title="Selects the whole entry ({{ reg.player_count|default:1 }} row{{ reg.player_count|pluralize }})">
+                      {% endif %}
                     </td>
+                    <td class="col-seq">{{ row.seq }}</td>
                     <td><p class="text-xs font-weight-bold mb-0">{{ reg.reg_no|default:reg.id }}</p></td>
                     <td><p class="text-xs mb-0">{{ reg.submitted_at|date:"Y-m-d h:i A" }}</p></td>
-                    <td>
-                      <p class="text-xs font-weight-bold mb-0">{{ reg.contact_person }}</p>
-                      <p class="text-xxs text-secondary mb-0">{{ reg.contact_email }}</p>
-                    </td>
-                    <td><p class="text-xs mb-0">{{ reg.billing_company|truncatechars:40 }}</p></td>
                     {% if form.is_participant %}
-                      <td class="text-center"><span class="text-xs font-weight-bold">{{ reg.player_count }}</span></td>
+                      <td class="text-center"><span class="text-xs font-weight-bold">{{ row.seat }}</span></td>
+                      {% for value in row.player_cells %}
+                        <td class="col-player"><p class="text-xs mb-0">{{ value|default:"—"|truncatechars:32 }}</p></td>
+                      {% endfor %}
                     {% endif %}
+                    {% for value in reg.contact_cells %}
+                      <td class="col-contact"><p class="text-xs mb-0">{{ value|default:"—"|truncatechars:40 }}</p></td>
+                    {% endfor %}
+                    {% for value in reg.billing_cells %}
+                      <td class="col-billing"><p class="text-xs mb-0">{{ value|default:"—"|truncatechars:40 }}</p></td>
+                    {% endfor %}
                     <td>
                       {% for s in reg.selections.all %}
                         <span class="badge bg-light text-dark text-xxs d-block text-start mb-1">{{ s.item_name|truncatechars:30 }}</span>
@@ -189,8 +259,18 @@
                       <td><p class="text-xs mb-0">{{ value|truncatechars:40 }}</p></td>
                     {% endfor %}
                     <td>
-                      <input type="text" class="form-control form-control-sm text-xs remarks-input"
-                             data-id="{{ reg.id }}" value="{{ reg.remarks }}" placeholder="Add a note...">
+                      {% if row.is_first %}
+                        <input type="text" class="form-control form-control-sm text-xs remarks-input"
+                               data-id="{{ reg.id }}" value="{{ reg.remarks }}" placeholder="Add a note...">
+                      {% else %}
+                        {% comment %}
+                          One editable box per entry, on the entry's first row.
+                          Continuation rows still carry the text so the row
+                          stays a complete record on screen and in the export.
+                        {% endcomment %}
+                        <p class="text-xs text-secondary mb-0 remarks-echo"
+                           data-id="{{ reg.id }}">{{ reg.remarks }}</p>
+                      {% endif %}
                     </td>
                     <td class="align-middle text-center">
                       <span class="status-pill status-{{ reg.approval_status }}">
@@ -203,6 +283,7 @@
                       </a>
                     </td>
                   </tr>
+                  {% endwith %}
                 {% endfor %}
               </tbody>
             </table>
@@ -243,6 +324,28 @@ function golfSelectedIds() {
   return Array.from(document.querySelectorAll('.row-check:checked')).map(c => c.value);
 }
 
+// An entry spans one row per participant, and only the first of those rows
+// carries the checkbox — so selection, hover and the row banding are all
+// painted across every row that shares the entry's id.
+function golfRowsFor(regId) {
+  return document.querySelectorAll(`#golfEntries tbody tr[data-reg="${regId}"]`);
+}
+function golfPaintSelection() {
+  document.querySelectorAll('#golfEntries tbody tr').forEach(tr => tr.classList.remove('entry-selected'));
+  golfSelectedIds().forEach(id => {
+    golfRowsFor(id).forEach(tr => tr.classList.add('entry-selected'));
+  });
+}
+// Re-band the rows so consecutive entries alternate, whatever the sort order.
+function golfBandEntries() {
+  let last = null, odd = false;
+  document.querySelectorAll('#golfEntries tbody tr').forEach(tr => {
+    const id = tr.dataset.reg;
+    if (id !== last) { odd = !odd; last = id; }
+    tr.classList.toggle('entry-band', odd);
+  });
+}
+
 // Keep the toolbar buttons + "N selected" badge in sync with the current
 // selection, the same pattern survey_submission_list uses.
 function updateGolfBulkButtons() {
@@ -254,9 +357,12 @@ function updateGolfBulkButtons() {
   }
   const badge = document.getElementById('golfSelCountBadge');
   if (badge) {
-    if (n > 0) { badge.textContent = n + ' selected'; badge.style.display = ''; }
-    else { badge.style.display = 'none'; }
+    if (n > 0) {
+      badge.textContent = n + (n === 1 ? ' entry selected' : ' entries selected');
+      badge.style.display = '';
+    } else { badge.style.display = 'none'; }
   }
+  golfPaintSelection();
 }
 
 function golfBulkStatus(status) {
@@ -301,18 +407,36 @@ document.addEventListener('DOMContentLoaded', function () {
     if (e.target.classList.contains('row-check')) updateGolfBulkButtons();
   });
 
-  // ── Remarks: save on blur ──
+  // ── Remarks: save on blur, and mirror onto the entry's other rows ──
   document.querySelectorAll('.remarks-input').forEach(input => {
     let last = input.value;
     input.addEventListener('blur', function () {
       if (this.value === last) return;
       last = this.value;
-      golfPostJSON(`/update_golf_remarks/${FORM_ID}/`, { id: this.dataset.id, remarks: this.value })
+      const id = this.dataset.id, value = this.value;
+      golfPostJSON(`/update_golf_remarks/${FORM_ID}/`, { id: id, remarks: value })
         .then(d => {
-          if (!d.success) Swal.fire({ icon: 'error', title: 'Could not save the remark' });
+          if (!d.success) { Swal.fire({ icon: 'error', title: 'Could not save the remark' }); return; }
+          document.querySelectorAll(`.remarks-echo[data-id="${id}"]`)
+            .forEach(p => p.textContent = value);
         });
     });
   });
+
+  // ── Entry grouping: hover and banding follow the whole entry ──
+  const tbody = document.querySelector('#golfEntries tbody');
+  if (tbody) {
+    tbody.addEventListener('mouseover', function (e) {
+      const tr = e.target.closest('tr');
+      if (!tr || !tr.dataset.reg) return;
+      golfRowsFor(tr.dataset.reg).forEach(r => r.classList.add('entry-hover'));
+    });
+    tbody.addEventListener('mouseout', function (e) {
+      const tr = e.target.closest('tr');
+      if (!tr || !tr.dataset.reg) return;
+      golfRowsFor(tr.dataset.reg).forEach(r => r.classList.remove('entry-hover'));
+    });
+  }
 
   // ── Detail drawer ──
   const drawer = new bootstrap.Offcanvas(document.getElementById('detailDrawer'));
@@ -335,12 +459,21 @@ $(document).ready(function () {
     paging: true,
     lengthChange: true,
     searching: true,
-    pageLength: 25,
-    lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+    {% comment %}
+      A participant entry is up to four rows now, so the default page holds
+      fewer entries than it used to — start higher.
+    {% endcomment %}
+    pageLength: {% if form.is_participant %}50{% else %}25{% endif %},
+    lengthMenu: [[10, 25, 50, 100, 200], [10, 25, 50, 100, 200]],
     scrollX: true,
     scrollY: '55vh',
-    order: [[2, 'desc']],
-    columnDefs: [{ orderable: false, targets: [0, -1, -2, -3] }],
+    order: [[3, 'desc']],
+    // Entries newest first, and within one entry always slot order.
+    orderFixed: { post: [1, 'asc'] },
+    columnDefs: [
+      { orderable: false, targets: [0, -1, -2, -3] },
+      { targets: 1, visible: false, searchable: false },
+    ],
     layout: {
       topStart: [
         { search: { className: 'form-control form-control-sm', placeholder: 'Search...', ariaLabel: 'Search' } },
@@ -379,9 +512,54 @@ $(document).ready(function () {
       { extend: 'excelHtml5', text: '<i class="material-symbols-rounded align-middle">download</i> Excel',
         className: 'btn btn-sm btn-grp btn-grp-excel',
         title: '{{ form.title|escapejs }}',
-        exportOptions: { columns: ':not(:first-child):not(:last-child)' } },
+        exportOptions: {
+          columns: ':visible:not(:first-child):not(:last-child)',
+          // Stacked cells (one line per player, one badge per item) would
+          // otherwise export as one run-together string.
+          format: {
+            // Supplying `header` also opts out of Buttons' stripping, so the
+            // heading is resolved here from the cell's own markup. It must NOT
+            // look the column up by the index argument: Buttons numbers the
+            // exported subset from zero, so an index lookup silently shifts
+            // every heading past the columns this export skips.
+            header: function (data) {
+              const html = String(data == null ? '' : data);
+              const flat = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+              const tag = html.match(/<span class="grp-tag">([^<]*)<\/span>/);
+              if (!tag) return flat;
+              // `flat` starts with the group tag's own text; qualify the label
+              // with it so a spreadsheet shows Player / Contact / Billing
+              // "Designation" as three distinct headings.
+              const name = tag[1].trim();
+              return name + ' — ' + flat.slice(name.length).trim();
+            },
+            body: function (data, row, column, node) {
+              // Buttons only strips the cell markup when no custom formatter is
+              // given, so once we supply one every column has to be handled here.
+              if (!node && golfTable) {
+                try { node = golfTable.cell(row, column).node(); } catch (e) { node = null; }
+              }
+              const flatten = s => String(s == null ? '' : s)
+                .replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+              if (!node || !node.querySelectorAll) return flatten(data);
+              // Remarks: the typed value, not the markup.
+              const input = node.querySelector('input, textarea, select');
+              if (input) return input.value;
+              // Stacked cells: one badge per selected item.
+              const parts = node.querySelectorAll('.badge');
+              if (parts.length) {
+                return Array.from(parts).map(p => p.textContent.trim()).filter(Boolean).join(' | ');
+              }
+              return flatten(node.textContent);
+            },
+          },
+        } },
     ],
-    autoWidth: false,
+    // scrollX renders the heading and the body as two separate tables, so
+    // DataTables has to measure the columns and apply one width set to both.
+    // With autoWidth off they size independently and the heading drifts away
+    // from its data (~600px across a table this wide).
+    autoWidth: true,
     scrollCollapse: true,
     language: {
       paginate: {
@@ -389,6 +567,8 @@ $(document).ready(function () {
         next: '<i class="material-symbols-rounded">chevron_right</i>',
       },
       emptyTable: "<p class='fs-6 fw-500 text-secondary py-4'>No entries yet. Share the public link to start collecting them.</p>",
+      // _TOTAL_ counts rows, and a participant entry is one row per player.
+      info: 'Showing _START_ to _END_ of _TOTAL_ {% if form.is_participant %}participant rows{% else %}entries{% endif %}',
       infoEmpty: '0 Record',
       zeroRecords: "<p class='fs-6 fw-500 text-secondary py-4'>No entry matches your search.</p>",
     },
@@ -400,6 +580,10 @@ $(document).ready(function () {
   $('<span id="golfSelCountBadge" class="badge bg-info text-white align-self-center me-2" style="display:none;"></span>')
     .prependTo('#golfEntries_wrapper .dt-buttons');
 
+  // Paging, sorting and searching all re-emit the rows, so the entry banding
+  // and the selection paint have to be reapplied after every draw.
+  golfTable.on('draw', function () { golfBandEntries(); golfPaintSelection(); });
+  golfBandEntries();
   updateGolfBulkButtons();
 });
 </script>
