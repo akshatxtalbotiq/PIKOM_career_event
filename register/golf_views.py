@@ -40,6 +40,7 @@ from .models import (
     GolfQuestion,
     GolfRegistration,
     GolfSelection,
+    GolfSizeImage,
     GolfSponsorItem,
     default_golf_player_field_config,
     default_golf_salutations,
@@ -608,6 +609,7 @@ def golf_form_builder(request, form_id):
         context["addon_items"] = _annotate_availability(
             _sponsor_items_for_event(form.fkevent, addons_only=True)
         )
+        context["size_images"] = form.size_guide_images
 
     return render(request, "register/golf_form_builder.html", context)
 
@@ -654,6 +656,93 @@ def golf_delete_banner(request, form_id):
         form.banner = None
         form.save(update_fields=["banner"])
     return JsonResponse({"success": True})
+
+
+def _size_image_payload(img):
+    return {
+        "id": img.id,
+        "url": img.image.url if img.image else "",
+        "caption": img.caption,
+        "number": img.number,
+    }
+
+
+@login_required
+def golf_upload_size_images(request, form_id):
+    """Add one or more slides to the T-shirt size guide. The file input is
+    `multiple`, so a single call can carry a whole set."""
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
+    form = get_object_or_404(GolfForm, id=form_id)
+    if not _can_manage_golf_form(request, form):
+        return JsonResponse({"success": False, "message": "Permission denied"}, status=403)
+
+    files = request.FILES.getlist("images") or ([request.FILES["image"]]
+                                                if "image" in request.FILES else [])
+    if not files:
+        return JsonResponse({"success": False, "message": "No file uploaded"}, status=400)
+
+    next_number = (form.size_images.aggregate(m=Max("number"))["m"] or 0) + 1
+    created = []
+    for f in files:
+        if f.size > 5 * 1024 * 1024:
+            return JsonResponse(
+                {"success": False, "message": f"“{f.name}” is over 5 MB"}, status=400)
+        if not (f.content_type or "").startswith("image/"):
+            return JsonResponse(
+                {"success": False, "message": f"“{f.name}” is not an image"}, status=400)
+        img = GolfSizeImage.objects.create(form=form, image=f, number=next_number)
+        created.append(_size_image_payload(img))
+        next_number += 1
+
+    return JsonResponse({"success": True, "images": created})
+
+
+@login_required
+def golf_delete_size_image(request, image_id):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
+    img = get_object_or_404(GolfSizeImage, id=image_id)
+    if not _can_manage_golf_form(request, img.form):
+        return JsonResponse({"success": False, "message": "Permission denied"}, status=403)
+    if img.image:
+        img.image.delete(save=False)
+    img.delete()
+    return JsonResponse({"success": True})
+
+
+@login_required
+def save_golf_size_images(request, form_id):
+    """Persist the slide order and captions in one go (the builder sends the
+    whole list after a drag or a caption edit)."""
+    if request.method != "POST":
+        return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
+    form = get_object_or_404(GolfForm, id=form_id)
+    if not _can_manage_golf_form(request, form):
+        return JsonResponse({"success": False, "message": "Permission denied"}, status=403)
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"success": False, "message": "Invalid JSON"}, status=400)
+
+    items = data.get("images")
+    if not isinstance(items, list):
+        return JsonResponse({"success": False, "message": "images must be a list"}, status=400)
+
+    # Only rows belonging to this form may be touched, whatever the payload says.
+    by_id = {i.id: i for i in form.size_images.all()}
+    updated = []
+    for position, item in enumerate(items, start=1):
+        if not isinstance(item, dict):
+            continue
+        img = by_id.get(item.get("id"))
+        if img is None:
+            continue
+        img.number = position
+        img.caption = (item.get("caption") or "").strip()[:200]
+        img.save(update_fields=["number", "caption"])
+        updated.append(_size_image_payload(img))
+    return JsonResponse({"success": True, "images": updated})
 
 
 @login_required
@@ -759,10 +848,11 @@ def save_golf_form_settings(request, form_id):
             if isinstance(s, str) and s.strip()
         ]
         form.tshirt_sizes = sizes or default_golf_tshirt_sizes()
+        form.size_guide_label = (data.get("size_guide_label") or "").strip()[:80]
 
         fields += [
             "player_slots", "required_players", "package_label", "package_price",
-            "currency", "salutation_options", "tshirt_sizes",
+            "currency", "salutation_options", "tshirt_sizes", "size_guide_label",
         ]
     else:
         form.currency = (data.get("currency") or "RM").strip()[:8] or "RM"
@@ -1228,6 +1318,9 @@ def _golf_public_context(form, preview_mode=False, closed=False):
         ctx["package_label"] = form.package_label or "Participation Package"
         ctx["items"] = _annotate_availability(_sponsor_items_for_event(event, addons_only=True))
         ctx["items_are_addons"] = True
+        # T-shirt size guide: slides for the modal the size field links to.
+        ctx["size_images"] = form.size_guide_images
+        ctx["size_guide_label"] = form.size_guide_link_text
     else:
         ctx["items"] = _annotate_availability(form.sponsor_items.filter(is_active=True))
         ctx["items_are_addons"] = False

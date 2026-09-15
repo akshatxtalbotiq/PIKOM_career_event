@@ -218,6 +218,53 @@
     .total-row.grand { border-top: 2px solid var(--theme); margin-top: .5rem; padding-top: .6rem; font-size: 1.05rem; font-weight: 700; }
     .total-row.grand .amount { color: var(--theme); }
 
+    /* T-shirt size guide: link beside the size field, and its carousel */
+    .size-guide-link {
+      display: inline-flex; align-items: center; gap: 4px;
+      margin-left: .4rem; font-weight: 600; font-size: .8rem;
+      color: var(--theme); text-decoration: underline;
+      text-underline-offset: 2px; white-space: nowrap; vertical-align: middle;
+    }
+    .size-guide-link:hover { opacity: .78; }
+    .size-guide-link svg { width: 15px; height: 15px; flex: 0 0 15px; }
+    /* Tap target on a phone, without pushing the label around on desktop. */
+    @media (max-width: 575.98px) { .size-guide-link { padding: 4px 0; } }
+
+    #sizeGuideModal .modal-body { max-height: 78vh; overflow-y: auto; }
+    #sizeGuideModal .sg-slide {
+      width: 100%; max-height: 66vh; object-fit: contain;
+      margin: 0 auto; background: #f7f9fb; border-radius: .5rem;
+    }
+    #sizeGuideModal .sg-slide-caption {
+      text-align: center; margin: .75rem auto 0; max-width: 60ch;
+      font-size: .9rem; color: #475467;
+    }
+    /* The arrows get their own gutter either side of the slide: overlaid on the
+       image they sit on top of the very rows people came to read. */
+    #sizeGuideModal #sizeGuideCarousel { padding-inline: 52px; }
+    /* The default controls and indicators are white — invisible on the light
+       backdrop these charts sit on. */
+    #sizeGuideModal .carousel-control-prev, #sizeGuideModal .carousel-control-next { width: 46px; opacity: 1; }
+    #sizeGuideModal .carousel-control-prev { left: 0; }
+    #sizeGuideModal .carousel-control-next { right: 0; }
+    #sizeGuideModal .carousel-control-prev-icon, #sizeGuideModal .carousel-control-next-icon {
+      background-color: rgba(31, 41, 55, .55); border-radius: 50%;
+      padding: 14px; background-size: 45% 45%;
+    }
+    #sizeGuideModal .carousel-indicators { bottom: -6px; }
+    #sizeGuideModal .carousel-indicators [data-bs-target] {
+      background-color: #c3cad4; height: 6px; width: 22px; border-radius: 3px;
+      border-top: 0; border-bottom: 0; opacity: 1;
+    }
+    #sizeGuideModal .carousel-indicators .active { background-color: var(--theme); }
+    #sizeGuideModal .carousel-inner { padding-bottom: 1.25rem; }
+    @media (max-width: 575.98px) {
+      #sizeGuideModal #sizeGuideCarousel { padding-inline: 34px; }
+      #sizeGuideModal .carousel-control-prev, #sizeGuideModal .carousel-control-next { width: 30px; }
+      #sizeGuideModal .carousel-control-prev-icon,
+      #sizeGuideModal .carousel-control-next-icon { padding: 10px; }
+    }
+
     .form-control, .form-select { font-size: 16px; }
     .form-check-label { word-break: break-word; }
     .event-details-table td { padding: 4px 0; font-size: 15px; color: #333; vertical-align: top; }
@@ -443,6 +490,24 @@
                         <div class="col-md-4">
                           <label class="form-label fw-bold mb-1">
                             {% if pf.required %}<span class="text-danger">*</span> {% endif %}{{ pf.label }}
+                            {% comment %}
+                              The size-guide link is rendered only when the
+                              organiser has uploaded at least one slide. The
+                              page loads no icon font, so the glyph is inline.
+                            {% endcomment %}
+                            {% if size_images %}
+                              <a href="#" class="size-guide-link" data-bs-toggle="modal"
+                                 data-bs-target="#sizeGuideModal">
+                                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                  <path fill="none" stroke="currentColor" stroke-width="1.8"
+                                        stroke-linejoin="round"
+                                        d="M2.8 14.4 14.4 2.8l6.8 6.8L9.6 21.2z"/>
+                                  <path fill="none" stroke="currentColor" stroke-width="1.6"
+                                        stroke-linecap="round"
+                                        d="M7 12.5l1.8 1.8M10 9.5l2.6 2.6M13 6.5l1.8 1.8"/>
+                                </svg>{{ size_guide_label }}
+                              </a>
+                            {% endif %}
                           </label>
                           <select class="form-select" name="p{{ slot }}_tshirt_size" {% if pf.required %}data-req="1"{% endif %}>
                             <option value="">Choose a size...</option>
@@ -775,6 +840,70 @@
 
     </div>
   </div>
+
+  {% if size_images %}
+  {% comment %}
+    T-shirt size guide. One slide per uploaded image; the controls and the
+    indicator strip are only worth rendering when there is more than one.
+  {% endcomment %}
+  <div class="modal fade" id="sizeGuideModal" tabindex="-1" aria-labelledby="sizeGuideTitle" aria-hidden="true">
+    {% comment %}
+      Not modal-dialog-scrollable: that pins the dialog to full viewport height
+      and leaves a large empty band under the slide. The body caps its own
+      height instead, so the dialog hugs the image.
+    {% endcomment %}
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="sizeGuideTitle">{{ size_guide_label }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="sizeGuideCarousel" class="carousel slide" data-bs-interval="false" data-bs-ride="false">
+            {% if size_images|length > 1 %}
+              <div class="carousel-indicators">
+                {% for img in size_images %}
+                  <button type="button" data-bs-target="#sizeGuideCarousel" data-bs-slide-to="{{ forloop.counter0 }}"
+                          {% if forloop.first %}class="active" aria-current="true"{% endif %}
+                          aria-label="Slide {{ forloop.counter }}"></button>
+                {% endfor %}
+              </div>
+            {% endif %}
+            <div class="carousel-inner">
+              {% for img in size_images %}
+                <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                  <img src="{{ img.image.url }}" class="d-block sg-slide"
+                       alt="{% if img.caption %}{{ img.caption }}{% else %}Size guide slide {{ forloop.counter }}{% endif %}">
+                  {% if img.caption %}
+                    <p class="sg-slide-caption">{{ img.caption }}</p>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+            {% if size_images|length > 1 %}
+              <button class="carousel-control-prev" type="button" data-bs-target="#sizeGuideCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Previous</span>
+              </button>
+              <button class="carousel-control-next" type="button" data-bs-target="#sizeGuideCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Next</span>
+              </button>
+            {% endif %}
+          </div>
+        </div>
+        <div class="modal-footer">
+          {% if size_images|length > 1 %}
+            <span class="me-auto text-muted" style="font-size:.82rem;">
+              {{ size_images|length }} slides — use the arrows or swipe.
+            </span>
+          {% endif %}
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 
   <script src="{% static 'register/assets/libraries/js/bootstrap.bundle.min.js' %}"></script>
   <script src="{% static 'register/sweetalert2/sweetalert2.js' %}"></script>

@@ -694,6 +694,11 @@ class GolfForm(models.Model):
     player_field_config = models.JSONField(default=default_golf_player_field_config)
     salutation_options = models.JSONField(default=default_golf_salutations)
     tshirt_sizes = models.JSONField(default=default_golf_tshirt_sizes)
+    size_guide_label = models.CharField(
+        max_length=80, blank=True, default="Size guide",
+        help_text="Text of the link shown next to the T-shirt size field on the "
+                  "public page. The link only appears once size images exist.",
+    )
 
     class Meta:
         ordering = ["-created_at"]
@@ -728,8 +733,40 @@ class GolfForm(models.Model):
         """{key: config} for template / view lookups."""
         return {f["key"]: f for f in self.player_fields}
 
+    @property
+    def size_guide_images(self):
+        """Size-guide slides in display order. Empty means the public page shows
+        no size-guide link at all."""
+        return list(self.size_images.all())
+
+    @property
+    def size_guide_link_text(self):
+        return (self.size_guide_label or "").strip() or "Size guide"
+
     def __str__(self):
         return f"{self.title} ({self.get_kind_display()})"
+
+
+class GolfSizeImage(models.Model):
+    """One slide of the T-shirt size guide: an image the organiser uploads on the
+    participant form builder, shown in a carousel from the public page."""
+
+    form = models.ForeignKey(
+        GolfForm, on_delete=models.CASCADE, related_name="size_images"
+    )
+    image = models.ImageField(upload_to="golf_size_images/")
+    caption = models.CharField(
+        max_length=200, blank=True, default="",
+        help_text="Optional line shown under the slide.",
+    )
+    number = models.PositiveIntegerField(default=0, help_text="Slide order.")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["number", "id"]
+
+    def __str__(self):
+        return self.caption or f"Size image {self.number}"
 
 
 class GolfQuestion(models.Model):

@@ -90,6 +90,34 @@
     word-break: break-all; min-height: 1em;
   }
 
+  /* T-shirt size guide: a grid of draggable slide cards */
+  .sg-block { border-top: 1px solid #eef1f5; }
+  .sg-grid {
+    display: grid; gap: .75rem;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  }
+  .sg-card {
+    position: relative; border: 1px solid #e6e9ef; border-radius: .6rem;
+    background: #fff; padding: .6rem; padding-top: 1.6rem;
+  }
+  .sg-card img {
+    width: 100%; height: 150px; object-fit: contain;
+    background: #f7f9fb; border-radius: .4rem;
+  }
+  .sg-card .sg-drag {
+    position: absolute; top: 4px; left: 5px; cursor: grab;
+    color: #b0b7c3; font-size: 20px;
+  }
+  .sg-card .sg-remove {
+    position: absolute; top: 4px; right: 4px; border: 0; border-radius: 50%;
+    width: 24px; height: 24px; line-height: 1; padding: 0;
+    background: #fdecea; color: #b3261e; display: flex;
+    align-items: center; justify-content: center;
+  }
+  .sg-card .sg-remove i { font-size: 16px; }
+  .sg-card .sg-remove:hover { background: #b3261e; color: #fff; }
+  .sg-card.sortable-ghost { opacity: .4; }
+
   .merge-tag {
     display: inline-block; padding: 1px 6px; margin-right: 4px; border-radius: 4px;
     background: #eef2f7; color: #344054; font-family: monospace; font-size: .75rem;
@@ -350,6 +378,53 @@
             <input type="text" class="form-control" id="fsTshirtSizes"
                    value="{{ form.tshirt_sizes|join:', ' }}" placeholder="S, M, L, XL, 2XL, 3XL, 4XL, 5XL">
             <small class="text-muted">Comma-separated, in display order.</small>
+          </div>
+        </div>
+
+        {% comment %}
+          T-shirt size guide. The images become the slides of a carousel the
+          public page opens from a link beside the T-Shirt Asian Size field.
+          With no images uploaded, that link is not rendered at all.
+        {% endcomment %}
+        <div class="sg-block mt-2 pt-3">
+          <div class="d-flex flex-wrap align-items-end gap-3 mb-3">
+            <div>
+              <h6 class="mb-1">T-shirt size guide</h6>
+              <small class="text-muted">
+                Upload the size-chart images. Participants open them in a slideshow from a
+                link next to the T-shirt field. Drag a slide to reorder it.
+              </small>
+            </div>
+            <div class="ms-auto" style="min-width:230px;">
+              <label class="form-label mb-1">Link text</label>
+              <input type="text" class="form-control form-control-sm" id="fsSizeGuideLabel"
+                     maxlength="80" value="{{ form.size_guide_label }}" placeholder="Size guide">
+            </div>
+            <div>
+              <label for="sizeImageInput" class="btn btn-sm btn-primary mb-0">
+                <i class="material-symbols-rounded align-middle">add_photo_alternate</i>
+                Add images
+              </label>
+              <input type="file" id="sizeImageInput" accept="image/*" multiple hidden>
+            </div>
+          </div>
+
+          <div id="sizeImageList" class="sg-grid">
+            {% for img in size_images %}
+              <div class="sg-card" data-id="{{ img.id }}">
+                <span class="sg-drag material-symbols-rounded" title="Drag to reorder">drag_indicator</span>
+                <button type="button" class="sg-remove" title="Remove this slide">
+                  <i class="material-symbols-rounded">close</i>
+                </button>
+                <img src="{{ img.image.url }}" alt="Size guide slide">
+                <input type="text" class="form-control form-control-sm sg-caption mt-2"
+                       maxlength="200" value="{{ img.caption }}" placeholder="Caption (optional)">
+              </div>
+            {% endfor %}
+          </div>
+          <div id="sizeImageEmpty" class="text-muted text-center py-4 {% if size_images %}d-none{% endif %}">
+            <i class="material-symbols-rounded upload-icon">imagesmode</i>
+            <div>No size images yet. The public page will show no size-guide link.</div>
           </div>
         </div>
       </div>
@@ -980,6 +1055,106 @@ document.addEventListener('DOMContentLoaded', function () {
       });
   });
 
+  // ── T-shirt size guide ──
+  // Slides persist as soon as they are added, removed or reordered; captions
+  // also ride along with the main "Save package, players & note" button.
+  const sgList = document.getElementById('sizeImageList');
+  const sgInput = document.getElementById('sizeImageInput');
+  const sgEmpty = document.getElementById('sizeImageEmpty');
+
+  function sgPaintEmpty() {
+    if (!sgEmpty) return;
+    sgEmpty.classList.toggle('d-none', sgList.querySelectorAll('.sg-card').length > 0);
+  }
+
+  function collectSizeImages() {
+    return Array.from(sgList.querySelectorAll('.sg-card')).map(card => ({
+      id: parseInt(card.dataset.id, 10),
+      caption: card.querySelector('.sg-caption').value,
+    }));
+  }
+
+  function saveSizeImages(quiet) {
+    if (!sgList) return Promise.resolve({ success: true });
+    return postJSON(`/save_golf_size_images/${FORM_ID}/`, { images: collectSizeImages() })
+      .then(d => {
+        if (!d.success && !quiet) {
+          Swal.fire({ icon: 'error', title: 'Could not save the size guide', text: d.message || '' });
+        }
+        return d;
+      });
+  }
+
+  function sgCard(img) {
+    const card = document.createElement('div');
+    card.className = 'sg-card';
+    card.dataset.id = img.id;
+    // The caption comes back from the server; build it as a value, never as
+    // interpolated markup.
+    card.innerHTML =
+      '<span class="sg-drag material-symbols-rounded" title="Drag to reorder">drag_indicator</span>' +
+      '<button type="button" class="sg-remove" title="Remove this slide">' +
+      '<i class="material-symbols-rounded">close</i></button>' +
+      '<img alt="Size guide slide">' +
+      '<input type="text" class="form-control form-control-sm sg-caption mt-2" maxlength="200" placeholder="Caption (optional)">';
+    card.querySelector('img').src = img.url;
+    card.querySelector('.sg-caption').value = img.caption || '';
+    return card;
+  }
+
+  if (sgList) {
+    if (window.Sortable) {
+      Sortable.create(sgList, {
+        handle: '.sg-drag', animation: 150,
+        onEnd: () => saveSizeImages(false).then(d => { if (d.success) toast('Order saved'); }),
+      });
+    }
+
+    sgInput.addEventListener('change', () => {
+      const files = Array.from(sgInput.files || []);
+      if (!files.length) return;
+      const fd = new FormData();
+      files.forEach(f => fd.append('images', f));
+      fetch(`/golf_upload_size_images/${FORM_ID}/`, {
+        method: 'POST', headers: { 'X-CSRFToken': csrf() }, body: fd,
+      })
+        .then(r => r.json())
+        .then(d => {
+          sgInput.value = '';
+          if (!d.success) { Swal.fire({ icon: 'error', title: 'Upload failed', text: d.message || '' }); return; }
+          (d.images || []).forEach(img => sgList.appendChild(sgCard(img)));
+          sgPaintEmpty();
+          toast(d.images.length === 1 ? 'Image added' : `${d.images.length} images added`);
+        });
+    });
+
+    sgList.addEventListener('click', function (e) {
+      const btn = e.target.closest('.sg-remove');
+      if (!btn) return;
+      const card = btn.closest('.sg-card');
+      Swal.fire({
+        icon: 'warning', title: 'Remove this slide?', showCancelButton: true,
+        confirmButtonText: 'Remove', confirmButtonColor: '#d9534f',
+      }).then(res => {
+        if (!res.isConfirmed) return;
+        fetch(`/golf_delete_size_image/${card.dataset.id}/`, {
+          method: 'POST', headers: { 'X-CSRFToken': csrf() },
+        })
+          .then(r => r.json())
+          .then(d => {
+            if (!d.success) { Swal.fire({ icon: 'error', title: 'Could not remove', text: d.message || '' }); return; }
+            card.remove();
+            sgPaintEmpty();
+            saveSizeImages(true);   // renumber what is left
+          });
+      });
+    });
+
+    sgList.addEventListener('blur', function (e) {
+      if (e.target.classList.contains('sg-caption')) saveSizeImages(true);
+    }, true);
+  }
+
   // ── Note editor (both form kinds) ──
   const noteEditor = makeQuill('#noteEditor');
   noteEditor.root.innerHTML = (document.getElementById('noteSeed').innerHTML || '').trim();
@@ -1017,6 +1192,7 @@ document.addEventListener('DOMContentLoaded', function () {
       payload.required_players = document.getElementById('fsRequiredPlayers').value;
       payload.salutation_options = splitList(document.getElementById('fsSalutations').value);
       payload.tshirt_sizes = splitList(document.getElementById('fsTshirtSizes').value);
+      payload.size_guide_label = document.getElementById('fsSizeGuideLabel').value;
     }
     if (showOnForm) payload.show_event_details = showOnForm.checked;
 
@@ -1027,10 +1203,12 @@ document.addEventListener('DOMContentLoaded', function () {
         else Swal.fire({ icon: 'error', title: 'Could not save', text: d.message || '' });
       });
     }
-    // Participant form: the player-field config lives on its own endpoint.
+    // Participant form: the player-field config and the size-guide captions
+    // live on their own endpoints.
     return Promise.all([
       settings,
       postJSON(`/save_golf_player_config/${FORM_ID}/`, { config: collectPlayerConfig() }),
+      saveSizeImages(true),
     ]).then(([a, b]) => {
       if (a.success && b.success) { toast('Saved'); setTimeout(() => location.reload(), 900); }
       else Swal.fire({ icon: 'error', title: 'Could not save', text: (a.message || b.message || '') });
