@@ -490,6 +490,47 @@ starting Phase 3.
 
 # Phase 3 --- Career Festival Backend Modules
 
+## Phase 3 Status — Completed 2026-10-07
+
+Phase 3 implementation and its approval gate are complete. The workflow
+below was followed: implementation, phase-specific Django tests,
+`manage.py check`, full `manage.py test`, failure fixes, and final review.
+Phase 4 has not been started.
+
+Implemented:
+
+- Event-scoped employer profiles and job listings, including attendee job
+  bookmarks and direct application links/email addresses.
+- Fixed-block and generated open interview times, attendee bookings,
+  cancellation/rebooking, approved-attendee eligibility, and per-time
+  capacity protection.
+- University/program profiles, training providers, and promotions with
+  expiry, optional documents, claim limits, cancellation/reclaim, and
+  claim instructions emailed to attendees.
+- Organizer career-directory management protected by event team access;
+  attendee career hub links use the existing registration token and all
+  listed records are scoped to that registration's event.
+- Career hub links in registration and QR emails, and Django admin entries
+  for the new domain models.
+
+Verification:
+
+- Migration: `register/migrations/0070_phase3_career_modules.py`.
+- Automated coverage: 6 Phase 3 tests were added. The full suite discovered
+  and ran 25 tests; all passed.
+- `python manage.py check`: passed with no issues.
+- `python manage.py test`: passed (25 tests).
+- `python manage.py makemigrations --check --dry-run` still reports only
+  the pre-existing Golf model migration drift (`GolfEvent`, `GolfForm`, and
+  related Golf models). Those models were intentionally excluded from the
+  Phase 3 migration. This check is informational and was not one of the
+  mandatory phase gates.
+- No duplicate employer/job/university/training/voucher/interview workflows
+  were found before implementation.
+
+**Phase 3 is complete. Stop here and wait for explicit approval before
+starting Phase 4.**
+
 ## Goal
 
 Implement the career-festival domain that sits on top of the event

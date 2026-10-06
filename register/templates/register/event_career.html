@@ -1,0 +1,16 @@
+{% extends "register/base.html" %}
+{% block content %}
+<div class="container py-4">
+  <h1>{{ campaign.title }} career directory</h1>
+  <p>Manage event employers, opportunities, education, interviews and promotions.</p>
+  {% for message in messages %}<div class="alert alert-info">{{ message }}</div>{% endfor %}
+  {% for key, title in section_titles %}{% endfor %}
+  {% include "register/_career_form_section.html" with key="employer" title="Employers" form=employer_form items=employer_items %}
+  {% include "register/_career_form_section.html" with key="job" title="Jobs" form=job_form items=job_items %}
+  {% include "register/_career_form_section.html" with key="interview" title="Interview availability" form=interview_form items=interview_items %}
+  {% include "register/_career_form_section.html" with key="university" title="Universities" form=university_form items=university_items %}
+  {% include "register/_career_form_section.html" with key="program" title="University programs" form=program_form items=program_items %}
+  {% include "register/_career_form_section.html" with key="provider" title="Training providers" form=provider_form items=provider_items %}
+  {% include "register/_career_form_section.html" with key="promotion" title="Vouchers and promotions" form=promotion_form items=promotion_items %}
+</div>
+{% endblock %}

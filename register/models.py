@@ -611,6 +611,230 @@ class Booth(models.Model):
 
     def __str__(self):
         return f"{self.number} — {self.name}"
+
+
+class Employer(models.Model):
+    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="employers")
+    booth = models.ForeignKey(Booth, on_delete=models.SET_NULL, null=True, blank=True, related_name="employers")
+    name = models.CharField(max_length=255)
+    logo = models.ImageField(upload_to="employer_logos/", null=True, blank=True)
+    description = models.TextField(blank=True, default="")
+    website = models.URLField(blank=True, default="")
+    contact_name = models.CharField(max_length=255, blank=True, default="")
+    contact_email = models.EmailField(blank=True, default="")
+    contact_phone = models.CharField(max_length=80, blank=True, default="")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
+class Job(models.Model):
+    EMPLOYMENT_TYPE_CHOICES = [
+        ("full_time", "Full-time"),
+        ("part_time", "Part-time"),
+        ("internship", "Internship"),
+        ("contract", "Contract"),
+        ("temporary", "Temporary"),
+        ("other", "Other"),
+    ]
+
+    employer = models.ForeignKey(Employer, on_delete=models.CASCADE, related_name="jobs")
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, default="")
+    requirements = models.TextField(blank=True, default="")
+    employment_type = models.CharField(max_length=20, choices=EMPLOYMENT_TYPE_CHOICES, default="full_time")
+    experience_level = models.CharField(max_length=100, blank=True, default="")
+    location = models.CharField(max_length=255, blank=True, default="")
+    application_url = models.URLField(blank=True, default="")
+    application_email = models.EmailField(blank=True, default="")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["employer__name", "title"]
+
+    def __str__(self):
+        return f"{self.employer.name} — {self.title}"
+
+
+class JobBookmark(models.Model):
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name="bookmarks")
+    attendee = models.ForeignKey(SurveyUser, on_delete=models.CASCADE, related_name="job_bookmarks")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["job", "attendee"], name="unique_job_bookmark_per_attendee"),
+        ]
+
+    def __str__(self):
+        return f"{self.attendee} — {self.job}"
+
+
+class InterviewSlot(models.Model):
+    MODE_FIXED = "fixed"
+    MODE_OPEN = "open"
+    MODE_CHOICES = [(MODE_FIXED, "Fixed block"), (MODE_OPEN, "Open booking slots")]
+    STATUS_OPEN = "open"
+    STATUS_CLOSED = "closed"
+    STATUS_CANCELLED = "cancelled"
+    STATUS_CHOICES = [
+        (STATUS_OPEN, "Open"),
+        (STATUS_CLOSED, "Closed"),
+        (STATUS_CANCELLED, "Cancelled"),
+    ]
+
+    employer = models.ForeignKey(Employer, on_delete=models.CASCADE, related_name="interview_slots")
+    date = models.DateField()
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    booking_mode = models.CharField(max_length=16, choices=MODE_CHOICES, default=MODE_FIXED)
+    slot_duration_minutes = models.PositiveSmallIntegerField(null=True, blank=True)
+    capacity = models.PositiveSmallIntegerField(default=1, help_text="Bookings allowed per fixed block or generated time slot.")
+    interviewer_info = models.CharField(max_length=255, blank=True, default="")
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_OPEN)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["date", "start_time", "employer__name"]
+
+    def __str__(self):
+        return f"{self.employer.name} — {self.date} {self.start_time}"
+
+
+class InterviewBooking(models.Model):
+    STATUS_BOOKED = "booked"
+    STATUS_CANCELLED = "cancelled"
+    STATUS_CHOICES = [(STATUS_BOOKED, "Booked"), (STATUS_CANCELLED, "Cancelled")]
+
+    slot = models.ForeignKey(InterviewSlot, on_delete=models.CASCADE, related_name="bookings")
+    attendee = models.ForeignKey(SurveyUser, on_delete=models.CASCADE, related_name="interview_bookings")
+    start_time = models.TimeField()
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_BOOKED)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["slot__date", "start_time", "created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["slot", "attendee", "start_time"],
+                name="unique_attendee_interview_time",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.attendee} — {self.slot.employer} @ {self.start_time}"
+
+
+class University(models.Model):
+    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="universities")
+    booth = models.ForeignKey(Booth, on_delete=models.SET_NULL, null=True, blank=True, related_name="universities")
+    name = models.CharField(max_length=255)
+    logo = models.ImageField(upload_to="university_logos/", null=True, blank=True)
+    description = models.TextField(blank=True, default="")
+    website = models.URLField(blank=True, default="")
+    contact_name = models.CharField(max_length=255, blank=True, default="")
+    contact_email = models.EmailField(blank=True, default="")
+    contact_phone = models.CharField(max_length=80, blank=True, default="")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
+class UniversityProgram(models.Model):
+    university = models.ForeignKey(University, on_delete=models.CASCADE, related_name="programs")
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, default="")
+    eligibility = models.TextField(blank=True, default="")
+    upcoming_batch_info = models.CharField(max_length=255, blank=True, default="")
+    internship_fresher_info = models.TextField(blank=True, default="")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["university__name", "name"]
+
+    def __str__(self):
+        return f"{self.university.name} — {self.name}"
+
+
+class TrainingProvider(models.Model):
+    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="training_providers")
+    booth = models.ForeignKey(Booth, on_delete=models.SET_NULL, null=True, blank=True, related_name="training_providers")
+    name = models.CharField(max_length=255)
+    logo = models.ImageField(upload_to="training_provider_logos/", null=True, blank=True)
+    description = models.TextField(blank=True, default="")
+    website = models.URLField(blank=True, default="")
+    contact_name = models.CharField(max_length=255, blank=True, default="")
+    contact_email = models.EmailField(blank=True, default="")
+    contact_phone = models.CharField(max_length=80, blank=True, default="")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
+class VoucherPromotion(models.Model):
+    provider = models.ForeignKey(TrainingProvider, on_delete=models.CASCADE, related_name="promotions")
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, default="")
+    value_label = models.CharField(max_length=120, blank=True, default="")
+    expires_at = models.DateTimeField(null=True, blank=True)
+    max_claims = models.PositiveIntegerField(null=True, blank=True)
+    instructions = models.TextField(blank=True, default="")
+    document = models.FileField(upload_to="voucher_documents/", blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["expires_at", "title"]
+
+    def __str__(self):
+        return f"{self.provider.name} — {self.title}"
+
+
+class VoucherClaim(models.Model):
+    STATUS_CLAIMED = "claimed"
+    STATUS_CANCELLED = "cancelled"
+    STATUS_CHOICES = [(STATUS_CLAIMED, "Claimed"), (STATUS_CANCELLED, "Cancelled")]
+
+    promotion = models.ForeignKey(VoucherPromotion, on_delete=models.CASCADE, related_name="claims")
+    attendee = models.ForeignKey(SurveyUser, on_delete=models.CASCADE, related_name="voucher_claims")
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_CLAIMED)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["promotion", "attendee"], name="unique_voucher_claim_per_attendee"),
+        ]
+
+    def __str__(self):
+        return f"{self.attendee} — {self.promotion} ({self.status})"
     
 
 # ===========================================================================

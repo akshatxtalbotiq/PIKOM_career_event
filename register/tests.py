@@ -9,9 +9,16 @@ from .event_services import (
     AttendeeNotEligibleError, SessionCapacityError,
     cancel_session_registration, register_for_session,
 )
+from .career_services import (
+    CareerCapacityError, CareerEligibilityError, book_interview,
+    cancel_interview_booking, cancel_voucher_claim, claim_voucher,
+    interview_start_times,
+)
 from .models import (
-    Booth, Campaign, CampaignTeam, EventSession, FloorMap, SessionRegistration,
-    Survey, SurveyUser,
+    Booth, Campaign, CampaignTeam, Employer, EventSession, FloorMap,
+    InterviewBooking, InterviewSlot, Job, JobBookmark, SessionRegistration,
+    Survey, SurveyUser, TrainingProvider, University, UniversityProgram,
+    VoucherClaim, VoucherPromotion,
 )
 
 
@@ -434,3 +441,121 @@ class PhaseTwoEventInfrastructureTests(TestCase):
         self.assertEqual(str(booth.x_percent), "25.00")
         self.assertEqual(str(booth.y_percent), "35.00")
         self.assertEqual(booth.organization_name, "PIKOM")
+
+
+class PhaseThreeCareerModulesTests(TestCase):
+    def setUp(self):
+        self.User = get_user_model()
+        self.admin = self.User.objects.create_superuser(
+            username="phase3-admin", email="phase3-admin@example.com", password="password"
+        )
+        self.client.force_login(self.admin)
+        self.campaign = Campaign.objects.create(
+            title="Career Festival",
+            start_date=timezone.datetime(2026, 11, 2, tzinfo=timezone.get_current_timezone()),
+            end_date=timezone.datetime(2026, 11, 3, 23, 59, tzinfo=timezone.get_current_timezone()),
+        )
+        self.survey = Survey.objects.create(
+            title="Career registration", fkcampaign=self.campaign,
+            purpose=Survey.PURPOSE_REGISTRATION,
+        )
+        self.employer = Employer.objects.create(campaign=self.campaign, name="Acme")
+        self.provider = TrainingProvider.objects.create(campaign=self.campaign, name="LearnCo")
+
+    def attendee(self, name, status=SurveyUser.STATUS_APPROVED, survey=None):
+        return SurveyUser.objects.create(
+            survey=survey or self.survey, name=name, email=f"{name.lower()}@example.com",
+            approval_status=status,
+        )
+
+    def test_organizer_creates_scoped_employer_job_university_provider_and_promotion(self):
+        url = reverse("event_career", args=[self.campaign.pk])
+        self.assertEqual(self.client.post(url, {"action": "save_employer", "name": "New Employer", "is_active": "on"}).status_code, 302)
+        employer = Employer.objects.get(name="New Employer")
+        self.assertEqual(employer.campaign, self.campaign)
+        self.assertEqual(self.client.post(url, {
+            "action": "save_job", "employer": employer.pk, "title": "Engineer",
+            "employment_type": "full_time", "is_active": "on",
+        }).status_code, 302)
+        self.assertTrue(Job.objects.filter(employer=employer, title="Engineer").exists())
+        self.assertEqual(self.client.post(url, {"action": "save_university", "name": "PIKOM University", "is_active": "on"}).status_code, 302)
+        university = University.objects.get(name="PIKOM University")
+        self.assertEqual(self.client.post(url, {
+            "action": "save_program", "university": university.pk, "name": "AI Diploma", "is_active": "on",
+        }).status_code, 302)
+        self.assertTrue(UniversityProgram.objects.filter(university=university).exists())
+        self.assertEqual(self.client.post(url, {
+            "action": "save_promotion", "provider": self.provider.pk, "title": "Course discount",
+            "max_claims": 3, "is_active": "on",
+        }).status_code, 302)
+        self.assertTrue(VoucherPromotion.objects.filter(provider=self.provider).exists())
+
+    def test_organizer_access_is_event_scoped(self):
+        other = Campaign.objects.create(title="Other", start_date=self.campaign.start_date, end_date=self.campaign.end_date)
+        organizer = self.User.objects.create_user(username="phase3-organizer", password="password")
+        self.client.force_login(organizer)
+        self.assertEqual(self.client.get(reverse("event_career", args=[other.pk])).status_code, 403)
+        CampaignTeam.objects.create(campaign=self.campaign, user=organizer)
+        self.assertEqual(self.client.get(reverse("event_career", args=[self.campaign.pk])).status_code, 200)
+        other_employer = Employer.objects.create(campaign=other, name="Other Co")
+        response = self.client.post(reverse("event_career", args=[self.campaign.pk]), {
+            "action": "save_job", "employer": other_employer.pk, "title": "Cross-event job",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Job.objects.filter(title="Cross-event job").exists())
+
+    def test_interview_open_times_capacity_cancellation_and_rebooking(self):
+        slot = InterviewSlot.objects.create(
+            employer=self.employer, date="2026-11-02", start_time="10:00", end_time="11:00",
+            booking_mode=InterviewSlot.MODE_OPEN, slot_duration_minutes=30, capacity=1,
+        )
+        slot.refresh_from_db()
+        self.assertEqual([t.isoformat(timespec="minutes") for t in interview_start_times(slot)], ["10:00", "10:30"])
+        first, second = self.attendee("First"), self.attendee("Second")
+        booking = book_interview(slot.pk, first, timezone.datetime.strptime("10:00", "%H:%M").time())
+        with self.assertRaises(CareerCapacityError):
+            book_interview(slot.pk, second, booking.start_time)
+        cancel_interview_booking(booking.pk, first)
+        rebooked = book_interview(slot.pk, second, booking.start_time)
+        self.assertEqual(rebooked.status, InterviewBooking.STATUS_BOOKED)
+
+    def test_interviews_require_approved_attendee_of_same_event_and_valid_time(self):
+        slot = InterviewSlot.objects.create(
+            employer=self.employer, date="2026-11-02", start_time="10:00", end_time="11:00",
+            capacity=1,
+        )
+        pending = self.attendee("Pending", SurveyUser.STATUS_PENDING)
+        with self.assertRaises(CareerEligibilityError):
+            book_interview(slot.pk, pending, slot.start_time)
+        other_campaign = Campaign.objects.create(title="Other", start_date=self.campaign.start_date, end_date=self.campaign.end_date)
+        other_survey = Survey.objects.create(title="Other registration", fkcampaign=other_campaign, purpose=Survey.PURPOSE_REGISTRATION)
+        outsider = self.attendee("Outsider", survey=other_survey)
+        with self.assertRaises(CareerEligibilityError):
+            book_interview(slot.pk, outsider, slot.start_time)
+
+    def test_voucher_claim_limit_cancel_and_reclaim(self):
+        promotion = VoucherPromotion.objects.create(provider=self.provider, title="Discount", max_claims=1)
+        first, second = self.attendee("Claimant"), self.attendee("Waiting")
+        claim = claim_voucher(promotion.pk, first)
+        with self.assertRaises(CareerCapacityError):
+            claim_voucher(promotion.pk, second)
+        cancel_voucher_claim(claim.pk, first)
+        reclaimed = claim_voucher(promotion.pk, second)
+        self.assertEqual(reclaimed.status, VoucherClaim.STATUS_CLAIMED)
+
+    def test_attendee_hub_is_token_scoped_and_email_links_to_it(self):
+        job = Job.objects.create(employer=self.employer, title="Data analyst", application_url="https://example.com/apply")
+        attendee = self.attendee("Token Attendee")
+        url = reverse("attendee_career_hub", args=[attendee.registration_code])
+        self.assertContains(self.client.get(url), job.title)
+        self.client.post(url, {"action": "bookmark", "job_id": job.pk})
+        self.assertTrue(JobBookmark.objects.filter(job=job, attendee=attendee).exists())
+        other = Campaign.objects.create(title="Other", start_date=self.campaign.start_date, end_date=self.campaign.end_date)
+        other_employer = Employer.objects.create(campaign=other, name="Hidden Co")
+        Job.objects.create(employer=other_employer, title="Hidden role")
+        self.assertNotContains(self.client.get(url), "Hidden role")
+        from django.template.loader import render_to_string
+        from .views import _event_email_ctx
+        from django.urls import reverse as url_reverse
+        html = render_to_string("register/email/email_registration_received.html", _event_email_ctx(attendee))
+        self.assertIn(url_reverse("attendee_career_hub", args=[attendee.registration_code]), html)

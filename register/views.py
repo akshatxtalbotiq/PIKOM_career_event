@@ -2884,6 +2884,10 @@ def _event_email_ctx(survey_user, request=None, intro_field=None):
             request.build_absolute_uri(reverse("attendee_event_sessions", args=[survey_user.registration_code]))
             if request is not None else base + reverse("attendee_event_sessions", args=[survey_user.registration_code])
         ),
+        "event_career_url": (
+            request.build_absolute_uri(reverse("attendee_career_hub", args=[survey_user.registration_code]))
+            if request is not None else base + reverse("attendee_career_hub", args=[survey_user.registration_code])
+        ),
         "signoff": strip_tags(signoff_html.replace("</p>", " </p>").replace("<br", " <br")).strip(),
         "signoff_html": signoff_html,
         "intro_html": _render_intro(getattr(campaign, intro_field, "") or "", tag_ctx, theme)

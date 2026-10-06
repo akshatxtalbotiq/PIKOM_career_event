@@ -35,6 +35,7 @@ from .golf_views import (
     update_golf_remarks, delete_golf_registrations,
 )
 from .event_views import event_infrastructure, attendee_session_registration, attendee_event_sessions
+from .career_views import event_career, attendee_career_hub
 
 urlpatterns = [
     path('', campaign_list, name='campaign_list'),
@@ -53,6 +54,8 @@ urlpatterns = [
     path('campaign_dashboard/<int:id>/', campaign_dashboard, name='campaign_dashboard'),
     path('events/<int:campaign_id>/infrastructure/', event_infrastructure, name='event_infrastructure'),
     path('my-sessions/<uuid:registration_code>/', attendee_event_sessions, name='attendee_event_sessions'),
+    path('events/<int:campaign_id>/career/', event_career, name='event_career'),
+    path('my-career/<uuid:registration_code>/', attendee_career_hub, name='attendee_career_hub'),
     path('my-sessions/<int:session_id>/<uuid:registration_code>/', attendee_session_registration, name='attendee_session_registration'),
     path('submission_list/<str:id>/', submission_list, name='submission_list'),
     path('get_campaign/<str:id>/', get_campaign, name='get_campaign'),    

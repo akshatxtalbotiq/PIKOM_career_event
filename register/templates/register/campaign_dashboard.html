@@ -75,6 +75,7 @@
               <a class="btn btn-sm btn-primary mb-0" href="{% url 'registration_form_list' %}?for_campaign={{ campaign.id }}">Create registration form</a>
             {% endif %}
             <a class="btn btn-sm btn-outline-primary mb-0" href="{% url 'event_infrastructure' campaign.id %}">Agenda, maps &amp; booths</a>
+            <a class="btn btn-sm btn-outline-primary mb-0" href="{% url 'event_career' campaign.id %}">Career directory</a>
             <a class="btn btn-sm btn-outline-secondary mb-0" href="{% url 'campaign_list' %}">All events</a>
           </div>
           {% if campaign.organizer_email %}<small class="d-block text-secondary mt-2">{{ campaign.organizer_email }}{% if campaign.organizer_phone %} · {{ campaign.organizer_phone }}{% endif %}</small>{% endif %}
