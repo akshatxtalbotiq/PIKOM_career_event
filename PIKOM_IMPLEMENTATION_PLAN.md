@@ -709,6 +709,59 @@ Report:
 
 # Phase 4 --- API + Next.js Attendee Experience
 
+## Phase 4 Status — Completed 2026-10-07
+
+Phase 4 implementation and its approval gate are complete. The mandatory
+workflow was followed: implementation, phase-specific tests, Django system
+check, full Django test suite, fixes, and final frontend build. Phase 5 has
+not been started.
+
+Implemented API boundary (`/api/`):
+
+- Public event list/detail, registration form schema, and attendee
+  registration endpoints.
+- Registration preserves configured identity and custom question answers;
+  newly registered attendees remain pending organizer approval.
+- Attendee profile read/update, event directory, combined schedule,
+  read-only check-in state and approved QR image.
+- Event-scoped employers/jobs, universities/programs, training providers and
+  promotions, interview slots, sessions/capacity, published floor maps and
+  booth coordinates.
+- Attendee job bookmark, session registration/cancellation, interview
+  booking/cancellation, and voucher claim/cancellation actions.
+- Mutating endpoints require the attendee's existing high-entropy
+  `registration_code` as a Bearer token. Event browsing/registration are
+  public. Attendee actions are restricted to the attendee's own event and
+  approved registrations. Check-in is read-only for attendees.
+
+Implemented a separate `frontend/` Next.js application with mobile-first
+event discovery, configured registration forms, confirmation, attendee
+token login, dashboard, employers, jobs, interviews, universities, training
+promotions, sessions, schedule/bookings, searchable floor maps/booths, and
+check-in QR display. Next.js rewrites `/api/` and `/media/` to Django using
+`DJANGO_API_URL`. Setting `ATTENDEE_APP_URL` in the Django environment adds
+private app login links to registration emails.
+
+Verification:
+
+- No Phase 4 database migration was required.
+- 8 Phase 4 Django API tests were added. Full suite discovered and ran 33
+  tests; all passed.
+- `python manage.py check`: passed with no issues.
+- `python manage.py test`: passed (33 tests).
+- `npm run build` in `frontend/`: passed with all app routes compiled.
+- `npm install` audited the frontend dependency tree with no reported
+  vulnerabilities.
+- No browser-driven end-to-end test suite exists yet; frontend verification
+  is the production build plus the API integration tests.
+
+The attendee token is a bearer credential and currently has no separate
+expiry/rotation flow. Keep it private. Configure `ATTENDEE_APP_URL` and
+`DJANGO_API_URL` for the deployed origins.
+
+**Phase 4 is complete. Stop here and wait for explicit approval before
+starting Phase 5.**
+
 ## Goal
 
 Build the modern, mobile-first attendee experience without destabilizing
@@ -899,6 +952,34 @@ Report:
 ------------------------------------------------------------------------
 
 # Phase 5 --- Production Polish, Testing & Cleanup
+
+## Phase 5 Status — Completed 2026-10-07
+
+Phase 5 implementation and its completion gate are complete. Changes include
+an end-to-end Django integration test, event directory pagination with a
+frontend load-more control, dashboard aggregation, survey-management access
+checks and input validation, production-oriented Django environment settings,
+and deployment documentation. The legacy Golf navigation is hidden by default
+and can be enabled with `SHOW_LEGACY_GOLF_TOOLS=true`; Golf routes and data
+models remain because production data safety could not be confirmed for
+permanent removal.
+
+Verification:
+
+- 4 Phase 5 Django tests cover the registration-to-check-in flow, event and
+  survey permissions, opt-in Golf navigation, and directory pagination.
+- The full Django suite discovered and ran 37 tests; all passed.
+- `python manage.py check`: passed with no issues.
+- `python manage.py test`: passed (37 tests).
+- `git diff --check`: passed.
+- `npm run build` in `frontend/`: passed with all attendee routes compiled.
+- `npm audit --audit-level=moderate`: passed with 0 vulnerabilities.
+- No browser-driven end-to-end test suite exists. Frontend verification is
+  the production build, with backend workflows covered by Django API tests.
+
+No Phase 5 database migration was required. No Phase 6 work was started.
+
+**Phase 5 is complete. Stop here for the final implementation report.**
 
 ## Goal
 

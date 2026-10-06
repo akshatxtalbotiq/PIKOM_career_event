@@ -17,7 +17,7 @@ from .career_services import (
 from .models import (
     Booth, Campaign, CampaignTeam, Employer, EventSession, FloorMap,
     InterviewBooking, InterviewSlot, Job, JobBookmark, SessionRegistration,
-    Survey, SurveyUser, TrainingProvider, University, UniversityProgram,
+    Answer, Question, Survey, SurveyUser, TrainingProvider, University, UniversityProgram,
     VoucherClaim, VoucherPromotion,
 )
 
@@ -559,3 +559,276 @@ class PhaseThreeCareerModulesTests(TestCase):
         from django.urls import reverse as url_reverse
         html = render_to_string("register/email/email_registration_received.html", _event_email_ctx(attendee))
         self.assertIn(url_reverse("attendee_career_hub", args=[attendee.registration_code]), html)
+
+
+class PhaseFourAttendeeAPITests(TestCase):
+    def setUp(self):
+        from rest_framework.test import APIClient
+
+        self.client = APIClient()
+        self.campaign = Campaign.objects.create(
+            title="API Festival", start_date=timezone.datetime(2026, 11, 2, tzinfo=timezone.get_current_timezone()),
+            end_date=timezone.datetime(2026, 11, 3, 23, 59, tzinfo=timezone.get_current_timezone()),
+        )
+        self.survey = Survey.objects.create(
+            title="API registration", fkcampaign=self.campaign,
+            purpose=Survey.PURPOSE_REGISTRATION, is_active=True,
+        )
+        self.attendee = SurveyUser.objects.create(
+            survey=self.survey, name="API Attendee", email="api@example.com",
+            approval_status=SurveyUser.STATUS_APPROVED,
+        )
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.attendee.registration_code}")
+        self.employer = Employer.objects.create(campaign=self.campaign, name="API Employer")
+
+    def test_event_list_and_detail_are_public_and_event_scoped(self):
+        self.client.credentials()
+        response = self.client.get("/api/events/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data[0]["title"], "API Festival")
+        self.assertEqual(self.client.get(f"/api/events/{self.campaign.pk}/").data["venue"], "")
+
+    def test_api_registration_returns_private_token_and_pending_status(self):
+        import os
+        from unittest.mock import patch
+        from django.core import mail
+        from django.test import override_settings
+
+        with override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend"):
+            with patch.dict(os.environ, {"ATTENDEE_APP_URL": "https://attendee.example"}):
+                self.client.credentials()
+                response = self.client.post(f"/api/events/{self.campaign.pk}/register/", {
+                    "name": "New Attendee", "email": "new@example.com", "phone": "123", "organization": "PIKOM",
+                }, format="json")
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["approval_status"], SurveyUser.STATUS_PENDING)
+        self.assertTrue(response.data["registration_code"])
+        self.assertTrue(SurveyUser.objects.filter(email="new@example.com", reg_no=response.data["registration_number"]).exists())
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn(f"https://attendee.example/login?token={response.data['registration_code']}", mail.outbox[0].alternatives[0][0])
+
+    def test_registration_form_schema_and_custom_answers_are_supported(self):
+        name_question = Question.objects.create(
+            survey=self.survey, number=1, text="Full name", question_type=Question.TYPE_IDENTITY_NAME,
+        )
+        email_question = Question.objects.create(
+            survey=self.survey, number=2, text="Email", question_type=Question.TYPE_IDENTITY_EMAIL,
+        )
+        custom_question = Question.objects.create(
+            survey=self.survey, number=3, text="What are you interested in?", question_type=Question.TYPE_TEXT,
+        )
+        choice_question = Question.objects.create(
+            survey=self.survey, number=4, text="Preferred track", question_type=Question.TYPE_RADIO,
+            choices=["AI", "Cloud"],
+        )
+        self.client.credentials()
+        schema = self.client.get(f"/api/events/{self.campaign.pk}/registration-form/")
+        self.assertEqual(schema.status_code, 200)
+        self.assertEqual(len(schema.data["questions"]), 4)
+        response = self.client.post(f"/api/events/{self.campaign.pk}/register/", {
+            "answers": {
+                str(name_question.pk): "Custom Form Attendee", str(email_question.pk): "custom@example.com",
+                str(custom_question.pk): "AI roles", str(choice_question.pk): "AI",
+            },
+        }, format="json")
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(Answer.objects.filter(question=custom_question, answer_text="AI roles").exists())
+        self.assertTrue(Answer.objects.filter(question=choice_question, selected_options=["AI"]).exists())
+
+    def test_attendee_token_authentication_and_event_directory(self):
+        response = self.client.get(f"/api/events/{self.campaign.pk}/directory/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["employers"][0]["name"], self.employer.name)
+        self.assertEqual(self.client.get("/api/me/").data["email"], self.attendee.email)
+        self.client.credentials(HTTP_AUTHORIZATION="Bearer 00000000-0000-0000-0000-000000000000")
+        self.assertEqual(self.client.get("/api/me/").status_code, 401)
+
+    def test_attendee_can_update_own_profile_only(self):
+        response = self.client.patch("/api/me/", {"name": "Updated Attendee", "organization": "PIKOM"}, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.attendee.refresh_from_db()
+        self.assertEqual(self.attendee.name, "Updated Attendee")
+        self.assertEqual(self.attendee.organization, "PIKOM")
+
+    def test_booking_and_bookmark_api_actions_and_schedule(self):
+        job = Job.objects.create(employer=self.employer, title="API Engineer")
+        slot = InterviewSlot.objects.create(
+            employer=self.employer, date="2026-11-02", start_time="10:00", end_time="11:00", capacity=1,
+        )
+        session = EventSession.objects.create(
+            campaign=self.campaign, title="API Session", session_type="panel", event_date="2026-11-02",
+            start_time="09:00", end_time="10:00", capacity=1,
+        )
+        self.assertEqual(self.client.post(f"/api/jobs/{job.pk}/bookmark/").status_code, 200)
+        self.assertEqual(self.client.post(f"/api/sessions/{session.pk}/registration/").status_code, 201)
+        directory = self.client.get(f"/api/events/{self.campaign.pk}/directory/").data
+        self.assertEqual(directory["sessions"][0]["booked"], 1)
+        self.assertEqual(directory["sessions"][0]["remaining"], 0)
+        booking_response = self.client.post(f"/api/interview-slots/{slot.pk}/booking/", {"start_time": "10:00"}, format="json")
+        self.assertEqual(booking_response.status_code, 201)
+        schedule = self.client.get("/api/me/schedule/").data
+        self.assertEqual(len(schedule["sessions"]), 1)
+        self.assertEqual(len(schedule["interviews"]), 1)
+        self.assertEqual(len(schedule["saved_jobs"]), 1)
+        self.assertEqual(self.client.delete(f"/api/interview-slots/{slot.pk}/booking/").status_code, 204)
+        self.assertEqual(self.client.delete(f"/api/jobs/{job.pk}/bookmark/").status_code, 204)
+        self.assertEqual(self.client.delete(f"/api/sessions/{session.pk}/registration/").status_code, 204)
+
+    def test_pending_attendee_can_read_but_cannot_book(self):
+        self.attendee.approval_status = SurveyUser.STATUS_PENDING
+        self.attendee.save(update_fields=["approval_status"])
+        session = EventSession.objects.create(
+            campaign=self.campaign, title="Closed for pending", session_type="panel", event_date="2026-11-02",
+            start_time="09:00", end_time="10:00", capacity=1,
+        )
+        self.assertEqual(self.client.get("/api/me/").status_code, 200)
+        self.assertEqual(self.client.post(f"/api/sessions/{session.pk}/registration/").status_code, 400)
+
+    def test_check_in_status_is_read_only_and_event_schedule_has_capacity(self):
+        self.attendee.qr_sent = True
+        self.attendee.save(update_fields=["qr_sent"])
+        response = self.client.get("/api/me/check-in/")
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.data["checked_in"])
+        self.assertTrue(response.data["qr_code"].startswith("data:image/png;base64,"))
+        self.assertEqual(self.client.post("/api/me/check-in/").status_code, 405)
+
+
+class PhaseFiveHardeningTests(TestCase):
+    def setUp(self):
+        self.User = get_user_model()
+        self.admin = self.User.objects.create_superuser(
+            username="phase5-admin", email="phase5-admin@example.com", password="password"
+        )
+        self.campaign = Campaign.objects.create(
+            title="Complete Flow Festival",
+            start_date=timezone.datetime(2026, 11, 2, tzinfo=timezone.get_current_timezone()),
+            end_date=timezone.datetime(2026, 11, 3, 23, 59, tzinfo=timezone.get_current_timezone()),
+        )
+        self.survey = Survey.objects.create(
+            title="Complete Flow Registration", fkcampaign=self.campaign,
+            purpose=Survey.PURPOSE_REGISTRATION, is_active=True,
+        )
+
+    def test_registration_to_approval_qr_bookings_and_checkin_end_to_end(self):
+        from rest_framework.test import APIClient
+        from django.core import mail
+        from django.test import override_settings
+        import json
+
+        with override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend"):
+            public_client = APIClient()
+            registration = public_client.post(f"/api/events/{self.campaign.pk}/register/", {
+                "name": "Festival Attendee", "email": "flow@example.com", "organization": "PIKOM",
+            }, format="json")
+            self.assertEqual(registration.status_code, 201)
+            attendee = SurveyUser.objects.get(pk=registration.data["id"])
+            attendee_client = APIClient()
+            attendee_client.credentials(HTTP_AUTHORIZATION=f"Bearer {registration.data['registration_code']}")
+            self.assertEqual(attendee_client.get("/api/me/").data["approval_status"], SurveyUser.STATUS_PENDING)
+
+            self.client.force_login(self.admin)
+            approval = self.client.post(reverse("set_survey_user_status", args=[self.survey.pk]), {
+                "ids": json.dumps([attendee.pk]), "status": SurveyUser.STATUS_APPROVED,
+            })
+            self.assertEqual(approval.status_code, 200)
+            sent = self.client.post(reverse("send_survey_qr", args=[self.survey.pk]), {
+                "ids": json.dumps([attendee.pk]),
+            })
+            self.assertTrue(sent.json()["success"])
+            attendee.refresh_from_db()
+            self.assertTrue(attendee.qr_sent)
+            self.assertEqual(len(mail.outbox), 2)  # submission receipt and approval QR
+
+            employer = Employer.objects.create(campaign=self.campaign, name="Flow Employer")
+            job = Job.objects.create(employer=employer, title="Flow Engineer")
+            slot = InterviewSlot.objects.create(
+                employer=employer, date="2026-11-02", start_time="10:00", end_time="11:00", capacity=1,
+            )
+            session = EventSession.objects.create(
+                campaign=self.campaign, title="Flow Session", session_type="panel", event_date="2026-11-02",
+                start_time="09:00", end_time="10:00", capacity=1,
+            )
+            provider = TrainingProvider.objects.create(campaign=self.campaign, name="Flow Training")
+            promotion = VoucherPromotion.objects.create(provider=provider, title="Flow Voucher", instructions="Use code FLOW")
+            self.assertEqual(attendee_client.post(f"/api/jobs/{job.pk}/bookmark/").status_code, 200)
+            self.assertEqual(attendee_client.post(f"/api/sessions/{session.pk}/registration/").status_code, 201)
+            self.assertEqual(attendee_client.post(
+                f"/api/interview-slots/{slot.pk}/booking/", {"start_time": "10:00"}, format="json"
+            ).status_code, 201)
+            self.assertEqual(attendee_client.post(f"/api/promotions/{promotion.pk}/claim/").status_code, 201)
+            directory = attendee_client.get(f"/api/events/{self.campaign.pk}/directory/")
+            self.assertEqual(directory.status_code, 200)
+            self.assertEqual(directory.data["sessions"][0]["remaining"], 0)
+            schedule = attendee_client.get("/api/me/schedule/").data
+            self.assertEqual((len(schedule["sessions"]), len(schedule["interviews"]), len(schedule["saved_jobs"])), (1, 1, 1))
+            self.assertEqual(schedule["promotions"][0]["instructions"], "Use code FLOW")
+            self.client.post(reverse("set_survey_user_checkin", args=[self.survey.pk]), {
+                "id": attendee.pk, "checked": "1",
+            })
+            status = attendee_client.get("/api/me/check-in/").data
+            self.assertTrue(status["checked_in"])
+            self.assertTrue(status["qr_code"].startswith("data:image/png;base64,"))
+            dashboard = self.client.get(reverse("campaign_dashboard", args=[self.campaign.pk]))
+            self.assertEqual(dashboard.context["kpis"]["checked_in"], 1)
+
+    def test_event_permissions_and_attendee_token_do_not_grant_organizer_access(self):
+        from rest_framework.test import APIClient
+        import json
+
+        attendee = SurveyUser.objects.create(
+            survey=self.survey, name="Attendee", email="attendee@example.com",
+            approval_status=SurveyUser.STATUS_APPROVED,
+        )
+        organizer = self.User.objects.create_user(username="other-organizer", password="password")
+        self.client.force_login(organizer)
+        self.assertEqual(self.client.get(reverse("event_career", args=[self.campaign.pk])).status_code, 403)
+        forbidden = self.client.post(reverse("set_survey_user_status", args=[self.survey.pk]), {
+            "ids": json.dumps([attendee.pk]), "status": SurveyUser.STATUS_REJECTED,
+        })
+        self.assertEqual(forbidden.status_code, 403)
+        self.assertEqual(self.client.get(reverse("consolidated_report", args=[self.survey.survey_code])).status_code, 403)
+        self.assertEqual(self.client.post(reverse("reorder_questions", args=[self.survey.pk]),
+                                          data=json.dumps({"order": [["invalid"]]}),
+                                          content_type="application/json").status_code, 403)
+        attendee_client = APIClient()
+        attendee_client.credentials(HTTP_AUTHORIZATION=f"Bearer {attendee.registration_code}")
+        self.assertIn(attendee_client.get(reverse("event_career", args=[self.campaign.pk])).status_code, (302, 403))
+        attendee.refresh_from_db()
+        self.assertEqual(attendee.approval_status, SurveyUser.STATUS_APPROVED)
+
+    def test_legacy_golf_navigation_is_opt_in_and_routes_remain_available(self):
+        from django.test import override_settings
+
+        self.client.force_login(self.admin)
+        with override_settings(SHOW_LEGACY_GOLF_TOOLS=False):
+            response = self.client.get(reverse("campaign_list"))
+            self.assertNotContains(response, "Legacy Golf Tools")
+        with override_settings(SHOW_LEGACY_GOLF_TOOLS=True):
+            response = self.client.get(reverse("campaign_list"))
+            self.assertContains(response, "Legacy Golf Tools")
+        self.assertEqual(reverse("golf_event_list"), "/golf_events/")
+
+    def test_event_directory_paginates_each_collection(self):
+        from rest_framework.test import APIClient
+
+        attendee = SurveyUser.objects.create(
+            survey=self.survey, name="Directory Attendee", email="directory@example.com",
+            approval_status=SurveyUser.STATUS_APPROVED,
+        )
+        first = Employer.objects.create(campaign=self.campaign, name="Directory Employer A")
+        second = Employer.objects.create(campaign=self.campaign, name="Directory Employer B")
+        Job.objects.create(employer=first, title="Directory Job A")
+        Job.objects.create(employer=second, title="Directory Job B")
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {attendee.registration_code}")
+
+        page_one = client.get(f"/api/events/{self.campaign.pk}/directory/?page=1&page_size=1")
+        page_two = client.get(f"/api/events/{self.campaign.pk}/directory/?page=2&page_size=1")
+        self.assertEqual(page_one.status_code, 200)
+        self.assertTrue(page_one.data["pagination"]["has_more"]["employers"])
+        self.assertEqual(len(page_one.data["employers"]), 1)
+        self.assertEqual(len(page_two.data["employers"]), 1)
+        self.assertEqual(len(page_one.data["jobs"]), 1)
+        self.assertEqual(len(page_two.data["jobs"]), 1)
+        self.assertFalse(page_two.data["pagination"]["has_more"]["employers"])

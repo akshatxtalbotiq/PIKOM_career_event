@@ -2,7 +2,7 @@ from email.utils import formataddr
 from datetime import datetime
 
 from django.core.mail import EmailMessage,EmailMultiAlternatives
-from django.db.models import Prefetch, Max
+from django.db.models import Count, Prefetch, Max, Q
 from django.shortcuts import render,get_object_or_404,redirect
 from django.urls import reverse
 from django.http import HttpResponse, JsonResponse
@@ -12,11 +12,11 @@ from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
 from django.utils.dateparse import parse_datetime, parse_date
 from django.utils import timezone
+from django.db.models.functions import TruncDate
 from django.template.loader import render_to_string
 from django.core.validators import validate_email, ValidationError
 from django.utils.html import strip_tags
 from django.utils.text import slugify
-from django.db.models import Q
 
 from django.contrib.auth.models import User
 from io import BytesIO
@@ -26,6 +26,7 @@ from picom import settings
 from .models import Registration, Player, Sponsorship,Campaign, Submission,CampaignTeam, Survey, Question, Answer, SurveyUser, default_identity_field_config, merge_identity_field_config
 
 import re
+import os
 import uuid
 import json
 import base64
@@ -378,19 +379,25 @@ def campaign_dashboard(request, id=None):
     active_reg_surveys = [s for s in reg_surveys if s.is_active]
     reg_survey_ids = [s.id for s in reg_surveys]
 
-    registrants = list(
-        SurveyUser.objects.filter(survey_id__in=reg_survey_ids)
-        if reg_survey_ids else SurveyUser.objects.none()
-    )
+    registrants = SurveyUser.objects.filter(survey_id__in=reg_survey_ids)
 
     # ---- Headline KPIs ----
-    total = len(registrants)
-    approved = sum(1 for r in registrants if r.approval_status == SurveyUser.STATUS_APPROVED)
-    pending = sum(1 for r in registrants if r.approval_status == SurveyUser.STATUS_PENDING)
-    rejected = sum(1 for r in registrants if r.approval_status == SurveyUser.STATUS_REJECTED)
-    qr_sent = sum(1 for r in registrants if r.qr_sent)
-    reminder_sent = sum(1 for r in registrants if r.reminder_sent)
-    checked_in = sum(1 for r in registrants if r.is_checked_in)
+    counts = registrants.aggregate(
+        total=Count("id"),
+        approved=Count("id", filter=Q(approval_status=SurveyUser.STATUS_APPROVED)),
+        pending=Count("id", filter=Q(approval_status=SurveyUser.STATUS_PENDING)),
+        rejected=Count("id", filter=Q(approval_status=SurveyUser.STATUS_REJECTED)),
+        qr_sent=Count("id", filter=Q(qr_sent=True)),
+        reminder_sent=Count("id", filter=Q(reminder_sent=True)),
+        checked_in=Count("id", filter=Q(is_checked_in=True)),
+    )
+    total = counts["total"]
+    approved = counts["approved"]
+    pending = counts["pending"]
+    rejected = counts["rejected"]
+    qr_sent = counts["qr_sent"]
+    reminder_sent = counts["reminder_sent"]
+    checked_in = counts["checked_in"]
     no_show = max(approved - checked_in, 0)
 
     def pct(part, whole):
@@ -419,11 +426,13 @@ def campaign_dashboard(request, id=None):
     ]
 
     # ---- Registration timeline (daily + cumulative) ----
-    per_day = Counter()
-    for r in registrants:
-        if r.created_at:
-            d = timezone.localtime(r.created_at).date()
-            per_day[d] += 1
+    per_day = {
+        row["registration_day"]: row["registration_count"]
+        for row in registrants.annotate(
+            registration_day=TruncDate("created_at", tzinfo=timezone.get_current_timezone())
+        ).values("registration_day").annotate(registration_count=Count("id")).order_by("registration_day")
+        if row["registration_day"] is not None
+    }
     timeline_labels, timeline_daily, timeline_cumulative = [], [], []
     running = 0
     for d in sorted(per_day.keys()):
@@ -443,14 +452,10 @@ def campaign_dashboard(request, id=None):
     )
     org_labels, org_values = [], []
     if org_in_list:
-        org_counter = Counter()
-        for r in registrants:
-            org = (r.organization or "").strip()
-            if org:
-                org_counter[org] += 1
-        top_orgs = org_counter.most_common(10)
-        org_labels = [o for o, _ in top_orgs]
-        org_values = [c for _, c in top_orgs]
+        top_orgs = list(registrants.exclude(organization__isnull=True).exclude(organization="")
+            .values("organization").annotate(total=Count("id")).order_by("-total", "organization")[:10])
+        org_labels = [row["organization"].strip() for row in top_orgs]
+        org_values = [row["total"] for row in top_orgs]
 
     # ---- Audience: distribution of choice-type questions ----
     # Limited to questions the organiser chose to surface as list columns
@@ -1565,6 +1570,8 @@ def create_survey(request):
 def get_survey(request, id):
     #print(f"Fetching survey data for ID: {id}")
     survey = get_object_or_404(Survey, id=id)  
+    if not _can_manage_survey(request, survey):
+        return JsonResponse({"success": False, "error": "Permission denied"}, status=403)
   
     data = {
         "title": survey.title,
@@ -1584,6 +1591,8 @@ def get_survey(request, id):
 def survey_submission_list(request, id=None):
     current_user = request.user
     survey = get_object_or_404(Survey, id=id)
+    if not _can_manage_survey(request, survey):
+        return HttpResponse(status=403)
     feedback_survey = None
     if survey.fkcampaign:
         feedback_survey = (
@@ -1610,6 +1619,8 @@ def get_survey_submission_list(request):
         if request.method == 'POST':
             survey_id = request.POST.get('id')
             survey = get_object_or_404(Survey, id=survey_id)
+            if not _can_manage_survey(request, survey):
+                return JsonResponse({"error": "Permission denied"}, status=403)
 
             # Identity columns to show. Respects the visibility/label settings
             # the form owner configured in the form builder, so the list
@@ -1765,6 +1776,8 @@ def get_survey_submission_list(request):
 def survey_answer_view(request, survey_id, user_id):
     # Get survey and survey user
     survey = get_object_or_404(Survey, id=survey_id)
+    if not _can_manage_survey(request, survey):
+        return HttpResponse(status=403)
     survey_user = get_object_or_404(SurveyUser, id=user_id, survey=survey)
 
     # Get all answers for this survey and user
@@ -2013,6 +2026,8 @@ def upload_banner(request, survey_id):
     if request.method != "POST":
         return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
     survey = get_object_or_404(Survey, id=survey_id)
+    if not _can_manage_survey(request, survey):
+        return JsonResponse({"success": False, "message": "Permission denied."}, status=403)
     banner = request.FILES.get("banner")
     if not banner:
         return JsonResponse({"success": False, "message": "No file uploaded"}, status=400)
@@ -2033,6 +2048,8 @@ def delete_banner(request, survey_id):
     if request.method != "POST":
         return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
     survey = get_object_or_404(Survey, id=survey_id)
+    if not _can_manage_survey(request, survey):
+        return JsonResponse({"success": False, "message": "Permission denied."}, status=403)
     if survey.banner:
         survey.banner.delete(save=False)
         survey.banner = None
@@ -2078,6 +2095,8 @@ def save_identity_config(request, survey_id):
             cleaned.append(dict(defaults[k]))
 
     survey = get_object_or_404(Survey, id=survey_id)
+    if not _can_manage_survey(request, survey):
+        return JsonResponse({"success": False, "message": "Permission denied."}, status=403)
     survey.identity_field_config = cleaned
     survey.save(update_fields=["identity_field_config"])
     return JsonResponse({"success": True, "config": cleaned})
@@ -2299,6 +2318,9 @@ def save_question(request):
         return JsonResponse({"success": False, "message": "Question text is required"}, status=400)
 
     question = get_object_or_404(Question, id=qid) if qid else None
+    survey = question.survey if question else get_object_or_404(Survey, id=survey_id)
+    if not _can_manage_survey(request, survey):
+        return JsonResponse({"success": False, "message": "Permission denied."}, status=403)
 
     valid_types = {choice[0] for choice in Question.QUESTION_TYPES}
     # matrix_roles is reserved for the legacy PIKOM survey; identity types
@@ -2370,7 +2392,6 @@ def save_question(request):
         question.list_column_label = list_column_label
         question.save()
     else:
-        survey = get_object_or_404(Survey, id=survey_id)
         next_number = (survey.questions.aggregate(m=Max("number"))["m"] or 0) + 1
         question = Question.objects.create(
             survey=survey,
@@ -2393,6 +2414,8 @@ def save_question(request):
 @login_required
 def get_question(request, question_id):
     question = get_object_or_404(Question, id=question_id)
+    if not _can_manage_survey(request, question.survey):
+        return JsonResponse({"success": False, "message": "Permission denied."}, status=403)
     return JsonResponse({
         "id": question.id,
         "survey_id": question.survey_id,
@@ -2415,12 +2438,14 @@ def delete_question(request, question_id):
     if request.method != "POST":
         return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
     question = get_object_or_404(Question, id=question_id)
+    survey = question.survey
+    if not _can_manage_survey(request, survey):
+        return JsonResponse({"success": False, "message": "Permission denied."}, status=403)
     if question.question_type in Question.IDENTITY_TYPES:
         return JsonResponse(
             {"success": False, "message": "Identity fields cannot be deleted. Mark them optional instead."},
             status=400,
         )
-    survey = question.survey
     question.delete()
     # Renumber remaining questions so display order stays 1..N
     for idx, q in enumerate(survey.questions.order_by("number"), start=1):
@@ -2439,9 +2464,20 @@ def reorder_questions(request, survey_id):
     except json.JSONDecodeError:
         return JsonResponse({"success": False, "message": "Invalid JSON"}, status=400)
     order = data.get("order") or []
+    if not isinstance(order, list):
+        return JsonResponse({"success": False, "message": "Question order must be a list."}, status=400)
     survey = get_object_or_404(Survey, id=survey_id)
+    if not _can_manage_survey(request, survey):
+        return JsonResponse({"success": False, "message": "Permission denied."}, status=403)
+    scoped_question_ids = set(survey.questions.values_list("id", flat=True))
+    try:
+        normalized_order = [int(question_id) for question_id in order]
+    except (TypeError, ValueError):
+        return JsonResponse({"success": False, "message": "Question order contains an invalid ID."}, status=400)
+    if len(normalized_order) != len(scoped_question_ids) or set(normalized_order) != scoped_question_ids:
+        return JsonResponse({"success": False, "message": "Question order does not match this form."}, status=400)
     with transaction.atomic():
-        for idx, qid in enumerate(order, start=1):
+        for idx, qid in enumerate(normalized_order, start=1):
             Question.objects.filter(id=qid, survey=survey).update(number=idx)
     return JsonResponse({"success": True})
 
@@ -2888,6 +2924,10 @@ def _event_email_ctx(survey_user, request=None, intro_field=None):
             request.build_absolute_uri(reverse("attendee_career_hub", args=[survey_user.registration_code]))
             if request is not None else base + reverse("attendee_career_hub", args=[survey_user.registration_code])
         ),
+        "attendee_app_login_url": (
+            f"{os.environ['ATTENDEE_APP_URL'].rstrip('/')}/login?token={survey_user.registration_code}"
+            if os.environ.get("ATTENDEE_APP_URL") else ""
+        ),
         "signoff": strip_tags(signoff_html.replace("</p>", " </p>").replace("<br", " <br")).strip(),
         "signoff_html": signoff_html,
         "intro_html": _render_intro(getattr(campaign, intro_field, "") or "", tag_ctx, theme)
@@ -3235,6 +3275,8 @@ def get_survey_user_edit(request, survey_id, user_id):
     """Return one registration's identity fields + answers so the list page
     can open the edit modal pre-filled with the current values."""
     survey = get_object_or_404(Survey, id=survey_id)
+    if not _can_manage_survey(request, survey):
+        return JsonResponse({"success": False, "message": "Permission denied."}, status=403)
     survey_user = get_object_or_404(SurveyUser, id=user_id, survey=survey)
 
     answers = {}
@@ -3282,6 +3324,8 @@ def update_survey_user(request, survey_id, user_id):
     """Update one registration from the list-page edit modal. Reuses the same
     validation rules as walk-in creation so required fields stay enforced."""
     survey = get_object_or_404(Survey, id=survey_id)
+    if not _can_manage_survey(request, survey):
+        return JsonResponse({"success": False, "message": "Permission denied."}, status=403)
     survey_user = get_object_or_404(SurveyUser, id=user_id, survey=survey)
     if request.method != "POST":
         return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
@@ -3421,6 +3465,8 @@ def survey_user_labels(request, survey_id):
     data-URI) for the selected registrations so an operator can (re)print
     badges for participants who already registered."""
     survey = get_object_or_404(Survey, id=survey_id)
+    if not _can_manage_survey(request, survey):
+        return JsonResponse({"success": False, "message": "Permission denied."}, status=403)
     if request.method != "POST":
         return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
 
@@ -3520,6 +3566,8 @@ def survey_user_label_pdf(request, survey_id):
     single sample badge for printer-alignment checks. (Named *_pdf for URL
     back-compat; it now returns HTML so the landscape orientation is honoured.)"""
     survey = get_object_or_404(Survey, id=survey_id)
+    if not _can_manage_survey(request, survey):
+        return HttpResponse(status=403)
 
     # Any authenticated operator may print a badge (the walk-in desk and the
     # check-in scan station are both staffed by signed-in users).
@@ -3582,6 +3630,8 @@ def send_survey_qr(request, survey_id):
     if request.method != "POST":
         return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
     survey = get_object_or_404(Survey, id=survey_id)
+    if not _can_manage_survey(request, survey):
+        return JsonResponse({"success": False, "message": "Permission denied."}, status=403)
 
     files = request.FILES.getlist("files")
     if sum(f.size for f in files) > 10 * 1024 * 1024:
@@ -3650,6 +3700,8 @@ def set_survey_user_status(request, survey_id):
     if request.method != "POST":
         return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
     survey = get_object_or_404(Survey, id=survey_id)
+    if not _can_manage_survey(request, survey):
+        return JsonResponse({"success": False, "message": "Permission denied."}, status=403)
     new_status = (request.POST.get("status") or "").strip().lower()
     valid = {SurveyUser.STATUS_APPROVED, SurveyUser.STATUS_REJECTED, SurveyUser.STATUS_PENDING}
     if new_status not in valid:
@@ -3688,12 +3740,15 @@ def set_survey_user_status(request, survey_id):
     })
 
 @login_required
+@login_required
 def set_survey_user_participant_type(request, survey_id):
     """POST: ids=[...], participant_type=delegate|speaker|sponsor. Bulk-set the
     participant type for the selected registrations of this form."""
     if request.method != "POST":
         return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
     survey = get_object_or_404(Survey, id=survey_id)
+    if not _can_manage_survey(request, survey):
+        return JsonResponse({"success": False, "message": "Permission denied."}, status=403)
     new_type = (request.POST.get("participant_type") or "").strip()
     valid_types = {c[0] for c in SurveyUser.PARTICIPANT_TYPE_CHOICES}
     print(f"set_survey_user_participant_type: new_type={new_type}, valid_types={valid_types}")
@@ -3724,6 +3779,8 @@ def set_survey_user_checkin(request, survey_id):
     if request.method != "POST":
         return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
     survey = get_object_or_404(Survey, id=survey_id)
+    if not _can_manage_survey(request, survey):
+        return JsonResponse({"success": False, "message": "Permission denied."}, status=403)
     try:
         user_id = int(request.POST.get("id") or 0)
     except (TypeError, ValueError):
@@ -3803,6 +3860,8 @@ def send_survey_event_reminder(request, survey_id):
     if request.method != "POST":
         return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
     survey = get_object_or_404(Survey, id=survey_id)
+    if not _can_manage_survey(request, survey):
+        return JsonResponse({"success": False, "message": "Permission denied."}, status=403)
     try:
         ids = json.loads(request.POST.get("ids") or "[]")
     except json.JSONDecodeError:
@@ -3846,6 +3905,8 @@ def send_survey_feedback_reminder(request, survey_id):
     if request.method != "POST":
         return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
     survey = get_object_or_404(Survey, id=survey_id)
+    if not _can_manage_survey(request, survey):
+        return JsonResponse({"success": False, "message": "Permission denied."}, status=403)
     if not survey.fkcampaign:
         return JsonResponse({"success": False, "message": "This form is not attached to a campaign."}, status=400)
     feedback = (
@@ -3883,6 +3944,8 @@ def delete_survey_users(request, survey_id):
     if request.method != "POST":
         return JsonResponse({"success": False, "message": "Invalid method"}, status=400)
     survey = get_object_or_404(Survey, id=survey_id)
+    if not _can_manage_survey(request, survey):
+        return JsonResponse({"success": False, "message": "Permission denied."}, status=403)
     try:
         ids = json.loads(request.POST.get("ids") or "[]")
     except json.JSONDecodeError:
@@ -3919,11 +3982,14 @@ def build_answers_dict(submission):
     answers = submission.answers.all()  # adjust
     return {a.question_id: a for a in answers}
 
+@login_required
 def survey_consolidated_pdf(request, survey_id):
     survey = get_object_or_404(
         Survey.objects.prefetch_related("questions"),
         survey_code=survey_id,
     )
+    if not _can_manage_survey(request, survey):
+        return HttpResponse("Permission denied.", status=403)
 
     # Prefetch answers for each SurveyUser to avoid N+1 queries
     users_qs = (

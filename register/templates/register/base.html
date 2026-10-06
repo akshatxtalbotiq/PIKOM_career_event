@@ -520,7 +520,8 @@
                     <span class="nav-link-text ms-1">Post-event Surveys</span>
                 </a>
             </li>
-            <!-- Golf Event: a collapsible parent with its own sub-pages -->
+            {% if show_legacy_golf_tools %}
+            <!-- Legacy Golf tools remain opt-in while their stored records are retained. -->
             <li class="nav-item has-submenu" id="golf_menu">
                 <a class="nav-link d-flex align-items-center" href="#golfSubmenu" data-bs-toggle="collapse"
                    role="button" aria-expanded="false" aria-controls="golfSubmenu" id="golf_menu_toggle">
@@ -551,6 +552,7 @@
                     </ul>
                 </div>
             </li>
+            {% endif %}
             {% if user.is_superuser %}
             <li class="nav-item">
                 <a id="user_list" class="nav-link" href="{% url 'user_list' %}">

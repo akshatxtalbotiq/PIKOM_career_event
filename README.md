@@ -26,6 +26,47 @@ python manage.py runserver
 
 Open the app at <http://127.0.0.1:8000/>. Sign in at <http://127.0.0.1:8000/login/>. The Django admin is at <http://127.0.0.1:8000/admin/>.
 
+## Attendee API and Next.js app
+
+The attendee API is served by Django under `/api/`. Public event listing and
+registration routes are available without authentication. Attendee routes use
+the high-entropy `registration_code` as a bearer token:
+
+```text
+GET    /api/events/
+GET    /api/events/{event_id}/
+POST   /api/events/{event_id}/register/
+GET    /api/events/{event_id}/directory/
+GET/PATCH /api/me/
+GET    /api/me/schedule/
+GET    /api/me/check-in/
+POST/DELETE /api/jobs/{job_id}/bookmark/
+POST/DELETE /api/sessions/{session_id}/registration/
+POST/DELETE /api/interview-slots/{slot_id}/booking/
+POST/DELETE /api/promotions/{promotion_id}/claim/
+```
+
+Send the attendee token as `Authorization: Bearer <registration_code>`. Tokens
+are personal credentials; keep them private. Attendee API access does not grant
+organizer access. Registration submissions remain pending until approved by an
+event organizer. The check-in endpoint is read-only for attendees.
+
+Run the Next.js attendee application separately from Django:
+
+```bash
+cd frontend
+cp .env.example .env.local
+npm install
+npm run dev
+```
+
+Set `DJANGO_API_URL` in `frontend/.env.local` to the Django server address. The
+Next.js server proxies `/api/` and `/media/` requests to Django. For secure
+attendee login links in registration emails, set the Django environment
+variable `ATTENDEE_APP_URL` to the deployed Next.js origin, without a trailing
+slash. Local registration automatically signs in the browser that submitted
+the form.
+
 If an admin account already exists, use its credentials instead of creating another one. Django does not provide a default username or password. To change an account's password, run `python manage.py changepassword <username>`.
 
 ## Database
@@ -88,10 +129,32 @@ Project settings live in `picom/settings.py`; `manage.py` uses the `picom.settin
 | `DB_NAME` | Repository-root `db.sqlite3` | SQLite path or MySQL database name. |
 | `DB_USER`, `DB_PASSWORD` | Empty | MySQL credentials. |
 | `DB_HOST`, `DB_PORT` | Empty | MySQL host and port. |
-| `EMAIL_BACKEND` | Django console email backend | Defaults to printing outgoing email to the server terminal. |
+| `EMAIL_BACKEND` | SMTP when `EMAIL_HOST` is set; otherwise console | Selects Django's email backend. |
+| `EMAIL_HOST`, `EMAIL_PORT` | Empty, `587` | SMTP server and port. |
+| `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` | Empty | SMTP credentials. |
+| `EMAIL_USE_TLS`, `EMAIL_USE_SSL`, `EMAIL_TIMEOUT` | `true`, `false`, `20` | SMTP connection security and timeout. TLS and SSL cannot both be enabled. |
 | `DEFAULT_FROM_EMAIL` | `webmaster@localhost` | Sender shown for outgoing email. |
+| `ATTENDEE_APP_URL` | Empty | Deployed Next.js origin used in attendee email links. |
+| `DJANGO_SECURE_SSL_REDIRECT` | `false` | Redirects HTTP to HTTPS when enabled. |
+| `DJANGO_SESSION_COOKIE_SECURE`, `DJANGO_CSRF_COOKIE_SECURE` | Enabled when debug is off | Restricts cookies to HTTPS. |
+| `DJANGO_SECURE_HSTS_SECONDS` | `0` | HSTS duration; enable only after HTTPS is working. |
+| `DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS`, `DJANGO_SECURE_HSTS_PRELOAD` | `false` | Optional HSTS scope controls. |
+| `DJANGO_BEHIND_HTTPS_PROXY` | `false` | Trusts `X-Forwarded-Proto: https` from a configured proxy. |
+| `SHOW_LEGACY_GOLF_TOOLS` | `false` | Shows the retained legacy Golf navigation when explicitly enabled. |
 
-The development defaults are not production settings. Before deploying, configure a secure secret, `DEBUG=False`, production hosts, database credentials, and an appropriate email backend. Never deploy with the local fallback secret.
+Production mode (`DJANGO_DEBUG=false`) requires explicit `DJANGO_SECRET_KEY` and
+`DJANGO_ALLOWED_HOSTS` values. Configure HTTPS redirect, proxy handling, and
+HSTS to match the deployment topology. Run `python manage.py collectstatic`
+and serve `STATIC_ROOT` (`staticfiles/`) through the web server or a static
+file service. `MEDIA_ROOT` (`media/`) contains uploaded assets and needs
+persistent storage or an object-storage backend in production. Next.js rewrites
+`/api/` and `/media/` to Django, so deploy both behind the intended public
+origin. No cross-origin browser API call is needed with this proxy setup.
+
+The development defaults are not production settings. Before deploying,
+configure a secure secret, `DEBUG=False`, production hosts, database
+credentials, HTTPS, persistent media, static-file serving, and an appropriate
+email backend. Never deploy with the local fallback secret.
 
 ## Common Commands
 

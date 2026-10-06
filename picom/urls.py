@@ -21,6 +21,7 @@ from django.urls import path
 from register import urls as register_urls
 from user import urls as user_urls
 from validate import urls as validate_urls
+from register import api_urls as register_api_urls
 from django.conf.urls import include
 
 urlpatterns = [
@@ -28,6 +29,7 @@ urlpatterns = [
     path('', include(register_urls), name='register'),
     path('', include(user_urls), name='user'),
     path('', include(validate_urls), name='validate'),
+    path('api/', include(register_api_urls)),
 
 
 ]

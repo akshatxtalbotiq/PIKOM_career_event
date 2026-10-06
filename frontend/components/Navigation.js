@@ -1,0 +1,2 @@
+import Link from "next/link";
+export default function Navigation(){return <header className="topbar"><Link className="brand" href="/">PIKOM</Link><nav><Link href="/dashboard">Dashboard</Link><Link href="/employers">Employers</Link><Link href="/jobs">Jobs</Link><Link href="/interviews">Interviews</Link><Link href="/universities">Universities</Link><Link href="/training-providers">Training</Link><Link href="/sessions">Sessions</Link><Link href="/floor-map">Map</Link><Link href="/dashboard/bookings">My schedule</Link><Link href="/check-in">Check-in</Link></nav></header>}
