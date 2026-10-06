@@ -561,6 +561,87 @@ class PhaseThreeCareerModulesTests(TestCase):
         self.assertIn(url_reverse("attendee_career_hub", args=[attendee.registration_code]), html)
 
 
+class WalkinRegistrationParityTests(TestCase):
+    def setUp(self):
+        self.User = get_user_model()
+        self.admin = self.User.objects.create_superuser(
+            username="walkin-admin",
+            email="walkin-admin@example.com",
+            password="test-password",
+        )
+        self.client.force_login(self.admin)
+        now = timezone.now()
+        self.campaign = Campaign.objects.create(
+            title="Walk-in parity event",
+            start_date=now,
+            end_date=now,
+        )
+        self.survey = Survey.objects.create(
+            title="Walk-in parity form",
+            fkcampaign=self.campaign,
+            purpose=Survey.PURPOSE_REGISTRATION,
+        )
+        self.matrix_question = Question.objects.create(
+            survey=self.survey,
+            number=1,
+            text="Describe your role interests",
+            question_type=Question.TYPE_MATRIX_ROLES,
+            is_required=True,
+        )
+
+    def test_walkin_has_identity_fallbacks_and_saves_matrix_answer(self):
+        page = self.client.get(reverse("survey_submission_list", args=[self.survey.pk]))
+        self.assertContains(page, 'name="name"')
+        self.assertContains(page, 'name="email"')
+        self.assertContains(page, f'name="q_{self.matrix_question.pk}"')
+        self.assertLess(
+            page.content.index(b'name="name"'),
+            page.content.index(f'name="q_{self.matrix_question.pk}"'.encode()),
+        )
+
+        response = self.client.post(
+            reverse("register_walkin", args=[self.survey.pk]),
+            {
+                "name": "Walk-in Attendee",
+                "email": "walkin@example.com",
+                f"q_{self.matrix_question.pk}": "Interested in data engineering roles",
+                "send_qr": "0",
+                "check_in": "0",
+                "print_label": "0",
+            },
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        attendee = SurveyUser.objects.get(survey=self.survey, email="walkin@example.com")
+        self.assertEqual(attendee.name, "Walk-in Attendee")
+        self.assertEqual(
+            Answer.objects.get(user=attendee, question=self.matrix_question).answer_text,
+            "Interested in data engineering roles",
+        )
+
+        edit_data = self.client.get(
+            reverse("get_survey_user_edit", args=[self.survey.pk, attendee.pk])
+        ).json()
+        self.assertEqual(
+            edit_data["answers"][f"q_{self.matrix_question.pk}"]["answer_text"],
+            "Interested in data engineering roles",
+        )
+        update = self.client.post(
+            reverse("update_survey_user", args=[self.survey.pk, attendee.pk]),
+            {
+                "name": "Updated Walk-in Attendee",
+                "email": "walkin@example.com",
+                f"q_{self.matrix_question.pk}": "Interested in analytics roles",
+            },
+        )
+        self.assertEqual(update.status_code, 200, update.content)
+        attendee.refresh_from_db()
+        self.assertEqual(attendee.name, "Updated Walk-in Attendee")
+        self.assertEqual(
+            Answer.objects.get(user=attendee, question=self.matrix_question).answer_text,
+            "Interested in analytics roles",
+        )
+
+
 class PhaseFourAttendeeAPITests(TestCase):
     def setUp(self):
         from rest_framework.test import APIClient
@@ -685,13 +766,23 @@ class PhaseFourAttendeeAPITests(TestCase):
         self.assertEqual(self.client.post(f"/api/sessions/{session.pk}/registration/").status_code, 400)
 
     def test_check_in_status_is_read_only_and_event_schedule_has_capacity(self):
-        self.attendee.qr_sent = True
-        self.attendee.save(update_fields=["qr_sent"])
+        self.attendee.qr_sent = False
+        self.attendee.approval_status = SurveyUser.STATUS_APPROVED
+        self.attendee.save(update_fields=["qr_sent", "approval_status"])
         response = self.client.get("/api/me/check-in/")
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.data["checked_in"])
         self.assertTrue(response.data["qr_code"].startswith("data:image/png;base64,"))
+        self.assertFalse(response.data["qr_sent"])
         self.assertEqual(self.client.post("/api/me/check-in/").status_code, 405)
+
+    def test_pending_attendee_does_not_receive_an_in_app_qr(self):
+        self.attendee.approval_status = SurveyUser.STATUS_PENDING
+        self.attendee.qr_sent = False
+        self.attendee.save(update_fields=["approval_status", "qr_sent"])
+        response = self.client.get("/api/me/check-in/")
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.data["qr_code"])
 
 
 class PhaseFiveHardeningTests(TestCase):

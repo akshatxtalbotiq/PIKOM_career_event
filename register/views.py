@@ -1604,6 +1604,19 @@ def survey_submission_list(request, id=None):
    
     participant_type_choices = dict(SurveyUser.PARTICIPANT_TYPE_CHOICES)   
     participant_type_choices_str = ";".join(participant_type_choices.values())
+    questions = list(survey.questions.all())
+    configured_identity_types = {question.question_type for question in questions}
+    walkin_identity_fields = [
+        {"key": "name", "label": "Name", "type": "text", "required": True},
+        {"key": "email", "label": "Email", "type": "email", "required": False},
+        {"key": "phone", "label": "Phone", "type": "tel", "required": False},
+        {"key": "organization", "label": "Organization", "type": "text", "required": False},
+    ]
+    walkin_identity_fields = [
+        field for field in walkin_identity_fields
+        if Question.IDENTITY_TYPES.get(f"identity_{field['key']}")
+        and f"identity_{field['key']}" not in configured_identity_types
+    ]
     
     return render(request, 'register/survey_submission_list.html', {
         'user': current_user,
@@ -1611,6 +1624,7 @@ def survey_submission_list(request, id=None):
         'campaign': survey.fkcampaign,
         'feedback_survey': feedback_survey,       
         'participant_type_choices_str': participant_type_choices_str,
+        'walkin_identity_fields': walkin_identity_fields,
     })
 
 @login_required
@@ -3123,7 +3137,12 @@ def register_walkin(request, survey_id):
                 status=400,
             )
 
-        identity_values = {}
+        identity_values = {
+            "name": (request.POST.get("name") or "").strip(),
+            "email": (request.POST.get("email") or "").strip(),
+            "phone": (request.POST.get("phone") or "").strip(),
+            "organization": (request.POST.get("organization") or "").strip(),
+        }
         for q in questions:
             if q.question_type in Question.IDENTITY_TYPES:
                 target_field = Question.IDENTITY_TYPES[q.question_type]
@@ -3180,7 +3199,7 @@ def register_walkin(request, survey_id):
                 continue
             field = f"q_{q.id}"
 
-            if q.question_type in (Question.TYPE_TEXT, Question.TYPE_TEXTAREA):
+            if q.question_type in (Question.TYPE_TEXT, Question.TYPE_TEXTAREA, Question.TYPE_MATRIX_ROLES):
                 val = (request.POST.get(field) or "").strip()
                 if val:
                     Answer.objects.create(
@@ -3356,7 +3375,12 @@ def update_survey_user(request, survey_id, user_id):
                 status=400,
             )
 
-        identity_values = {}
+        identity_values = {
+            "name": (request.POST.get("name") or "").strip(),
+            "email": (request.POST.get("email") or "").strip(),
+            "phone": (request.POST.get("phone") or "").strip(),
+            "organization": (request.POST.get("organization") or "").strip(),
+        }
         for q in questions:
             if q.question_type in Question.IDENTITY_TYPES:
                 target_field = Question.IDENTITY_TYPES[q.question_type]
@@ -3403,7 +3427,7 @@ def update_survey_user(request, survey_id, user_id):
                 continue
             field = f"q_{q.id}"
 
-            if q.question_type in (Question.TYPE_TEXT, Question.TYPE_TEXTAREA):
+            if q.question_type in (Question.TYPE_TEXT, Question.TYPE_TEXTAREA, Question.TYPE_MATRIX_ROLES):
                 val = (request.POST.get(field) or "").strip()
                 if val:
                     Answer.objects.create(survey=survey, question=q, user=survey_user, answer_text=val)

@@ -13,6 +13,11 @@ export async function api(path, options = {}) {
   });
   if (response.status === 204) return null;
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.detail || "The request could not be completed.");
+  if (!response.ok) {
+    const detail = data.detail || data.message ||
+      Object.values(data).flatMap(value => Array.isArray(value) ? value : [value])
+        .filter(value => typeof value === "string" && value.trim()).join(" ");
+    throw new Error(detail || "The request could not be completed.");
+  }
   return data;
 }

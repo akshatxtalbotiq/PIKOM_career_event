@@ -402,6 +402,17 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
 
           {% if survey.questions.all %}
             {# Render the exact same fields (identity + custom) as the public form. #}
+            {% for field in walkin_identity_fields %}
+              <div class="walkin-question">
+                <label for="walkinFallback{{ field.key|capfirst }}" class="form-label">
+                  {% if field.required %}<span class="text-danger">*</span> {% endif %}{{ field.label }}
+                </label>
+                <input type="{{ field.type }}" class="form-control" id="walkinFallback{{ field.key|capfirst }}"
+                       name="{{ field.key }}" {% if field.required %}required{% endif %}>
+                {% if field.key == 'email' %}<small class="text-muted">Required to email the QR code.</small>{% endif %}
+              </div>
+            {% endfor %}
+
             {% for q in survey.questions.all %}
               <div class="walkin-question" data-question-type="{{ q.question_type }}" data-question-id="{{ q.id }}">
                 <label class="form-label">
@@ -436,6 +447,9 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
 
                 {% elif q.question_type == 'textarea' %}
                   <textarea class="form-control" id="wq{{ q.id }}" name="q_{{ q.id }}" rows="3" {% if q.is_required %}required{% endif %}></textarea>
+
+                {% elif q.question_type == 'matrix_roles' %}
+                  <textarea class="form-control" id="wq{{ q.id }}" name="q_{{ q.id }}" rows="5" {% if q.is_required %}required{% endif %}></textarea>
 
                 {% elif q.question_type == 'select' %}
                   <select class="form-select walkin-select" name="q_{{ q.id }}" id="wq{{ q.id }}"
@@ -1456,6 +1470,11 @@ table.on('draw.dt', function () {
       }
 
       function populateEditForm(su, answers) {
+        setFieldByName('name', su.name || '');
+        setFieldByName('email', su.email || '');
+        setFieldByName('phone', su.phone || '');
+        setFieldByName('organization', su.organization || '');
+
         $('#walkinForm .walkin-question').each(function () {
           const $question = $(this);
           const qType = $question.data('question-type');
@@ -1484,7 +1503,7 @@ table.on('draw.dt', function () {
             return;
           }
 
-          if (qType === 'text' || qType === 'textarea') {
+          if (qType === 'text' || qType === 'textarea' || qType === 'matrix_roles') {
             setFieldByName(fieldName, answer.answer_text || '');
             return;
           }

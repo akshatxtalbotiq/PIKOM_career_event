@@ -472,7 +472,9 @@ def api_voucher_claim(request, promotion_id):
 def api_check_in(request):
     attendee = request.auth
     qr_data = None
-    if attendee.qr_sent and attendee.approval_status == SurveyUser.STATUS_APPROVED:
+    # Approval authorizes the attendee to use their check-in credential.
+    # qr_sent tracks email delivery only; it should not control in-app display.
+    if attendee.approval_status == SurveyUser.STATUS_APPROVED:
         buffer = BytesIO()
         qrcode.make(str(attendee.registration_code)).save(buffer, format="PNG")
         qr_data = "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode("ascii")

@@ -2,6 +2,9 @@
 
 A Django application for managing events and campaigns, registration forms, participants, surveys, QR check-in, and event operations.
 
+For a walkthrough of attendee and organizer workflows, see the
+[application guide](APPLICATION_GUIDE.md).
+
 ## Requirements
 
 - Python 3.12 recommended (the project has been run with Python 3.12).
@@ -66,6 +69,14 @@ attendee login links in registration emails, set the Django environment
 variable `ATTENDEE_APP_URL` to the deployed Next.js origin, without a trailing
 slash. Local registration automatically signs in the browser that submitted
 the form.
+
+## Synthetic showcase data
+
+To populate a development database with linked sample events, registrants,
+employers, jobs, sessions, maps, interviews, education/training content, and
+bookings, follow [the synthetic data instructions](synthetic_data/README.md).
+The seed script is repeatable, does not delete data, and refuses to run with
+`DJANGO_DEBUG=false`.
 
 If an admin account already exists, use its credentials instead of creating another one. Django does not provide a default username or password. To change an account's password, run `python manage.py changepassword <username>`.
 
