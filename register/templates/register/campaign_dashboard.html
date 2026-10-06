@@ -29,11 +29,11 @@
         <div class="ms-1">
           <h3 class="mb-0 h4 font-weight-bolder opacity-7">
             <i class="material-symbols-rounded align-middle">monitoring</i>
-            {{ campaign.title }} — Dashboard
+            {{ campaign.title }} — Event dashboard
           </h3>
           <nav aria-label="breadcrumb">
             <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0">
-              <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="{% url 'campaign_list' %}">Campaigns</a></li>
+              <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="{% url 'campaign_list' %}">Events</a></li>
               <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Dashboard</li>
             </ol>
           </nav>
@@ -43,62 +43,60 @@
         <span class="text-xs text-secondary">
           {{ campaign.start_date|date:"d M Y" }} &ndash; {{ campaign.end_date|date:"d M Y" }}
           {% if campaign.is_active %}
-            <span class="badge badge-sm bg-gradient-success ms-1">Active</span>
+            <span class="badge badge-sm bg-gradient-success ms-1">Event active</span>
           {% else %}
-            <span class="badge badge-sm bg-gradient-secondary ms-1">Completed</span>
+            <span class="badge badge-sm bg-gradient-secondary ms-1">Event inactive</span>
           {% endif %}
         </span>
       </div>
+    </div>
+
+    <div class="row g-3 mt-0 align-items-stretch">
+      <div class="col-lg-8">
+        <div class="card shadow-sm h-100"><div class="card-body d-flex flex-wrap gap-4 align-items-center justify-content-between">
+          <div><div class="text-xs text-secondary text-uppercase">Registration</div>
+            {% if registration_status == 'Open' %}<span class="badge bg-success">Open</span>
+            {% elif registration_status == 'Closed' %}<span class="badge bg-secondary">Closed</span>
+            {% else %}<span class="badge bg-warning text-dark">Not configured</span>{% endif %}
+          </div>
+          <div><div class="text-xs text-secondary text-uppercase">Event time</div><strong>{{ campaign.event_time|default:"Add event time" }}</strong></div>
+          <div><div class="text-xs text-secondary text-uppercase">Venue</div><strong>{{ campaign.venue|default:"Add venue"|truncatechars:55 }}</strong></div>
+          {% if campaign.organizer_name %}<div><div class="text-xs text-secondary text-uppercase">Organizer</div><strong>{{ campaign.organizer_name }}</strong></div>{% endif %}
+        </div></div>
+      </div>
+      <div class="col-lg-4">
+        <div class="card shadow-sm h-100"><div class="card-body">
+          <h6 class="mb-2">Event setup</h6>
+          <div class="d-flex flex-wrap gap-2">
+            {% if registration_form %}
+              <a class="btn btn-sm btn-primary mb-0" href="{% url 'form_builder' registration_form.id %}">Configure registration</a>
+              <a class="btn btn-sm btn-outline-primary mb-0" href="{% url 'survey_submission_list' registration_form.id %}">View attendees</a>
+            {% else %}
+              <a class="btn btn-sm btn-primary mb-0" href="{% url 'registration_form_list' %}?for_campaign={{ campaign.id }}">Create registration form</a>
+            {% endif %}
+            <a class="btn btn-sm btn-outline-secondary mb-0" href="{% url 'campaign_list' %}">All events</a>
+          </div>
+          {% if campaign.organizer_email %}<small class="d-block text-secondary mt-2">{{ campaign.organizer_email }}{% if campaign.organizer_phone %} · {{ campaign.organizer_phone }}{% endif %}</small>{% endif %}
+        </div></div>
+      </div>
+    </div>
+    {% if campaign.description %}<div class="card shadow-sm mt-3"><div class="card-body py-3"><div class="text-xs text-secondary text-uppercase mb-1">About this event</div>{{ campaign.description|linebreaksbr }}</div></div>{% endif %}
+
+    <div class="row g-3 mt-0">
+      <div class="col-6 col-md-3"><div class="card kpi-card shadow-sm h-100"><div class="card-body py-3"><div class="kpi-label text-secondary">Registrations</div><div class="kpi-value text-dark">{{ kpis.total }}</div><div class="kpi-sub text-secondary">{{ kpis.pending }} pending</div></div></div></div>
+      <div class="col-6 col-md-3"><div class="card kpi-card shadow-sm h-100"><div class="card-body py-3"><div class="kpi-label text-secondary">Approved</div><div class="kpi-value text-success">{{ kpis.approved }}</div></div></div></div>
+      <div class="col-6 col-md-3"><div class="card kpi-card shadow-sm h-100"><div class="card-body py-3"><div class="kpi-label text-secondary">Checked in</div><div class="kpi-value text-info">{{ kpis.checked_in }}</div></div></div></div>
+      <div class="col-6 col-md-3"><div class="card kpi-card shadow-sm h-100"><div class="card-body py-3"><div class="kpi-label text-secondary">Registration form</div><div class="kpi-value" style="font-size:1rem">{{ registration_status }}</div><div class="kpi-sub text-secondary">Event status: {% if campaign.is_active %}Active{% else %}Inactive{% endif %}</div></div></div></div>
     </div>
 
     {% if not has_data %}
       <div class="card mt-3">
         <div class="card-body empty-state">
           <i class="material-symbols-rounded" style="font-size:48px;">inbox</i>
-          <p class="mt-2 mb-0">No registrations captured for this campaign yet.</p>
+          <p class="mt-2 mb-0">No registrations yet. Your event status and setup links are shown above.</p>
         </div>
       </div>
     {% else %}
-
-    <!-- KPI cards -->
-    <div class="row g-3 mb-1">
-      <div class="col-6 col-md-3">
-        <div class="card kpi-card shadow-sm h-100">
-          <div class="card-body py-3">
-            <div class="kpi-label text-secondary">Registrations</div>
-            <div class="kpi-value text-dark">{{ kpis.total }}</div>
-            <div class="kpi-sub text-secondary">{{ kpis.pending }} pending · {{ kpis.rejected }} rejected</div>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card kpi-card shadow-sm h-100">
-          <div class="card-body py-3">
-            <div class="kpi-label text-secondary">Approved</div>
-            <div class="kpi-value text-success">{{ kpis.approved }}</div>
-            <div class="kpi-sub text-secondary">{{ kpis.approval_rate }}% of registrations</div>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card kpi-card shadow-sm h-100">
-          <div class="card-body py-3">
-            <div class="kpi-label text-secondary">Checked in</div>
-            <div class="kpi-value text-info">{{ kpis.checked_in }}</div>
-            <div class="kpi-sub text-secondary">{{ kpis.turnout_rate }}% turnout of approved</div>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card kpi-card shadow-sm h-100">
-          <div class="card-body py-3">
-            <div class="kpi-label text-secondary">No-shows</div>
-            <div class="kpi-value text-danger">{{ kpis.no_show }}</div>
-            <div class="kpi-sub text-secondary">approved but not checked in</div>
-          </div>
-        </div>
-      </div>
-    </div>
 
     <div class="row g-3 mt-0">
       <!-- Funnel -->

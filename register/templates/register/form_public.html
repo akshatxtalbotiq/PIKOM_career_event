@@ -86,9 +86,9 @@
         {% endfor %}
       {% endif %}
 
-      {% if survey.banner %}
+      {% if survey.banner or survey.fkcampaign.banner %}
         <div class="mb-3 rounded overflow-hidden shadow-sm">
-          <img src="{{ survey.banner.url }}" alt="{{ survey.title }}" class="img-fluid w-100">
+          <img src="{% if survey.banner %}{{ survey.banner.url }}{% else %}{{ survey.fkcampaign.banner.url }}{% endif %}" alt="{{ survey.title }}" class="img-fluid w-100">
         </div>
       {% endif %}
 
@@ -125,6 +125,8 @@
           <h3 class="form-title fw-bold mb-2">{{ survey.title }}</h3>
           {% if survey.description %}
             <div class="form-desc">{{ survey.description|safe }}</div>
+          {% elif survey.fkcampaign.description %}
+            <div class="form-desc">{{ survey.fkcampaign.description|linebreaksbr }}</div>
           {% endif %}
         </div>
       </div>

@@ -21,6 +21,26 @@ The implementation must be completed **phase by phase**.
 >
 > Do not start the next phase until the user explicitly says to proceed.
 
+### Mandatory Phase Workflow
+
+Every phase must include automated tests for the functionality introduced
+or modified in that phase. This is a required completion gate, not an
+optional follow-up. Complete these steps in order:
+
+1. Implement the current phase.
+2. Add or update relevant Django automated tests for the changes.
+3. Run `python manage.py check`.
+4. Run `python manage.py test`.
+5. Fix failures and rerun the relevant checks and test suite until they
+   pass. Do not mark the phase complete while a required check fails or
+   has not been run.
+6. Review the changes for regressions, report the test count and results,
+   and request approval for the next phase.
+
+Only after all six steps may the phase be marked complete. If the
+environment prevents a required command from running, report the blocker
+and leave the phase incomplete; do not request approval to proceed.
+
 The existing working functionality should be preserved unless this
 document explicitly says otherwise.
 
@@ -268,6 +288,31 @@ Report:
 -   Any migration/data risks
 
 **Wait for explicit approval before starting Phase 2.**
+
+### Phase 1 Test Status
+
+The initial Phase 1 implementation did not include automated tests. This
+was identified during review and corrected in the follow-up recorded
+below, which adds coverage for event creation/date handling, event access
+permissions, banner and description rendering, and dashboard registration
+status/counts, then runs both required Django commands.
+
+**Follow-up completed 2026-10-07:** Added ten Phase 1 automated tests
+covering event creation/profile persistence and date boundaries, invalid
+event input, banner size validation and fallback rendering, event
+description rendering, event edit/dashboard access, and dashboard
+registration states and attendee counts. The first test run exposed an
+end-date parsing defect; it was fixed and the complete suite was rerun
+successfully.
+
+- `python manage.py check`: passed, no issues.
+- `python manage.py test`: passed, 10 tests discovered and 10 run.
+- Additional `makemigrations --check --dry-run` reports existing
+  `Golf*` models without migrations. This pre-existing golf schema drift
+  was not changed as part of this Phase 1 test follow-up.
+
+Phase 1 remains at its approval gate; do not begin Phase 2 until the user
+explicitly approves it.
 
 ------------------------------------------------------------------------
 
@@ -1004,7 +1049,11 @@ boundary are sufficiently stable.
 
 ## 7. Tests
 
-Every phase must include appropriate testing.
+Every phase must include automated tests for the functionality introduced
+or modified in that phase. Follow the Mandatory Phase Workflow: add/update
+tests, run `python manage.py check`, run `python manage.py test`, fix
+failures, and report the discovered and executed test count before marking
+the phase complete.
 
 At minimum:
 

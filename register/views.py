@@ -1,4 +1,5 @@
 from email.utils import formataddr
+from datetime import datetime
 
 from django.core.mail import EmailMessage,EmailMultiAlternatives
 from django.db.models import Prefetch, Max
@@ -8,7 +9,7 @@ from django.db import transaction, IntegrityError
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
-from django.utils.dateparse import parse_datetime
+from django.utils.dateparse import parse_datetime, parse_date
 from django.utils import timezone
 from django.template.loader import render_to_string
 from django.core.validators import validate_email, ValidationError
@@ -373,6 +374,7 @@ def campaign_dashboard(request, id=None):
     reg_surveys = list(
         campaign.surveys.filter(purpose=Survey.PURPOSE_REGISTRATION)
     )
+    active_reg_surveys = [s for s in reg_surveys if s.is_active]
     reg_survey_ids = [s.id for s in reg_surveys]
 
     registrants = list(
@@ -502,6 +504,8 @@ def campaign_dashboard(request, id=None):
         "orgs_json": json.dumps({"labels": org_labels, "values": org_values}),
         "question_charts_json": json.dumps(question_charts),
         "theme_color": campaign.theme,
+        "registration_status": "Open" if active_reg_surveys else ("Closed" if reg_surveys else "Not configured"),
+        "registration_form": reg_surveys[0] if reg_surveys else None,
     }
     return render(request, "register/campaign_dashboard.html", context)
 
@@ -513,9 +517,29 @@ def create_campaign(request):
 
     if request.method == 'POST':
         id = request.POST.get('id')
-        title = request.POST.get('title')
-        start_date = parse_datetime(request.POST.get('start_date'))
-        end_date = parse_datetime(request.POST.get('end_date'))
+        title = (request.POST.get('title') or '').strip()
+        if not title:
+            return JsonResponse({'success': False, 'error': 'Event name is required.'}, status=400)
+        # The organizer form submits calendar dates. Keep Campaign's historical
+        # DateTimeFields for compatibility, storing start at midnight and end
+        # at the final moment of the selected end date.
+        def campaign_boundary(value, end_of_day=False):
+            raw_value = (value or '').strip()
+            day = parse_date(raw_value)
+            if day is not None:
+                parsed = datetime.combine(day, datetime.max.time() if end_of_day else datetime.min.time())
+            else:
+                parsed = parse_datetime(raw_value)
+            if parsed is None:
+                return None
+            if timezone.is_naive(parsed):
+                parsed = timezone.make_aware(parsed, timezone.get_current_timezone())
+            return parsed
+
+        start_date = campaign_boundary(request.POST.get('start_date'))
+        end_date = campaign_boundary(request.POST.get('end_date'), end_of_day=True)
+        if not start_date or not end_date or end_date < start_date:
+            return JsonResponse({'success': False, 'error': 'Enter a valid event date range.'}, status=400)
         is_active = request.POST.get('is_active') == 'true'
         url = request.POST.get('url')
         need_qr = request.POST.get('need_qr') == 'true'
@@ -529,11 +553,22 @@ def create_campaign(request):
         theme_color = (request.POST.get('theme_color') or '').strip()
         if not re.fullmatch(r"#[0-9a-fA-F]{6}", theme_color):
             theme_color = Campaign.THEME_DEFAULT
+        banner = request.FILES.get('banner')
+        if banner and (banner.size > 5 * 1024 * 1024 or not (banner.content_type or '').startswith('image/')):
+            return JsonResponse({'success': False, 'error': 'Event banner must be an image under 5 MB.'}, status=400)
 
         if id:
             #print(f"Updating campaign with ID: {id}")
             campaign = get_object_or_404(Campaign, id=id)
+            if not _can_edit_campaign(request, campaign):
+                return HttpResponse(status=403)
             campaign.title = title
+            campaign.description = request.POST.get('description', '').strip()
+            campaign.organizer_name = request.POST.get('organizer_name', '').strip()
+            campaign.organizer_email = request.POST.get('organizer_email', '').strip()
+            campaign.organizer_phone = request.POST.get('organizer_phone', '').strip()
+            if request.FILES.get('banner'):
+                campaign.banner = request.FILES['banner']
             campaign.start_date = start_date
             campaign.end_date = end_date
             campaign.is_active = is_active
@@ -546,9 +581,16 @@ def create_campaign(request):
             campaign.theme_color = theme_color
             campaign.save()
         else:
+            if not request.user.is_superuser and not request.user.has_perm('register.add_campaign'):
+                return HttpResponse(status=403)
             #print("Creating a new campaign")
             campaign = Campaign.objects.create(
                 title=title,
+                description=request.POST.get('description', '').strip(),
+                organizer_name=request.POST.get('organizer_name', '').strip(),
+                organizer_email=request.POST.get('organizer_email', '').strip(),
+                organizer_phone=request.POST.get('organizer_phone', '').strip(),
+                banner=request.FILES.get('banner'),
                 start_date=start_date,
                 end_date=end_date,
                 is_active=is_active,
@@ -576,6 +618,8 @@ def create_campaign(request):
 def get_campaign(request, id):
     #print(f"Fetching campaign data for ID: {id}")
     campaign = get_object_or_404(Campaign, id=id)
+    if not _can_edit_campaign(request, campaign):
+        return HttpResponse(status=403)
 
     user = request.user
     
@@ -588,8 +632,13 @@ def get_campaign(request, id):
 
     data = {
         "title": campaign.title,
-        "start_date": campaign.start_date.isoformat() if campaign.start_date else "",
-        "end_date": campaign.end_date.isoformat() if campaign.end_date else "",
+        "description": campaign.description,
+        "organizer_name": campaign.organizer_name,
+        "organizer_email": campaign.organizer_email,
+        "organizer_phone": campaign.organizer_phone,
+        "banner": campaign.banner.url if campaign.banner else "",
+        "start_date": campaign.start_date.strftime('%Y-%m-%d') if campaign.start_date else "",
+        "end_date": campaign.end_date.strftime('%Y-%m-%d') if campaign.end_date else "",
         "url": campaign.url,
         "active": campaign.is_active,
         "id": campaign.id,
@@ -2151,7 +2200,8 @@ def preview_email(request, survey_id, kind):
         return HttpResponse(status=403)
     campaign = survey.fkcampaign
     base = _email_base_url(request)
-    banner_url = (base + survey.banner.url) if survey.banner else ""
+    banner = survey.banner or (campaign.banner if campaign else None)
+    banner_url = (base + banner.url) if banner else ""
     event_date = campaign.end_date if campaign else None
     title = (campaign.title if campaign else survey.title) or ""
     tag_ctx = {
@@ -2798,7 +2848,8 @@ def _event_email_ctx(survey_user, request=None, intro_field=None):
     survey = survey_user.survey
     campaign = survey.fkcampaign if survey else None
     base = _email_base_url(request)
-    banner_url = (base + survey.banner.url) if (survey and survey.banner) else ""
+    banner = (survey.banner if survey and survey.banner else (campaign.banner if campaign else None))
+    banner_url = (base + banner.url) if banner else ""
     event_date = campaign.end_date if campaign else None
     title = (campaign.title if campaign else (survey.title if survey else "")) or ""
     tag_ctx = {
@@ -3918,4 +3969,3 @@ def user_manual(request):
     carries a print stylesheet that strips the chrome for Save-as-PDF.
     """
     return render(request, 'register/user_manual.html')
-
