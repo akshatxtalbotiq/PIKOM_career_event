@@ -479,6 +479,138 @@ class Answer(models.Model):
     def __str__(self):
         who = self.user if self.user_id else "Anonymous"
         return f"{who} Q{self.question.number}"
+
+
+class EventSession(models.Model):
+    STATUS_SCHEDULED = "scheduled"
+    STATUS_CANCELLED = "cancelled"
+    STATUS_COMPLETED = "completed"
+    STATUS_CHOICES = [
+        (STATUS_SCHEDULED, "Scheduled"),
+        (STATUS_CANCELLED, "Cancelled"),
+        (STATUS_COMPLETED, "Completed"),
+    ]
+    TYPE_CHOICES = [
+        ("panel", "Panel"),
+        ("live", "Live session"),
+        ("speaking", "Speaking session"),
+        ("employer", "Employer presentation"),
+        ("university", "University presentation"),
+        ("other", "Other"),
+    ]
+
+    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="event_sessions")
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, default="")
+    session_type = models.CharField(max_length=32, choices=TYPE_CHOICES, default="other")
+    event_date = models.DateField()
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    location = models.CharField(max_length=255, blank=True, default="")
+    capacity = models.PositiveIntegerField(null=True, blank=True)
+    speaker_name = models.CharField(max_length=255, blank=True, default="")
+    speaker_info = models.TextField(blank=True, default="")
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_SCHEDULED)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["event_date", "start_time", "title"]
+
+    @property
+    def duration_minutes(self):
+        start = datetime.combine(self.event_date, self.start_time)
+        end = datetime.combine(self.event_date, self.end_time)
+        return int((end - start).total_seconds() // 60)
+
+    @property
+    def booked_count(self):
+        return self.registrations.filter(status=SessionRegistration.STATUS_BOOKED).count()
+
+    def __str__(self):
+        return self.title
+
+
+class SessionRegistration(models.Model):
+    STATUS_BOOKED = "booked"
+    STATUS_CANCELLED = "cancelled"
+    STATUS_CHOICES = [
+        (STATUS_BOOKED, "Booked"),
+        (STATUS_CANCELLED, "Cancelled"),
+    ]
+
+    session = models.ForeignKey(EventSession, on_delete=models.CASCADE, related_name="registrations")
+    attendee = models.ForeignKey(SurveyUser, on_delete=models.CASCADE, related_name="session_registrations")
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_BOOKED)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["session", "attendee"], name="unique_session_attendee_registration"),
+        ]
+
+    def __str__(self):
+        return f"{self.attendee} — {self.session} ({self.status})"
+
+
+class FloorMap(models.Model):
+    STATUS_DRAFT = "draft"
+    STATUS_PUBLISHED = "published"
+    STATUS_INACTIVE = "inactive"
+    STATUS_CHOICES = [
+        (STATUS_DRAFT, "Draft"),
+        (STATUS_PUBLISHED, "Published"),
+        (STATUS_INACTIVE, "Inactive"),
+    ]
+
+    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, related_name="floor_maps")
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, default="")
+    version = models.CharField(max_length=40, blank=True, default="")
+    image = models.ImageField(upload_to="floor_maps/")
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_DRAFT)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at", "name"]
+
+    def __str__(self):
+        return f"{self.campaign.title} — {self.name}"
+
+
+class Booth(models.Model):
+    floor_map = models.ForeignKey(FloorMap, on_delete=models.CASCADE, related_name="booths")
+    number = models.CharField(max_length=40)
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, default="")
+    x_percent = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    y_percent = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    width_percent = models.DecimalField(max_digits=6, decimal_places=2, default=5)
+    height_percent = models.DecimalField(max_digits=6, decimal_places=2, default=5)
+    category = models.CharField(max_length=100, blank=True, default="")
+    organization_name = models.CharField(max_length=255, blank=True, default="")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["number", "name"]
+        constraints = [
+            models.UniqueConstraint(fields=["floor_map", "number"], name="unique_booth_number_per_floor_map"),
+            models.CheckConstraint(
+                condition=models.Q(x_percent__gte=0, x_percent__lte=100,
+                                   y_percent__gte=0, y_percent__lte=100,
+                                   width_percent__gt=0, width_percent__lte=100,
+                                   height_percent__gt=0, height_percent__lte=100),
+                name="booth_position_and_size_percentages_valid",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.number} — {self.name}"
     
 
 # ===========================================================================

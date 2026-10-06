@@ -1,0 +1,112 @@
+{% extends 'register/base.html' %}
+
+{% block content %}
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+  <div class="container-fluid py-3">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+      <div>
+        <h3 class="mb-1">{{ campaign.title }} · Agenda &amp; floor plan</h3>
+        <a href="{% url 'campaign_dashboard' campaign.id %}">Back to event dashboard</a>
+      </div>
+    </div>
+
+    {% if messages %}{% for message in messages %}
+      <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+        {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}{% endif %}
+
+    <section id="sessions" class="card shadow-sm mb-4">
+      <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div><h5 class="mb-0">Agenda sessions</h5><small>Sessions are listed by date and start time.</small></div>
+        <form method="get" class="d-flex gap-2 align-items-center">
+          <label for="agendaDate" class="small">Filter date</label>
+          <input id="agendaDate" type="date" class="form-control" name="date" value="{{ session_date }}">
+          <button class="btn btn-sm btn-outline-primary mb-0">Filter</button>
+          {% if session_date %}<a class="btn btn-sm btn-outline-secondary mb-0" href="{% url 'event_infrastructure' campaign.id %}#sessions">Clear</a>{% endif %}
+        </form>
+      </div>
+      <div class="card-body">
+        {% if sessions %}
+          <div class="table-responsive"><table class="table align-items-center">
+            <thead><tr><th>Session</th><th>Date &amp; time</th><th>Location</th><th>Capacity</th><th>Status</th><th></th></tr></thead>
+            <tbody>{% for session in sessions %}
+              <tr>
+                <td><strong>{{ session.title }}</strong><div class="small text-muted">{{ session.get_session_type_display }}{% if session.speaker_name %} · {{ session.speaker_name }}{% endif %}</div>{% if session.description %}<div class="small">{{ session.description|truncatechars:120 }}</div>{% endif %}</td>
+                <td class="text-nowrap">{{ session.event_date|date:'D, d M Y' }}<br>{{ session.start_time|time:'H:i' }}–{{ session.end_time|time:'H:i' }}</td>
+                <td>{{ session.location|default:'—' }}</td>
+                <td>{{ session.registration_count }}{% if session.capacity %} / {{ session.capacity }}{% else %} / Unlimited{% endif %}</td>
+                <td><span class="badge bg-{% if session.status == 'scheduled' %}success{% elif session.status == 'cancelled' %}danger{% else %}secondary{% endif %}">{{ session.get_status_display }}</span></td>
+                <td class="text-nowrap"><a class="btn btn-sm btn-outline-primary mb-1" href="?edit_session={{ session.id }}#sessions">Edit</a>
+                  <form method="post" class="d-inline" onsubmit="return confirm('Delete this session and its bookings?');">{% csrf_token %}<input type="hidden" name="action" value="delete_session"><input type="hidden" name="item_id" value="{{ session.id }}"><button class="btn btn-sm btn-outline-danger mb-1">Delete</button></form>
+                </td>
+              </tr>
+            {% endfor %}</tbody>
+          </table></div>
+        {% else %}<p class="text-muted mb-3">No sessions match this date. Add the first agenda session below.</p>{% endif %}
+
+        <hr><h6>{% if session_form.instance.pk %}Edit session{% else %}Add a session{% endif %}</h6>
+        <form method="post" action="{% url 'event_infrastructure' campaign.id %}#sessions" class="row g-3">
+          {% csrf_token %}<input type="hidden" name="action" value="save_session">{% if session_form.instance.pk %}<input type="hidden" name="item_id" value="{{ session_form.instance.pk }}">{% endif %}
+          {% for field in session_form %}<div class="col-md-{% if field.name == 'description' or field.name == 'speaker_info' %}12{% elif field.name == 'title' or field.name == 'location' %}6{% else %}4{% endif %}">
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+          </div>{% endfor %}
+          {% for error in session_form.non_field_errors %}<div class="col-12 text-danger small">{{ error }}</div>{% endfor %}
+          <div class="col-12"><button class="btn btn-primary mb-0">Save session</button>{% if session_form.instance.pk %}<a class="btn btn-outline-secondary mb-0" href="{% url 'event_infrastructure' campaign.id %}#sessions">Cancel edit</a>{% endif %}</div>
+        </form>
+      </div>
+    </section>
+
+    <section id="floor-maps" class="card shadow-sm mb-4">
+      <div class="card-header"><h5 class="mb-0">Floor maps &amp; booths</h5><small>Upload a map, then position booths using percentages of the image dimensions.</small></div>
+      <div class="card-body">
+        {% for floor_map in floor_maps %}
+          <div class="border rounded p-3 mb-4">
+            <div class="d-flex flex-wrap justify-content-between gap-2 mb-3">
+              <div><h6 class="mb-1">{{ floor_map.name }}{% if floor_map.version %} <small class="text-muted">v{{ floor_map.version }}</small>{% endif %}</h6><span class="badge bg-info">{{ floor_map.get_status_display }}</span>{% if floor_map.description %}<p class="small mb-0 mt-1">{{ floor_map.description }}</p>{% endif %}</div>
+              <div><a class="btn btn-sm btn-outline-primary mb-1" href="?edit_map={{ floor_map.id }}#floor-maps">Edit map details</a>
+                <form method="post" class="d-inline" onsubmit="return confirm('Delete this map and all its booths?');">{% csrf_token %}<input type="hidden" name="action" value="delete_floor_map"><input type="hidden" name="item_id" value="{{ floor_map.id }}"><button class="btn btn-sm btn-outline-danger mb-1">Delete map</button></form>
+              </div>
+            </div>
+            <div class="floor-map-preview position-relative mb-3">
+              <img src="{{ floor_map.image.url }}" alt="{{ floor_map.name }}" class="img-fluid w-100 rounded">
+              {% for booth in floor_map.booths.all %}{% if booth.is_active %}
+                <span title="{{ booth.number }} · {{ booth.name }}" class="booth-marker" style="left:{{ booth.x_percent }}%;top:{{ booth.y_percent }}%;width:{{ booth.width_percent }}%;height:{{ booth.height_percent }}%;">{{ booth.number }}</span>
+              {% endif %}{% endfor %}
+            </div>
+            {% if floor_map.booths.all %}<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Booth</th><th>Organization</th><th>Category</th><th>Position (x, y)</th><th>Status</th><th></th></tr></thead><tbody>
+              {% for booth in floor_map.booths.all %}<tr><td>{{ booth.number }} · {{ booth.name }}</td><td>{{ booth.organization_name|default:'—' }}</td><td>{{ booth.category|default:'—' }}</td><td>{{ booth.x_percent }}, {{ booth.y_percent }}%</td><td>{% if booth.is_active %}Active{% else %}Inactive{% endif %}</td><td><a href="?edit_booth={{ booth.id }}#booth-form">Edit</a> · <form method="post" class="d-inline">{% csrf_token %}<input type="hidden" name="action" value="delete_booth"><input type="hidden" name="item_id" value="{{ booth.id }}"><button class="btn btn-link btn-sm p-0">Delete</button></form></td></tr>{% endfor %}
+            </tbody></table></div>{% endif %}
+          </div>
+        {% empty %}<p class="text-muted">No floor maps yet. Upload one below.</p>{% endfor %}
+
+        <div class="row g-4">
+          <div class="col-lg-6">
+            <h6>{% if floor_map_form.instance.pk %}Edit floor map{% else %}Upload a floor map{% endif %}</h6>
+            <form method="post" enctype="multipart/form-data" class="row g-2">
+              {% csrf_token %}<input type="hidden" name="action" value="save_floor_map">{% if floor_map_form.instance.pk %}<input type="hidden" name="item_id" value="{{ floor_map_form.instance.pk }}">{% endif %}
+              {% for field in floor_map_form %}<div class="col-12"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endfor %}
+              {% for error in floor_map_form.non_field_errors %}<div class="col-12 text-danger small">{{ error }}</div>{% endfor %}
+              <div class="col-12"><button class="btn btn-primary mb-0">Save floor map</button></div>
+            </form>
+          </div>
+          <div class="col-lg-6" id="booth-form">
+            <h6>{% if booth_form.instance.pk %}Edit booth{% else %}Add a booth{% endif %}</h6>
+            <form method="post" class="row g-2">
+              {% csrf_token %}<input type="hidden" name="action" value="save_booth">{% if booth_form.instance.pk %}<input type="hidden" name="item_id" value="{{ booth_form.instance.pk }}">{% endif %}
+              {% for field in booth_form %}<div class="col-{% if field.name == 'description' %}12{% else %}6{% endif %}"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endfor %}
+              {% for error in booth_form.non_field_errors %}<div class="col-12 text-danger small">{{ error }}</div>{% endfor %}
+              <div class="col-12"><small class="text-muted d-block mb-2">Position and size are percentages of the floor-map image; x/y mark the booth's top-left corner.</small><button class="btn btn-primary mb-0">Save booth</button></div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+<style>
+  .floor-map-preview { line-height: 0; }
+  .booth-marker { position:absolute; min-width:22px; min-height:18px; background:rgba(25,135,84,.82); color:#fff; border:1px solid #fff; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:11px; line-height:1; overflow:hidden; }
+  #id_description, #id_speaker_info { min-height:70px; }
+</style>
+{% endblock %}

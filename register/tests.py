@@ -5,7 +5,14 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import Campaign, CampaignTeam, Survey, SurveyUser
+from .event_services import (
+    AttendeeNotEligibleError, SessionCapacityError,
+    cancel_session_registration, register_for_session,
+)
+from .models import (
+    Booth, Campaign, CampaignTeam, EventSession, FloorMap, SessionRegistration,
+    Survey, SurveyUser,
+)
 
 
 class PhaseOneEventManagementTests(TestCase):
@@ -206,3 +213,224 @@ class PhaseOneEventManagementTests(TestCase):
         CampaignTeam.objects.create(campaign=campaign, user=organizer)
         allowed = self.client.get(reverse("campaign_dashboard", args=[campaign.pk]))
         self.assertEqual(allowed.status_code, 200)
+
+
+class PhaseTwoEventInfrastructureTests(TestCase):
+    def setUp(self):
+        self.User = get_user_model()
+        self.admin = self.User.objects.create_superuser(
+            username="phase2-admin", email="phase2-admin@example.com", password="password"
+        )
+        self.client.force_login(self.admin)
+        self.campaign = Campaign.objects.create(
+            title="Festival", start_date=timezone.datetime(2026, 11, 2, tzinfo=timezone.get_current_timezone()),
+            end_date=timezone.datetime(2026, 11, 3, 23, 59, tzinfo=timezone.get_current_timezone()),
+        )
+        self.survey = Survey.objects.create(
+            title="Registration", fkcampaign=self.campaign,
+            purpose=Survey.PURPOSE_REGISTRATION,
+        )
+
+    def create_attendee(self, name, status=SurveyUser.STATUS_APPROVED):
+        return SurveyUser.objects.create(
+            survey=self.survey, name=name, email=f"{name.lower().replace(' ', '.')}@example.com",
+            approval_status=status,
+        )
+
+    def create_session(self, **overrides):
+        values = {
+            "campaign": self.campaign,
+            "title": "Career panel",
+            "session_type": "panel",
+            "event_date": "2026-11-02",
+            "start_time": "10:00",
+            "end_time": "11:00",
+            "capacity": 2,
+        }
+        values.update(overrides)
+        return EventSession.objects.create(**values)
+
+    def test_organizer_can_create_sessions_and_agenda_is_ordered(self):
+        response = self.client.post(
+            reverse("event_infrastructure", args=[self.campaign.pk]),
+            {
+                "action": "save_session", "title": "Afternoon panel", "session_type": "panel",
+                "event_date": "2026-11-02", "start_time": "14:00", "end_time": "15:00",
+                "capacity": "40", "location": "Stage A", "speaker_name": "A. Speaker",
+                "description": "Career paths and hiring trends.", "status": "scheduled",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        EventSession.objects.create(
+            campaign=self.campaign, title="Morning keynote", session_type="speaking",
+            event_date="2026-11-02", start_time="09:00", end_time="09:30",
+        )
+        sessions = list(EventSession.objects.filter(campaign=self.campaign))
+        self.assertEqual([s.title for s in sessions], ["Morning keynote", "Afternoon panel"])
+        self.assertEqual(sessions[1].duration_minutes, 60)
+
+    def test_session_form_rejects_invalid_times_and_dates_outside_event(self):
+        response = self.client.post(
+            reverse("event_infrastructure", args=[self.campaign.pk]),
+            {
+                "action": "save_session", "title": "Invalid session", "session_type": "panel",
+                "event_date": "2026-11-04", "start_time": "11:00", "end_time": "10:00",
+                "status": "scheduled",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(EventSession.objects.exists())
+        self.assertTrue(response.context["session_form"].errors)
+
+    def test_event_infrastructure_requires_event_team_access(self):
+        self.client.logout()
+        organizer = self.User.objects.create_user(username="outside-organizer", password="password")
+        self.client.force_login(organizer)
+        url = reverse("event_infrastructure", args=[self.campaign.pk])
+        self.assertEqual(self.client.get(url).status_code, 403)
+        CampaignTeam.objects.create(campaign=self.campaign, user=organizer)
+        self.assertEqual(self.client.get(url).status_code, 200)
+
+    def test_session_capacity_cancellation_and_rebooking(self):
+        session = self.create_session(capacity=1)
+        first = self.create_attendee("First Attendee")
+        second = self.create_attendee("Second Attendee")
+
+        booking = register_for_session(session.pk, first)
+        self.assertEqual(booking.status, SessionRegistration.STATUS_BOOKED)
+        self.assertEqual(session.booked_count, 1)
+        with self.assertRaises(SessionCapacityError):
+            register_for_session(session.pk, second)
+
+        cancel_session_registration(session.pk, first)
+        rebooked = register_for_session(session.pk, second)
+        self.assertEqual(rebooked.attendee_id, second.pk)
+        self.assertEqual(session.booked_count, 1)
+
+    def test_session_registration_requires_approved_attendee_for_same_event(self):
+        session = self.create_session()
+        pending = self.create_attendee("Pending Attendee", SurveyUser.STATUS_PENDING)
+        with self.assertRaises(AttendeeNotEligibleError):
+            register_for_session(session.pk, pending)
+
+    def test_attendee_can_view_book_and_cancel_session_with_registration_token(self):
+        session = self.create_session()
+        attendee = self.create_attendee("Token Attendee")
+        url = reverse(
+            "attendee_session_registration", args=[session.pk, attendee.registration_code]
+        )
+        self.assertEqual(self.client.get(url).status_code, 200)
+        booked = self.client.post(url, {"action": "register"})
+        self.assertEqual(booked.status_code, 302)
+        registration = SessionRegistration.objects.get(session=session, attendee=attendee)
+        self.assertEqual(registration.status, SessionRegistration.STATUS_BOOKED)
+        self.client.post(url, {"action": "cancel"})
+        registration.refresh_from_db()
+        self.assertEqual(registration.status, SessionRegistration.STATUS_CANCELLED)
+
+    def test_attendee_agenda_lists_sessions_and_rejects_cross_event_token(self):
+        session = self.create_session()
+        attendee = self.create_attendee("Agenda Attendee")
+        agenda = self.client.get(reverse("attendee_event_sessions", args=[attendee.registration_code]))
+        self.assertEqual(agenda.status_code, 200)
+        self.assertContains(agenda, session.title)
+
+        other_campaign = Campaign.objects.create(
+            title="Other Festival", start_date=self.campaign.start_date,
+            end_date=self.campaign.end_date,
+        )
+        other_session = self.create_session(campaign=other_campaign, title="Other event session")
+        cross_event = reverse(
+            "attendee_session_registration", args=[other_session.pk, attendee.registration_code]
+        )
+        self.assertEqual(self.client.get(cross_event).status_code, 404)
+
+    def test_registration_emails_link_to_the_attendee_agenda(self):
+        from django.template.loader import render_to_string
+        from django.urls import reverse
+        from .views import _event_email_ctx
+
+        attendee = self.create_attendee("Email Attendee")
+        agenda_path = reverse(
+            "attendee_event_sessions", args=[attendee.registration_code]
+        )
+        received_html = render_to_string(
+            "register/email/email_registration_received.html",
+            _event_email_ctx(attendee, intro_field="thankyou_intro"),
+        )
+        qr_html = render_to_string(
+            "register/email/email_registration_qr.html",
+            _event_email_ctx(attendee, intro_field="qr_email_intro"),
+        )
+
+        self.assertIn(agenda_path, received_html)
+        self.assertIn(agenda_path, qr_html)
+
+    def test_organizer_can_upload_floor_map_and_position_booth(self):
+        import io
+        import tempfile
+
+        from PIL import Image
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.test import override_settings
+
+        image_buffer = io.BytesIO()
+        Image.new("RGB", (80, 60), "white").save(image_buffer, format="PNG")
+        image_content = image_buffer.getvalue()
+        map_url = reverse("event_infrastructure", args=[self.campaign.pk])
+
+        with tempfile.TemporaryDirectory() as media_root:
+            with override_settings(MEDIA_ROOT=media_root):
+                map_response = self.client.post(
+                    map_url,
+                    {
+                        "action": "save_floor_map", "name": "Main hall", "version": "1",
+                        "description": "Exhibition level", "status": "published",
+                        "image": SimpleUploadedFile("hall.png", image_content, content_type="image/png"),
+                    },
+                )
+                self.assertEqual(map_response.status_code, 302)
+                floor_map = FloorMap.objects.get(campaign=self.campaign)
+
+                edit_map_response = self.client.post(
+                    map_url,
+                    {
+                        "action": "save_floor_map", "item_id": floor_map.pk,
+                        "name": "Main hall updated", "version": "2",
+                        "description": "Updated exhibition level", "status": "published",
+                    },
+                )
+                self.assertEqual(edit_map_response.status_code, 302)
+
+                booth_response = self.client.post(
+                    map_url,
+                    {
+                        "action": "save_booth", "floor_map": floor_map.pk,
+                        "number": "A12", "name": "PIKOM Careers", "organization_name": "PIKOM",
+                        "category": "Careers", "x_percent": "20", "y_percent": "30",
+                        "width_percent": "10", "height_percent": "8", "is_active": "on",
+                    },
+                )
+                self.assertEqual(booth_response.status_code, 302)
+                booth = Booth.objects.get(floor_map=floor_map)
+
+                edit_booth_response = self.client.post(
+                    map_url,
+                    {
+                        "action": "save_booth", "item_id": booth.pk,
+                        "floor_map": floor_map.pk, "number": "A12", "name": "PIKOM Careers updated",
+                        "organization_name": "PIKOM", "category": "Careers",
+                        "x_percent": "25", "y_percent": "35", "width_percent": "10",
+                        "height_percent": "8", "is_active": "on",
+                    },
+                )
+                self.assertEqual(edit_booth_response.status_code, 302)
+
+        booth = Booth.objects.get(floor_map=floor_map)
+        floor_map.refresh_from_db()
+        self.assertEqual(floor_map.name, "Main hall updated")
+        self.assertTrue(floor_map.image.name)
+        self.assertEqual(booth.name, "PIKOM Careers updated")
+        self.assertEqual(str(booth.x_percent), "25.00")
+        self.assertEqual(str(booth.y_percent), "35.00")
+        self.assertEqual(booth.organization_name, "PIKOM")

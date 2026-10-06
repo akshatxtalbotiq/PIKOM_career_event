@@ -4,6 +4,7 @@ from datetime import datetime
 from django.core.mail import EmailMessage,EmailMultiAlternatives
 from django.db.models import Prefetch, Max
 from django.shortcuts import render,get_object_or_404,redirect
+from django.urls import reverse
 from django.http import HttpResponse, JsonResponse
 from django.db import transaction, IntegrityError
 from django.contrib import messages
@@ -2879,6 +2880,10 @@ def _event_email_ctx(survey_user, request=None, intro_field=None):
         "survey": survey,
         "campaign": campaign,
         "banner_url": banner_url,
+        "event_sessions_url": (
+            request.build_absolute_uri(reverse("attendee_event_sessions", args=[survey_user.registration_code]))
+            if request is not None else base + reverse("attendee_event_sessions", args=[survey_user.registration_code])
+        ),
         "signoff": strip_tags(signoff_html.replace("</p>", " </p>").replace("<br", " <br")).strip(),
         "signoff_html": signoff_html,
         "intro_html": _render_intro(getattr(campaign, intro_field, "") or "", tag_ctx, theme)

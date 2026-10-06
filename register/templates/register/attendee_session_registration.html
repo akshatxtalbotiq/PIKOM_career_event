@@ -1,0 +1,30 @@
+{% load static %}
+<!doctype html>
+<html lang="en"><head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ session.title }} · {{ session.campaign.title }}</title>
+  <link rel="stylesheet" href="{% static 'register/assets/css/bootstrap.css' %}">
+  <style>body{background:#f4f7f6;color:#24332d}.wrap{max-width:680px}.session-card{border:0;border-radius:16px;box-shadow:0 5px 22px #193d2b12}.muted{color:#66756e}</style>
+</head><body><main class="container wrap py-4 py-md-5">
+  <a href="{% url 'attendee_event_sessions' attendee.registration_code %}" class="text-success">← Back to agenda</a>
+  {% if messages %}{% for message in messages %}<div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} mt-3">{{ message }}</div>{% endfor %}{% endif %}
+  <article class="card session-card mt-3"><div class="card-body p-4 p-md-5">
+    <p class="text-uppercase small fw-bold text-success mb-1">{{ session.campaign.title }}</p>
+    <span class="badge text-bg-light">{{ session.get_session_type_display }}</span>
+    <h1 class="h3 mt-2">{{ session.title }}</h1>
+    <p class="muted">{{ session.event_date|date:'l, d M Y' }} · {{ session.start_time|time:'H:i' }}–{{ session.end_time|time:'H:i' }}{% if session.location %}<br>{{ session.location }}{% endif %}</p>
+    {% if session.description %}<div class="mb-3">{{ session.description|linebreaksbr }}</div>{% endif %}
+    {% if session.speaker_name %}<p><strong>{{ session.speaker_name }}</strong>{% if session.speaker_info %}<br>{{ session.speaker_info|linebreaksbr }}{% endif %}</p>{% endif %}
+    <p class="small muted">{% if session.capacity %}{{ remaining_capacity }} of {{ session.capacity }} places remaining{% else %}No capacity limit{% endif %}</p>
+    {% if registration and registration.status == 'booked' %}
+      <div class="alert alert-success">You have a place in this session.</div>
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="cancel"><button class="btn btn-outline-danger">Cancel booking</button></form>
+    {% elif can_register %}
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="register"><button class="btn btn-success">Book this session</button></form>
+    {% elif attendee.approval_status != 'approved' %}
+      <div class="alert alert-info mb-0">Session booking is available after your event registration is approved.</div>
+    {% elif session.status != 'scheduled' or not session.campaign.is_active %}
+      <div class="alert alert-secondary mb-0">This session is not open for booking.</div>
+    {% else %}<div class="alert alert-warning mb-0">This session is full.</div>{% endif %}
+  </div></article>
+</main></body></html>

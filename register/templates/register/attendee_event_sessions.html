@@ -1,0 +1,23 @@
+{% load static %}
+<!doctype html>
+<html lang="en"><head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agenda · {{ campaign.title }}</title>
+  <link rel="stylesheet" href="{% static 'register/assets/css/bootstrap.css' %}">
+  <style>body{background:#f4f7f6;color:#24332d}.wrap{max-width:850px}.session-card{border:0;border-radius:14px;box-shadow:0 5px 22px #193d2b12}.muted{color:#66756e}</style>
+</head><body><main class="container wrap py-4 py-md-5">
+  <header class="mb-4"><p class="text-uppercase small fw-bold text-success mb-1">Event agenda</p><h1 class="h3">{{ campaign.title }}</h1><p class="muted mb-0">Hello {{ attendee.name|default:"attendee" }}. Browse sessions and manage your bookings.</p></header>
+  {% if messages %}{% for message in messages %}<div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %}">{{ message }}</div>{% endfor %}{% endif %}
+  {% if attendee.approval_status != 'approved' %}<div class="alert alert-info">Session booking will be available after your event registration is approved.</div>{% endif %}
+  {% for session in sessions %}
+    <article class="card session-card mb-3"><div class="card-body p-3 p-md-4">
+      <div class="d-flex justify-content-between align-items-start gap-2"><div><span class="badge text-bg-light">{{ session.get_session_type_display }}</span><h2 class="h5 mt-2 mb-1">{{ session.title }}</h2></div><span class="badge bg-{% if session.status == 'scheduled' %}success{% elif session.status == 'cancelled' %}danger{% else %}secondary{% endif %}">{{ session.get_status_display }}</span></div>
+      {% if session.description %}<p class="mb-2">{{ session.description|linebreaksbr }}</p>{% endif %}
+      <div class="small muted">{{ session.event_date|date:'l, d M Y' }} · {{ session.start_time|time:'H:i' }}–{{ session.end_time|time:'H:i' }}{% if session.location %} · {{ session.location }}{% endif %}</div>
+      {% if session.speaker_name %}<div class="small mt-1"><strong>{{ session.speaker_name }}</strong>{% if session.speaker_info %} · {{ session.speaker_info|truncatechars:180 }}{% endif %}</div>{% endif %}
+      <div class="d-flex justify-content-between align-items-center mt-3"><small class="muted">{% if session.capacity %}{{ session.remaining_capacity }} places remaining{% else %}Open capacity{% endif %}{% if session.attendee_registration_status == 'booked' %} · <strong class="text-success">Booked</strong>{% elif session.attendee_registration_status == 'cancelled' %} · Previously booked{% endif %}</small>
+        <a class="btn btn-sm btn-outline-success" href="{% url 'attendee_session_registration' session.id attendee.registration_code %}">View session</a>
+      </div>
+    </div></article>
+  {% empty %}<div class="card session-card"><div class="card-body p-4 text-center"><h2 class="h5">The agenda is being prepared</h2><p class="muted mb-0">Please check back later for event sessions.</p></div></div>{% endfor %}
+</main></body></html>

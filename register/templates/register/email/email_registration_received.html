@@ -71,6 +71,13 @@
                 </p>
               {% endif %}
 
+              {% if event_sessions_url %}
+                <p style="margin:18px 0 0;font-size:14px;">
+                  <a href="{{ event_sessions_url }}" style="color:{{ theme }};font-weight:600;">Preview the event agenda</a>
+                  <span style="color:#666;">Session booking is available after your registration is approved.</span>
+                </p>
+              {% endif %}
+
               {% if reg_no %}
                 <p style="margin: 18px 0 0 0;">
                   Your reference number:
