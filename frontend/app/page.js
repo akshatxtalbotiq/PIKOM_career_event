@@ -1,14 +1,50 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { api } from "../lib/api";
+import { api, clearToken, getToken } from "../lib/api";
 import { PinIcon, ArrowUpRightIcon, CalendarIcon } from "../components/Icons";
 
 export default function Home() {
+  const router = useRouter();
   const [events, setEvents] = useState([]);
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(false);
+  const [sessionChoiceOpen, setSessionChoiceOpen] = useState(false);
+
+  async function handleAttendeeLogin() {
+    if (!getToken()) {
+      router.push("/login");
+      return;
+    }
+
+    setCheckingSession(true);
+    try {
+      await api("me/");
+      setSessionChoiceOpen(true);
+    } catch {
+      router.push("/login");
+    } finally {
+      setCheckingSession(false);
+    }
+  }
+
+  function signOutAndOpenLogin() {
+    clearToken();
+    setSessionChoiceOpen(false);
+    router.push("/login");
+  }
+
+  useEffect(() => {
+    if (!sessionChoiceOpen) return undefined;
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setSessionChoiceOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [sessionChoiceOpen]);
 
   useEffect(() => {
     api("events/")
@@ -25,9 +61,9 @@ export default function Home() {
           <span className="brand-tag">CAREER FESTIVAL · 2026</span>
         </Link>
         <nav>
-          <Link className="button secondary" href="/login">
-            Attendee Login
-          </Link>
+          <button type="button" className="secondary" onClick={handleAttendeeLogin} disabled={checkingSession}>
+            {checkingSession ? "Checking session…" : "Attendee Login"}
+          </button>
         </nav>
       </header>
 
@@ -44,15 +80,50 @@ export default function Home() {
         <p>
           Connect directly with top technology employers, schedule 1-on-1 interviews, attend industry keynotes, and discover university degree pathways across Malaysia.
         </p>
-        <div className="hero-actions">
-          <a className="button" href="#events">
-            Explore Events
-          </a>
-          <Link className="button secondary" href="/login" style={{ background: "rgba(255,255,255,0.08)", color: "#fff", borderColor: "rgba(255,255,255,0.2)" }}>
-            Access Portal <ArrowUpRightIcon size={14} />
-          </Link>
-        </div>
+          <div
+            className="hero-actions"
+            style={{
+              display: "flex",
+              gap: "16px",
+              flexWrap: "wrap",
+            }}
+          >
+            <a className="button" href="#events">
+              Explore Events
+            </a>
+
+            <button
+              type="button"
+              className="secondary"
+              onClick={handleAttendeeLogin}
+              disabled={checkingSession}
+              style={{
+                background: "rgba(255,255,255,0.08)",
+                color: "#fff",
+                borderColor: "rgba(255,255,255,0.2)",
+              }}
+            >
+              {checkingSession ? "Checking session…" : <>Access Portal <ArrowUpRightIcon size={14} /></>}
+            </button>
+          </div>
       </section>
+
+      {sessionChoiceOpen && (
+        <div className="session-choice-backdrop" onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setSessionChoiceOpen(false);
+        }}>
+          <section className="session-choice-dialog" role="dialog" aria-modal="true" aria-labelledby="session-choice-title" aria-describedby="session-choice-description">
+            <div className="eyebrow">ATTENDEE SESSION</div>
+            <h2 id="session-choice-title">You&rsquo;re already signed in</h2>
+            <p id="session-choice-description" className="muted">Continue to your attendee portal, or sign out to use a different access code.</p>
+            <div className="session-choice-actions">
+              <button type="button" onClick={() => router.push("/dashboard")}>Continue as signed-in attendee</button>
+              <button type="button" className="secondary" onClick={signOutAndOpenLogin}>Sign out and sign in again</button>
+              <button type="button" className="session-choice-cancel" onClick={() => setSessionChoiceOpen(false)}>Cancel</button>
+            </div>
+          </section>
+        </div>
+      )}
 
       {/* Metrics Section (Section 9) */}
       <div className="metrics-grid">

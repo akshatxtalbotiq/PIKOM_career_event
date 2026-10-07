@@ -41,7 +41,7 @@ function NavIcon({ name }) {
   return <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
 }
 
-export default function Navigation() {
+export default function Navigation({ signOutAction }) {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
   const desktopMoreLinks = navLinks.filter((item) => !desktopPrimaryLinks.includes(item.href));
@@ -108,6 +108,11 @@ export default function Navigation() {
             {moreOpen && renderMoreLinks("desktop-more-menu", "attendee-more-desktop", desktopMoreLinks)}
           </div>
         </nav>
+        {signOutAction && (
+          <div className="topbar-actions">
+            <button type="button" className="secondary topbar-signout" onClick={signOutAction}>Sign out</button>
+          </div>
+        )}
       </header>
 
       <div className={`mobile-nav-backdrop ${moreOpen ? "visible" : ""}`} onClick={() => setMoreOpen(false)} aria-hidden="true" />

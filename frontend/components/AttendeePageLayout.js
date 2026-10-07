@@ -7,7 +7,6 @@ import { clearToken } from "../lib/api";
 import { resetAttendeeCache } from "../hooks/useAttendeeData";
 
 const PAGE_DESCRIPTIONS = {
-  "Attendee Dashboard": "Your registration, saved opportunities, and event activity at a glance.",
   "Participating Employers": "Explore participating organizations and locate their festival booths.",
   "Jobs & Opportunities": "Browse roles from event employers and save opportunities to your schedule.",
   "Interview Availability": "Choose an available time for a one-to-one employer conversation.",
@@ -32,7 +31,7 @@ export default function AttendeePageLayout({ title, attendee, children, showLoad
   if (error && !me) {
     return (
       <main className="shell">
-        <Navigation />
+        <Navigation signOutAction={handleSignOut} />
         <section className="card access-card">
           <div className="eyebrow" style={{ marginBottom: "0.5rem" }}>00 / Authorization</div>
           <h1>Attendee Access Needed</h1>
@@ -48,7 +47,7 @@ export default function AttendeePageLayout({ title, attendee, children, showLoad
   if (!data || !me) {
     return (
       <main className="shell">
-        <Navigation />
+        <Navigation signOutAction={handleSignOut} />
         <div style={{ padding: "4rem 0", textAlign: "center" }}>
           <div className="eyebrow">PORTAL LOADING</div>
           <h2 style={{ fontFamily: "var(--font-display)", textTransform: "uppercase", fontSize: "2rem", margin: "0.5rem 0" }}>
@@ -64,32 +63,18 @@ export default function AttendeePageLayout({ title, attendee, children, showLoad
 
   return (
     <main className="shell">
-      <Navigation />
-
-      {/* Editorial Header Furniture (Section 5) */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem", marginBottom: "0.75rem" }}>
-        <span className="eyebrow muted">{data.event.title}</span>
-        <span className="mono-indicator">
-          STATUS: <span style={{ color: isPending ? "var(--brick-red)" : "inherit", fontWeight: 700 }}>{me.approval_status?.toUpperCase()}</span>
-        </span>
-      </div>
+      <Navigation signOutAction={handleSignOut} />
 
       <div className="section-title attendee-title">
         <div>
           <h1>{title}</h1>
-          <p>
-            {isPending
-              ? "Your registration is currently waiting for event team review. Booking features and check-in pass activate upon approval."
-              : PAGE_DESCRIPTIONS[title] || "Plan your PIKOM Career Festival experience."}
-          </p>
-        </div>
-        <div className="attendee-actions-row">
-          <button
-            className="secondary"
-            onClick={handleSignOut}
-          >
-            Sign out
-          </button>
+          {(isPending || PAGE_DESCRIPTIONS[title]) && (
+            <p>
+              {isPending
+                ? "Your registration is currently waiting for event team review. Booking features and check-in pass activate upon approval."
+                : PAGE_DESCRIPTIONS[title]}
+            </p>
+          )}
         </div>
       </div>
 

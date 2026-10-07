@@ -237,6 +237,18 @@ button:focus-visible, .button:focus-visible, input:focus-visible, select:focus-v
   color: var(--brick-red);
 }
 
+.topbar-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.topbar-signout {
+  min-height: 40px;
+  padding: 0.55rem 1rem;
+}
+
 /* Desktop Navigation */
 nav {
   display: flex;
@@ -825,6 +837,65 @@ nav.desktop-nav a {
   text-transform: uppercase;
 }
 
+.session-choice-backdrop {
+  position: fixed;
+  z-index: 1100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(28, 25, 19, 0.58);
+  animation: backdrop-in 160ms ease-out both;
+}
+
+.session-choice-dialog {
+  width: min(100%, 480px);
+  padding: clamp(1.5rem, 5vw, 2.25rem);
+  border: 1px solid var(--border-cream);
+  border-radius: var(--radius-lg);
+  background: var(--surface-cream);
+  box-shadow: 0 22px 60px rgba(28, 25, 19, 0.3);
+  animation: menu-in 180ms ease-out both;
+}
+
+.session-choice-dialog h2 {
+  margin: 0.55rem 0 0.65rem;
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 400;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.session-choice-dialog p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.session-choice-actions {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 1.5rem;
+}
+
+.session-choice-actions > button {
+  width: 100%;
+}
+
+.session-choice-actions .session-choice-cancel {
+  min-height: 38px;
+  padding: 0.4rem 0.75rem;
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink-muted);
+  text-transform: none;
+}
+
+.session-choice-actions .session-choice-cancel:hover {
+  background: var(--surface-tint);
+  color: var(--ink);
+}
+
 /* Ticket / Pass aesthetic for check-in */
 .pass-ticket {
   background: var(--surface-cream);
@@ -926,6 +997,16 @@ nav.desktop-nav a {
     flex-direction: row;
     margin-bottom: 1.25rem;
     padding-bottom: 1rem;
+  }
+
+  .topbar-actions {
+    margin-left: auto;
+  }
+
+  .topbar-signout {
+    min-height: 40px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.76rem;
   }
 
   nav.desktop-nav {
