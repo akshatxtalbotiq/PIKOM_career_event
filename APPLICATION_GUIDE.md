@@ -177,14 +177,11 @@ attendee in Django. To explore an already-approved attendee journey, enter one
 of the seeded approved attendee tokens at `/login/`. Use an unused email when
 submitting the same form again; duplicate event registrations are rejected.
 
-## Legacy Golf
+## Golf event workflow
 
-Golf tournaments, participant/sponsor forms, entries, player slots, and
-sponsorship items are a separate legacy workflow in Django. The navigation is
-hidden by default. Set `SHOW_LEGACY_GOLF_TOOLS=true` in the Django environment
-and restart Django to show the Golf links for an authorized organizer. Golf
-routes and existing Golf data are retained; the Next.js attendee app does not
-replace these Golf pages.
+The GolfEvent tournament and form-authoring workflow has been removed. Its
+models, routes, and database tables are removed by Django migration 0072. The
+separate legacy registration flow is unchanged.
 
 ## Where to look in the code
 

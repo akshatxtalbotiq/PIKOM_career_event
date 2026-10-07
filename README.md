@@ -151,7 +151,6 @@ Project settings live in `picom/settings.py`; `manage.py` uses the `picom.settin
 | `DJANGO_SECURE_HSTS_SECONDS` | `0` | HSTS duration; enable only after HTTPS is working. |
 | `DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS`, `DJANGO_SECURE_HSTS_PRELOAD` | `false` | Optional HSTS scope controls. |
 | `DJANGO_BEHIND_HTTPS_PROXY` | `false` | Trusts `X-Forwarded-Proto: https` from a configured proxy. |
-| `SHOW_LEGACY_GOLF_TOOLS` | `false` | Shows the retained legacy Golf navigation when explicitly enabled. |
 
 Production mode (`DJANGO_DEBUG=false`) requires explicit `DJANGO_SECRET_KEY` and
 `DJANGO_ALLOWED_HOSTS` values. Configure HTTPS redirect, proxy handling, and

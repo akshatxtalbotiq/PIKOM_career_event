@@ -1,2 +1,14 @@
-import Explorer from "../../components/Explorer";
-export default function Page(){return <Explorer section="jobs"/>}
+"use client";
+
+import AttendeeJobsView from "../../components/AttendeeJobsView";
+import AttendeePageLayout from "../../components/AttendeePageLayout";
+import useAttendeeData from "../../hooks/useAttendeeData";
+
+export default function Jobs() {
+  const attendee = useAttendeeData();
+  return (
+    <AttendeePageLayout title="Jobs & Opportunities" attendee={attendee}>
+      {attendee.data && <AttendeeJobsView jobs={attendee.data.jobs} me={attendee.me} busy={attendee.busy} action={attendee.action} />}
+    </AttendeePageLayout>
+  );
+}

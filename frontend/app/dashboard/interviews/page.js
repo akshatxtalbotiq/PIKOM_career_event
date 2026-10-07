@@ -1,2 +1,14 @@
-import Explorer from "../../../components/Explorer";
-export default function Interviews(){return <Explorer section="interviews"/>}
+"use client";
+
+import AttendeePageLayout from "../../../components/AttendeePageLayout";
+import AttendeeBookingsView from "../../../components/AttendeeBookingsView";
+import useAttendeeData from "../../../hooks/useAttendeeData";
+
+export default function Interviews() {
+  const attendee = useAttendeeData();
+  return (
+    <AttendeePageLayout title="My Schedule & Itinerary" attendee={attendee}>
+      {attendee.data && <AttendeeBookingsView schedule={attendee.schedule} action={attendee.action} />}
+    </AttendeePageLayout>
+  );
+}

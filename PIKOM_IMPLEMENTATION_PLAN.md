@@ -959,10 +959,9 @@ Phase 5 implementation and its completion gate are complete. Changes include
 an end-to-end Django integration test, event directory pagination with a
 frontend load-more control, dashboard aggregation, survey-management access
 checks and input validation, production-oriented Django environment settings,
-and deployment documentation. The legacy Golf navigation is hidden by default
-and can be enabled with `SHOW_LEGACY_GOLF_TOOLS=true`; Golf routes and data
-models remain because production data safety could not be confirmed for
-permanent removal.
+and deployment documentation. The legacy Golf navigation was hidden by
+default at this point; the GolfEvent workflow and its empty tables were later
+removed after confirming the removal scope.
 
 Verification:
 

@@ -888,18 +888,6 @@ class PhaseFiveHardeningTests(TestCase):
         attendee.refresh_from_db()
         self.assertEqual(attendee.approval_status, SurveyUser.STATUS_APPROVED)
 
-    def test_legacy_golf_navigation_is_opt_in_and_routes_remain_available(self):
-        from django.test import override_settings
-
-        self.client.force_login(self.admin)
-        with override_settings(SHOW_LEGACY_GOLF_TOOLS=False):
-            response = self.client.get(reverse("campaign_list"))
-            self.assertNotContains(response, "Legacy Golf Tools")
-        with override_settings(SHOW_LEGACY_GOLF_TOOLS=True):
-            response = self.client.get(reverse("campaign_list"))
-            self.assertContains(response, "Legacy Golf Tools")
-        self.assertEqual(reverse("golf_event_list"), "/golf_events/")
-
     def test_event_directory_paginates_each_collection(self):
         from rest_framework.test import APIClient
 

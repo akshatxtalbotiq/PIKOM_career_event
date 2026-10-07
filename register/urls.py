@@ -18,22 +18,6 @@ from .views import index, save_registration, thankyou, sponsorship, save_sponsor
     register_walkin, survey_user_labels, survey_user_label_pdf, campaign_dashboard,set_survey_user_participant_type, \
     user_manual
 
-# Golf Event lives in its own module so views.py stays navigable.
-from .golf_views import (
-    golf_event_list, save_golf_event, get_golf_event, delete_golf_event,
-    golf_participant_form_list, golf_sponsor_form_list,
-    save_golf_form, get_golf_form, delete_golf_form, clone_golf_form,
-    golf_form_builder, golf_form_preview, golf_upload_banner, golf_delete_banner,
-    golf_upload_size_images, golf_delete_size_image, save_golf_size_images,
-    save_golf_player_config, save_golf_form_settings,
-    save_golf_event_details, save_golf_email_content,
-    save_golf_question, get_golf_question, delete_golf_question, reorder_golf_questions,
-    save_golf_sponsor_item, get_golf_sponsor_item, delete_golf_sponsor_item,
-    reorder_golf_sponsor_items, set_golf_item_availability,
-    golf_form_public, golf_form_submit, golf_form_thankyou,
-    golf_submission_list, golf_submission_detail, set_golf_registration_status,
-    update_golf_remarks, delete_golf_registrations,
-)
 from .event_views import event_infrastructure, attendee_session_registration, attendee_event_sessions
 from .career_views import event_career, attendee_career_hub
 
@@ -139,57 +123,6 @@ urlpatterns = [
     path('form/<str:survey_code>/thanks/<int:user_id>/', form_thankyou),
     path('exclude_columns/', exclude_columns, name='exclude_columns'),
     path('remove_submissions/', remove_submissions, name='remove_submissions'),
-
-    # -----------------------------------------------------------------
-    # Golf Event
-    # -----------------------------------------------------------------
-    # Menu: Golf Event > Event
-    path('golf_events/', golf_event_list, name='golf_event_list'),
-    path('save_golf_event', save_golf_event, name='save_golf_event'),
-    path('get_golf_event/<int:id>/', get_golf_event, name='get_golf_event'),
-    path('delete_golf_event/<int:id>/', delete_golf_event, name='delete_golf_event'),
-
-    # Menu: Golf Event > Registration Form / Sponsor Form
-    path('golf_registration_forms/', golf_participant_form_list, name='golf_participant_form_list'),
-    path('golf_sponsor_forms/', golf_sponsor_form_list, name='golf_sponsor_form_list'),
-    path('save_golf_form', save_golf_form, name='save_golf_form'),
-    path('get_golf_form/<int:id>/', get_golf_form, name='get_golf_form'),
-    path('delete_golf_form/<int:id>/', delete_golf_form, name='delete_golf_form'),
-    path('clone_golf_form/<int:id>/', clone_golf_form, name='clone_golf_form'),
-
-    # Golf form builder
-    path('golf_form_builder/<int:form_id>/', golf_form_builder, name='golf_form_builder'),
-    path('golf_form_preview/<int:form_id>/', golf_form_preview, name='golf_form_preview'),
-    path('golf_upload_banner/<int:form_id>/', golf_upload_banner, name='golf_upload_banner'),
-    path('golf_delete_banner/<int:form_id>/', golf_delete_banner, name='golf_delete_banner'),
-    path('golf_upload_size_images/<int:form_id>/', golf_upload_size_images, name='golf_upload_size_images'),
-    path('golf_delete_size_image/<int:image_id>/', golf_delete_size_image, name='golf_delete_size_image'),
-    path('save_golf_size_images/<int:form_id>/', save_golf_size_images, name='save_golf_size_images'),
-    path('save_golf_player_config/<int:form_id>/', save_golf_player_config, name='save_golf_player_config'),
-    path('save_golf_form_settings/<int:form_id>/', save_golf_form_settings, name='save_golf_form_settings'),
-    path('save_golf_event_details/<int:event_id>/', save_golf_event_details, name='save_golf_event_details'),
-    path('save_golf_email_content/<int:event_id>/', save_golf_email_content, name='save_golf_email_content'),
-    path('save_golf_question', save_golf_question, name='save_golf_question'),
-    path('get_golf_question/<int:question_id>/', get_golf_question, name='get_golf_question'),
-    path('delete_golf_question/<int:question_id>/', delete_golf_question, name='delete_golf_question'),
-    path('reorder_golf_questions/<int:form_id>/', reorder_golf_questions, name='reorder_golf_questions'),
-    path('save_golf_sponsor_item', save_golf_sponsor_item, name='save_golf_sponsor_item'),
-    path('get_golf_sponsor_item/<int:item_id>/', get_golf_sponsor_item, name='get_golf_sponsor_item'),
-    path('delete_golf_sponsor_item/<int:item_id>/', delete_golf_sponsor_item, name='delete_golf_sponsor_item'),
-    path('reorder_golf_sponsor_items/<int:form_id>/', reorder_golf_sponsor_items, name='reorder_golf_sponsor_items'),
-    path('set_golf_item_availability/<int:item_id>/', set_golf_item_availability, name='set_golf_item_availability'),
-
-    # Golf entries (admin)
-    path('golf_submission_list/<int:form_id>/', golf_submission_list, name='golf_submission_list'),
-    path('golf_submission_detail/<int:form_id>/<int:reg_id>/', golf_submission_detail, name='golf_submission_detail'),
-    path('set_golf_registration_status/<int:form_id>/', set_golf_registration_status, name='set_golf_registration_status'),
-    path('update_golf_remarks/<int:form_id>/', update_golf_remarks, name='update_golf_remarks'),
-    path('delete_golf_registrations/<int:form_id>/', delete_golf_registrations, name='delete_golf_registrations'),
-
-    # Golf public pages
-    path('golf/<str:form_ident>/', golf_form_public, name='golf_form_public'),
-    path('golf/<int:form_id>/submit/', golf_form_submit, name='golf_form_submit'),
-    path('golf/<str:form_ident>/thanks/<int:reg_id>/', golf_form_thankyou, name='golf_form_thankyou'),
 
     # Help
     path('user_manual/', user_manual, name='user_manual'),

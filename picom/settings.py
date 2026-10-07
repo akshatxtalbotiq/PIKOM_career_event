@@ -20,7 +20,6 @@ ALLOWED_HOSTS = os.environ.get(
 ALLOWED_HOSTS = [host.strip() for host in ALLOWED_HOSTS if host.strip()]
 if not DEBUG and not os.environ.get("DJANGO_ALLOWED_HOSTS"):
     raise ImproperlyConfigured("Set DJANGO_ALLOWED_HOSTS before running with DJANGO_DEBUG=false.")
-SHOW_LEGACY_GOLF_TOOLS = os.environ.get("SHOW_LEGACY_GOLF_TOOLS", "false").lower() == "true"
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -57,7 +56,6 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                "register.context_processors.feature_flags",
             ],
         },
     },

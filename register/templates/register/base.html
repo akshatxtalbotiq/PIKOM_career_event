@@ -520,39 +520,6 @@
                     <span class="nav-link-text ms-1">Post-event Surveys</span>
                 </a>
             </li>
-            {% if show_legacy_golf_tools %}
-            <!-- Legacy Golf tools remain opt-in while their stored records are retained. -->
-            <li class="nav-item has-submenu" id="golf_menu">
-                <a class="nav-link d-flex align-items-center" href="#golfSubmenu" data-bs-toggle="collapse"
-                   role="button" aria-expanded="false" aria-controls="golfSubmenu" id="golf_menu_toggle">
-                    <i class="material-symbols-rounded opacity-5">golf_course</i>
-                    <span class="nav-link-text ms-1">Legacy Golf Tools</span>
-                    <i class="material-symbols-rounded ms-auto submenu-caret opacity-5" style="font-size:1.1rem;">expand_more</i>
-                </a>
-                <div class="collapse" id="golfSubmenu">
-                    <ul class="nav nav-sm flex-column ps-3">
-                        <li class="nav-item">
-                            <a id="golf_event_list" class="nav-link" href="{% url 'golf_event_list' %}">
-                                <i class="material-symbols-rounded opacity-5">event</i>
-                                <span class="nav-link-text ms-1">Event</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a id="golf_participant_form_list" class="nav-link" href="{% url 'golf_participant_form_list' %}">
-                                <i class="material-symbols-rounded opacity-5">how_to_reg</i>
-                                <span class="nav-link-text ms-1">Registration Form</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a id="golf_sponsor_form_list" class="nav-link" href="{% url 'golf_sponsor_form_list' %}">
-                                <i class="material-symbols-rounded opacity-5">handshake</i>
-                                <span class="nav-link-text ms-1">Sponsor Form</span>
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </li>
-            {% endif %}
             {% if user.is_superuser %}
             <li class="nav-item">
                 <a id="user_list" class="nav-link" href="{% url 'user_list' %}">
@@ -640,44 +607,6 @@
       } else if (currentPath.endsWith('users')) {
         const el = document.getElementById('user_list');
         if (el) el.classList.add('active');
-      }
-
-      // ── Golf Event submenu: highlight the current page and keep the group open ──
-      const golfPages = {
-        'golf_events': 'golf_event_list',
-        'golf_registration_forms': 'golf_participant_form_list',
-        'golf_sponsor_forms': 'golf_sponsor_form_list',
-      };
-      // Builder / entries pages live under the group too, so the parent stays
-      // open and the owning submenu item stays highlighted while you work.
-      const golfSubPages = [
-        ['golf_form_builder', 'golf_form_preview', 'golf_submission_list'],
-      ];
-      let golfActiveId = null;
-      for (const [slug, elId] of Object.entries(golfPages)) {
-        if (currentPath.endsWith(slug)) { golfActiveId = elId; break; }
-      }
-      const inGolfSection = golfActiveId !== null
-        || /\/golf_(form_builder|form_preview|submission_list|submission_detail)\//.test(currentPath + '/');
-      if (golfActiveId) {
-        const el = document.getElementById(golfActiveId);
-        if (el) el.classList.add('active');
-      }
-      if (inGolfSection) {
-        const submenu = document.getElementById('golfSubmenu');
-        const toggle = document.getElementById('golf_menu_toggle');
-        if (submenu) submenu.classList.add('show');
-        if (toggle) {
-          toggle.setAttribute('aria-expanded', 'true');
-          toggle.classList.add('submenu-open');
-        }
-      }
-      // Keep the parent tint in sync when the user opens/closes it by hand.
-      const golfSub = document.getElementById('golfSubmenu');
-      const golfToggle = document.getElementById('golf_menu_toggle');
-      if (golfSub && golfToggle) {
-        golfSub.addEventListener('shown.bs.collapse', () => golfToggle.classList.add('submenu-open'));
-        golfSub.addEventListener('hidden.bs.collapse', () => golfToggle.classList.remove('submenu-open'));
       }
 
       // ── Sidebar collapse toggle ──
