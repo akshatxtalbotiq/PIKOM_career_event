@@ -7,7 +7,7 @@ import useAttendeeData from "../../hooks/useAttendeeData";
 export default function FloorMap() {
   const attendee = useAttendeeData();
   return (
-    <AttendeePageLayout title="Floor Map & Booths" attendee={attendee}>
+    <AttendeePageLayout title="Floor Map & Booths" attendee={attendee} showLoadMore>
       {attendee.data && <AttendeeFloorMapView floorMaps={attendee.data.floor_maps} />}
     </AttendeePageLayout>
   );

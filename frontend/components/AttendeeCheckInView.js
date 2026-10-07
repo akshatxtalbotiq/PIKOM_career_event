@@ -1,3 +1,5 @@
+import { CheckCircleIcon, ClockAlertIcon, PrinterIcon } from "./Icons";
+
 export default function CheckInView({ checkin }) {
   const isCheckedIn = Boolean(checkin?.checked_in);
   const isApproved = checkin?.approval_status === "approved";
@@ -24,7 +26,11 @@ export default function CheckInView({ checkin }) {
         <div className="pass-ticket-body">
           <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", justifyContent: "center", marginBottom: "1rem" }}>
             <span className={`badge ${isCheckedIn ? "dark" : "brick"}`}>
-              {isCheckedIn ? "✓ Venue Check-In Complete" : "● Awaiting Venue Check-In"}
+              {isCheckedIn ? (
+                <><CheckCircleIcon size={14} /> Venue Check-In Complete</>
+              ) : (
+                <><ClockAlertIcon size={14} /> Awaiting Venue Check-In</>
+              )}
             </span>
             <span className="badge">
               Status: {checkin?.approval_status?.toUpperCase() || "PENDING"}
@@ -67,7 +73,7 @@ export default function CheckInView({ checkin }) {
                   onClick={() => window.print()}
                   style={{ fontSize: "0.82rem" }}
                 >
-                  Print Physical Pass 🖨️
+                  <><PrinterIcon size={14} /> Print Physical Pass</>
                 </button>
               </div>
             </>

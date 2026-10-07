@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { PinIcon, CalendarIcon, ClockIcon } from "./Icons";
 
-export default function SessionsView({ sessions = [], me, busy, action }) {
+export default function SessionsView({ sessions = [], schedule, me, busy, action }) {
   const [search, setSearch] = useState("");
   const isApproved = me.approval_status === "approved";
+  const registeredSessions = new Set((schedule?.sessions || []).map((session) => session.id));
 
   const filtered = sessions.filter((session) =>
     `${session.title} ${session.speaker} ${session.location} ${session.description || ""}`
@@ -40,6 +42,7 @@ export default function SessionsView({ sessions = [], me, busy, action }) {
       <div className="grid">
         {filtered.map((session) => {
           const isFull = session.remaining === 0;
+          const isRegistered = registeredSessions.has(session.id);
           return (
             <article
               className="card"
@@ -51,8 +54,9 @@ export default function SessionsView({ sessions = [], me, busy, action }) {
                   <span className={`badge ${session.remaining !== null && session.remaining < 15 ? "brick" : ""}`}>
                     {session.remaining === null ? "Open Seating" : isFull ? "Sold Out / Full" : `${session.remaining} Seats Left`}
                   </span>
-                  <span className="mono-indicator" style={{ fontSize: "0.72rem" }}>
-                    📍 {session.location}
+                  <span className="mono-indicator" style={{ fontSize: "0.72rem", display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+                    <PinIcon size={12} style={{ color: "var(--brick-red)" }} />
+                    {session.location}
                   </span>
                 </div>
 
@@ -64,8 +68,16 @@ export default function SessionsView({ sessions = [], me, busy, action }) {
                   </p>
                 )}
 
-                <p className="muted" style={{ fontSize: "0.88rem", fontWeight: 600, margin: "0 0 0.75rem" }}>
-                  🗓️ {new Date(`${session.date}T00:00:00`).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })} · ⏰ {session.start_time.slice(0, 5)}–{session.end_time.slice(0, 5)}
+                <p className="muted" style={{ fontSize: "0.88rem", fontWeight: 600, margin: "0 0 0.75rem", display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+                    <CalendarIcon size={14} />
+                    {new Date(`${session.date}T00:00:00`).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
+                  </span>
+                  <span>·</span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+                    <ClockIcon size={14} />
+                    {session.start_time.slice(0, 5)}–{session.end_time.slice(0, 5)}
+                  </span>
                 </p>
 
                 <p style={{ color: "var(--ink-muted)", fontSize: "0.94rem", lineHeight: 1.6, marginBottom: "1.25rem" }}>
@@ -75,11 +87,12 @@ export default function SessionsView({ sessions = [], me, busy, action }) {
 
               <div>
                 <button
-                  disabled={busy || !isApproved || isFull}
-                  onClick={() => action(`sessions/${session.id}/registration/`)}
+                  className={isRegistered ? "secondary" : undefined}
+                  disabled={busy || (!isRegistered && (!isApproved || isFull))}
+                  onClick={() => action(`sessions/${session.id}/registration/`, isRegistered ? "DELETE" : "POST")}
                   style={{ width: "100%", fontSize: "0.84rem" }}
                 >
-                  {isFull ? "Session Full" : "Reserve Seat in Schedule →"}
+                  {isRegistered ? "Reserved · Cancel" : isFull ? "Session Full" : isApproved ? "Reserve Seat in Schedule →" : "Approval required"}
                 </button>
               </div>
             </article>

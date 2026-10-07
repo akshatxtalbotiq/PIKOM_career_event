@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AcademicCapIcon, BuildingIcon, CalendarIcon, ClockIcon } from "./Icons";
 
 export default function BookingsView({ schedule, action }) {
   const sessions = schedule?.sessions || [];
@@ -36,8 +37,9 @@ export default function BookingsView({ schedule, action }) {
                     <span className="mono-indicator">{session.start_time?.slice(0, 5)}</span>
                   </div>
                   <h3>{session.title}</h3>
-                  <p className="muted" style={{ fontSize: "0.9rem", margin: "0.2rem 0 1rem" }}>
-                    🗓️ {session.date} · ⏰ {session.start_time}
+                  <p className="muted schedule-meta">
+                    <span><CalendarIcon size={14} /> {session.date}</span>
+                    <span><ClockIcon size={14} /> {session.start_time}</span>
                   </p>
                 </div>
                 <button
@@ -81,8 +83,9 @@ export default function BookingsView({ schedule, action }) {
                     <span className="mono-indicator">{booking.start_time?.slice(0, 5)}</span>
                   </div>
                   <h3>{booking.employer}</h3>
-                  <p className="muted" style={{ fontSize: "0.9rem", margin: "0.2rem 0 1rem" }}>
-                    🗓️ {booking.date} · ⏰ {booking.start_time}
+                  <p className="muted schedule-meta">
+                    <span><CalendarIcon size={14} /> {booking.date}</span>
+                    <span><ClockIcon size={14} /> {booking.start_time}</span>
                   </p>
                 </div>
                 <button
@@ -123,8 +126,8 @@ export default function BookingsView({ schedule, action }) {
                 <div>
                   <span className="badge" style={{ marginBottom: "0.5rem" }}>BOOKMARKED</span>
                   <h3>{job.title}</h3>
-                  <p className="muted" style={{ fontSize: "0.9rem", margin: "0.2rem 0 1rem" }}>
-                    🏢 {job.employer}
+                  <p className="muted schedule-meta">
+                    <span><BuildingIcon size={14} /> {job.employer}</span>
                   </p>
                 </div>
                 <Link className="button secondary" href="/jobs" style={{ width: "100%", fontSize: "0.8rem" }}>
@@ -161,8 +164,8 @@ export default function BookingsView({ schedule, action }) {
                 <div>
                   <span className="badge brick" style={{ marginBottom: "0.5rem" }}>CLAIMED PERK</span>
                   <h3>{promotion.title}</h3>
-                  <p className="muted" style={{ fontSize: "0.9rem", margin: "0.2rem 0 1rem" }}>
-                    🎓 {promotion.provider}
+                  <p className="muted schedule-meta">
+                    <span><AcademicCapIcon size={14} /> {promotion.provider}</span>
                   </p>
                 </div>
                 <button

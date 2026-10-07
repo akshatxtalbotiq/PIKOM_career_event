@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 
-export default function TrainingView({ providers = [], me, busy, action }) {
+export default function TrainingView({ providers = [], me, schedule, busy, action }) {
   const [search, setSearch] = useState("");
   const isApproved = me.approval_status === "approved";
+  const claimedPromotions = new Map((schedule?.promotions || []).map((promotion) => [promotion.promotion_id, promotion]));
 
   const filtered = providers.filter((provider) =>
     `${provider.name} ${provider.description || ""} ${provider.promotions.map((p) => `${p.title} ${p.value || ""}`).join(" ")}`
@@ -69,6 +70,11 @@ export default function TrainingView({ providers = [], me, busy, action }) {
                       padding: "1.25rem",
                     }}
                   >
+                    {claimedPromotions.has(promotion.id) && (
+                      <div style={{ marginBottom: "0.65rem" }}>
+                        <span className="badge dark" role="status">Claimed</span>
+                      </div>
+                    )}
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem", marginBottom: "0.5rem" }}>
                       <span className="badge brick">
                         {promotion.value || "EXCLUSIVE PERK"}
@@ -86,13 +92,21 @@ export default function TrainingView({ providers = [], me, busy, action }) {
                       {promotion.description}
                     </p>
 
+                    {claimedPromotions.get(promotion.id)?.instructions && (
+                      <p style={{ color: "var(--ink)", fontSize: "0.88rem", lineHeight: 1.5, margin: "0 0 0.75rem" }}>
+                        <strong>Claim instructions:</strong> {claimedPromotions.get(promotion.id).instructions}
+                      </p>
+                    )}
+
                     <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
                       <button
-                        disabled={busy || !isApproved}
+                        disabled={busy || !isApproved || claimedPromotions.has(promotion.id)}
                         onClick={() => action(`promotions/${promotion.id}/claim/`)}
                         style={{ fontSize: "0.82rem", flex: "1 1 auto" }}
                       >
-                        Claim Voucher →
+                        {claimedPromotions.has(promotion.id)
+                          ? "Already claimed"
+                          : isApproved ? "Claim Voucher →" : "Approval required"}
                       </button>
 
                       {promotion.document_url && (

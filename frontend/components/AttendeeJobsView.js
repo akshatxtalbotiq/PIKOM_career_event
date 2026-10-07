@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { BuildingIcon, PinIcon, ArrowUpRightIcon, MailIcon, BookmarkIcon } from "./Icons";
 
 export default function JobsView({ jobs = [], me, busy, action }) {
   const [search, setSearch] = useState("");
@@ -84,8 +85,17 @@ export default function JobsView({ jobs = [], me, busy, action }) {
 
               <h3>{job.title}</h3>
 
-              <p className="muted" style={{ fontSize: "0.92rem", margin: "0.2rem 0 0.75rem", fontWeight: 600 }}>
-                🏢 {job.employer} {job.location ? `· 📍 ${job.location}` : ""}
+              <p className="muted" style={{ fontSize: "0.92rem", margin: "0.2rem 0 0.75rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap" }}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+                  <BuildingIcon size={14} />
+                  {job.employer}
+                </span>
+                {job.location && (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+                    · <PinIcon size={13} style={{ color: "var(--brick-red)" }} />
+                    {job.location}
+                  </span>
+                )}
               </p>
 
               <p style={{ color: "var(--ink-muted)", fontSize: "0.94rem", lineHeight: 1.6, marginBottom: "0.75rem" }}>
@@ -109,9 +119,9 @@ export default function JobsView({ jobs = [], me, busy, action }) {
                   href={job.application_url}
                   target="_blank"
                   rel="noreferrer"
-                  style={{ flex: "1 1 auto", fontSize: "0.82rem" }}
+                  style={{ flex: "1 1 auto", fontSize: "0.82rem", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "0.4rem" }}
                 >
-                  Apply Online ↗
+                  Apply Online <ArrowUpRightIcon size={13} />
                 </a>
               )}
 
@@ -119,9 +129,9 @@ export default function JobsView({ jobs = [], me, busy, action }) {
                 <a
                   className="button"
                   href={`mailto:${job.application_email}`}
-                  style={{ flex: "1 1 auto", fontSize: "0.82rem" }}
+                  style={{ flex: "1 1 auto", fontSize: "0.82rem", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "0.4rem" }}
                 >
-                  Email Application ✉
+                  Email Application <MailIcon size={14} />
                 </a>
               )}
 
@@ -134,9 +144,13 @@ export default function JobsView({ jobs = [], me, busy, action }) {
                   fontSize: "0.82rem",
                   background: job.saved ? "var(--surface-dark)" : "var(--surface-cream)",
                   color: job.saved ? "var(--bg-cream)" : "var(--ink)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
                 }}
               >
-                {job.saved ? "★ Saved" : "☆ Save"}
+                <BookmarkIcon size={14} filled={Boolean(job.saved)} />
+                {job.saved ? "Saved" : "Save"}
               </button>
             </div>
           </article>

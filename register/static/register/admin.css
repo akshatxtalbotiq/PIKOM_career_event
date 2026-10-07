@@ -1,0 +1,156 @@
+:root {
+  --admin-ink: #202631;
+  --admin-muted: #697382;
+  --admin-line: #e3e7ed;
+  --admin-soft: #f7f8fa;
+  --admin-white: #fff;
+  --admin-shadow: 0 8px 24px rgb(22 30 42 / 5%);
+}
+
+html, body, #container { min-height: 100%; }
+body, #container { color: var(--admin-ink); }
+body { background: var(--admin-soft); }
+a:link, a:visited { color: #303844; }
+a:hover { color: #111820; }
+
+/* A quiet white masthead keeps the admin feeling like part of the product. */
+#header {
+  align-items: center;
+  background: var(--admin-white);
+  border-bottom: 1px solid var(--admin-line);
+  box-shadow: 0 2px 12px rgb(22 30 42 / 3%);
+  color: var(--admin-ink);
+  padding: 14px 24px;
+}
+#branding h1, #branding h1 a:link, #branding h1 a:visited {
+  color: var(--admin-ink);
+  font-size: 1.08rem;
+  font-weight: 750;
+  letter-spacing: -.02em;
+}
+#site-name { margin: 0; }
+#site-name a {
+  color: var(--admin-ink);
+  font-size: 1.12rem;
+  font-weight: 800;
+  letter-spacing: -.025em;
+}
+#user-tools { color: var(--admin-muted); font-size: .8rem; }
+#user-tools a { border-bottom: 1px solid #cbd1d9; color: var(--admin-ink); }
+#user-tools a:hover { border-color: var(--admin-ink); }
+
+#main { background: transparent; }
+#content { padding-top: 1.7rem; }
+#content h1 { color: var(--admin-ink); font-size: 1.8rem; font-weight: 760; letter-spacing: -.035em; }
+.breadcrumbs { background: transparent; color: var(--admin-muted); padding: 0 0 1rem; }
+.breadcrumbs a { color: var(--admin-muted); }
+.breadcrumbs a:hover { color: var(--admin-ink); }
+
+/* Dashboard app cards make the available tools easier to scan. */
+.dashboard #content-main .app-list {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+}
+.dashboard #content-main .app-list > .module {
+  align-self: start;
+  margin: 0;
+}
+.dashboard #content-main .app-list > .module caption,
+.dashboard #content-main .app-list > .module h2 {
+  border-bottom: 1px solid var(--admin-line);
+  font-size: .92rem;
+  letter-spacing: .01em;
+  padding: 14px 16px;
+}
+.dashboard #content-main .app-list > .module th,
+.dashboard #content-main .app-list > .module td { padding: 12px 16px; }
+.dashboard #content-main .app-list > .module td a { font-weight: 650; }
+
+/* Keep navigation and content surfaces white, with structure from spacing and borders. */
+#nav-sidebar {
+  background: var(--admin-white);
+  border-right: 1px solid var(--admin-line);
+  padding: 1rem .85rem;
+}
+#nav-sidebar .module th, #nav-sidebar .module td { padding: .5rem .65rem; }
+#nav-sidebar .current-model {
+  background: var(--admin-soft);
+  border-left: 3px solid var(--admin-ink);
+  border-radius: 0 6px 6px 0;
+}
+#nav-sidebar .current-model a { color: var(--admin-ink); font-weight: 700; }
+#nav-sidebar a:hover { color: #111820; }
+
+.module, #changelist, .change-form #content-main > form {
+  background: var(--admin-white);
+  border: 1px solid var(--admin-line);
+  border-radius: 12px;
+  box-shadow: var(--admin-shadow);
+  overflow: hidden;
+}
+.module h2, .module caption, .inline-group h2 {
+  background: var(--admin-white);
+  border-bottom: 1px solid var(--admin-line);
+  color: var(--admin-ink);
+  font-size: .92rem;
+  font-weight: 750;
+  padding: 13px 16px;
+}
+#content-main .module table th, #content-main .module table td { padding: .8rem 1rem; }
+#content-main .module table th { background: var(--admin-soft); color: #46505d; font-size: .76rem; letter-spacing: .035em; text-transform: uppercase; }
+#content-main .module table tr:nth-child(even) { background: #fcfcfd; }
+#content-main .module table tr:hover { background: #f5f6f8; }
+
+#changelist { padding: 0; }
+#changelist-filter {
+  background: var(--admin-white);
+  border-left: 1px solid var(--admin-line);
+  padding: 0 0 1rem;
+}
+#changelist-filter h2 { background: var(--admin-white); border-bottom: 1px solid var(--admin-line); color: var(--admin-ink); padding: 14px; }
+#changelist-filter h3 { color: var(--admin-muted); font-size: .73rem; letter-spacing: .06em; text-transform: uppercase; }
+#changelist-filter li.selected a { color: var(--admin-ink); font-weight: 750; }
+#changelist-form .results { border: 0; }
+#changelist table thead th { background: var(--admin-soft); }
+#changelist table tbody tr:hover { background: #f7f8fa; }
+#changelist .paginator { padding: .8rem 1rem; }
+
+/* Inputs, buttons, and field groups use consistent monochrome controls. */
+button, input[type=submit], .submit-row input, a.button, .object-tools a {
+  border-radius: 7px;
+  font-weight: 650;
+}
+.default, input[type=submit].default, .object-tools a {
+  background: #252b34;
+  border-color: #252b34;
+  color: #fff;
+}
+.default:hover, input[type=submit].default:hover, .object-tools a:hover { background: #111820; color: #fff; }
+input, textarea, select, .vTextField {
+  background-color: #fff;
+  border: 1px solid #cfd5dd;
+  border-radius: 6px;
+  padding: .52rem .65rem;
+}
+input:focus, textarea:focus, select:focus {
+  border-color: #59616d;
+  box-shadow: 0 0 0 3px rgb(40 48 60 / 10%);
+  outline: none;
+}
+.form-row { border-bottom: 1px solid #f0f1f3; padding: 14px 16px; }
+.form-row:last-child { border-bottom: 0; }
+.submit-row { background: var(--admin-soft); border-top: 1px solid var(--admin-line); }
+.help, p.help, form p.help { color: var(--admin-muted); }
+.messagelist li { border: 1px solid var(--admin-line); border-radius: 8px; box-shadow: none; }
+
+/* A compact login panel remains legible on small screens. */
+.login #content { padding-top: 3rem; }
+.login #content-main { background: var(--admin-white); border: 1px solid var(--admin-line); border-radius: 12px; box-shadow: var(--admin-shadow); padding: 1.5rem; }
+
+@media (max-width: 767px) {
+  #header { padding: 12px 16px; }
+  #content { padding: 1rem; }
+  #content h1 { font-size: 1.5rem; }
+  #changelist-filter { border-left: 0; border-top: 1px solid var(--admin-line); }
+}

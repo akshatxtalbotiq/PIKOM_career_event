@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PinIcon, CalendarIcon, ClockIcon } from "./Icons";
 
 export default function DashboardView({ me, event, schedule }) {
   const isPending = me.approval_status !== "approved";
@@ -31,9 +32,20 @@ export default function DashboardView({ me, event, schedule }) {
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap", margin: "0.5rem 0 1.25rem", color: "var(--ink-muted)", fontSize: "1rem" }}>
           <span style={{ fontWeight: 700, color: "var(--ink)" }}>{event.title}</span>
           <span>·</span>
-          <span>📍 {event.venue}</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+            <PinIcon size={15} style={{ color: "var(--brick-red)" }} />
+            {event.venue}
+          </span>
           <span>·</span>
-          <span>🗓️ {new Date(event.start_date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })} · {event.event_time}</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+            <CalendarIcon size={15} />
+            {new Date(event.start_date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+          </span>
+          <span>·</span>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+            <ClockIcon size={14} />
+            {event.event_time}
+          </span>
         </div>
 
         <p style={{ color: "var(--ink-muted)", fontSize: "1.05rem", lineHeight: 1.65, maxWidth: "780px", margin: "0 0 1.5rem" }}>

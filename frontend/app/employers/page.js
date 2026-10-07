@@ -7,7 +7,7 @@ import useAttendeeData from "../../hooks/useAttendeeData";
 export default function Employers() {
   const attendee = useAttendeeData();
   return (
-    <AttendeePageLayout title="Participating Employers" attendee={attendee}>
+    <AttendeePageLayout title="Participating Employers" attendee={attendee} showLoadMore>
       {attendee.data && <AttendeeEmployersView employers={attendee.data.employers} />}
     </AttendeePageLayout>
   );

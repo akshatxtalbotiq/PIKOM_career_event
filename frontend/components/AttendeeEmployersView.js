@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PinIcon, ArrowUpRightIcon } from "./Icons";
 
 export default function EmployersView({ employers = [] }) {
   const [search, setSearch] = useState("");
@@ -104,8 +105,9 @@ export default function EmployersView({ employers = [] }) {
               <h3>{employer.name}</h3>
 
               {employer.booth?.name && (
-                <p className="muted" style={{ fontSize: "0.85rem", margin: "-0.2rem 0 0.5rem", fontWeight: 600 }}>
-                  📍 {employer.booth.name}
+                <p className="muted" style={{ fontSize: "0.85rem", margin: "-0.2rem 0 0.5rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                  <PinIcon size={13} style={{ color: "var(--brick-red)" }} />
+                  {employer.booth.name}
                 </p>
               )}
 
@@ -121,9 +123,9 @@ export default function EmployersView({ employers = [] }) {
                   href={employer.website}
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ width: "100%", fontSize: "0.8rem" }}
+                  style={{ width: "100%", fontSize: "0.8rem", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "0.4rem" }}
                 >
-                  Visit Website ↗
+                  Visit Website <ArrowUpRightIcon size={13} />
                 </a>
               </div>
             )}

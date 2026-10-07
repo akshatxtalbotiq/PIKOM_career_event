@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
+import { PinIcon, ArrowUpRightIcon, CalendarIcon } from "../components/Icons";
 
 export default function Home() {
   const [events, setEvents] = useState([]);
@@ -45,10 +46,10 @@ export default function Home() {
         </p>
         <div className="hero-actions">
           <a className="button" href="#events">
-            Explore Events ↓
+            Explore Events
           </a>
           <Link className="button secondary" href="/login" style={{ background: "rgba(255,255,255,0.08)", color: "#fff", borderColor: "rgba(255,255,255,0.2)" }}>
-            Access Portal ↗
+            Access Portal <ArrowUpRightIcon size={14} />
           </Link>
         </div>
       </section>
@@ -108,13 +109,14 @@ export default function Home() {
                 <span className={`badge ${event.registration_open ? "brick" : ""}`}>
                   {event.registration_open ? "Registration Open" : "Registration Closed"}
                 </span>
-                <span className="mono-indicator">
+                <span className="mono-indicator" style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem" }}>
+                  <CalendarIcon size={13} />
                   {new Date(event.start_date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
                 </span>
               </div>
               <h2>{event.title}</h2>
-              <p className="muted" style={{ fontSize: "0.92rem", marginBottom: "0.75rem", fontWeight: 600 }}>
-                📍 {event.venue}
+              <p className="muted" style={{ fontSize: "0.92rem", marginBottom: "0.75rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                <PinIcon size={14} style={{ color: "var(--brick-red)" }} /> {event.venue}
               </p>
               <p style={{ color: "var(--ink-muted)", fontSize: "0.95rem", lineHeight: 1.6, marginBottom: "1.5rem" }}>
                 {event.description}
@@ -122,7 +124,7 @@ export default function Home() {
             </div>
             <div>
               <Link className="button" href={`/register?event=${event.id}`} style={{ width: "100%" }}>
-                Register for Event ↗
+                Register for Event <ArrowUpRightIcon size={14} />
               </Link>
             </div>
           </article>

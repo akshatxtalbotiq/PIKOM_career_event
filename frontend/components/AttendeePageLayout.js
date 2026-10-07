@@ -1,26 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Navigation from "./Navigation";
 import { clearToken } from "../lib/api";
+import { resetAttendeeCache } from "../hooks/useAttendeeData";
 
-const CATEGORIES = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/employers", label: "Employers" },
-  { href: "/jobs", label: "Jobs" },
-  { href: "/interviews", label: "Interviews" },
-  { href: "/universities", label: "Universities" },
-  { href: "/training-providers", label: "Training" },
-  { href: "/sessions", label: "Sessions" },
-  { href: "/floor-map", label: "Floor Map" },
-  { href: "/dashboard/bookings", label: "My Schedule" },
-  { href: "/check-in", label: "Check-in Pass" },
-];
+const PAGE_DESCRIPTIONS = {
+  "Attendee Dashboard": "Your registration, saved opportunities, and event activity at a glance.",
+  "Participating Employers": "Explore participating organizations and locate their festival booths.",
+  "Jobs & Opportunities": "Browse roles from event employers and save opportunities to your schedule.",
+  "Interview Availability": "Choose an available time for a one-to-one employer conversation.",
+  "Universities & Programs": "Compare programs and connect with higher education providers.",
+  "Training & Promotions": "Claim training offers and find your claimed vouchers here.",
+  "Keynotes & Sessions": "Explore the event program and reserve or cancel a seat.",
+  "Floor Map & Booths": "Find exhibitors, stages, and facilities across the venue.",
+  "My Schedule & Itinerary": "Review and manage your sessions, interviews, saved jobs, and claimed offers.",
+  "Check-in Pass": "Open your approved QR pass for entry and badge collection.",
+};
 
-export default function AttendeePageLayout({ title, attendee, children }) {
+export default function AttendeePageLayout({ title, attendee, children, showLoadMore = false }) {
   const { me, data, error, loadingMore, loadMore } = attendee;
-  const pathname = usePathname();
+  const router = useRouter();
+
+  const handleSignOut = () => {
+    resetAttendeeCache();
+    clearToken();
+    router.push("/login");
+  };
 
   if (error && !me) {
     return (
@@ -73,39 +80,16 @@ export default function AttendeePageLayout({ title, attendee, children }) {
           <p>
             {isPending
               ? "Your registration is currently waiting for event team review. Booking features and check-in pass activate upon approval."
-              : "Explore career pathways, schedule interviews, and manage your festival itinerary."}
+              : PAGE_DESCRIPTIONS[title] || "Plan your PIKOM Career Festival experience."}
           </p>
         </div>
         <div className="attendee-actions-row">
           <button
             className="secondary"
-            onClick={() => {
-              clearToken();
-              location.href = "/login";
-            }}
+            onClick={handleSignOut}
           >
             Sign out
           </button>
-        </div>
-      </div>
-
-      {/* Section 12: Horizontally scrollable editorial category tabs for fast swiping */}
-      <div className="category-tabs-wrapper">
-        <div className="category-tabs" role="tablist" aria-label="Directory sections">
-          {CATEGORIES.map((tab) => {
-            const isActive = pathname === tab.href;
-            return (
-              <Link
-                key={tab.href}
-                href={tab.href}
-                className={`category-tab ${isActive ? "active" : ""}`}
-                role="tab"
-                aria-selected={isActive}
-              >
-                {tab.label}
-              </Link>
-            );
-          })}
         </div>
       </div>
 
@@ -117,7 +101,7 @@ export default function AttendeePageLayout({ title, attendee, children }) {
 
       <section className="attendee-content">{children}</section>
 
-      {Object.values(data.pagination?.has_more || {}).some(Boolean) && (
+      {showLoadMore && Object.values(data.pagination?.has_more || {}).some(Boolean) && (
         <div className="attendee-load-more">
           <button className="secondary" disabled={loadingMore} onClick={loadMore}>
             {loadingMore ? "Loading more records…" : "Load More"}
