@@ -1001,7 +1001,7 @@ def save_submission(request):
                 #campaign = Campaign.objects.filter(campaign_code=campaign_code).first()
                 if campaign and campaign.pic_email and is_instant == False:
                     
-                    html_content = render_to_string('register/email/submission_notification.html', {'title': campaign.title, 'url': 'https://pikom.talxone.com/submission_list/' + c_id.replace("-", "") + '/'})
+                    html_content = render_to_string('register/email/submission_notification.html', {'title': campaign.title, 'url': 'https://pikom.talbotiq.com/submission_list/' + c_id.replace("-", "") + '/'})
                     valid_emails = []
                     for email in campaign.pic_email.split(','):
                         email = email.strip()
@@ -1189,7 +1189,7 @@ def survey_submit(request, survey_id):
     #     if campaign and campaign.pic_email:
     #         c_id = str(campaign.campaign_code)
             
-    #         html_content = render_to_string('register/email/submission_notification.html', {'title': campaign.title, 'url': 'https://pikom.talxone.com/submission_list/' + c_id.replace("-", "") + '/'})
+    #         html_content = render_to_string('register/email/submission_notification.html', {'title': campaign.title, 'url': 'https://pikom.talbotiq.com/submission_list/' + c_id.replace("-", "") + '/'})
     #         valid_emails = []
     #         for email in campaign.pic_email.split(','):
     #             email = email.strip()
