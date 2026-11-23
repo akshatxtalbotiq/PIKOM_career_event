@@ -1,0 +1,87 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static log admin_dashboard %}
+
+{# PIKOM admin home: full-width model cards grouped by app, recent actions as a side rail. #}
+
+{% block bodyclass %}{{ block.super }} dashboard pk-home{% endblock %}
+{% block coltype %}colM{% endblock %}
+{% block nav-breadcrumbs %}{% endblock %}
+{% block nav-sidebar %}{% endblock %}
+
+{% block content_title %}
+  <div class="pk-home-head">
+    <span class="pk-eyebrow">PIKOM Operations</span>
+    <h1>{{ title }}</h1>
+    <p>Browse and edit every record behind the console. Click a card to open its list, or <strong>+</strong> to add a new one.</p>
+  </div>
+{% endblock %}
+
+{% block content %}
+<div class="pk-home-layout">
+  <div class="pk-home-main">
+    {% if app_list %}
+      {% for app in app_list %}
+        <section class="pk-app" aria-labelledby="app-{{ app.app_label }}">
+          <header class="pk-app-head">
+            <h2 id="app-{{ app.app_label }}"><a href="{{ app.app_url }}">{{ app.name }}</a></h2>
+            <span class="pk-app-count">{{ app.models|length }} model{{ app.models|length|pluralize }}</span>
+          </header>
+          <div class="pk-card-grid">
+            {% for model in app.models %}
+              {% model_count app.app_label model as count %}
+              <article class="pk-card">
+                {% if model.admin_url %}
+                  <a class="pk-card-link" href="{{ model.admin_url }}" aria-label="Open {{ model.name }}"></a>
+                {% endif %}
+                <span class="pk-card-icon material-symbols-rounded" aria-hidden="true">{% model_icon model %}</span>
+                <div class="pk-card-body">
+                  <h3>{{ model.name }}</h3>
+                  <span class="pk-card-meta">{% if count != "" %}{{ count }} record{{ count|pluralize }}{% else %}View records{% endif %}</span>
+                </div>
+                {% if model.add_url %}
+                  <a class="pk-card-add" href="{{ model.add_url }}" title="Add {{ model.name|lower }}" aria-label="Add {{ model.name|lower }}">
+                    <span class="material-symbols-rounded" aria-hidden="true">add</span>
+                  </a>
+                {% endif %}
+              </article>
+            {% endfor %}
+          </div>
+        </section>
+      {% endfor %}
+    {% else %}
+      <p class="pk-empty">{% translate "You don’t have permission to view or edit anything." %}</p>
+    {% endif %}
+  </div>
+
+  <aside class="pk-home-rail" aria-labelledby="recent-title">
+    <div class="pk-rail-card">
+      <h2 id="recent-title">Recent actions</h2>
+      {% get_admin_log 10 as admin_log for_user user %}
+      {% if not admin_log %}
+        <p class="pk-empty">Nothing yet. Your edits will show up here.</p>
+      {% else %}
+        <ul class="pk-activity">
+          {% for entry in admin_log %}
+            <li class="{% if entry.is_addition %}is-add{% elif entry.is_change %}is-change{% else %}is-delete{% endif %}">
+              <span class="pk-activity-dot material-symbols-rounded" aria-hidden="true">{% if entry.is_addition %}add{% elif entry.is_change %}edit{% else %}delete{% endif %}</span>
+              <div>
+                {% if entry.is_deletion or not entry.get_admin_url %}
+                  <strong>{{ entry.object_repr }}</strong>
+                {% else %}
+                  <a href="{{ entry.get_admin_url }}">{{ entry.object_repr }}</a>
+                {% endif %}
+                <span class="pk-activity-meta">
+                  {% if entry.content_type %}{% filter capfirst %}{{ entry.content_type.name }}{% endfilter %}{% else %}{% translate "Unknown content" %}{% endif %}
+                  &middot; {{ entry.action_time|timesince }} ago
+                </span>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+  </aside>
+</div>
+{% endblock %}
+
+{% block sidebar %}{% endblock %}

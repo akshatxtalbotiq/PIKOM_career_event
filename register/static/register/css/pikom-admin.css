@@ -1467,3 +1467,11 @@ button.dt-button.btn-primary:hover,
     min-width: calc(50% - 0.5rem);
   }
 }
+
+/* ---------- Fluid layout: fill wide screens, cap line length on ultra-wide ---------- */
+.main-content .container-fluid {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding-left: clamp(1rem, 2.2vw, 2.5rem);
+  padding-right: clamp(1rem, 2.2vw, 2.5rem);
+}

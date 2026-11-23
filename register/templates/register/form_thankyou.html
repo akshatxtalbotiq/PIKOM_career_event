@@ -7,35 +7,37 @@
   <title>Thank you - {{ survey.title }}</title>
   <link rel="stylesheet" href="{% static 'register/assets/css/bootstrap.css' %}">
   <link rel="stylesheet" href="{% static 'register/assets/css/style.css' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Public+Sans:ital,wght@0,300..800;1,300..800&display=swap">
+  <link rel="stylesheet" href="{% static 'register/css/pikom-public.css' %}">
   <style>
     :root {
-      --theme: {% if survey.fkcampaign %}{{ survey.fkcampaign.theme }}{% else %}#198754{% endif %};
-      --theme-soft: {% if survey.fkcampaign %}{{ survey.fkcampaign.theme_soft }}{% else %}#e7f4ec{% endif %};
+      --theme: {% if survey.fkcampaign %}{{ survey.fkcampaign.theme }}{% else %}#b3401f{% endif %};
+      --theme-soft: {% if survey.fkcampaign %}{{ survey.fkcampaign.theme_soft }}{% else %}#fbeee9{% endif %};
     }
-    body { background: #f5f7fb; }
-    .thanks-card { max-width: 620px; padding: 2.5rem; }
-    .review-steps { text-align: left; }
-    .review-steps li { padding: .35rem 0; }
+    .review-steps { text-align: left; padding-left: 1.2rem; }
+    .review-steps li { padding: .45rem 0; color: var(--pf-ink-muted); }
     .ref-pill {
-      display: inline-block; padding: .25rem .75rem; border-radius: 999px;
-      background: var(--theme-soft); color: var(--theme); font-weight: 600; font-size: .9rem;
-    }
-    @media (max-width: 575.98px) {
-      .thanks-card { padding: 1.5rem; }
-      h2 { font-size: 1.5rem; }
+      display: inline-block; padding: .35rem .9rem; border-radius: 999px;
+      background: var(--theme-soft); color: var(--theme); font-weight: 800; font-size: .95rem;
+      letter-spacing: .04em;
     }
   </style>
-</head>
-<body>
-  <section class="container-xl">
-    <div class="d-flex flex-column justify-content-center align-items-center text-center py-5" style="min-height:100dvh;">
-      <div class="bg-white rounded shadow thanks-card">
-        <div class="mb-3" style="font-size:64px; color:var(--theme);">&#10003;</div>
+<body class="pf-page">
+  <header class="pf-topbar">
+    <img src="{% static 'user/img/PIKOM-orange.png' %}" alt="PIKOM">
+    <span class="pf-topbar-label">Event registration</span>
+  </header>
+  <main class="pf-shell">
+    <div class="d-flex flex-column justify-content-center align-items-center text-center" style="min-height:70vh;">
+      <div class="card pf-state" style="width:100%; max-width:640px;">
+        <div class="pf-state-icon" aria-hidden="true">&#10003;</div>
 
         {% if is_registration %}
-          <h2 class="fw-bold mb-2">Thank you for your submission.</h2>
-          <p class="text-muted mb-3">
-            {% if survey_user.name %}Hi <strong>{{ survey_user.name }}</strong>,<br> Thank you for registering for{% else %}Your registration for{% endif %}
+          <h3>Thank you for registering</h3>
+          <p class="mb-3" style="color:var(--pf-ink-muted);">
+            {% if survey_user.name %}Hi <strong>{{ survey_user.name }}</strong>,<br> thank you for registering for{% else %}Your registration for{% endif %}
             <strong>{{ survey.title }}</strong>.
           </p>
 
@@ -45,23 +47,23 @@
             </div>
           {% endif %}
 
-          <ol class="review-steps mb-4">
-            <li>We have successfully received your registration and it is currently under review.</li>
-            <li>Please keep an eye out for your registration confirmation with the QR code.</li>
-            <li>For any additional requirements, our team will reach out to you.</li>
+          <ol class="review-steps mb-0 mx-auto" style="max-width:480px;">
+            <li>We have received your registration and it is currently under review.</li>
+            <li>Keep an eye out for your confirmation email with the QR code.</li>
+            <li>If we need anything else, our team will reach out to you.</li>
           </ol>
         {% else %}
-          <h2 class="fw-bold mb-2">Thank you!</h2>
-          <p class="text-muted mb-4">
+          <h3>Thank you!</h3>
+          <p class="mb-0" style="color:var(--pf-ink-muted);">
             Your response to <strong>{{ survey.title }}</strong> has been recorded{% if survey_user.name %}, <strong>{{ survey_user.name }}</strong>{% endif %}.
           </p>
         {% endif %}
       </div>
 
-      <div class="text-center mt-3" style="font-size:.78rem; color:#9aa3ad; letter-spacing:.02em;">
-        Powered by <span style="font-weight:600; color:#8a93a0;">Talbotiq Technologies</span>
+      <div class="pf-footer">
+        Powered by <strong>Talbotiq Technologies</strong>
       </div>
     </div>
-  </section>
+  </main>
 </body>
 </html>

@@ -9,67 +9,22 @@
   <link rel="stylesheet" href="{% static 'register/assets/css/bootstrap.css' %}">
   <link rel="stylesheet" href="{% static 'register/assets/css/style.css' %}">
   <link rel="stylesheet" href="{% static 'register/sweetalert2/sweetalert2.css' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Public+Sans:ital,wght@0,300..800;1,300..800&display=swap">
+  <link rel="stylesheet" href="{% static 'register/css/pikom-public.css' %}">
   <style>
     :root {
-      --theme: {% if survey.fkcampaign %}{{ survey.fkcampaign.theme }}{% else %}#198754{% endif %};
-      --theme-soft: {% if survey.fkcampaign %}{{ survey.fkcampaign.theme_soft }}{% else %}#e7f4ec{% endif %};
+      --theme: {% if survey.fkcampaign %}{{ survey.fkcampaign.theme }}{% else %}#b3401f{% endif %};
+      --theme-soft: {% if survey.fkcampaign %}{{ survey.fkcampaign.theme_soft }}{% else %}#fbeee9{% endif %};
     }
-    body { background: #f5f7fb; }
-    .form-card { max-width: 920px; margin: 0 auto; }
-    .q-number { font-weight: 600; color: var(--theme); margin-right: 4px; }
-
-    /* Form title: kept on a single line. A small script (fitTitle) shrinks
-       the font-size until the whole title fits on one line, down to a floor. */
-    .form-title {
-      font-size: 1.75rem;
-      line-height: 1.2;
-      white-space: nowrap;
-      overflow: hidden;
-    }
-
-    /* Theme-coloured submit button (replaces the fixed Bootstrap green) */
-    .btn-theme { background: var(--theme); border-color: var(--theme); color: #fff; }
-    .btn-theme:hover, .btn-theme:focus { background: var(--theme); border-color: var(--theme); color: #fff; filter: brightness(.92); }
-
-    /* Rich "about this event" block under the form title (authored in the
-       form settings with the rich-text editor) */
-    .form-desc { color: #444; font-size: 15px; }
-    .form-desc p { margin: 0 0 .5rem 0; }
-    .form-desc p:last-child { margin-bottom: 0; }
-    .form-desc ul, .form-desc ol { padding-left: 1.4rem; margin: 0 0 .5rem 0; }
-    .form-desc li { margin-bottom: .25rem; }
-    .form-desc strong { color: #222; }
-    .form-desc em, .form-desc small { color: #6b7280; }
-    .form-desc a { color: var(--theme); font-weight: 600; }
-    .form-desc h1, .form-desc h2, .form-desc h3, .form-desc h4 { font-size: 1.05rem; font-weight: 700; color: var(--theme); margin: .75rem 0 .35rem 0; }
-    .form-desc blockquote {
-      margin: .5rem 0; padding: .6rem .9rem;
-      background: var(--theme-soft); border-left: 4px solid var(--theme);
-      border-radius: .25rem; color: #333;
-    }
-
-    /* Prevent iOS Safari from zooming the viewport when an input is focused. */
-    .form-control, .form-select { font-size: 16px; }
-
-    /* Tighten layout on phones */
-    @media (max-width: 575.98px) {
-      .container-xl { padding-left: 12px; padding-right: 12px; }
-      .py-5 { padding-top: 1.25rem !important; padding-bottom: 1.25rem !important; }
-      .form-card .card-body { padding: 1rem !important; }
-      .followup-box { margin-left: 0.5rem !important; }
-      h3 { font-size: 1.25rem; }
-      .btn-lg { padding: 0.75rem 1.25rem; font-size: 1rem; }
-    }
-
-    /* Long radio/checkbox labels (e.g. consent paragraphs) wrap nicely */
-    .form-check-label { word-break: break-word; }
-
-    /* Event details block */
-    .event-details-table td { padding: 4px 0; font-size: 15px; color: #333; vertical-align: top; }
-    .event-details-table .ed-icon { padding-right: 12px; white-space: nowrap; }
   </style>
 </head>
-<body>
+<body class="pf-page">
+  <header class="pf-topbar">
+    <img src="{% static 'user/img/PIKOM-orange.png' %}" alt="PIKOM">
+    <span class="pf-topbar-label">Event registration</span>
+  </header>
   {% if preview_mode %}
     <div class="alert alert-warning text-center mb-0 rounded-0" style="position:sticky;top:0;z-index:1030;">
       <strong>👁 PREVIEW MODE</strong> — this is exactly what participants will see. Submissions are <strong>NOT saved</strong>.
@@ -77,7 +32,7 @@
     </div>
   {% endif %}
 
-  <div class="container-xl py-5">
+  <div class="pf-shell">
     <div class="form-card">
 
       {% if messages %}
@@ -94,8 +49,8 @@
 
       {% if registration_closed and not preview_mode %}
         <div class="card shadow-sm rounded mb-3 text-center">
-          <div class="card-body p-5">
-            <div style="font-size:48px; line-height:1; margin-bottom:.5rem;">&#128274;</div>
+          <div class="card-body pf-state">
+            <div class="pf-state-icon" aria-hidden="true">&#128274;</div>
             <h3 class="fw-bold mb-2" style="color:var(--theme);">Registration Closed</h3>
             {% if registration_closed_message %}
               <div class="form-desc text-center mb-3" style="font-size:15px;">{{ registration_closed_message|safe }}</div>
@@ -120,9 +75,12 @@
         </div>
       {% else %}
 
-      <div class="card shadow-sm rounded mb-3">
-        <div class="card-body p-4">
-          <h3 class="form-title fw-bold mb-2">{{ survey.title }}</h3>
+      <div class="pf-layout">
+      <aside class="pf-aside">
+      <div class="card pf-hero-card">
+        <div class="card-body">
+          <span class="pf-eyebrow">Registration</span>
+          <h3 class="form-title mb-2">{{ survey.title }}</h3>
           {% if survey.description %}
             <div class="form-desc">{{ survey.description|safe }}</div>
           {% elif survey.fkcampaign.description %}
@@ -175,16 +133,18 @@
         {% endwith %}
       {% endif %}
 
+      </aside>
+      <div class="pf-main">
         <form action="{% if preview_mode %}#{% else %}{% url 'form_submit' survey.id %}{% endif %}" method="post" id="formAnswers" novalidate data-preview="{% if preview_mode %}1{% else %}0{% endif %}">
           {% csrf_token %}
 
-          <div class="card shadow-sm rounded mb-3">
-            <div class="card-body p-4">
+          <div class="card pf-questions-card">
+            <div class="card-body pf-questions">
 
               {% for q in survey.questions.all %}              
                 {% if q.question_type != 'identity_participant_type' %}
-                <div class="mb-4">
-                  <label class="form-label fw-bold">
+                <div class="q-block">
+                  <label class="form-label">
                     
                       {% if q.is_required %}<span class="text-danger">*</span> {% endif %}
                       {{ q.text|safe }}
@@ -301,16 +261,17 @@
             </div>
           </div>
 
-          <div class="text-center mb-5">
-            <button type="submit" class="btn btn-lg btn-theme px-5">
+          <div class="pf-submit-wrap">
+            <button type="submit" class="btn btn-lg btn-theme">
               {% if preview_mode %}Submit (Preview){% else %}Submit Registration{% endif %}
             </button>
           </div>
         </form>
-
+      </div>
+      </div>
       {% endif %}
 
-      <div class="text-center pb-4" style="font-size:.78rem; color:#9aa3ad; letter-spacing:.02em;">
+      <div class="pf-footer">
         Powered by <span style="font-weight:600; color:#8a93a0;">Talbotiq Technologies</span>
       </div>
 
@@ -426,29 +387,7 @@
       });
     }
 
-    /* Shrink the form title's font until it fits on one line.
-       Starts at the CSS size (1.75rem = 28px) and steps down to a floor
-       of 14px. If it still doesn't fit at the floor, allow wrapping so it
-       never gets unreadably small. */
-    (function fitTitle() {
-      var el = document.querySelector('.form-title');
-      if (!el) return;
-      var MAX = 28, MIN = 14;
-      function fit() {
-        el.style.whiteSpace = 'nowrap';
-        var size = MAX;
-        el.style.fontSize = size + 'px';
-        while (el.scrollWidth > el.clientWidth && size > MIN) {
-          size -= 1;
-          el.style.fontSize = size + 'px';
-        }
-        if (el.scrollWidth > el.clientWidth) {
-          el.style.whiteSpace = 'normal';   // last resort: wrap rather than clip
-        }
-      }
-      fit();
-      window.addEventListener('resize', fit);
-    })();
+
   </script>
 </body>
 </html>

@@ -1,0 +1,501 @@
+/* ==========================================================================
+   PIKOM – public event registration pages
+   Used by: form_public.html, form_detail.html, form_thankyou.html
+   Matches the console and candidate-side design language: cream surfaces,
+   brick-red default accent (overridable per event via --theme), Anton
+   display headings and Public Sans body. Loads after bootstrap.css.
+   ========================================================================== */
+
+:root {
+  --pf-bg: #f1ece1;
+  --pf-surface: #faf7f2;
+  --pf-field: #fffdf9;
+  --pf-tint: #eae3d4;
+  --pf-ink: #1c1913;
+  --pf-ink-muted: #5e574a;
+  --pf-ink-subtle: #877e70;
+  --pf-border: #ded7c8;
+  --pf-border-strong: #cbbfab;
+  --pf-radius-lg: 22px;
+  --pf-radius-md: 14px;
+  --pf-radius-sm: 10px;
+  --pf-shadow: 0 2px 10px rgba(28, 25, 19, 0.05);
+  --pf-shadow-lift: 0 18px 48px rgba(28, 25, 19, 0.10);
+  --theme: #b3401f;
+  --theme-soft: #fbeee9;
+  --theme-hover: #983416;
+  --font-display: 'Anton', 'Oswald', 'Bebas Neue', sans-serif;
+  --font-body: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ---------- Page ---------- */
+body.pf-page {
+  background:
+    radial-gradient(1100px 500px at 0% -5%, rgba(179, 64, 31, 0.08), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(179, 64, 31, 0.05), transparent 55%),
+    var(--pf-bg);
+  color: var(--pf-ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Thin brand bar on top of every public page */
+.pf-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem clamp(1rem, 3vw, 2.5rem);
+  background: var(--pf-surface);
+  border-bottom: 1px solid var(--pf-border);
+}
+
+.pf-topbar img {
+  height: 30px;
+  width: auto;
+  display: block;
+}
+
+.pf-topbar .pf-topbar-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--pf-ink-muted);
+}
+
+.pf-shell {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: clamp(1rem, 3vw, 2.5rem) clamp(1rem, 3vw, 2.5rem) 1.5rem;
+}
+
+/* Page-level alerts and banners */
+.pf-page .alert {
+  border-radius: var(--pf-radius-md);
+  border: 1px solid var(--pf-border);
+  font-weight: 600;
+}
+
+.pf-banner {
+  border-radius: var(--pf-radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--pf-border);
+  box-shadow: var(--pf-shadow);
+  margin-bottom: clamp(1rem, 2vw, 1.5rem);
+  background: var(--pf-tint);
+}
+
+.pf-banner img {
+  display: block;
+  width: 100%;
+  max-height: 340px;
+  object-fit: cover;
+}
+
+/* ---------- Layout: aside (event info) + main (questions) ---------- */
+.pf-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(1rem, 2.5vw, 2rem);
+  align-items: start;
+}
+
+@media (min-width: 992px) {
+  .pf-layout {
+    grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+  }
+
+  .pf-aside {
+    position: sticky;
+    top: 1.5rem;
+  }
+}
+
+.pf-aside,
+.pf-main {
+  min-width: 0;
+}
+
+/* ---------- Cards ---------- */
+.pf-page .card {
+  background: var(--pf-surface);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-lg);
+  box-shadow: var(--pf-shadow);
+  margin-bottom: 1rem !important;
+  overflow: hidden;
+}
+
+.pf-page .card-body {
+  padding: clamp(1.1rem, 2.2vw, 1.6rem) !important;
+}
+
+/* Title card */
+.pf-hero-card .card-body {
+  position: relative;
+}
+
+.pf-hero-card .card-body::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  height: 4px;
+  background: var(--theme);
+}
+
+.pf-page .form-title {
+  font-family: var(--font-display);
+  font-weight: 400 !important;
+  font-size: clamp(2rem, 3.6vw, 2.9rem);
+  line-height: 1.02;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  color: var(--pf-ink);
+  margin: 0.35rem 0 0.75rem;
+  white-space: normal !important;
+  overflow: visible !important;
+}
+
+.pf-eyebrow {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--theme);
+}
+
+/* Rich description block */
+.form-desc {
+  color: var(--pf-ink-muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.form-desc p { margin: 0 0 0.6rem; }
+.form-desc p:last-child { margin-bottom: 0; }
+.form-desc ul,
+.form-desc ol { padding-left: 1.3rem; margin: 0 0 0.6rem; }
+.form-desc li { margin-bottom: 0.25rem; }
+.form-desc strong { color: var(--pf-ink); }
+.form-desc a { color: var(--theme); font-weight: 700; }
+
+.form-desc h1,
+.form-desc h2,
+.form-desc h3,
+.form-desc h4 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  font-size: 1.15rem;
+  letter-spacing: 0.02em;
+  color: var(--theme);
+  margin: 0.9rem 0 0.4rem;
+}
+
+.form-desc blockquote {
+  margin: 0.6rem 0;
+  padding: 0.7rem 0.95rem;
+  background: var(--theme-soft);
+  border-left: 4px solid var(--theme);
+  border-radius: 10px;
+  color: var(--pf-ink);
+}
+
+/* Event details */
+.pf-page .card h6 {
+  font-family: var(--font-body);
+  font-size: 0.7rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.16em !important;
+  text-transform: uppercase;
+  color: var(--pf-ink-muted) !important;
+  margin-bottom: 0.85rem !important;
+}
+
+.event-details-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 0.55rem;
+}
+
+.event-details-table td {
+  padding: 0;
+  font-size: 0.93rem;
+  color: var(--pf-ink);
+  vertical-align: top;
+}
+
+.event-details-table .ed-icon {
+  width: 2.2rem;
+  padding-right: 0.6rem;
+  font-size: 1.05rem;
+  white-space: nowrap;
+}
+
+.event-details-table a {
+  color: var(--theme) !important;
+}
+
+/* Questions card */
+.pf-questions {
+  padding: clamp(1.1rem, 2.4vw, 1.9rem) !important;
+}
+
+.pf-page .form-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--pf-ink);
+  margin-bottom: 0.4rem;
+  display: block;
+}
+
+.pf-page .form-label .text-danger {
+  color: var(--theme) !important;
+}
+
+.pf-page .q-block {
+  padding: 1.15rem 0;
+  border-bottom: 1px solid var(--pf-border);
+}
+
+.pf-page .q-block:first-child {
+  padding-top: 0;
+}
+
+.pf-page .q-block:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.pf-page .text-muted,
+.pf-page .form-text,
+.pf-page .small.text-muted {
+  color: var(--pf-ink-muted) !important;
+}
+
+/* ---------- Inputs ---------- */
+.pf-page .form-control,
+.pf-page .form-select {
+  font-family: var(--font-body);
+  font-size: 16px; /* stops iOS zoom on focus */
+  background-color: var(--pf-field);
+  border: 1px solid var(--pf-border-strong);
+  border-radius: var(--pf-radius-sm);
+  padding: 0.7rem 0.9rem;
+  min-height: 48px;
+  color: var(--pf-ink);
+  box-shadow: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.pf-page textarea.form-control {
+  min-height: 112px;
+}
+
+.pf-page .form-control::placeholder {
+  color: var(--pf-ink-subtle);
+  opacity: 1;
+}
+
+.pf-page .form-control:focus,
+.pf-page .form-select:focus {
+  border-color: var(--theme);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--theme) 16%, transparent);
+  outline: none;
+}
+
+.pf-page .form-control-sm {
+  min-height: 42px;
+  padding: 0.55rem 0.8rem;
+}
+
+.pf-page .followup-box {
+  margin-top: 0.6rem !important;
+  margin-left: 0 !important;
+  padding-left: 0.9rem;
+  border-left: 3px solid var(--theme-soft);
+}
+
+.pf-page .followup-box.ms-4 {
+  margin-left: 0.9rem !important;
+}
+
+/* Radios / checkboxes become selectable rows */
+.pf-page .form-check {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 48px;
+  padding: 0.65rem 0.9rem 0.65rem 2.7rem;
+  margin: 0 0 0.5rem;
+  background: var(--pf-field);
+  border: 1px solid var(--pf-border);
+  border-radius: var(--pf-radius-sm);
+  transition: border-color 160ms ease, background-color 160ms ease;
+  cursor: pointer;
+}
+
+.pf-page .form-check:hover {
+  border-color: var(--pf-border-strong);
+  background: #fff;
+}
+
+.pf-page .form-check:has(input:checked) {
+  border-color: var(--theme);
+  background: var(--theme-soft);
+}
+
+.pf-page .form-check-input {
+  position: absolute;
+  left: 0.9rem;
+  top: 50%;
+  transform: translateY(-50%);
+  margin: 0;
+  width: 1.15rem;
+  height: 1.15rem;
+  float: none;
+  cursor: pointer;
+  accent-color: var(--theme);
+}
+
+.pf-page .form-check-input:focus {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--theme) 16%, transparent);
+  border-color: var(--theme);
+}
+
+.pf-page .form-check-label {
+  margin: 0;
+  font-weight: 600;
+  color: var(--pf-ink);
+  cursor: pointer;
+  word-break: break-word;
+}
+
+/* "Other:" row keeps its input inline */
+.pf-page .form-check.d-flex {
+  padding-left: 2.7rem;
+}
+
+/* ---------- Submit ---------- */
+.pf-submit-wrap {
+  padding: 0.25rem 0 0.5rem;
+}
+
+.pf-page .btn-theme {
+  width: 100%;
+  min-height: 56px;
+  border-radius: var(--pf-radius-md);
+  background: var(--theme);
+  border: 1px solid var(--theme);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--theme) 28%, transparent);
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.pf-page .btn-theme:hover,
+.pf-page .btn-theme:focus {
+  background: var(--theme-hover);
+  border-color: var(--theme-hover);
+  color: #fff;
+  filter: none;
+  transform: translateY(-1px);
+}
+
+.pf-page .btn-theme:active {
+  transform: translateY(0);
+}
+
+.pf-note {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--pf-ink-subtle);
+  margin-top: 0.9rem;
+}
+
+/* ---------- Closed / thank-you states ---------- */
+.pf-state {
+  text-align: center;
+  padding: clamp(2rem, 5vw, 3.5rem) clamp(1.25rem, 4vw, 2.5rem) !important;
+}
+
+.pf-state .pf-state-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--theme-soft);
+  color: var(--theme);
+  font-size: 2rem;
+}
+
+.pf-state h3 {
+  font-family: var(--font-display);
+  font-weight: 400 !important;
+  text-transform: uppercase;
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+  letter-spacing: 0.01em;
+  color: var(--pf-ink) !important;
+  margin-bottom: 0.6rem;
+}
+
+/* ---------- Footer ---------- */
+.pf-footer {
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--pf-ink-subtle);
+  letter-spacing: 0.02em;
+  padding: 1.5rem 0 2rem;
+}
+
+.pf-footer strong {
+  color: var(--pf-ink-muted);
+}
+
+/* ---------- Mobile ---------- */
+@media (max-width: 575.98px) {
+  .pf-topbar {
+    padding: 0.7rem 1rem;
+  }
+
+  .pf-topbar img {
+    height: 26px;
+  }
+
+  .pf-page .card-body {
+    padding: 1.05rem !important;
+  }
+
+  .pf-page .form-check {
+    padding-left: 2.6rem;
+  }
+
+  .pf-page .form-check-input {
+    left: 0.8rem;
+  }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .pf-page *,
+  .pf-page *::before,
+  .pf-page *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

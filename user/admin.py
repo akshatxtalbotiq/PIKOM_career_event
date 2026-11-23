@@ -16,9 +16,11 @@ class UserAdmin(DjangoUserAdmin):
     search_fields = ("username", "first_name", "last_name", "email")
     ordering = ("username",)
     list_per_page = 40
+    filter_horizontal = ("groups", "user_permissions")
 
 
 @admin.register(Group)
 class GroupAdmin(admin.ModelAdmin):
     list_display = ("name",)
     search_fields = ("name",)
+    filter_horizontal = ("permissions",)

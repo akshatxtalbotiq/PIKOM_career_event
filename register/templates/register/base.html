@@ -62,14 +62,14 @@
       <button type="button" class="admin-menu-btn" id="adminMenuBtn" aria-label="Open navigation" aria-controls="sidenav-main" aria-expanded="false">
         <i class="material-symbols-rounded">menu</i>
       </button>
-      <img src="{% static 'user/img/PIKOM.png' %}" alt="PIKOM" height="26" class="admin-topbar-logo">
+      <img src="{% static 'user/img/PIKOM-orange.png' %}" alt="PIKOM" height="26" class="admin-topbar-logo">
     </header>
     <div class="sidenav-backdrop" id="sidenavBackdrop"></div>
 
     <aside class="sidenav" id="sidenav-main" aria-label="Admin navigation">
     <div class="sidenav-header">
         <a class="navbar-brand m-0" href="{% url 'campaign_list' %}">
-            <img src="{% static 'user/img/PIKOM.png' %}" class="navbar-brand-img" alt="PIKOM">
+            <img src="{% static 'user/img/PIKOM-orange.png' %}" class="navbar-brand-img" alt="PIKOM">
             <span class="brand-mark" aria-hidden="true">P</span>
         </a>
 
@@ -218,8 +218,10 @@
         }
       }
 
-      // Desktop: restore saved collapsed state
-      applyCollapsed(localStorage.getItem('sidenavCollapsed') === 'true');
+      // Desktop: restore the saved state. With no saved choice, start as the
+      // icon rail on laptop-width screens (below 1200px) to give content room.
+      const savedCollapsed = localStorage.getItem('sidenavCollapsed');
+      applyCollapsed(savedCollapsed === null ? window.innerWidth < 1200 : savedCollapsed === 'true');
 
       if (toggleBtn) {
         toggleBtn.addEventListener('click', function (e) {
