@@ -3,141 +3,567 @@
 
 {% block extracss %}
 <style>
-  .kpi-card { border: none; }
-  .kpi-card .kpi-value { font-size: 1.9rem; font-weight: 700; line-height: 1.1; }
-  .kpi-card .kpi-label { font-size: .8rem; text-transform: uppercase; letter-spacing: .03em; }
-  .kpi-card .kpi-sub { font-size: .78rem; }
-  .dash-chart-card { border: none; }
-  .dash-chart-card .card-header { background: transparent; border-bottom: 1px solid #f0f0f0; }
-  .funnel-row { display: flex; align-items: center; gap: .75rem; margin-bottom: .6rem; }
-  .funnel-row .funnel-label { width: 120px; font-size: .82rem; font-weight: 600; color: #344767; }
-  .funnel-row .funnel-bar-wrap { flex: 1; background: #f0f2f5; border-radius: 6px; overflow: hidden; height: 26px; }
-  .funnel-row .funnel-bar { height: 100%; display: flex; align-items: center; justify-content: flex-end;
-                            padding-right: 8px; color: #fff; font-size: .78rem; font-weight: 600; border-radius: 6px;
-                            min-width: 32px; transition: width .4s ease; }
-  .empty-state { padding: 4rem 1rem; text-align: center; color: #8392ab; }
+  /* ---------- Event dashboard (PIKOM console) ---------- */
+  .dash-wrap {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 0.5rem clamp(1rem, 2.2vw, 2.5rem) 3rem;
+  }
+
+  .dash-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    padding: 1rem 0 1.5rem;
+    border-bottom: 1px solid #ded7c8;
+    margin-bottom: clamp(1rem, 2vw, 1.5rem);
+  }
+
+  .dash-crumbs {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #5e574a;
+  }
+
+  .dash-crumbs a { color: #5e574a; }
+  .dash-crumbs a:hover { color: #b3401f; }
+
+  .dash-title {
+    font-family: 'Anton', 'Oswald', sans-serif;
+    font-size: clamp(2rem, 4.2vw, 3.4rem);
+    line-height: 0.98;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    color: #1c1913;
+    margin: 0.55rem 0 0.9rem;
+  }
+
+  .dash-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .dash-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.38rem 0.8rem;
+    border-radius: 999px;
+    background: #faf7f2;
+    border: 1px solid #ded7c8;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: #3f3a30;
+  }
+
+  .dash-chip .material-symbols-rounded {
+    font-size: 1rem;
+    color: #b3401f;
+  }
+
+  .dash-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.38rem 0.85rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border: 1px solid #ded7c8;
+    background: #eae3d4;
+    color: #5e574a;
+  }
+
+  .dash-pill.ok {
+    background: #e7f1e4;
+    color: #2f6b3a;
+    border-color: #9cc7a1;
+  }
+
+  .dash-hero-actions {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+
+  /* KPI row */
+  .dash-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: clamp(0.75rem, 1.5vw, 1.25rem);
+    margin-bottom: clamp(0.75rem, 1.5vw, 1.25rem);
+  }
+
+  .dash-kpi {
+    position: relative;
+    overflow: hidden;
+    background: #faf7f2;
+    border: 1px solid #ded7c8;
+    border-radius: 22px;
+    padding: 1.25rem 1.4rem 1.2rem;
+    box-shadow: 0 2px 8px rgba(28, 25, 19, 0.04);
+    min-width: 0;
+  }
+
+  .dash-kpi::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: #b3401f;
+  }
+
+  .dash-kpi.ok::before { background: #2f6b3a; }
+  .dash-kpi.info::before { background: #3f6e7a; }
+  .dash-kpi.ink::before { background: #1c1913; }
+
+  .dash-kpi-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #5e574a;
+  }
+
+  .dash-kpi-value {
+    font-family: 'Anton', 'Oswald', sans-serif;
+    font-size: clamp(2.2rem, 3.4vw, 3rem);
+    line-height: 1;
+    color: #1c1913;
+    margin-top: 0.5rem;
+  }
+
+  .dash-kpi-value.small {
+    font-family: 'Public Sans', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 800;
+    margin-top: 0.7rem;
+  }
+
+  .dash-kpi-sub {
+    font-size: 0.86rem;
+    color: #5e574a;
+    margin-top: 0.4rem;
+  }
+
+  /* Responsive 12-column panel grid */
+  .dash-grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: clamp(0.75rem, 1.5vw, 1.25rem);
+    margin-bottom: clamp(0.75rem, 1.5vw, 1.25rem);
+  }
+
+  .dash-s-4 { grid-column: span 4; }
+  .dash-s-5 { grid-column: span 5; }
+  .dash-s-6 { grid-column: span 6; }
+  .dash-s-7 { grid-column: span 7; }
+  .dash-s-8 { grid-column: span 8; }
+  .dash-s-12 { grid-column: span 12; }
+
+  .dash-panel {
+    background: #faf7f2;
+    border: 1px solid #ded7c8;
+    border-radius: 22px;
+    box-shadow: 0 2px 8px rgba(28, 25, 19, 0.04);
+    overflow: hidden;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .dash-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #ded7c8;
+  }
+
+  .dash-panel-head h6 {
+    font-family: 'Anton', 'Oswald', sans-serif;
+    font-weight: 400;
+    font-size: 1.2rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    margin: 0;
+    color: #1c1913;
+  }
+
+  .dash-panel-body {
+    padding: 1.25rem;
+    flex: 1 1 auto;
+  }
+
+  .dash-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 1.1rem 1.5rem;
+  }
+
+  .dash-detail-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #5e574a;
+  }
+
+  .dash-detail-value {
+    font-weight: 700;
+    font-size: 0.98rem;
+    margin-top: 0.3rem;
+    color: #1c1913;
+    overflow-wrap: anywhere;
+  }
+
+  .dash-about {
+    margin-top: 1.25rem;
+    padding-top: 1.1rem;
+    border-top: 1px dashed #cbbfab;
+    color: #3f3a30;
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .dash-contact {
+    margin-top: 1rem;
+    font-size: 0.86rem;
+    color: #5e574a;
+  }
+
+  /* Setup action list */
+  .dash-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    padding: 1rem;
+  }
+
+  .dash-action {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.8rem 0.95rem;
+    border-radius: 14px;
+    border: 1px solid #ded7c8;
+    background: #fffdf9;
+    color: #1c1913;
+    font-weight: 700;
+    font-size: 0.92rem;
+    transition: border-color 160ms ease, transform 160ms ease, background-color 160ms ease;
+  }
+
+  .dash-action .material-symbols-rounded {
+    color: #b3401f;
+    font-size: 1.25rem;
+  }
+
+  .dash-action .arrow {
+    margin-left: auto;
+    color: #877e70;
+    font-size: 1.1rem;
+  }
+
+  .dash-action:hover {
+    border-color: #b3401f;
+    color: #b3401f;
+    transform: translateY(-1px);
+  }
+
+  .dash-action.primary {
+    background: #b3401f;
+    border-color: #b3401f;
+    color: #fff;
+  }
+
+  .dash-action.primary .material-symbols-rounded,
+  .dash-action.primary .arrow {
+    color: #fff;
+  }
+
+  .dash-action.primary:hover {
+    background: #983416;
+    border-color: #983416;
+    color: #fff;
+  }
+
+  /* Chart panels */
+  .dash-chart-card {
+    border-radius: 22px !important;
+  }
+
+  .dash-chart-card .card-header {
+    background: transparent !important;
+    border-bottom: 1px solid #ded7c8 !important;
+    padding: 1rem 1.25rem !important;
+  }
+
+  .dash-chart-card .card-header h6 {
+    font-family: 'Anton', 'Oswald', sans-serif;
+    font-weight: 400;
+    font-size: 1.2rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    margin: 0;
+  }
+
+  .dash-chart-card .card-body {
+    padding: 1.25rem;
+  }
+
+  .funnel-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.7rem;
+  }
+
+  .funnel-row .funnel-label {
+    width: 128px;
+    flex: 0 0 128px;
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: #1c1913;
+  }
+
+  .funnel-row .funnel-bar-wrap {
+    flex: 1;
+    background: #eae3d4;
+    border-radius: 8px;
+    overflow: hidden;
+    height: 30px;
+  }
+
+  .funnel-row .funnel-bar {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 10px;
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border-radius: 8px;
+    min-width: 34px;
+    transition: width 0.4s ease;
+  }
+
+  .empty-state {
+    padding: 3.5rem 1rem;
+    text-align: center;
+    color: #5e574a;
+  }
+
+  /* Responsive */
+  @media (max-width: 991.98px) {
+    .dash-grid > * {
+      grid-column: 1 / -1 !important;
+    }
+  }
+
+  @media (max-width: 575.98px) {
+    .dash-hero-actions .btn {
+      flex: 1 1 auto;
+    }
+
+    .dash-kpis {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dash-kpi {
+      padding: 1rem;
+    }
+
+    .funnel-row .funnel-label {
+      width: 96px;
+      flex-basis: 96px;
+      font-size: 0.78rem;
+    }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
 <main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
-  <div class="container-fluid py-3">
+  <div class="dash-wrap">
 
-    <!-- Header -->
-    <div class="row align-items-center mb-2">
-      <div class="col-lg-8">
-        <div class="ms-1">
-          <h3 class="mb-0 h4 font-weight-bolder opacity-7">
-            <i class="material-symbols-rounded align-middle">monitoring</i>
-            {{ campaign.title }} — Event dashboard
-          </h3>
-          <nav aria-label="breadcrumb">
-            <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0">
-              <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="{% url 'campaign_list' %}">Events</a></li>
-              <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Dashboard</li>
-            </ol>
-          </nav>
+    <!-- Hero -->
+    <header class="dash-hero">
+      <div>
+        <nav class="dash-crumbs" aria-label="Breadcrumb">
+          <a href="{% url 'campaign_list' %}">Events</a>
+          <span>/</span>
+          <span>Dashboard</span>
+        </nav>
+        <h1 class="dash-title">{{ campaign.title }}</h1>
+        <div class="dash-meta">
+          <span class="dash-chip">
+            <i class="material-symbols-rounded">calendar_month</i>
+            {{ campaign.start_date|date:"d M Y" }} &ndash; {{ campaign.end_date|date:"d M Y" }}
+          </span>
+          {% if campaign.event_time %}
+          <span class="dash-chip"><i class="material-symbols-rounded">schedule</i>{{ campaign.event_time }}</span>
+          {% endif %}
+          {% if campaign.venue %}
+          <span class="dash-chip"><i class="material-symbols-rounded">location_on</i>{{ campaign.venue|truncatechars:60 }}</span>
+          {% endif %}
+          {% if campaign.is_active %}
+            <span class="dash-pill ok">Event active</span>
+          {% else %}
+            <span class="dash-pill">Event inactive</span>
+          {% endif %}
         </div>
       </div>
-      <div class="col-lg-4 text-lg-end mt-2 mt-lg-0">
-        <span class="text-xs text-secondary">
-          {{ campaign.start_date|date:"d M Y" }} &ndash; {{ campaign.end_date|date:"d M Y" }}
-          {% if campaign.is_active %}
-            <span class="badge badge-sm bg-gradient-success ms-1">Event active</span>
-          {% else %}
-            <span class="badge badge-sm bg-gradient-secondary ms-1">Event inactive</span>
-          {% endif %}
-        </span>
+      <div class="dash-hero-actions">
+        {% if registration_form %}
+          <a class="btn btn-primary mb-0" href="{% url 'form_builder' registration_form.id %}">Configure registration</a>
+          <a class="btn btn-outline-primary mb-0" href="{% url 'survey_submission_list' registration_form.id %}">View attendees</a>
+        {% else %}
+          <a class="btn btn-primary mb-0" href="{% url 'registration_form_list' %}?for_campaign={{ campaign.id }}">Create registration form</a>
+        {% endif %}
+        <a class="btn btn-outline-secondary mb-0" href="{% url 'campaign_list' %}">All events</a>
       </div>
-    </div>
+    </header>
 
-    <div class="row g-3 mt-0 align-items-stretch">
-      <div class="col-lg-8">
-        <div class="card shadow-sm h-100"><div class="card-body d-flex flex-wrap gap-4 align-items-center justify-content-between">
-          <div><div class="text-xs text-secondary text-uppercase">Registration</div>
-            {% if registration_status == 'Open' %}<span class="badge bg-success">Open</span>
-            {% elif registration_status == 'Closed' %}<span class="badge bg-secondary">Closed</span>
-            {% else %}<span class="badge bg-warning text-dark">Not configured</span>{% endif %}
-          </div>
-          <div><div class="text-xs text-secondary text-uppercase">Event time</div><strong>{{ campaign.event_time|default:"Add event time" }}</strong></div>
-          <div><div class="text-xs text-secondary text-uppercase">Venue</div><strong>{{ campaign.venue|default:"Add venue"|truncatechars:55 }}</strong></div>
-          {% if campaign.organizer_name %}<div><div class="text-xs text-secondary text-uppercase">Organizer</div><strong>{{ campaign.organizer_name }}</strong></div>{% endif %}
-        </div></div>
-      </div>
-      <div class="col-lg-4">
-        <div class="card shadow-sm h-100"><div class="card-body">
-          <h6 class="mb-2">Event setup</h6>
-          <div class="d-flex flex-wrap gap-2">
-            {% if registration_form %}
-              <a class="btn btn-sm btn-primary mb-0" href="{% url 'form_builder' registration_form.id %}">Configure registration</a>
-              <a class="btn btn-sm btn-outline-primary mb-0" href="{% url 'survey_submission_list' registration_form.id %}">View attendees</a>
-            {% else %}
-              <a class="btn btn-sm btn-primary mb-0" href="{% url 'registration_form_list' %}?for_campaign={{ campaign.id }}">Create registration form</a>
+    <!-- KPIs -->
+    <section class="dash-kpis" aria-label="Key figures">
+      <article class="dash-kpi ink">
+        <div class="dash-kpi-label">Registrations</div>
+        <div class="dash-kpi-value">{{ kpis.total }}</div>
+        <div class="dash-kpi-sub">{{ kpis.pending }} pending</div>
+      </article>
+      <article class="dash-kpi ok">
+        <div class="dash-kpi-label">Approved</div>
+        <div class="dash-kpi-value">{{ kpis.approved }}</div>
+        <div class="dash-kpi-sub">{% if kpis.total %}{% widthratio kpis.approved kpis.total 100 %}% of registrations{% else %}No registrations yet{% endif %}</div>
+      </article>
+      <article class="dash-kpi info">
+        <div class="dash-kpi-label">Checked in</div>
+        <div class="dash-kpi-value">{{ kpis.checked_in }}</div>
+        <div class="dash-kpi-sub">{% if kpis.approved %}{% widthratio kpis.checked_in kpis.approved 100 %}% of approved{% else %}Check-in opens after approval{% endif %}</div>
+      </article>
+      <article class="dash-kpi">
+        <div class="dash-kpi-label">Registration form</div>
+        <div class="dash-kpi-value small">{{ registration_status }}</div>
+        <div class="dash-kpi-sub">Event status: {% if campaign.is_active %}Active{% else %}Inactive{% endif %}</div>
+      </article>
+    </section>
+
+    <!-- Details + setup -->
+    <div class="dash-grid">
+      <section class="dash-panel dash-s-8" aria-labelledby="details-title">
+        <div class="dash-panel-head">
+          <h6 id="details-title">Event details</h6>
+        </div>
+        <div class="dash-panel-body">
+          <div class="dash-details">
+            <div>
+              <div class="dash-detail-label">Registration</div>
+              <div class="dash-detail-value">
+                {% if registration_status == 'Open' %}<span class="dash-pill ok">Open</span>
+                {% elif registration_status == 'Closed' %}<span class="dash-pill">Closed</span>
+                {% else %}<span class="dash-pill">Not configured</span>{% endif %}
+              </div>
+            </div>
+            <div>
+              <div class="dash-detail-label">Event time</div>
+              <div class="dash-detail-value">{{ campaign.event_time|default:"Add event time" }}</div>
+            </div>
+            <div>
+              <div class="dash-detail-label">Venue</div>
+              <div class="dash-detail-value">{{ campaign.venue|default:"Add venue" }}</div>
+            </div>
+            {% if campaign.organizer_name %}
+            <div>
+              <div class="dash-detail-label">Organizer</div>
+              <div class="dash-detail-value">{{ campaign.organizer_name }}</div>
+            </div>
             {% endif %}
-            <a class="btn btn-sm btn-outline-primary mb-0" href="{% url 'event_infrastructure' campaign.id %}">Agenda, maps &amp; booths</a>
-            <a class="btn btn-sm btn-outline-primary mb-0" href="{% url 'event_career' campaign.id %}">Career directory</a>
-            <a class="btn btn-sm btn-outline-secondary mb-0" href="{% url 'campaign_list' %}">All events</a>
           </div>
-          {% if campaign.organizer_email %}<small class="d-block text-secondary mt-2">{{ campaign.organizer_email }}{% if campaign.organizer_phone %} · {{ campaign.organizer_phone }}{% endif %}</small>{% endif %}
-        </div></div>
-      </div>
-    </div>
-    {% if campaign.description %}<div class="card shadow-sm mt-3"><div class="card-body py-3"><div class="text-xs text-secondary text-uppercase mb-1">About this event</div>{{ campaign.description|linebreaksbr }}</div></div>{% endif %}
+          {% if campaign.organizer_email or campaign.organizer_phone %}
+          <div class="dash-contact">
+            {{ campaign.organizer_email }}{% if campaign.organizer_email and campaign.organizer_phone %} &middot; {% endif %}{{ campaign.organizer_phone }}
+          </div>
+          {% endif %}
+          {% if campaign.description %}
+          <div class="dash-about">{{ campaign.description|linebreaksbr }}</div>
+          {% endif %}
+        </div>
+      </section>
 
-    <div class="row g-3 mt-0">
-      <div class="col-6 col-md-3"><div class="card kpi-card shadow-sm h-100"><div class="card-body py-3"><div class="kpi-label text-secondary">Registrations</div><div class="kpi-value text-dark">{{ kpis.total }}</div><div class="kpi-sub text-secondary">{{ kpis.pending }} pending</div></div></div></div>
-      <div class="col-6 col-md-3"><div class="card kpi-card shadow-sm h-100"><div class="card-body py-3"><div class="kpi-label text-secondary">Approved</div><div class="kpi-value text-success">{{ kpis.approved }}</div></div></div></div>
-      <div class="col-6 col-md-3"><div class="card kpi-card shadow-sm h-100"><div class="card-body py-3"><div class="kpi-label text-secondary">Checked in</div><div class="kpi-value text-info">{{ kpis.checked_in }}</div></div></div></div>
-      <div class="col-6 col-md-3"><div class="card kpi-card shadow-sm h-100"><div class="card-body py-3"><div class="kpi-label text-secondary">Registration form</div><div class="kpi-value" style="font-size:1rem">{{ registration_status }}</div><div class="kpi-sub text-secondary">Event status: {% if campaign.is_active %}Active{% else %}Inactive{% endif %}</div></div></div></div>
+      <section class="dash-panel dash-s-4" aria-labelledby="setup-title">
+        <div class="dash-panel-head">
+          <h6 id="setup-title">Event setup</h6>
+        </div>
+        <nav class="dash-actions">
+          <a class="dash-action" href="{% url 'event_infrastructure' campaign.id %}">
+            <i class="material-symbols-rounded">map</i> Agenda, maps &amp; booths
+            <i class="material-symbols-rounded arrow">chevron_right</i>
+          </a>
+          <a class="dash-action" href="{% url 'event_career' campaign.id %}">
+            <i class="material-symbols-rounded">work</i> Career directory
+            <i class="material-symbols-rounded arrow">chevron_right</i>
+          </a>
+          {% if registration_form %}
+          <a class="dash-action" href="{% url 'survey_submission_list' registration_form.id %}">
+            <i class="material-symbols-rounded">group</i> Attendees
+            <i class="material-symbols-rounded arrow">chevron_right</i>
+          </a>
+          {% endif %}
+        </nav>
+      </section>
     </div>
 
     {% if not has_data %}
-      <div class="card mt-3">
-        <div class="card-body empty-state">
-          <i class="material-symbols-rounded" style="font-size:48px;">inbox</i>
-          <p class="mt-2 mb-0">No registrations yet. Your event status and setup links are shown above.</p>
+      <section class="dash-panel">
+        <div class="empty-state">
+          <i class="material-symbols-rounded" style="font-size:48px;color:#b3401f;">inbox</i>
+          <p class="mt-2 mb-0">No registrations yet. Share the registration link to start collecting attendees.</p>
         </div>
-      </div>
+      </section>
     {% else %}
 
-    <div class="row g-3 mt-0">
-      <!-- Funnel -->
-      <div class="col-lg-5">
-        <div class="card dash-chart-card shadow-sm h-100">
-          <div class="card-header py-3"><h6 class="mb-0">Registration funnel</h6></div>
-          <div class="card-body" id="funnelContainer"></div>
-        </div>
-      </div>
-      <!-- Timeline -->
-      <div class="col-lg-7">
-        <div class="card dash-chart-card shadow-sm h-100">
-          <div class="card-header py-3"><h6 class="mb-0">Registrations over time</h6></div>
-          <div class="card-body"><canvas id="timelineChart" height="120"></canvas></div>
-        </div>
-      </div>
+    <!-- Funnel + timeline -->
+    <div class="dash-grid">
+      <section class="dash-panel dash-s-5 dash-chart-card" aria-labelledby="funnel-title">
+        <div class="card-header"><h6 id="funnel-title" class="mb-0">Registration funnel</h6></div>
+        <div class="card-body" id="funnelContainer"></div>
+      </section>
+      <section class="dash-panel dash-s-7 dash-chart-card" aria-labelledby="timeline-title">
+        <div class="card-header"><h6 id="timeline-title" class="mb-0">Registrations over time</h6></div>
+        <div class="card-body"><canvas id="timelineChart" height="120"></canvas></div>
+      </section>
     </div>
 
-    <div class="row g-3 mt-0">
+    <!-- Organisations + approval status -->
+    <div class="dash-grid">
       {% if show_orgs %}
-      <!-- Top organizations -->
-      <div class="col-lg-6">
-        <div class="card dash-chart-card shadow-sm h-100">
-          <div class="card-header py-3"><h6 class="mb-0">Top organizations</h6></div>
-          <div class="card-body"><canvas id="orgsChart" height="220"></canvas></div>
-        </div>
-      </div>
+      <section class="dash-panel dash-s-6 dash-chart-card" aria-labelledby="orgs-title">
+        <div class="card-header"><h6 id="orgs-title" class="mb-0">Top organisations</h6></div>
+        <div class="card-body"><canvas id="orgsChart" height="220"></canvas></div>
+      </section>
       {% endif %}
-      <!-- Status split -->
-      <div class="{% if show_orgs %}col-lg-6{% else %}col-lg-12{% endif %}">
-        <div class="card dash-chart-card shadow-sm h-100">
-          <div class="card-header py-3"><h6 class="mb-0">Approval status</h6></div>
-          <div class="card-body d-flex justify-content-center"><canvas id="statusChart" height="220"></canvas></div>
-        </div>
-      </div>
+      <section class="dash-panel {% if show_orgs %}dash-s-6{% else %}dash-s-12{% endif %} dash-chart-card" aria-labelledby="status-title">
+        <div class="card-header"><h6 id="status-title" class="mb-0">Approval status</h6></div>
+        <div class="card-body d-flex justify-content-center"><canvas id="statusChart" height="220"></canvas></div>
+      </section>
     </div>
 
     <!-- Per-question audience breakdown -->
-    <div class="row g-3 mt-0" id="questionChartsRow"></div>
+    <div class="dash-grid" id="questionChartsRow"></div>
 
     {% endif %}
   </div>
@@ -149,7 +575,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
 (function () {
-  const THEME = "{{ theme_color|escapejs }}" || "#198754";
+  const THEME = "{{ theme_color|escapejs }}" || "#b3401f";
   const funnel = {{ funnel_json|safe }};
   const timeline = {{ timeline_json|safe }};
   const orgs = {{ orgs_json|safe }};
@@ -157,8 +583,8 @@
   const KPI = { approved: {{ kpis.approved }}, pending: {{ kpis.pending }}, rejected: {{ kpis.rejected }} };
 
   // A repeatable palette derived around the theme + supporting hues.
-  const PALETTE = [THEME, "#5e72e4", "#11cdef", "#fb6340", "#f5365c", "#2dce89",
-                   "#ffd600", "#8965e0", "#8392ab", "#344767", "#e14eca", "#00bcd4"];
+  const PALETTE = [THEME, "#1c1913", "#c98a2b", "#3f6e7a", "#2f6b3a", "#877e70",
+                   "#e28e75", "#6b4f2a", "#5e574a", "#8f2a14", "#a2713f", "#4b5d3a"];
 
   // ---- Funnel (horizontal bars, relative widths) ----
   (function () {
@@ -184,7 +610,7 @@
         { type: "bar", label: "Per day", data: timeline.daily,
           backgroundColor: THEME + "cc", borderRadius: 4, order: 2 },
         { type: "line", label: "Cumulative", data: timeline.cumulative,
-          borderColor: "#5e72e4", backgroundColor: "#5e72e4", tension: .3,
+          borderColor: "#1c1913", backgroundColor: "#1c1913", tension: .3,
           pointRadius: 2, yAxisID: "y1", order: 1 }
       ]
     },
@@ -219,7 +645,7 @@
     data: {
       labels: ["Approved", "Pending", "Rejected"],
       datasets: [{ data: [KPI.approved, KPI.pending, KPI.rejected],
-                   backgroundColor: ["#2dce89", "#ffd600", "#f5365c"] }]
+                   backgroundColor: ["#2f6b3a", "#c98a2b", "#b3401f"] }]
     },
     options: { responsive: true, maintainAspectRatio: true,
                plugins: { legend: { position: "bottom" } } }
@@ -229,11 +655,10 @@
   const row = document.getElementById("questionChartsRow");
   questionCharts.forEach((qc, idx) => {
     const col = document.createElement("div");
-    col.className = "col-lg-6";
+    col.className = "dash-s-6 dash-chart-card dash-panel";
     col.innerHTML =
-      '<div class="card dash-chart-card shadow-sm h-100">' +
-      '<div class="card-header py-3"><h6 class="mb-0">' + qc.title.replace(/</g, "&lt;") + '</h6></div>' +
-      '<div class="card-body"><canvas id="qChart' + idx + '" height="200"></canvas></div></div>';
+      '<div class="card-header"><h6 class="mb-0">' + qc.title.replace(/</g, "&lt;") + '</h6></div>' +
+      '<div class="card-body"><canvas id="qChart' + idx + '" height="200"></canvas></div>';
     row.appendChild(col);
     new Chart(col.querySelector("canvas"), {
       type: "bar",
