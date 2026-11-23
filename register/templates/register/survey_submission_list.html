@@ -189,6 +189,45 @@ div.dt-button-collection .dt-danger-item.dt-button {
 }
 div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; }
 
+/* ---------- Match the campaign list's table ----------
+   That table's cells wrap their content in <p class="text-xs font-weight-bold">;
+   these cells are rendered by DataTables as bare strings, so the same size,
+   weight, colour and row rhythm are applied here instead. Badges, links and
+   the tick icons set their own colour and are unaffected. */
+#entries tbody td {
+  font-size: .75rem;
+  font-weight: 600;
+  color: #262626;
+  line-height: 1.25;          /* .text-xs on the campaign list */
+  /* The campaign list reaches its 43px rows with 8px cell padding plus a py-1
+     wrapper inside each cell. These cells have no wrapper, so the same row
+     height comes from the padding alone. */
+  padding: .75rem .5rem;
+}
+#entries tbody td a { font-weight: 600; }
+/* The tick / check-in glyphs are the only cell content the campaign list has no
+   equivalent of, and at their natural line box they alone make every row 5px
+   taller. Pinning the line height to the text's keeps the row rhythm identical
+   without shrinking the glyph itself. */
+#entries tbody td .material-symbols-rounded {
+  /* 15px is the td's own computed line height (.75rem x 1.25). A relative
+     value would resolve against the glyph's 20px instead and make the row
+     taller than the campaign list's, which is the whole point of this block. */
+  line-height: 15px;
+  vertical-align: middle;
+}
+
+/* The resize plugin marks every resizable heading with a dashed edge, which
+   the campaign list has no equivalent of. Kept, but only while the pointer is
+   on the heading — so the table reads the same at rest and the columns are
+   still obviously draggable when you go looking. */
+#entries_wrapper table.dataTable thead th[data-is-resizable=true] {
+  border-inline-end-color: transparent;
+}
+#entries_wrapper table.dataTable thead tr:hover th[data-is-resizable=true] {
+  border-inline-end-color: #d7dde5;
+}
+
 /* Manual resize handle fallback so column edges stay draggable even when
    DataTables clone/fixed header wrappers interfere with plugin hit testing. */
 #entries_wrapper .manual-col-resize-handle {
@@ -277,12 +316,13 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
         <div class="card my-2">
 
           <div class="card-body px-0 pb-2">
-            <div class="table-responsive p-3">
-              <table id="entries" class="table table-hover align-items-center mb-0" style="font-size: 12px;">
+            <div class="table-responsive p-0">
+              <table id="entries" class="table align-items-center mb-0">
                 <thead>
                   <tr id="entriesHeaderRow">
                       <th><input type="checkbox" id="select-all"></th>
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Reg #</th>
+                      <th data-col-key="regno" data-filter="text"
+                          class="text-uppercase text-secondary text-sm font-weight-bolder">Reg #</th>
                   </tr>
                 </thead>
                 <tbody id="registration-body"></tbody>
@@ -694,21 +734,34 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
         // followed by the fixed system columns (Status, Check-in, QR Sent,
         // Submitted). The static <thead> only ships the checkbox and Reg #.
         const $headerRow = $('#entriesHeaderRow');
+        // opts.key / opts.filter tag the heading for the shared column-filter
+        // module (register/js/table-filters.js); a heading with no filter — the
+        // select-all checkbox — simply gets no funnel.
         const appendTh = (label, opts = {}) => {
           const cls = opts.center
             ? 'text-uppercase text-secondary text-sm font-weight-bolder text-center'
             : 'text-uppercase text-secondary text-sm font-weight-bolder';
-          $headerRow.append($('<th></th>').addClass(cls).text(label));
+          const $th = $('<th></th>').addClass(cls).text(label);
+          if (opts.key) {
+            $th.attr('data-col-key', opts.key);
+            $th.attr('data-filter', opts.filter || 'text');
+            $th.attr('data-label', label);
+            if (opts.choices) $th.attr('data-choices', opts.choices);
+          }
+          $headerRow.append($th);
         };
         // Progress indicators first, so the operator sees each participant's
         // state at a glance, then identity / custom answers, then submitted.
-        appendTh('Status', { center: true });
-        appendTh('Check-in', { center: true });
-        appendTh('QR Sent', { center: true });
-        appendTh('Reminder', { center: true });
-        identityCols.forEach(col => appendTh(col.title));
-        customCols.forEach(col => appendTh(col.title));
-        appendTh('Submitted');
+        // The three tick columns render as icons but filter as Yes / No, so
+        // their choices are stated rather than derived from the cells.
+        appendTh('Status',   { center: true, key: 'status',   filter: 'choice',
+                               choices: 'Pending,Approved,Rejected' });
+        appendTh('Check-in', { center: true, key: 'checkin',  filter: 'choice', choices: 'Yes,No' });
+        appendTh('QR Sent',  { center: true, key: 'qrsent',   filter: 'choice', choices: 'Yes,No' });
+        appendTh('Reminder', { center: true, key: 'reminder', filter: 'choice', choices: 'Yes,No' });
+        identityCols.forEach(col => appendTh(col.title, { key: 'id_' + col.key, filter: 'text' }));
+        customCols.forEach(col => appendTh(col.title, { key: 'q_' + col.key, filter: 'text' }));
+        appendTh('Submitted', { key: 'submitted', filter: 'date' });
 
         // Render Yes / No for booleans when exporting (Excel grabs the icon's
         // text content otherwise → "radio_button_unchecked"). Display gets
@@ -1065,13 +1118,12 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
           });
         }
 
-        let table = new DataTable('#entries', {
+        let table = new DataTable('#entries', Object.assign({
         responsive: false,
         paging: true,
         lengthChange: true,
         searching: true,
         pageLength: 10,
-        colReorder: true,
         // Disable auto hook and initialize manually in initComplete.
         colResize: false,
         scrollY: '60vh',
@@ -1265,9 +1317,10 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
           attachColResize(this.api());
           enableManualColumnResize(this.api());
           restoreColumnWidths(this.api(), surveyId);   // ← NEW: overlay saved widths
+          RegisterTable.enhance(this.api());
           console.log('DataTable initialized and loaded via AJAX');
         }
-      });
+      }, RegisterTable.options({ fixedLeft: 1 })));
 
       // Keep resize handles healthy after users reorder columns.
       table.on('column-reorder.dt', function () {

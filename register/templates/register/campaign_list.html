@@ -1,6 +1,8 @@
 {% extends 'register/base.html' %}
 {% load static %}
 
+
+
 {% block content %}
     <main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg ">
     <!-- Navbar -->
@@ -225,13 +227,25 @@
             <div class="table-responsive p-0">
               <table id="campaigns" class="table align-items-center mb-0" >
                 <thead>
+                  {% comment %}
+                    Every column except the Action one carries a filter button.
+                    data-filter picks the popover: text, date (a from/to range)
+                    or choice (a pick-list). data-col-key is the stable handle —
+                    column indexes move once the header is dragged, so nothing
+                    addresses a column by number.
+                  {% endcomment %}
                   <tr>
                     <!--th class="text-uppercase text-secondary text-sm font-weight-bolder">ID</th-->
-                    <th class="text-uppercase text-secondary text-sm font-weight-bolder">Campaign Title</th>
-                    <th class="text-uppercase text-secondary text-sm font-weight-bolder">Start Date</th>
-                    <th class="text-uppercase text-secondary text-sm font-weight-bolder">End Date</th>
+                    <th class="text-uppercase text-secondary text-sm font-weight-bolder"
+                        data-col-key="title" data-filter="text" data-label="Campaign Title">Campaign Title</th>
+                    <th class="text-uppercase text-secondary text-sm font-weight-bolder"
+                        data-col-key="start" data-filter="date" data-label="Start Date">Start Date</th>
+                    <th class="text-uppercase text-secondary text-sm font-weight-bolder"
+                        data-col-key="end" data-filter="date" data-label="End Date">End Date</th>
                     <!-- <th class="text-uppercase text-secondary text-sm font-weight-bolder">Total Enteries</th> -->
-                    <th class="text-uppercase text-secondary text-sm font-weight-bolder">Status</th>
+                    <th class="text-uppercase text-secondary text-sm font-weight-bolder"
+                        data-col-key="status" data-filter="choice" data-label="Status"
+                        data-choices="Active,Inactive">Status</th>
                     <th class="text-uppercase text-secondary text-sm font-weight-bolder"></th>
                   </tr>
                 </thead>
@@ -265,10 +279,15 @@
                             </div>
                           </div>
                         </td>
-                        <td>
+                        {% comment %}
+                          data-date is the machine-readable value the date-range
+                          filter compares against, so it never has to parse the
+                          display format back into a date.
+                        {% endcomment %}
+                        <td data-date="{{ campaign.start_date|date:'Y-m-d' }}">
                           <p class="text-xs font-weight-bold mb-0">{{ campaign.start_date|date:"Y-m-d h:i A"  }}</p>
                         </td>
-                        <td>
+                        <td data-date="{{ campaign.end_date|date:'Y-m-d' }}">
                           <p class="text-xs font-weight-bold mb-0">{{ campaign.end_date|date:"Y-m-d h:i A"  }}</p>
                         </td>
                         <!-- <td class="align-middle text-center">
@@ -649,9 +668,19 @@
     });
 
     $(document).ready(function () {
-      $(".timepicker").flatpickr({
+      // Start defaults to 12:00 AM, end to 11:59 PM when a date is picked
+      // on an empty field; the time can still be changed manually.
+      $("#campaignStartDate").flatpickr({
         enableTime: true,
         dateFormat: "Y-m-d H:i",
+        defaultHour: 0,
+        defaultMinute: 0,
+      });
+      $("#campaignEndDate").flatpickr({
+        enableTime: true,
+        dateFormat: "Y-m-d H:i",
+        defaultHour: 23,
+        defaultMinute: 59,
       });
 
 
@@ -670,7 +699,7 @@
           });
       }
      
-      const datatable = new DataTable('#campaigns', {
+      const datatable = new DataTable('#campaigns', Object.assign({
         responsive: false,
         paging: true,
         processing: true,
@@ -678,8 +707,24 @@
         searching: true,
         pageLength: 10,
         lengthMenu: [[5, 10, 15, 50, 100], [5, 10, 15, 50, 100]],
-        colReorder: false,
-        scrollY: '60vh',  
+        {% comment %}
+          Drag a heading to move its column. stateSave is what remembers that
+          across page loads (stateDuration 0 = localStorage, no expiry);
+          stateSaveParams strips the searches and the page number so ONLY the
+          layout is restored — a filter still silently applied after a reload
+          reads as missing data.
+        {% endcomment %}
+        colReorder: true,
+        stateSave: true,
+        stateDuration: 0,
+        stateSaveParams: function (settings, data) {
+          if (data.search) data.search.search = '';
+          (data.columns || []).forEach(function (c) {
+            if (c.search) c.search.search = '';
+          });
+          data.start = 0;
+        },
+        scrollY: '60vh',
         layout: {
           topStart: [
             {
@@ -726,11 +771,13 @@
         },
         pagingTag: 'button',
         initComplete: function (settings, json) {
-          console.log('table is ready');
+          RegisterTable.enhance(this.api());
         }
-      });
+      }, RegisterTable.options()));
 
     });
+
+
   
     function getCSRFToken() {
           let name = 'csrftoken';

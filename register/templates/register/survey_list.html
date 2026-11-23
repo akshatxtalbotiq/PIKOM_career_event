@@ -53,12 +53,12 @@
               <table id="surveys" class="table align-items-center mb-0">
                 <thead>
                   <tr>
-                    <th class="text-uppercase text-secondary text-sm font-weight-bolder" style="width: 10%;">ID</th>
-                    <th class="text-uppercase text-secondary text-sm font-weight-bolder" style="width: 55%;">{% if list_purpose == 'registration' %}Form Title{% else %}Survey Title{% endif %}</th>
-                    <!-- <th class="text-uppercase text-secondary text-sm font-weight-bolder" style="width: 30%;">Description</th> -->
-                    <th class="text-uppercase text-secondary text-sm font-weight-bolder" style="width: 20%;">Created At</th>
-                    <th class="text-uppercase text-secondary text-sm font-weight-bolder" style="width: 5%;">Status</th>
-                    <th class="text-uppercase text-secondary text-sm font-weight-bolder" style="width: 10%;"></th>
+                    <th data-col-key="id" data-filter="number" class="text-uppercase text-secondary text-sm font-weight-bolder">ID</th>
+                    <th data-col-key="title" data-filter="text" class="text-uppercase text-secondary text-sm font-weight-bolder">{% if list_purpose == 'registration' %}Form Title{% else %}Survey Title{% endif %}</th>
+                    <!-- <th class="text-uppercase text-secondary text-sm font-weight-bolder">Description</th> -->
+                    <th data-col-key="created" data-filter="date" class="text-uppercase text-secondary text-sm font-weight-bolder">Created At</th>
+                    <th data-col-key="status" data-filter="choice" class="text-uppercase text-secondary text-sm font-weight-bolder">Status</th>
+                    <th class="text-uppercase text-secondary text-sm font-weight-bolder"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -508,7 +508,7 @@
           });
       }
      
-      const datatable = new DataTable('#surveys', {
+      const datatable = new DataTable('#surveys', Object.assign({
 
         responsive: false,
         'paging': true,
@@ -516,7 +516,6 @@
         "lengthChange": true,
         "searching": true,
         "pageLength": 10,
-        colReorder: true,
         layout: {
           topStart: {
             'search': {
@@ -563,10 +562,10 @@
 
 
         initComplete: function (settings, json) {
-          console.log('table is ready')
+          RegisterTable.enhance(this.api());
         }
 
-      });
+      }, RegisterTable.options()));
 
     });
   

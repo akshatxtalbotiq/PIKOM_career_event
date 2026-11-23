@@ -28,19 +28,19 @@
                 <table id="entries" class="table table-hover align-items-center mb-0" style="font-size: 12px;">
                   <thead>
                     <tr>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Reg. No.</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Package</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Salutation</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Name</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Email</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Phone</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Designation</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder ">Organization</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder ">Address</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Registartion Date</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">Submitted By</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">SB Email</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder">SB Contact Number</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder" data-col-key="regno" data-filter="text">Reg. No.</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder" data-col-key="package" data-filter="choice">Package</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder" data-col-key="salutation" data-filter="choice">Salutation</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder" data-col-key="name" data-filter="text">Name</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder" data-col-key="email" data-filter="text">Email</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder" data-col-key="phone" data-filter="text">Phone</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder" data-col-key="designation" data-filter="text">Designation</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder " data-col-key="org" data-filter="text">Organization</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder " data-col-key="address" data-filter="text">Address</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder" data-col-key="regdate" data-filter="date">Registartion Date</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder" data-col-key="sb" data-filter="text">Submitted By</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder" data-col-key="sb_email" data-filter="text">SB Email</th>
+                        <th class="text-uppercase text-secondary text-sm font-weight-bolder" data-col-key="sb_phone" data-filter="text">SB Contact Number</th>
 
                         
                     </tr>
@@ -79,14 +79,13 @@
 
       let campaignId = '{{campaign.campaign_code}}';  
 
-  new DataTable('#entries', {
+  new DataTable('#entries', Object.assign({
     responsive: false,
     paging: true,
     processing: true,
     lengthChange: true,
     searching: true,
     pageLength: 10,
-    colReorder: true,
     ajax: {
       url: '/get_sponsorship_list',
       type: 'POST', 
@@ -158,9 +157,10 @@
     },
     order: [[0, 'desc']],
     initComplete: function () {
+      RegisterTable.enhance(this.api());
       console.log('DataTable initialized and loaded via AJAX');
     }
-  });
+  }, RegisterTable.options()));
 });
 
     

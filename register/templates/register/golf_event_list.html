@@ -35,11 +35,11 @@
             <table id="golfEvents" class="table align-items-center mb-0">
               <thead>
                 <tr>
-                  <th class="text-uppercase text-secondary text-sm font-weight-bolder">Event Title</th>
-                  <th class="text-uppercase text-secondary text-sm font-weight-bolder">Start Date</th>
-                  <th class="text-uppercase text-secondary text-sm font-weight-bolder">End Date</th>
-                  <th class="text-uppercase text-secondary text-sm font-weight-bolder">Forms</th>
-                  <th class="text-uppercase text-secondary text-sm font-weight-bolder">Status</th>
+                  <th data-col-key="title" data-filter="text" class="text-uppercase text-secondary text-sm font-weight-bolder">Event Title</th>
+                  <th data-col-key="start" data-filter="date" class="text-uppercase text-secondary text-sm font-weight-bolder">Start Date</th>
+                  <th data-col-key="end" data-filter="date" class="text-uppercase text-secondary text-sm font-weight-bolder">End Date</th>
+                  <th data-col-key="forms" data-filter="number" class="text-uppercase text-secondary text-sm font-weight-bolder">Forms</th>
+                  <th data-col-key="status" data-filter="choice" class="text-uppercase text-secondary text-sm font-weight-bolder">Status</th>
                   <th class="text-uppercase text-secondary text-sm font-weight-bolder"></th>
                 </tr>
               </thead>
@@ -409,7 +409,7 @@
       });
     }
 
-    new DataTable('#golfEvents', {
+    new DataTable('#golfEvents', Object.assign({
       responsive: false,
       paging: true,
       lengthChange: true,
@@ -439,7 +439,10 @@
         zeroRecords: "<p class='fs-6 fw-500 text-secondary py-4'>No golf event matches your search.</p>",
       },
       pagingTag: 'button',
-    });
+      initComplete: function () {
+        RegisterTable.enhance(this.api());
+      },
+    }, RegisterTable.options()));
   });
 </script>
 {% endblock %}

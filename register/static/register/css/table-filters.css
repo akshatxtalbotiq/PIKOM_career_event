@@ -1,0 +1,73 @@
+/* =============================================================================
+   Per-column filters + drag-to-reorder — shared by every admin list table.
+   Paired with register/js/table-filters.js.
+   ========================================================================== */
+
+/* ---------- The funnel in the heading ---------- */
+th.col-filter-th { position: relative; cursor: grab; }
+th.col-filter-th:active { cursor: grabbing; }
+th.col-filter-th .th-wrap {
+  display: flex; align-items: center; gap: 6px; justify-content: space-between;
+}
+.col-filter-btn {
+  border: 0; background: transparent; padding: 0 2px; line-height: 1;
+  color: #b0b7c3; border-radius: 4px; cursor: pointer; flex: 0 0 auto;
+  /* The survey entries table pins a manual column-resize handle to the right
+     edge of every heading (right:-5px; width:10px; z-index:3). The margin keeps
+     the funnel clear of it so both stay usable, and the z-index guarantees the
+     funnel wins anywhere they still overlap — without it the handle silently
+     swallows every click on the filter. */
+  margin-right: 7px; position: relative; z-index: 4;
+}
+.col-filter-btn:hover { color: #3a9fd6; background: #eef6fc; }
+.col-filter-btn svg { width: 15px; height: 15px; display: block; }
+/* A column with a filter on it has to be obvious at a glance, otherwise an
+   empty table looks like missing data. */
+.col-filter-btn.is-active { color: #fff; background: #3a9fd6; }
+.col-filter-btn.is-active:hover { background: #2f86b6; color: #fff; }
+
+/* ---------- The popover ---------- */
+.filter-pop { min-width: 250px; max-width: none; }
+.filter-pop .popover-header { font-size: .78rem; font-weight: 700; }
+.filter-pop .popover-body { padding: .75rem; }
+.filter-pop label.form-label { font-size: .72rem; margin-bottom: .15rem; color: #667085; }
+.filter-pop .form-control, .filter-pop .form-select,
+.filter-pop .form-check-label { font-size: .82rem; }
+.filter-pop .fp-row { margin-top: .5rem; }
+.filter-pop .fp-date { background: #fff; cursor: pointer; }
+.filter-pop .fp-actions {
+  display: flex; gap: .4rem; justify-content: flex-end; margin-top: .65rem;
+}
+/* A long pick-list (auto-derived from the column) scrolls rather than running
+   off the bottom of the screen. */
+.filter-pop .fp-choices { max-height: 220px; overflow-y: auto; }
+
+/* flatpickr renders after Bootstrap has measured and positioned the popover,
+   so the date popover reserves the room up front: 308px calendar + the body's
+   own .75rem padding either side. Constraining the calendar to 100% of a
+   narrow popover instead silently clips Friday and Saturday off the grid. */
+.filter-pop-date .popover-body { min-width: 334px; }
+.filter-pop .flatpickr-calendar.static { box-shadow: none; border: 1px solid #e6e9ef; }
+.filter-pop .flatpickr-calendar.static.open { margin-top: 2px; }
+.filter-pop .flatpickr-wrapper { display: block; }
+
+/* ---------- The bar above the table ---------- */
+.tf-bar {
+  display: flex; flex-wrap: wrap; gap: .4rem; align-items: center;
+  padding: 0 1rem .5rem;
+}
+.tf-bar .tf-chips { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+.tf-bar .fb-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: #eef6fc; color: #1f6f9c; border: 1px solid #cfe6f5;
+  border-radius: 999px; padding: 2px 6px 2px 10px; font-size: .75rem; font-weight: 600;
+}
+.tf-bar .fb-chip button {
+  border: 0; background: transparent; color: #1f6f9c; line-height: 1; padding: 0; cursor: pointer;
+}
+.tf-bar .fb-chip button .material-symbols-rounded { font-size: 15px; vertical-align: middle; }
+.tf-bar .tf-clear-all { font-size: .75rem; }
+.tf-bar .tf-reset { font-size: .75rem; margin-left: auto; }
+
+/* ---------- Drag feedback ---------- */
+table.dt-colreorder-float { outline: 2px solid #3a9fd6; outline-offset: -2px; opacity: .92; }

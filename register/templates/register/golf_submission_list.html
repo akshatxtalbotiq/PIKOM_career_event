@@ -175,8 +175,8 @@
                     on a descending sort, which would show a flight as 4,3,2,1.
                   {% endcomment %}
                   <th class="col-seq"></th>
-                  <th class="text-uppercase text-secondary text-sm font-weight-bolder">Ref</th>
-                  <th class="text-uppercase text-secondary text-sm font-weight-bolder">Submitted</th>
+                  <th data-col-key="ref" data-filter="text" class="text-uppercase text-secondary text-sm font-weight-bolder">Ref</th>
+                  <th data-col-key="submitted" data-filter="date" class="text-uppercase text-secondary text-sm font-weight-bolder">Submitted</th>
                   {% comment %}
                     One row per participant. Every registration-level value is
                     repeated on each of the entry's rows so that each row reads
@@ -184,9 +184,10 @@
                     Excel export all stay correct.
                   {% endcomment %}
                   {% if form.is_participant %}
-                    <th class="text-uppercase text-secondary text-sm font-weight-bolder">Player</th>
+                    <th data-col-key="seat" data-filter="text" class="text-uppercase text-secondary text-sm font-weight-bolder">Player</th>
                     {% for pf in list_player_fields %}
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder col-player">
+                      <th class="text-uppercase text-secondary text-sm font-weight-bolder col-player"
+                          data-col-key="pf_{{ pf.key }}" data-filter="text">
                         <span class="grp-tag">Player</span>{{ pf.label|striptags|truncatechars:22 }}
                       </th>
                     {% endfor %}
@@ -199,26 +200,31 @@
                     export re-reads it to qualify the heading in the workbook.
                   {% endcomment %}
                   {% for f in contact_spec %}
-                    <th class="text-uppercase text-secondary text-sm font-weight-bolder col-contact">
+                    <th class="text-uppercase text-secondary text-sm font-weight-bolder col-contact"
+                        data-col-key="ct_{{ f.0 }}" data-filter="text">
                       <span class="grp-tag">Contact</span>{{ f.1 }}
                     </th>
                   {% endfor %}
                   {% for f in billing_spec %}
-                    <th class="text-uppercase text-secondary text-sm font-weight-bolder col-billing">
+                    <th class="text-uppercase text-secondary text-sm font-weight-bolder col-billing"
+                        data-col-key="bl_{{ f.0 }}" data-filter="text">
                       <span class="grp-tag">Billing</span>{{ f.1 }}
                     </th>
                   {% endfor %}
-                  <th class="text-uppercase text-secondary text-sm font-weight-bolder">
+                  <th class="text-uppercase text-secondary text-sm font-weight-bolder"
+                      data-col-key="items" data-filter="text">
                     {% if form.is_sponsor %}Items{% else %}Add-ons{% endif %}
                   </th>
-                  <th class="text-uppercase text-secondary text-sm font-weight-bolder">Total</th>
+                  <th class="text-uppercase text-secondary text-sm font-weight-bolder"
+                      data-col-key="total" data-filter="number">Total</th>
                   {% for q in list_questions %}
-                    <th class="text-uppercase text-secondary text-sm font-weight-bolder">
+                    <th class="text-uppercase text-secondary text-sm font-weight-bolder"
+                        data-col-key="q_{{ q.id }}" data-filter="text">
                       {{ q.list_column_label|default:q.text|striptags|truncatechars:22 }}
                     </th>
                   {% endfor %}
-                  <th class="text-uppercase text-secondary text-sm font-weight-bolder">Remarks</th>
-                  <th class="text-uppercase text-secondary text-sm font-weight-bolder">Status</th>
+                  <th data-col-key="remarks" data-filter="text" class="text-uppercase text-secondary text-sm font-weight-bolder">Remarks</th>
+                  <th data-col-key="status" data-filter="choice" data-choices="Pending,Approved,Rejected" class="text-uppercase text-secondary text-sm font-weight-bolder">Status</th>
                   <th class="text-uppercase text-secondary text-sm font-weight-bolder"></th>
                 </tr>
               </thead>
@@ -454,7 +460,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 $(document).ready(function () {
-  golfTable = new DataTable('#golfEntries', {
+  golfTable = new DataTable('#golfEntries', Object.assign({
     responsive: false,
     paging: true,
     lengthChange: true,
@@ -573,7 +579,10 @@ $(document).ready(function () {
       zeroRecords: "<p class='fs-6 fw-500 text-secondary py-4'>No entry matches your search.</p>",
     },
     pagingTag: 'button',
-  });
+    initComplete: function () {
+      RegisterTable.enhance(this.api());
+    },
+  }, RegisterTable.options({ fixedLeft: 2, fixedRight: 1 })));
 
   // Inject a small "N selected" badge into the buttons toolbar, matching
   // the pattern used on the survey submissions page.

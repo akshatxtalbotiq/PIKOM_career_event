@@ -42,12 +42,12 @@ Shared list page for both golf form menus. `list_kind` is 'participant' or
             <table id="golfForms" class="table align-items-center mb-0">
               <thead>
                 <tr>
-                  <th class="text-uppercase text-secondary text-sm font-weight-bolder" style="width:8%;">ID</th>
-                  <th class="text-uppercase text-secondary text-sm font-weight-bolder" style="width:37%;">Form Title</th>
-                  <th class="text-uppercase text-secondary text-sm font-weight-bolder" style="width:22%;">Golf Event</th>
-                  <th class="text-uppercase text-secondary text-sm font-weight-bolder" style="width:13%;">Created At</th>
-                  <th class="text-uppercase text-secondary text-sm font-weight-bolder" style="width:8%;">Status</th>
-                  <th class="text-uppercase text-secondary text-sm font-weight-bolder" style="width:12%;"></th>
+                  <th data-col-key="id" data-filter="number" class="text-uppercase text-secondary text-sm font-weight-bolder">ID</th>
+                  <th data-col-key="title" data-filter="text" class="text-uppercase text-secondary text-sm font-weight-bolder">Form Title</th>
+                  <th data-col-key="event" data-filter="choice" class="text-uppercase text-secondary text-sm font-weight-bolder">Golf Event</th>
+                  <th data-col-key="created" data-filter="date" class="text-uppercase text-secondary text-sm font-weight-bolder">Created At</th>
+                  <th data-col-key="status" data-filter="choice" class="text-uppercase text-secondary text-sm font-weight-bolder">Status</th>
+                  <th class="text-uppercase text-secondary text-sm font-weight-bolder"></th>
                 </tr>
               </thead>
               <tbody>
@@ -415,7 +415,7 @@ Shared list page for both golf form menus. `list_kind` is 'participant' or
   $(document).ready(function () {
     $('.timepicker').flatpickr({ enableTime: true, dateFormat: 'Y-m-d H:i' });
 
-    new DataTable('#golfForms', {
+    new DataTable('#golfForms', Object.assign({
       responsive: false,
       paging: true,
       lengthChange: true,
@@ -452,7 +452,10 @@ Shared list page for both golf form menus. `list_kind` is 'participant' or
         zeroRecords: "<p class='fs-6 fw-500 text-secondary py-4'>No form matches your search.</p>",
       },
       pagingTag: 'button',
-    });
+      initComplete: function () {
+        RegisterTable.enhance(this.api());
+      },
+    }, RegisterTable.options()));
   });
 </script>
 {% endblock %}

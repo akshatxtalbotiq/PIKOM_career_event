@@ -459,6 +459,9 @@
 
   </style>
 
+  {% comment %}Per-column filters + drag-to-reorder, shared by every list table.{% endcomment %}
+  <link rel="stylesheet" href="{% static 'register/css/table-filters.css' %}">
+
   {% block extra_head %}
   {% endblock %}
   {% block extracss %}
@@ -601,6 +604,7 @@
   <script src="{% static 'register/sweetalert2/sweetalert2.js' %}"></script>
 
   <script src="{% static 'user/js/jquery.dataTables.colResize.js' %}"></script>
+  <script src="{% static 'register/js/table-filters.js' %}"></script>
 
   {% block extrajs_head %}
   {% endblock %}
