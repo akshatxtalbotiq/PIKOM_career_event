@@ -1,0 +1,936 @@
+/* ==========================================================================
+   PIKOM – Django admin (/admin/) skin
+   Same tokens as the console theme (pikom-admin.css) and the candidate side.
+   Loaded from templates/admin/base_site.html AFTER Django's own dark_mode.css,
+   so the palette is locked in light and dark modes alike.
+   ========================================================================== */
+
+/* ---------- 1. Django CSS variables -> PIKOM palette ----------
+   Specificity: html[data-theme] and html:not([data-theme=light]) are (0,1,1),
+   and this block comes later in the cascade, so it wins in every mode. */
+:root,
+html,
+html[data-theme="light"],
+html[data-theme="dark"],
+html:not([data-theme="light"]) {
+  --primary: #b3401f;
+  --secondary: #1c1913;
+  --accent: #b3401f;
+  --primary-fg: #fff;
+
+  --body-fg: #1c1913;
+  --body-bg: #f1ece1;
+  --body-quiet-color: #5e574a;
+  --body-medium-color: #3f3a30;
+  --body-loud-color: #1c1913;
+
+  --header-color: #1c1913;
+  --header-branding-color: #b3401f;
+  --header-bg: #faf7f2;
+  --header-link-color: #1c1913;
+
+  --breadcrumbs-fg: #5e574a;
+  --breadcrumbs-link-fg: #1c1913;
+  --breadcrumbs-bg: transparent;
+
+  --link-fg: #b3401f;
+  --link-hover-color: #983416;
+  --link-selected-fg: #b3401f;
+
+  --hairline-color: #ded7c8;
+  --border-color: #cbbfab;
+
+  --error-fg: #8f2a14;
+
+  --message-success-bg: #e7f1e4;
+  --message-warning-bg: #fbeee9;
+  --message-error-bg: #fbeee9;
+
+  --darkened-bg: #eae3d4;
+  --selected-bg: #eae3d4;
+  --selected-row: #fbeee9;
+
+  --button-fg: #fff;
+  --button-bg: #b3401f;
+  --button-hover-bg: #983416;
+  --default-button-bg: #b3401f;
+  --default-button-hover-bg: #983416;
+  --close-button-bg: #5e574a;
+  --close-button-hover-bg: #1c1913;
+  --delete-button-bg: #8f2a14;
+  --delete-button-hover-bg: #6e1f0f;
+
+  --object-tools-fg: #fff;
+  --object-tools-bg: #b3401f;
+  --object-tools-hover-bg: #983416;
+
+  --font-family-primary: 'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family-monospace: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* ---------- 2. Base ---------- */
+html, body {
+  background: #f1ece1;
+  color: #1c1913;
+  font-family: var(--font-family-primary);
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+}
+
+#container {
+  background: transparent;
+  min-height: 100vh;
+}
+
+.theme-toggle,
+.color-theme-toggle {
+  display: none !important;
+}
+
+a:link, a:visited {
+  color: #b3401f;
+}
+
+a:hover {
+  color: #983416;
+}
+
+:focus-visible {
+  outline: 2px solid #b3401f;
+  outline-offset: 2px;
+}
+
+/* ---------- 3. Header ---------- */
+#header {
+  background: #faf7f2;
+  border-bottom: 1px solid #ded7c8;
+  box-shadow: 0 2px 10px rgba(28, 25, 19, 0.04);
+  padding: 12px 24px;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  color: #1c1913;
+}
+
+#branding {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+#site-name {
+  margin: 0;
+}
+
+#site-name a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: 'Anton', 'Oswald', sans-serif;
+  font-size: 1.45rem;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #1c1913;
+}
+
+#site-name a:hover {
+  color: #b3401f;
+}
+
+.admin-brand-logo {
+  height: 28px;
+  width: auto;
+  display: block;
+}
+
+#user-tools {
+  color: #5e574a;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin-left: auto;
+}
+
+#user-tools a {
+  color: #1c1913;
+  border-bottom: 1px solid #cbbfab;
+  font-weight: 700;
+}
+
+#user-tools a:hover {
+  color: #b3401f;
+  border-color: #b3401f;
+}
+
+#user-tools button {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: #b3401f;
+  font-weight: 700;
+  font-size: 0.82rem;
+  text-transform: none;
+  cursor: pointer;
+  border-bottom: 1px solid #cbbfab;
+}
+
+/* "Back to PIKOM Console" pill in the header */
+.admin-console-link {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid #cbbfab;
+  background: #fff;
+  color: #1c1913 !important;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.admin-console-link:hover {
+  background: #eae3d4;
+  border-color: #b3401f;
+  color: #b3401f !important;
+}
+
+/* ---------- 4. Breadcrumbs ---------- */
+.breadcrumbs {
+  background: transparent;
+  color: #5e574a;
+  padding: 0.9rem 24px 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.breadcrumbs a {
+  color: #5e574a;
+}
+
+.breadcrumbs a:hover {
+  color: #b3401f;
+}
+
+/* ---------- 5. Page titles ---------- */
+#content {
+  padding: 1.25rem 24px 2.5rem;
+}
+
+#content h1 {
+  font-family: 'Anton', 'Oswald', sans-serif;
+  font-weight: 400;
+  font-size: clamp(1.9rem, 3.4vw, 2.5rem);
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  line-height: 1.05;
+  color: #1c1913;
+  margin: 0 0 1rem;
+}
+
+/* ---------- 6. Index: app modules as cards ---------- */
+.module,
+#changelist,
+.change-form #content-main > form,
+.login #content-main {
+  background: #faf7f2;
+  border: 1px solid #ded7c8;
+  border-radius: 22px;
+  box-shadow: 0 2px 10px rgba(28, 25, 19, 0.05);
+  overflow: hidden;
+  color: #1c1913;
+}
+
+.module {
+  margin-bottom: 1.25rem;
+}
+
+.module h2,
+.module caption,
+.inline-group h2 {
+  background: #faf7f2;
+  border-bottom: 1px solid #ded7c8;
+  color: #1c1913;
+  font-family: 'Anton', 'Oswald', sans-serif;
+  font-weight: 400;
+  font-size: 1.35rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  padding: 0.9rem 1.1rem;
+  margin: 0;
+}
+
+#content-main .module table {
+  width: 100%;
+  background: transparent;
+}
+
+#content-main .module table th,
+#content-main .module table td {
+  background: transparent;
+  border-bottom: 1px solid #ded7c8;
+  padding: 0.7rem 1.1rem;
+  vertical-align: middle;
+}
+
+#content-main .module table tr:last-child th,
+#content-main .module table tr:last-child td {
+  border-bottom: 0;
+}
+
+#content-main .module table tr:hover th,
+#content-main .module table tr:hover td {
+  background: rgba(234, 227, 212, 0.5);
+}
+
+#content-main .module th a {
+  color: #1c1913;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+#content-main .module th a:hover {
+  color: #b3401f;
+}
+
+/* Add / Change become pills instead of the stock black cells */
+#content-main .module td:has(> a.addlink),
+#content-main .module td:has(> a.changelink) {
+  width: 1%;
+  white-space: nowrap;
+  padding-right: 0.6rem;
+}
+
+#content-main .module a.addlink,
+#content-main .module a.changelink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.38rem 0.8rem 0.38rem 1.7rem;
+  border-radius: 999px;
+  border: 1px solid #cbbfab;
+  background-color: #fff;
+  background-position: 0.55rem center;
+  background-size: 0.68rem;
+  color: #1c1913;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  margin-left: 0.35rem;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+#content-main .module a.addlink {
+  background-color: #b3401f;
+  border-color: #b3401f;
+  color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14' fill='%23fff'%3E%3Cpath d='M7 1v12M1 7h12' stroke='%23fff' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") !important;
+}
+
+#content-main .module a.addlink:hover {
+  background-color: #983416;
+  border-color: #983416;
+  color: #fff;
+}
+
+#content-main .module a.changelink {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14' fill='none' stroke='%231c1913' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9.5 2.5l2 2L5 11H3V9z'/%3E%3C/svg%3E") !important;
+}
+
+#content-main .module a.changelink:hover {
+  background-color: #eae3d4;
+  border-color: #b3401f;
+  color: #b3401f;
+}
+
+/* The app module headings still have a plain text-only fallback. */
+.app-register .module h2,
+.app-auth .module h2 {
+  letter-spacing: 0.02em;
+}
+
+/* Recent actions and other sidebar modules */
+#content-related {
+  background: transparent;
+}
+
+#content-related .module {
+  background: #faf7f2;
+}
+
+#content-related h2 {
+  font-family: 'Anton', 'Oswald', sans-serif;
+  font-weight: 400;
+  text-transform: uppercase;
+  font-size: 1.2rem;
+  letter-spacing: 0.02em;
+  color: #1c1913;
+  background: #faf7f2;
+  border-bottom: 1px solid #ded7c8;
+  padding: 0.85rem 1.1rem;
+  margin: 0;
+}
+
+#content-related h3 {
+  color: #5e574a;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.75rem 1.1rem 0;
+  margin: 0;
+}
+
+#content-related .actionlist {
+  padding: 0.5rem 1.1rem 1rem;
+  margin: 0;
+}
+
+#content-related .actionlist li {
+  padding: 0.6rem 0 0.6rem 1.5rem;
+  border-bottom: 1px solid #ded7c8;
+  font-size: 0.88rem;
+  line-height: 1.35;
+  list-style: none;
+}
+
+#content-related .actionlist li:last-child {
+  border-bottom: 0;
+}
+
+#content-related .actionlist li a {
+  font-weight: 700;
+  color: #1c1913;
+}
+
+#content-related .actionlist li a:hover {
+  color: #b3401f;
+}
+
+#content-related .mini.quiet {
+  color: #5e574a;
+}
+
+#content-related p {
+  padding: 0.75rem 1.1rem 1rem;
+  color: #5e574a;
+  margin: 0;
+}
+
+/* Dashboard layout: keep the index content and sidebar stacked on small screens */
+#content-related {
+  margin-top: 0;
+}
+
+/* ---------- 7. Changelist ---------- */
+#changelist {
+  padding: 0;
+}
+
+#changelist .toplinks {
+  border-bottom: 1px solid #ded7c8;
+}
+
+#toolbar {
+  background: #faf7f2;
+  border-bottom: 1px solid #ded7c8;
+  padding: 0.8rem 1.1rem;
+}
+
+#toolbar form input[type=text] {
+  border-radius: 10px;
+}
+
+#changelist-search {
+  padding: 0.5rem 0;
+}
+
+#changelist-form .actions {
+  background: #faf7f2;
+  border-bottom: 1px solid #ded7c8;
+  padding: 0.7rem 1.1rem;
+}
+
+#changelist-form .results {
+  overflow-x: auto;
+}
+
+#changelist table thead th {
+  background: #eae3d4;
+  color: #5e574a;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #ded7c8;
+  white-space: nowrap;
+}
+
+#changelist table thead th a {
+  color: #5e574a;
+}
+
+#changelist table tbody td,
+#changelist table tbody th {
+  border-bottom: 1px solid #ded7c8;
+  padding: 0.75rem 1rem;
+  background: transparent;
+}
+
+#changelist table tbody tr:hover td,
+#changelist table tbody tr:hover th {
+  background: rgba(234, 227, 212, 0.5);
+}
+
+#changelist table tbody tr.selected td,
+#changelist table tbody tr.selected th {
+  background: #fbeee9;
+}
+
+#changelist .paginator {
+  background: #faf7f2;
+  border-top: 1px solid #ded7c8;
+  padding: 0.85rem 1.1rem;
+  color: #5e574a;
+}
+
+#changelist-filter {
+  background: #faf7f2;
+  border-left: 1px solid #ded7c8;
+  border-radius: 0 22px 22px 0;
+  padding: 0 0 1rem;
+}
+
+#changelist-filter h2 {
+  background: #faf7f2;
+  color: #1c1913;
+  border-bottom: 1px solid #ded7c8;
+  font-family: 'Anton', 'Oswald', sans-serif;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  padding: 0.9rem 1.1rem;
+}
+
+#changelist-filter h3 {
+  color: #5e574a;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+#changelist-filter li a {
+  color: #5e574a;
+}
+
+#changelist-filter li.selected a {
+  color: #b3401f;
+  font-weight: 700;
+}
+
+/* ---------- 8. Left nav (model list on changelists) ---------- */
+#nav-sidebar {
+  background: #faf7f2;
+  border-right: 1px solid #ded7c8;
+  border-radius: 22px 0 0 22px;
+}
+
+#nav-sidebar .module {
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+#nav-sidebar .current-model {
+  background: #eae3d4;
+  border-left: 3px solid #b3401f;
+  border-radius: 0 8px 8px 0;
+}
+
+#nav-sidebar .current-model a {
+  color: #1c1913;
+  font-weight: 700;
+}
+
+/* ---------- 9. Change form ---------- */
+.change-form #content-main > form,
+.change-form #content-main form > fieldset {
+  background: transparent;
+}
+
+fieldset.module {
+  background: #faf7f2;
+  border: 1px solid #ded7c8;
+  border-radius: 22px;
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+}
+
+fieldset.module h2 {
+  font-family: 'Anton', 'Oswald', sans-serif;
+  font-weight: 400;
+  font-size: 1.2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  background: #faf7f2;
+  color: #1c1913;
+  border-bottom: 1px solid #ded7c8;
+  padding: 0.9rem 1.1rem;
+}
+
+.form-row {
+  border-bottom: 1px solid #eee7d8;
+  padding: 0.85rem 1.1rem;
+}
+
+.form-row:last-child {
+  border-bottom: 0;
+}
+
+.form-row label,
+.aligned label {
+  color: #1c1913;
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.form-row .help,
+.help,
+p.help {
+  color: #5e574a;
+  font-size: 0.8rem;
+}
+
+.submit-row {
+  background: #eae3d4;
+  border: 1px solid #ded7c8;
+  border-radius: 22px;
+  padding: 0.9rem 1.1rem;
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.submit-row a.deletelink {
+  background: #8f2a14;
+  color: #fff !important;
+  border-radius: 10px;
+  padding: 0.55rem 0.95rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background-image: none;
+  padding-left: 0.95rem;
+}
+
+.object-tools a {
+  border-radius: 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.45rem 0.85rem;
+}
+
+.object-tools a:link,
+.object-tools a:visited {
+  color: #fff;
+}
+
+/* ---------- 10. Form controls ---------- */
+input[type=text],
+input[type=password],
+input[type=email],
+input[type=url],
+input[type=number],
+input[type=tel],
+input[type=date],
+input[type=time],
+input[type=datetime-local],
+input[type=search],
+select,
+textarea,
+.vTextField,
+.vDateField,
+.vTimeField,
+.vURLField,
+.vIntegerField {
+  background: #fffdf9;
+  border: 1px solid #cbbfab;
+  border-radius: 10px;
+  color: #1c1913;
+  font-family: var(--font-family-primary);
+  font-size: 0.92rem;
+  padding: 0.5rem 0.75rem;
+  box-shadow: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+  max-width: 100%;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #b3401f;
+  box-shadow: 0 0 0 3px rgba(179, 64, 31, 0.14);
+  outline: none;
+}
+
+input[type=checkbox],
+input[type=radio] {
+  accent-color: #b3401f;
+}
+
+select[multiple] {
+  padding: 0.25rem;
+}
+
+/* Filter-horizontal and related widgets */
+.selector .selector-available,
+.selector .selector-chosen {
+  background: #faf7f2;
+  border: 1px solid #ded7c8;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.selector-chooseall,
+.selector-clearall,
+.selector-add,
+.selector-remove {
+  border-radius: 8px;
+}
+
+/* Buttons */
+input[type=submit],
+button,
+.button,
+a.button,
+.button:link {
+  font-family: var(--font-family-primary);
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  box-shadow: none;
+}
+
+input[type=submit].default,
+.button.default {
+  background: #b3401f;
+  border: 1px solid #b3401f;
+  color: #fff;
+}
+
+input[type=submit].default:hover,
+.button.default:hover {
+  background: #983416;
+  border-color: #983416;
+}
+
+input[type=submit]:not(.default),
+.button:not(.default) {
+  background: #faf7f2;
+  border: 1px solid #cbbfab;
+  color: #1c1913;
+}
+
+input[type=submit]:not(.default):hover,
+.button:not(.default):hover {
+  background: #eae3d4;
+}
+
+/* Messages */
+.messagelist li {
+  border-radius: 12px;
+  border: 1px solid #ded7c8;
+  box-shadow: none;
+  padding: 0.75rem 1rem 0.75rem 2.6rem;
+  font-weight: 600;
+}
+
+.messagelist li.success {
+  background: #e7f1e4;
+  border-color: #9cc7a1;
+  color: #2f6b3a;
+}
+
+.messagelist li.warning {
+  background: #fbeee9;
+  border-color: #e28e75;
+  color: #8f2a14;
+}
+
+.messagelist li.error {
+  background: #fbeee9;
+  border-color: #e28e75;
+  color: #8f2a14;
+}
+
+/* ---------- 11. Login page ---------- */
+body.login {
+  background: radial-gradient(1000px 520px at 12% -10%, rgba(179, 64, 31, 0.10), transparent 60%), #f1ece1 !important;
+  min-height: 100vh;
+}
+
+.login #container {
+  width: min(440px, 92vw) !important;
+  max-width: 440px;
+  margin: 3.5rem auto 0 !important;
+  background: #faf7f2;
+  border: 1px solid #ded7c8;
+  border-radius: 28px;
+  box-shadow: 0 18px 48px rgba(28, 25, 19, 0.10);
+  overflow: hidden;
+  min-height: 0 !important;
+}
+
+.login #header {
+  justify-content: center;
+  background: #faf7f2;
+  border-bottom: 1px solid #ded7c8;
+  padding: 1.5rem 1.5rem 1.25rem;
+  box-shadow: none;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.login #branding {
+  justify-content: center;
+}
+
+.login #site-name a {
+  font-size: 1.8rem;
+}
+
+.login #site-name .admin-brand-logo {
+  height: 34px;
+}
+
+.login #content {
+  width: auto;
+  max-width: none;
+  margin: 0;
+  padding: 1.6rem 1.6rem 1.8rem;
+}
+
+.login #content-main {
+  float: none;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0;
+}
+
+.login #content h1 {
+  text-align: center;
+  font-size: 2rem;
+  margin-bottom: 1.1rem;
+}
+
+.login form .form-row {
+  padding: 0 0 1rem;
+  border: 0;
+}
+
+.login form .form-row label {
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+.login form .form-row input[type=text],
+.login form .form-row input[type=password] {
+  width: 100%;
+  min-height: 44px;
+  font-size: 0.98rem;
+  padding: 0.6rem 0.85rem;
+}
+
+.login .submit-row {
+  background: transparent;
+  border: 0;
+  padding: 0.25rem 0 0;
+  margin-top: 0.25rem;
+  display: block;
+}
+
+.login .submit-row input[type=submit] {
+  width: 100%;
+  min-height: 48px;
+  background: #b3401f;
+  border: 1px solid #b3401f;
+  color: #fff;
+}
+
+.login .submit-row input[type=submit]:hover {
+  background: #983416;
+  border-color: #983416;
+}
+
+.login .password-reset-link {
+  display: block;
+  text-align: center;
+  margin-top: 1rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.login .errornote {
+  background: #fbeee9;
+  border: 1px solid #e28e75;
+  color: #8f2a14;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.login .errorlist {
+  color: #8f2a14;
+  font-size: 0.85rem;
+}
+
+/* ---------- 12. Mobile ---------- */
+@media (max-width: 767px) {
+  #header {
+    padding: 12px 16px;
+  }
+
+  #content {
+    padding: 1rem 16px 2rem;
+  }
+
+  #content h1 {
+    font-size: 1.7rem;
+  }
+
+  .breadcrumbs {
+    padding: 0.75rem 16px 0;
+  }
+
+  #changelist-filter {
+    border-left: 0;
+    border-top: 1px solid #ded7c8;
+    border-radius: 0 0 22px 22px;
+  }
+
+  #content-main .module a.addlink,
+  #content-main .module a.changelink {
+    padding: 0.35rem 0.65rem 0.35rem 1.5rem;
+  }
+}

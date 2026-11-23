@@ -5,11 +5,21 @@
 
 {% block extrastyle %}
   {{ block.super }}
-  <link rel="stylesheet" href="{% static 'register/admin.css' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Public+Sans:ital,wght@0,300..800;1,300..800&display=swap">
+  <link rel="stylesheet" href="{% static 'register/css/pikom-admin-django.css' %}">
 {% endblock %}
 
 {% block branding %}
-  <div id="site-name"><a href="{% url 'admin:index' %}">PIKOM Operations</a></div>
+  <div id="site-name">
+    <a href="{% url 'admin:index' %}">
+      <img src="{% static 'user/img/PIKOM.png' %}" alt="" class="admin-brand-logo">
+      <span>Operations</span>
+    </a>
+  </div>
 {% endblock %}
 
-{% block nav-global %}{% endblock %}
+{% block nav-global %}
+  <a class="admin-console-link" href="{% url 'campaign_list' %}">&larr; PIKOM Console</a>
+{% endblock %}

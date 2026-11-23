@@ -1,463 +1,42 @@
 {% load static %}
-
-
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="theme-color" content="#f1ece1">
   <link rel="apple-touch-icon" sizes="76x76" href="{% static 'user/img/apple-icon.png' %}">
   <link rel="icon" type="image/png" href="{% static 'user/img/favicon.png' %}">
   <title>
-    PIKOM
+    PIKOM Admin
   </title>
+
   <!-- Main Jquery -->
   <script src="{% static 'user/js/core/jquery-3.7.1.min.js' %}"></script>
-  <!--     Fonts and icons     -->
-  <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700,900" />
+
+  <!-- Fonts: same families as the candidate side -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Public+Sans:ital,wght@0,300..800;1,300..800&display=swap" />
+  <!-- Icons -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont/dist/tabler-icons.min.css" />
   <link href="{% static 'user/css/nucleo-icons.css' %}" rel="stylesheet" />
   <link href="{% static 'user/css/nucleo-svg.css' %}" rel="stylesheet" />
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
 
-
-  <!-- CSS Files -->
+  <!-- Base framework (Bootstrap 5 via Material Dashboard) -->
   <link id="pagestyle" rel="stylesheet" href="{% static 'user/css/material-dashboard.css' %}" />
   <link id="datatableStyle" rel="stylesheet" href="{% static 'user/css/datatables.min.css' %}">
-  <link id="datatableStyle" rel="stylesheet" href="{% static 'user/js/plugins/timepicker/flatpickr.min.css' %}">
+  <link rel="stylesheet" href="{% static 'user/js/plugins/timepicker/flatpickr.min.css' %}">
 
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-
   <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-
   <link href="{% static 'user/css/jquery.dataTables.colResize.css' %}" rel="stylesheet" />
-  <!-- <link rel="stylesheet" href="{% static 'register/css/bootstrap.min.css' %}">
-  <link rel="stylesheet" href="{% static 'register/css/style.css' %}"> -->
 
-  <style>
-    .icon-btn {
-      background: none;
-      border: none;
-      padding: 0.25rem;
-      cursor: pointer;
-    }
-
-    .icon-btn i {
-      font-size: 1.5rem; /* Adjust size as needed */
-      color: #6c757d; /* Optional: match your theme */
-    }
-
-    .icon-btn:hover i {
-      color: #000; /* Optional: hover effect */
-    }
-
-    /* The theme locks `body` to height:100vh; overflow:hidden, so the page
-       itself never scrolls and expects .main-content to scroll internally.
-       Make it an actual scroll container so content isn't clipped on short /
-       low-resolution screens (e.g. 1024x640). */
-    .main-content {
-      height: 100vh;
-      overflow-x: auto;
-      overflow-y: auto;
-    }
-
-    /* ── Sidebar collapse/expand ── */
-
-    /* ── Main content margin adjustment ── */
-    body.sidenav-collapsed .main-content {
-      margin-left: calc(var(--sidenav-mini-width) + 1rem) !important;
-    }
-
-    body:not(.sidenav-collapsed) .main-content {
-      margin-left: calc(var(--sidenav-full-width) + 1rem) !important;
-    }
-
-    :root {
-      --sidenav-full-width: 250px;
-      --sidenav-mini-width: 68px;
-      --sidenav-transition: 0.25s ease;
-    }
-
-    #sidenav-main {
-      width: var(--sidenav-full-width);
-      transition: width var(--sidenav-transition);
-      overflow: hidden !important; /* kill x-scroll at all times */
-    }
-
-    /* ── Collapsed state ── */
-    #sidenav-main.sidenav-mini {
-      width: var(--sidenav-mini-width) !important;
-    }
-
-    /* Hide text, hr, brand name instantly on collapse */
-    #sidenav-main.sidenav-mini .nav-link-text,
-    #sidenav-main.sidenav-mini .navbar-brand span:not(.visually-hidden),
-    #sidenav-main.sidenav-mini hr.horizontal {
-      display: none !important;
-    }
-
-    /* Center the logo area */
-    #sidenav-main.sidenav-mini .sidenav-header {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 0.5rem 0;
-    }
-
-    #sidenav-main.sidenav-mini .navbar-brand {
-      padding: 0.5rem !important;
-      margin: 0 auto !important;
-      display: flex;
-      justify-content: center;
-    }
-
-    /* Scale down logo image in mini mode */
-    #sidenav-main.sidenav-mini .navbar-brand-img {
-      width: 36px;
-      height: 36px;
-      object-fit: contain;
-    }
-
-    /* Center nav items and remove extra padding */
-    #sidenav-main.sidenav-mini .navbar-nav {
-      align-items: center;
-      width: 100%;
-    }
-
-    #sidenav-main.sidenav-mini .nav-item {
-      width: 100%;
-      display: flex;
-      justify-content: center;
-    }
-
-    #sidenav-main.sidenav-mini .nav-link {
-      display: flex !important;
-      justify-content: center !important;
-      align-items: center !important;
-      padding: 0.75rem 0 !important;
-      width: 44px;
-      border-radius: 8px;
-    }
-
-    /* Make icon fully visible (remove opacity-5 effect) */
-    #sidenav-main.sidenav-mini .nav-link i.material-symbols-rounded {
-      opacity: 1 !important;
-      font-size: 1.4rem;
-      margin: 0 !important;
-    }
-
-    /* Hide the logout section divider text neatly */
-    #sidenav-main.sidenav-mini .mt-4 {
-      margin-top: 0.5rem !important;
-    }
-
-    /* Toggle button: hide in mini, show on hover */
-    #sidenavToggleBtn i {
-      transition: transform var(--sidenav-transition);
-    }
-
-    #sidenav-main.sidenav-mini #sidenavToggleBtn i {
-      transform: rotate(180deg);
-    }
-
-    #sidenav-main.sidenav-mini #sidenavToggleBtn {
-      opacity: 0;
-      transition: opacity var(--sidenav-transition);
-      right: 0.25rem !important;
-    }
-
-    #sidenav-main.sidenav-mini:hover #sidenavToggleBtn {
-      opacity: 1;
-    }
-
-    /* ── Hover expand when collapsed ── */
-    /* ── Hover expand when collapsed ── */
-    #sidenav-main.sidenav-mini:hover {
-      width: var(--sidenav-full-width) !important;
-    }
-
-    #sidenav-main.sidenav-mini:hover .nav-link-text {
-      display: inline !important;
-    }
-
-    #sidenav-main.sidenav-mini:hover hr.horizontal {
-      display: block !important;
-    }
-
-    /* Restore nav items layout */
-    #sidenav-main.sidenav-mini:hover .navbar-nav {
-      align-items: unset;
-    }
-
-    #sidenav-main.sidenav-mini:hover .nav-item {
-      display: block;
-      justify-content: unset;
-    }
-
-    /* Restore nav-link to original */
-    #sidenav-main.sidenav-mini:hover .nav-link {
-      display: flex !important;
-      justify-content: flex-start !important;
-      align-items: center !important;
-      padding: 0.75rem 1rem !important;
-      width: auto !important;
-      border-radius: 8px;
-    }
-
-    /* Restore icon opacity */
-    #sidenav-main.sidenav-mini:hover .nav-link i.material-symbols-rounded {
-      opacity: 0.5 !important;
-    }
-
-    /* Restore logo to full size */
-    #sidenav-main.sidenav-mini:hover .navbar-brand {
-      padding: 0.75rem 1.5rem !important;
-      margin: 0 !important;
-      justify-content: flex-start;
-      display: flex;
-    }
-
-    #sidenav-main.sidenav-mini:hover .navbar-brand-img {
-      width: unset !important;
-      height: unset !important;
-    }
-
-    /* Restore header alignment */
-    #sidenav-main.sidenav-mini:hover .sidenav-header {
-      justify-content: flex-start;
-      padding: unset;
-    }
-
-    /* Restore logout margin */
-    #sidenav-main.sidenav-mini:hover .mt-4 {
-      margin-top: 1.5rem !important;
-    }
-
-    /* Restore text/hr on hover */
-    #sidenav-main.sidenav-mini:hover .nav-link-text,
-    #sidenav-main.sidenav-mini:hover hr.horizontal {
-      display: inline !important;
-    }
-
-    /* Restore nav-link layout on hover */
-    #sidenav-main.sidenav-mini:hover .nav-link {
-      display: flex !important;
-      justify-content: flex-start !important;
-      padding: 0.75rem 1rem !important;
-      width: auto;
-    }
-
-    /* Restore logo on hover */
-    #sidenav-main.sidenav-mini:hover .navbar-brand {
-      padding: 0.75rem 1rem !important;
-      justify-content: flex-start;
-    }
-
-    #sidenav-main.sidenav-mini:hover .navbar-brand-img {
-      width: 32px;
-      height: 32px;
-    }
-
-    #sidenav-main.sidenav-mini:hover .sidenav-header {
-      justify-content: flex-start;
-    }
-
-    /* Smooth content push */
-    .main-content {
-      transition: margin-left var(--sidenav-transition);
-    }
-
-
-    /* ── Active nav-link: light blue gradient ── */
-    #sidenav-main .nav-link.active {
-      background: linear-gradient(195deg, #89d4f5, #3a9fd6) !important;
-      box-shadow: 0 4px 12px rgba(58, 159, 214, 0.35) !important;
-    }
-
-    /* Keep icon and text white when active */
-    #sidenav-main .nav-link.active i.material-symbols-rounded {
-      opacity: 1 !important;
-      color: #fff !important;
-    }
-
-    #sidenav-main .nav-link.active .nav-link-text {
-      color: #fff !important;
-    }
-
-    /* ── Form controls: visible bottom border ──
-       The Material Dashboard theme ships a second `.form-control { border: none }`
-       rule that wins by source order, so inputs, selects and textareas render with
-       no visible edge and read as plain text. Give every control an underline so
-       it's obvious it can be typed into, and let it pick up the accent colour on
-       focus. `!important` is needed to beat that theme rule.
-
-       Opted out: `.border-0` (deliberately borderless, e.g. the read-only
-       shareable-link box) and `.border` (already carries a full box border, as the
-       campaign / form / event modals do). */
-    .form-control:not(.border-0):not(.border),
-    .form-select:not(.border-0):not(.border),
-    textarea.form-control:not(.border-0):not(.border) {
-      border-bottom: 1px solid #d2d6da !important;
-    }
-
-    /* Focus: thicker underline in the system accent blue. */
-    .form-control:not(.border-0):not(.border):focus,
-    .form-select:not(.border-0):not(.border):focus,
-    textarea.form-control:not(.border-0):not(.border):focus {
-      border-bottom: 2px solid #3a9fd6 !important;
-      box-shadow: none;
-    }
-
-    /* Read-only / disabled: dashed and lighter, so it doesn't invite typing. */
-    .form-control:not(.border-0):not(.border)[readonly],
-    .form-control:not(.border-0):not(.border):disabled,
-    .form-select:not(.border-0):not(.border):disabled {
-      border-bottom: 1px dashed #dfe3e8 !important;
-    }
-
-    /* Keep Bootstrap's validation colours on the underline. */
-    .form-control.is-invalid, .form-select.is-invalid,
-    .was-validated .form-control:invalid, .was-validated .form-select:invalid {
-      border-bottom-color: #fd5c70 !important;
-    }
-
-    .form-control.is-valid, .form-select.is-valid,
-    .was-validated .form-control:valid, .was-validated .form-select:valid {
-      border-bottom-color: #66d432 !important;
-    }
-
-    /* ── Scrollable modals ──
-       `modal-dialog-centered` makes the dialog a ROW-direction flex container, so
-       `.modal-content` is a flex item on the horizontal axis and its height never
-       becomes definite. The column flex inside it then has nothing to distribute:
-       `.modal-body` keeps its full content height, the overflow is silently clipped
-       by `overflow:hidden`, and the footer (Save / Cancel) is pushed off-screen.
-
-       Turning the dialog into a COLUMN flex container puts the content on the
-       vertical axis, where it can shrink to the dialog's height — which makes the
-       height definite and lets the body scroll. `align-items: stretch` keeps the
-       modal full width (column direction would otherwise shrink-wrap it). */
-    .modal-dialog-scrollable.modal-dialog-centered {
-      flex-direction: column;
-      align-items: stretch;
-      justify-content: center;
-    }
-
-    .modal-dialog-scrollable .modal-content {
-      max-height: 100%;
-      min-height: 0;
-    }
-
-    /* Second half of the problem: the modals here wrap header/body/footer in a
-       <form>, so the FORM is the flex item, not the body — which breaks the chain
-       Bootstrap's scrollable variant relies on. Make the wrapper a flex column too
-       so the sizing runs unbroken from .modal-content down to .modal-body. */
-    .modal-dialog-scrollable .modal-content > form {
-      display: flex;
-      flex-direction: column;
-      flex: 1 1 auto;
-      min-height: 0;
-      max-height: 100%;
-    }
-
-    .modal-dialog-scrollable .modal-body {
-      flex: 1 1 auto;
-      min-height: 0;
-      overflow-y: auto;
-      overscroll-behavior: contain;
-    }
-
-    /* Header and footer must never give up space to the body. */
-    .modal-dialog-scrollable .modal-header,
-    .modal-dialog-scrollable .modal-footer {
-      flex: 0 0 auto;
-    }
-
-    /* ── Submenu (Golf Event) ── */
-    #sidenav-main .nav-sm .nav-link {
-      padding: 0.5rem 0.75rem !important;
-      font-size: 0.85rem;
-    }
-
-    #sidenav-main .nav-sm .nav-link i.material-symbols-rounded {
-      font-size: 1.1rem;
-    }
-
-    /* Caret flips when the group is open */
-    #sidenav-main .submenu-caret {
-      transition: transform var(--sidenav-transition);
-    }
-
-    #sidenav-main .nav-link[aria-expanded="true"] .submenu-caret {
-      transform: rotate(180deg);
-    }
-
-    /* Parent row of an open group: tinted, not the full active gradient, so the
-       selected child still stands out. */
-    #sidenav-main .nav-link.submenu-open {
-      background: #eaf6fd !important;
-    }
-
-    /* In mini mode the submenu and caret would have nowhere to render. */
-    #sidenav-main.sidenav-mini:not(:hover) .nav-sm,
-    #sidenav-main.sidenav-mini:not(:hover) .submenu-caret,
-    #sidenav-main.sidenav-mini:not(:hover) #golfSubmenu {
-      display: none !important;
-    }
-
-    /* Mini mode, hovered: the rail expands back to full width, and from
-       there the submenu should behave exactly like it does in expanded
-       mode — closed until you click it (or already open if you're on one
-       of its sub-pages), not forced open. No extra rule needed here: once
-       ":not(:hover)" above stops matching, the submenu simply falls back
-       to its normal expanded-mode display state. */
-
-    /* The theme's default caret for a collapse toggle (a Font Awesome glyph)
-       renders as a stray tofu box here because Font Awesome's font isn't
-       loaded on this page. We already show our own chevron via
-       .submenu-caret, so drop the theme's pseudo-element entirely. */
-    #sidenav-main .nav-link[data-bs-toggle="collapse"]:after {
-      content: none !important;
-    }
-
-    /* The theme's own rule for these nested links (.navbar-nav .nav-item
-       .collapse .nav .nav-item .nav-link) sets a pale rgba(206,212,218,.7)
-       grey meant for a dark sidebar. This sidenav is white, so that rule
-       reads as barely-there text — override it here, darker and legible. */
-    #sidenav-main .navbar-nav .nav-item .collapse .nav .nav-item .nav-link,
-    #sidenav-main .navbar-nav .nav-item .collapsing .nav .nav-item .nav-link {
-      color: #495569 !important;
-    }
-
-    #sidenav-main .navbar-nav .nav-item .collapse .nav .nav-item .nav-link i.material-symbols-rounded,
-    #sidenav-main .navbar-nav .nav-item .collapsing .nav .nav-item .nav-link i.material-symbols-rounded {
-      opacity: 1 !important;
-    }
-
-    #sidenav-main .navbar-nav .nav-item .collapse .nav .nav-item .nav-link:hover,
-    #sidenav-main .navbar-nav .nav-item .collapsing .nav .nav-item .nav-link:hover {
-      color: #1f2937 !important;
-      background-color: #f4f6f9;
-      border-radius: 0.375rem;
-    }
-
-    /* Current sub-page: bold dark text on the same tint used for the open
-       parent row, so it's unmistakably the selected one. */
-    #sidenav-main .navbar-nav .nav-item .collapse .nav .nav-item .nav-link.active,
-    #sidenav-main .navbar-nav .nav-item .collapsing .nav .nav-item .nav-link.active,
-    #sidenav-main .navbar-nav .nav-item .collapse .nav .nav-item.active .nav-link,
-    #sidenav-main .navbar-nav .nav-item .collapsing .nav .nav-item.active .nav-link {
-      color: #1f2937 !important;
-      font-weight: 700;
-      background-color: #eaf6fd;
-      border-radius: 0.375rem;
-    }
-
-
-
-  </style>
+  <!-- PIKOM admin theme (candidate-side design language). Loaded last so it wins. -->
+  <link rel="stylesheet" href="{% static 'register/css/pikom-admin.css' %}" />
 
   {% block extra_head %}
   {% endblock %}
@@ -465,7 +44,7 @@
   {% endblock %}
 </head>
 
-<body class="g-sidenav-show  bg-gray-100">
+<body class="g-sidenav-show bg-gray-100">
 
     {% if request.session.impersonator_id %}
     <div class="alert alert-warning text-dark m-0 rounded-0 d-flex justify-content-center align-items-center gap-3 py-2"
@@ -478,81 +57,99 @@
     </div>
     {% endif %}
 
-    <aside class="sidenav navbar navbar-vertical navbar-expand-xs border-radius-lg fixed-start ms-2  bg-white my-2" id="sidenav-main">         
-    <div class="sidenav-header">         
-        <i class="fas fa-times p-3 cursor-pointer text-dark opacity-5 position-absolute end-0 top-0 d-none d-xl-none"             
-           aria-hidden="true" id="iconSidenav"></i>         
-        <a class="navbar-brand px-4 py-3 m-0" href="">             
-            <img src="{% static 'user/img/PIKOM.png' %}" class="navbar-brand-img" alt="main_logo">             
-            <span class="ms-1 text-sm text-dark visually-hidden">PIKOM</span>         
-        </a>   
-        
-        <button id="sidenavToggleBtn" class="btn btn-link p-0 position-absolute" 
-              style="top: 1rem; right: 0.75rem; z-index: 10; border: none; background: none;">
-          <i class="material-symbols-rounded text-dark" style="font-size: 1.25rem;">menu_open</i>
+    <!-- Mobile top bar (phones / tablets) -->
+    <header class="admin-topbar" role="banner">
+      <button type="button" class="admin-menu-btn" id="adminMenuBtn" aria-label="Open navigation" aria-controls="sidenav-main" aria-expanded="false">
+        <i class="material-symbols-rounded">menu</i>
       </button>
-    </div>         
-    <hr class="horizontal dark mt-0 mb-2">         
-    
-    <div class="collapse navbar-collapse w-auto" id="sidenav-collapse-main">         
-        <ul class="navbar-nav">             
-            <!-- <li class="nav-item">             
-                <a class="nav-link" href="dashboard.html">                 
-                    <i class="material-symbols-rounded opacity-5">dashboard</i>                 
-                    <span class="nav-link-text ms-1">Dashboard</span>             
-                </a>             
-            </li> -->             
-            <li class="nav-item">             
-                <a id="campaign_list" class="nav-link" href="{% url 'campaign_list' %}">                 
-                    <i class="material-symbols-rounded opacity-5">table_view</i>                 
-                    <span class="nav-link-text ms-1">Events</span>
-                </a>             
-            </li>   
+      <img src="{% static 'user/img/PIKOM.png' %}" alt="PIKOM" height="26" class="admin-topbar-logo">
+    </header>
+    <div class="sidenav-backdrop" id="sidenavBackdrop"></div>
+
+    <aside class="sidenav" id="sidenav-main" aria-label="Admin navigation">
+    <div class="sidenav-header">
+        <a class="navbar-brand m-0" href="{% url 'campaign_list' %}">
+            <img src="{% static 'user/img/PIKOM.png' %}" class="navbar-brand-img" alt="PIKOM">
+            <span class="brand-mark" aria-hidden="true">P</span>
+        </a>
+
+        <button id="sidenavToggleBtn" class="btn p-0" type="button" aria-label="Collapse sidebar" title="Collapse / expand">
+          <i class="material-symbols-rounded">menu_open</i>
+        </button>
+    </div>
+    <hr class="horizontal">
+
+    <div class="collapse navbar-collapse w-auto" id="sidenav-collapse-main">
+        <div class="sidenav-section-label">Workspace</div>
+        <ul class="navbar-nav">
             <li class="nav-item">
-                <a id="registration_form_list" class="nav-link" href="{% url 'registration_form_list' %}">
-                    <i class="material-symbols-rounded opacity-5">assignment</i>
-                    <span class="nav-link-text ms-1">Registration Forms</span>
+                <a id="campaign_list" class="nav-link" href="{% url 'campaign_list' %}" title="Events">
+                    <i class="material-symbols-rounded">calendar_month</i>
+                    <span class="nav-link-text">Events</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a id="survey_list" class="nav-link" href="{% url 'survey_list' %}">
-                    <i class="material-symbols-rounded opacity-5">quiz</i>
-                    <span class="nav-link-text ms-1">Post-event Surveys</span>
+                <a id="registration_form_list" class="nav-link" href="{% url 'registration_form_list' %}" title="Registration Forms">
+                    <i class="material-symbols-rounded">assignment</i>
+                    <span class="nav-link-text">Registration Forms</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a id="survey_list" class="nav-link" href="{% url 'survey_list' %}" title="Post-event Surveys">
+                    <i class="material-symbols-rounded">quiz</i>
+                    <span class="nav-link-text">Post-event Surveys</span>
                 </a>
             </li>
             {% if user.is_superuser %}
             <li class="nav-item">
-                <a id="user_list" class="nav-link" href="{% url 'user_list' %}">
-                    <i class="material-symbols-rounded opacity-5">person</i>
-                    <span class="nav-link-text ms-1">Users</span>
+                <a id="user_list" class="nav-link" href="{% url 'user_list' %}" title="Users">
+                    <i class="material-symbols-rounded">group</i>
+                    <span class="nav-link-text">Users</span>
                 </a>
             </li>
             {% endif %}
+        </ul>
+
+        {% if user.is_staff %}
+        <div class="sidenav-section-label mt-3">Advanced</div>
+        <ul class="navbar-nav">
             <li class="nav-item">
-                <a id="user_manual" class="nav-link" href="{% url 'user_manual' %}" target="_blank" rel="noopener">
-                    <i class="material-symbols-rounded opacity-5">menu_book</i>
-                    <span class="nav-link-text ms-1">User Manual</span>
+                <a id="django_admin" class="nav-link" href="{% url 'admin:index' %}" title="Django Admin">
+                    <i class="material-symbols-rounded">admin_panel_settings</i>
+                    <span class="nav-link-text">Django Admin</span>
+                </a>
+            </li>
+        </ul>
+        {% endif %}
+
+        <div class="sidenav-section-label mt-3">Help</div>
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a id="user_manual" class="nav-link" href="{% url 'user_manual' %}" target="_blank" rel="noopener" title="User Manual">
+                    <i class="material-symbols-rounded">menu_book</i>
+                    <span class="nav-link-text">User Manual</span>
                 </a>
             </li>
         </ul>
 
-        <!-- Logout Button -->
+        <!-- Logout -->
         <div class="mt-4">
-            <hr class="horizontal dark mt-0 mb-2">
+            <hr class="horizontal">
             <ul class="navbar-nav">
                 <li class="nav-item">
-                    <a class="nav-link text-danger" href="{% url 'logout' %}">
-                        <i class="material-symbols-rounded opacity-5">logout</i>
-                        <span class="nav-link-text ms-1">Logout</span>
+                    <a class="nav-link text-danger" href="{% url 'logout' %}" title="Logout">
+                        <i class="material-symbols-rounded">logout</i>
+                        <span class="nav-link-text">Logout</span>
                     </a>
                 </li>
             </ul>
         </div>
-    </div>      
+    </div>
 </aside>
+
     {% block content %}
-    {% endblock %}  
-    
+    {% endblock %}
+
 
   <!--   Core JS Files   -->
   <script src="{% static 'user/js/core/popper.min.js' %}"></script>
@@ -576,7 +173,7 @@
 
   {% block extrajs %}
   {% endblock %}
-  
+
   <script>
     var win = navigator.platform.indexOf('Win') > -1;
     if (win && document.querySelector('#sidenav-scrollbar')) {
@@ -588,15 +185,14 @@
   </script>
 
   <script>
-    //if url last part is 'survey_list', add class active to the survey_list link in sidebar
-    //after page load
+    // Highlight the current section in the sidebar and wire up the sidebar
+    // (desktop collapse + mobile drawer).
     document.addEventListener("DOMContentLoaded", function() {
       let currentPath = window.location.pathname;
-      //remove last slash if exists
       if (currentPath.endsWith('/')) {
         currentPath = currentPath.slice(0, -1);
-      }     
-      
+      }
+
       if (currentPath.endsWith('survey_list')) {
         document.getElementById('survey_list').classList.add('active');
       } else if (currentPath.endsWith('campaign_list')) {
@@ -609,7 +205,6 @@
         if (el) el.classList.add('active');
       }
 
-      // ── Sidebar collapse toggle ──
       const sidenav = document.getElementById('sidenav-main');
       const toggleBtn = document.getElementById('sidenavToggleBtn');
 
@@ -623,20 +218,42 @@
         }
       }
 
-      // Restore saved state on load
+      // Desktop: restore saved collapsed state
       applyCollapsed(localStorage.getItem('sidenavCollapsed') === 'true');
 
-      toggleBtn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        const isCollapsed = !sidenav.classList.contains('sidenav-mini');
-        applyCollapsed(isCollapsed);
-        localStorage.setItem('sidenavCollapsed', isCollapsed);
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          const isCollapsed = !sidenav.classList.contains('sidenav-mini');
+          applyCollapsed(isCollapsed);
+          localStorage.setItem('sidenavCollapsed', isCollapsed);
+        });
+      }
+
+      // Mobile: off-canvas drawer
+      const menuBtn = document.getElementById('adminMenuBtn');
+      const backdrop = document.getElementById('sidenavBackdrop');
+
+      function setDrawer(open) {
+        document.body.classList.toggle('sidenav-open', open);
+        if (menuBtn) menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      }
+
+      if (menuBtn) {
+        menuBtn.addEventListener('click', function () {
+          setDrawer(!document.body.classList.contains('sidenav-open'));
+        });
+      }
+      if (backdrop) {
+        backdrop.addEventListener('click', function () { setDrawer(false); });
+      }
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') setDrawer(false);
       });
-
-
-
+      sidenav.querySelectorAll('a.nav-link').forEach(function (a) {
+        a.addEventListener('click', function () { setDrawer(false); });
+      });
     });
-
   </script>
 </body>
 

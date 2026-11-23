@@ -8,14 +8,14 @@
   .kpi-card .kpi-label { font-size: .8rem; text-transform: uppercase; letter-spacing: .03em; }
   .kpi-card .kpi-sub { font-size: .78rem; }
   .dash-chart-card { border: none; }
-  .dash-chart-card .card-header { background: transparent; border-bottom: 1px solid #f0f0f0; }
+  .dash-chart-card .card-header { background: transparent; border-bottom: 1px solid #ded7c8; }
   .funnel-row { display: flex; align-items: center; gap: .75rem; margin-bottom: .6rem; }
-  .funnel-row .funnel-label { width: 120px; font-size: .82rem; font-weight: 600; color: #344767; }
-  .funnel-row .funnel-bar-wrap { flex: 1; background: #f0f2f5; border-radius: 6px; overflow: hidden; height: 26px; }
+  .funnel-row .funnel-label { width: 120px; font-size: .82rem; font-weight: 600; color: #1c1913; }
+  .funnel-row .funnel-bar-wrap { flex: 1; background: #eae3d4; border-radius: 6px; overflow: hidden; height: 26px; }
   .funnel-row .funnel-bar { height: 100%; display: flex; align-items: center; justify-content: flex-end;
                             padding-right: 8px; color: #fff; font-size: .78rem; font-weight: 600; border-radius: 6px;
                             min-width: 32px; transition: width .4s ease; }
-  .empty-state { padding: 4rem 1rem; text-align: center; color: #8392ab; }
+  .empty-state { padding: 4rem 1rem; text-align: center; color: #5e574a; }
 </style>
 {% endblock %}
 
@@ -149,7 +149,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
 (function () {
-  const THEME = "{{ theme_color|escapejs }}" || "#198754";
+  const THEME = "{{ theme_color|escapejs }}" || "#b3401f";
   const funnel = {{ funnel_json|safe }};
   const timeline = {{ timeline_json|safe }};
   const orgs = {{ orgs_json|safe }};
@@ -157,8 +157,8 @@
   const KPI = { approved: {{ kpis.approved }}, pending: {{ kpis.pending }}, rejected: {{ kpis.rejected }} };
 
   // A repeatable palette derived around the theme + supporting hues.
-  const PALETTE = [THEME, "#5e72e4", "#11cdef", "#fb6340", "#f5365c", "#2dce89",
-                   "#ffd600", "#8965e0", "#8392ab", "#344767", "#e14eca", "#00bcd4"];
+  const PALETTE = [THEME, "#1c1913", "#c98a2b", "#3f6e7a", "#2f6b3a", "#877e70",
+                   "#e28e75", "#6b4f2a", "#5e574a", "#8f2a14", "#a2713f", "#4b5d3a"];
 
   // ---- Funnel (horizontal bars, relative widths) ----
   (function () {
@@ -184,7 +184,7 @@
         { type: "bar", label: "Per day", data: timeline.daily,
           backgroundColor: THEME + "cc", borderRadius: 4, order: 2 },
         { type: "line", label: "Cumulative", data: timeline.cumulative,
-          borderColor: "#5e72e4", backgroundColor: "#5e72e4", tension: .3,
+          borderColor: "#1c1913", backgroundColor: "#1c1913", tension: .3,
           pointRadius: 2, yAxisID: "y1", order: 1 }
       ]
     },
@@ -219,7 +219,7 @@
     data: {
       labels: ["Approved", "Pending", "Rejected"],
       datasets: [{ data: [KPI.approved, KPI.pending, KPI.rejected],
-                   backgroundColor: ["#2dce89", "#ffd600", "#f5365c"] }]
+                   backgroundColor: ["#2f6b3a", "#c98a2b", "#b3401f"] }]
     },
     options: { responsive: true, maintainAspectRatio: true,
                plugins: { legend: { position: "bottom" } } }
