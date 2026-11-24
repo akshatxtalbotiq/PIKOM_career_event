@@ -110,11 +110,11 @@
         <div class="ms-1">
           <h3 class="mb-0 h4 font-weight-bolder opacity-7">
             <i class="material-symbols-rounded align-middle">menu_book</i>
-            User Manual — Campaigns &amp; Registration Forms
+            User Manual — Events &amp; Registration Forms
           </h3>
           <nav aria-label="breadcrumb">
             <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0">
-              <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="{% url 'campaign_list' %}">Campaigns</a></li>
+              <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="{% url 'campaign_list' %}">Events</a></li>
               <li class="breadcrumb-item text-sm text-dark active" aria-current="page">User Manual</li>
             </ol>
           </nav>
@@ -137,7 +137,7 @@
         <ol class="text-sm mb-0">
           <li><a href="#before">Before you begin</a></li>
           <li><a href="#concepts">How the pieces fit together</a></li>
-          <li><a href="#partA"><strong>Part A</strong> — Create a campaign</a></li>
+          <li><a href="#partA"><strong>Part A</strong> — Create an event</a></li>
           <li><a href="#partB"><strong>Part B</strong> — Create a registration form</a></li>
           <li><a href="#partC"><strong>Part C</strong> — Set up the form in Form Builder</a></li>
           <li><a href="#clone">Clone a form for a repeat event</a></li>
@@ -153,19 +153,37 @@
       <div class="card-header pb-2"><h6 class="mb-0">1. Before you begin</h6></div>
       <div class="card-body pt-2">
         <ul>
-          <li>Sign in with your administrator account. Every screen in this manual requires you to be signed in.</li>
-          <li>The left-hand menu holds <strong>Campaigns</strong>, <strong>Registration Forms</strong>,
-              <strong>Post-event Surveys</strong>, <strong>Users</strong>, <strong>User Manual</strong>
-              (this page — it opens in its own tab, so you can keep it beside the screen you are working on)
-              and <strong>Logout</strong>.</li>
-          <li><strong>Permissions.</strong> Superusers see everything. Everyone else only sees campaigns whose
+          <li>Sign in with your administrator account at the <strong>Login</strong> page. Every screen in this manual
+              requires you to be signed in.</li>
+          <li>The left-hand menu is grouped into sections:
+            <ul>
+              <li><strong>Workspace</strong> — <strong>Events</strong>, <strong>Registration Forms</strong>,
+                  <strong>Post-event Surveys</strong> and <strong>Users</strong> (Users is shown to superusers only).</li>
+              <li><strong>Advanced</strong> — <strong>Django Admin</strong>, the raw database screens (shown to staff
+                  accounts only). Use it only when this manual tells you to.</li>
+              <li><strong>Help</strong> — <strong>User Manual</strong> (this page). It opens in its own tab, so you can
+                  keep it beside the screen you are working on.</li>
+              <li><strong>Logout</strong> sits at the bottom of the menu, in red.</li>
+            </ul>
+          </li>
+          <li>The button at the top of the menu, next to the PIKOM logo, collapses it to icons only. Hover over an icon
+              to see its name, and click the button again to expand it. On a phone or tablet the menu is hidden; tap
+              the <strong>menu</strong> button in the top bar to open it.</li>
+          <li><strong>Permissions.</strong> Superusers see everything. Everyone else only sees events whose
               <em>Campaign Team</em> they belong to, and can only build forms and read registrations for those
-              campaigns. If a page returns a permission error, ask a superuser to add you to the campaign team.</li>
+              events. The <strong>+ Add New</strong> button and the <strong>Edit</strong> pencil only appear if your
+              account is allowed to create or change events. If a page returns a permission error, ask a superuser to
+              add you to the event’s team.</li>
         </ul>
         <div class="manual-note">
-          <strong>Two steps, always in this order.</strong> A campaign comes first, then the registration form is
-          attached to it. Creating the form first and attaching it later works, but you lose the event details and
-          email wording that are driven by the campaign until the link is made.
+          <strong>“Event” and “campaign” mean the same thing.</strong> The menu and page titles now say
+          <em>Events</em>, but a few labels still use the older word <em>campaign</em> — for example
+          <em>Campaign Team</em> and <em>Campaign dashboard</em>.
+        </div>
+        <div class="manual-note">
+          <strong>Two steps, always in this order.</strong> The event comes first, then the registration form is
+          attached to it. Creating the form first and attaching it later works, but until the link is made the form
+          has none of the event’s details, banner or email wording.
         </div>
       </div>
     </div>
@@ -183,39 +201,48 @@
               </tr>
             </thead>
             <tbody>
-              <tr><td class="k">Campaign</td><td>The event itself: title, dates, the team who runs it, theme colour, active/inactive status.</td><td>Campaigns</td></tr>
-              <tr><td class="k">Registration form</td><td>The public page invitees fill in. It belongs to one campaign.</td><td>Registration Forms</td></tr>
-              <tr><td class="k">Form Builder</td><td>Where you set the banner, event details, email wording and the questions on that form.</td><td>Registration Forms → <em>Build form</em></td></tr>
-              <tr><td class="k">Registrations</td><td>Who signed up, their approval status, QR codes sent, check-in state.</td><td>Campaigns → <em>View registered participants</em></td></tr>
+              <tr><td class="k">Event</td><td>The event itself: name, dates, description, organiser contact, banner, the team who runs it, theme colour and active/inactive status.</td><td>Events</td></tr>
+              <tr><td class="k">Event dashboard</td><td>One page per event: headline figures, event details, setup shortcuts and registration charts.</td><td>Events → <em>chart</em> icon</td></tr>
+              <tr><td class="k">Registration form</td><td>The public page invitees fill in. It belongs to one event.</td><td>Registration Forms</td></tr>
+              <tr><td class="k">Form Builder</td><td>Where you set the form’s banner, event details, email wording and the questions on that form.</td><td>Registration Forms → <em>Build form</em>, or the event dashboard → <em>Configure registration</em></td></tr>
+              <tr><td class="k">Registrations (attendees)</td><td>Who signed up, their approval status, QR codes sent, check-in state.</td><td>Events → <em>View registered participants</em>, or the event dashboard → <em>View attendees</em></td></tr>
+              <tr><td class="k">Agenda, maps &amp; booths</td><td>The event’s agenda sessions, and floor maps with booth positions.</td><td>Event dashboard → <em>Event setup</em></td></tr>
+              <tr><td class="k">Career directory</td><td>Employers, jobs, interview availability, universities and their programmes, training providers, and vouchers and promotions.</td><td>Event dashboard → <em>Event setup</em></td></tr>
             </tbody>
           </table>
+        <p class="mt-2">The event details, agenda, maps and career directory are also shown to attendees in the attendee
+          app, so whatever you enter here is what they see.</p>
       </div>
     </div>
 
     <!-- 3. Part A -->
     <div class="card manual-card my-2" id="partA">
-      <div class="card-header pb-2"><h6 class="mb-0">3. Part A — Create a campaign</h6></div>
+      <div class="card-header pb-2"><h6 class="mb-0">3. Part A — Create an event</h6></div>
       <div class="card-body pt-2">
 
-        <h6 class="manual-step"><span class="step-pill">Step A1</span>Open the Campaigns list</h6>
-        <p>Click <strong>Campaigns</strong> in the left menu. Each row is one campaign, with its dates, an
+        <h6 class="manual-step"><span class="step-pill">Step A1</span>Open the Events list</h6>
+        <p>Click <strong>Events</strong> in the left menu. Each row is one event, with its <strong>Starts</strong>
+          and <strong>Ends</strong> dates, an
           <span class="badge badge-sm bg-gradient-success">Active</span> or
           <span class="badge badge-sm bg-gradient-danger">Inactive</span> badge, and a set of action icons on the
-          right. Use <strong>Search</strong> and <strong>entries per page</strong> to narrow a long list.</p>
+          right. Click an event’s name to go straight to its registrations. Use <strong>Search</strong> and
+          <strong>entries per page</strong> to narrow a long list.</p>
         <figure class="manual-fig">
-          <img src="{% static 'register/manual/a1_campaign_list.jpg' %}" class="border-radius-lg shadow-sm" alt="The Campaigns list">
-          <figcaption>The Campaigns list. The <strong>+ Add New</strong> button sits at the top right.</figcaption>
+          <img src="{% static 'register/manual/a1_campaign_list.jpg' %}" class="border-radius-lg shadow-sm" alt="The Events list">
+          <figcaption>The Events list. The <strong>+ Add New</strong> button sits at the top right.</figcaption>
         </figure>
 
         <h6 class="manual-step"><span class="step-pill">Step A2</span>Click + Add New</h6>
-        <p>The <strong>Add New Campaign</strong> dialog opens on top of the list. Nothing is saved until you press
+        <p>The <strong>Create event</strong> dialog opens on top of the list. Nothing is saved until you press
           <strong>Save</strong>, so you can back out at any point with <strong>Close</strong>.</p>
         <figure class="manual-fig">
-          <img src="{% static 'register/manual/a2_add_campaign_empty.jpg' %}" class="border-radius-lg shadow-sm" alt="The empty Add New Campaign dialog">
-          <figcaption>The empty Add New Campaign dialog.</figcaption>
+          <img src="{% static 'register/manual/a2_add_campaign_empty.jpg' %}" class="border-radius-lg shadow-sm" alt="The empty Create event dialog">
+          <figcaption>The empty Create event dialog.</figcaption>
         </figure>
 
-        <h6 class="manual-step"><span class="step-pill">Step A3</span>Fill in the campaign details</h6>
+        <h6 class="manual-step"><span class="step-pill">Step A3</span>Fill in the event details</h6>
+        <p>The dialog has three groups: the name and dates at the top, <strong>Event information</strong> in the
+          middle, and the team, colour and switches at the bottom.</p>
           <table class="table align-items-center mb-0 manual-table">
             <thead>
               <tr>
@@ -224,44 +251,48 @@
               </tr>
             </thead>
             <tbody>
-              <tr><td class="k">Campaign Title</td><td>Required. Appears in the campaign list, on the dashboard and in registrant emails. If one event has more than one form, name them distinctly — e.g. <em>… - REGISTRATION</em> and <em>… - SPONSORSHIP</em>.</td></tr>
-              <tr><td class="k">Campaign Start Date</td><td>Click the field to open the calendar, choose the day, then set the hour and minutes on the bottom row of the picker.</td></tr>
-              <tr><td class="k">Campaign End Date</td><td>Same picker. <strong>This date is reused as the event date</strong> in the confirmation and reminder emails, so set it to the actual event day.</td></tr>
-              <tr><td class="k">‘Reply To’ Email</td><td>Where replies from registrants go. More than one address is allowed — separate them with commas.</td></tr>
-              <tr><td class="k">Campaign Team</td><td>The users allowed to manage this campaign and its forms. Click the box and pick from the list; repeat to add several people.</td></tr>
-              <tr><td class="k">Event Theme Colour</td><td>Accent colour used on the public form and in registrant emails. Click <strong>Choose colour</strong> (or the swatch) and pick a colour in your browser’s colour picker. The value must be a 6-digit hex code; anything else falls back to the system default.</td></tr>
+              <tr><td class="k">Event name</td><td>Required. Appears in the Events list, on the dashboard and in registrant emails. If one event has more than one form, name them distinctly — e.g. <em>… - REGISTRATION</em> and <em>… - SPONSORSHIP</em>.</td></tr>
+              <tr><td class="k">Start date</td><td>Required. Click the field and choose the day from the calendar. There is no time to set — the event starts at the beginning of that day.</td></tr>
+              <tr><td class="k">End date</td><td>Required, and it cannot be before the start date. The event runs to the end of that day. <strong>This date is reused as the event date</strong> in the confirmation and reminder emails, so set it to the actual event day.</td></tr>
+              <tr><td class="k">Description</td><td>A short introduction to the event. It appears on the event dashboard and in the attendee app, and on the public registration form if the form has no description of its own.</td></tr>
+              <tr><td class="k">Organizer / contact name, Contact email, Contact phone</td><td>Who attendees should contact about the event. Optional. They appear in the event details on the dashboard and in the attendee app.</td></tr>
+              <tr><td class="k">Event banner</td><td>Optional. An image file under 5 MB. It is shown at the top of the public registration form unless the form has its own banner, and in the attendee app. When editing an event that already has a banner, the dialog says so; choose a new file only if you want to replace it.</td></tr>
+              <tr><td class="k">‘Reply To’ Email</td><td>Required. Where replies from registrants go. More than one address is allowed — separate them with commas and no spaces, e.g. <em>pic1@mail.com,pic2@mail.com</em>.</td></tr>
+              <tr><td class="k">Campaign Team</td><td>The users allowed to manage this event and its forms. Click the box and pick from the list; repeat to add several people.</td></tr>
+              <tr><td class="k">Event Theme Colour</td><td>Accent colour used on the public form and in registrant emails. Click <strong>Choose colour</strong> (or the swatch) and pick a colour in your browser’s colour picker. The chosen code is shown next to <em>Selected:</em>.</td></tr>
               <tr><td class="k">Enable or Disable QR Scanning Page</td><td>Legacy QR submission flow. Leave <strong>off</strong> unless someone has specifically asked for it.</td></tr>
-              <tr><td class="k">Active or Inactive the Campaign</td><td>On = the campaign is live and shows the green <em>Active</em> badge. Turn it off to retire a campaign without deleting it.</td></tr>
-              <tr><td class="k">Enable Or Disable Check In Info</td><td>On = registrants are prompted for check-in information. Leave on for events you will check people in at.</td></tr>
+              <tr><td class="k">Event is active</td><td>On (the default) = the event is live and shows the green <em>Active</em> badge. Turn it off to retire an event without deleting it.</td></tr>
+              <tr><td class="k">Enable Or Disable Check In Info</td><td>On (the default) = registrants are prompted for check-in information. Leave on for events you will check people in at.</td></tr>
             </tbody>
           </table>
+        <div class="manual-note">
+          <strong>Venue and event time</strong> are not in this dialog. Set them in Form Builder under the event
+          details (Part C). Until then the dashboard shows <em>Add venue</em> and <em>Add event time</em>.
+        </div>
         <figure class="manual-fig">
-          <img src="{% static 'register/manual/a3_datepicker.jpg' %}" class="border-radius-lg shadow-sm" alt="The date picker">
-          <figcaption>The date picker: choose the day, then set the time on the bottom row.</figcaption>
-        </figure>
-        <figure class="manual-fig">
-          <img src="{% static 'register/manual/a4_team.jpg' %}" class="border-radius-lg shadow-sm" alt="Choosing the campaign team">
-          <figcaption>Campaign Team — click the box and choose the users who will run this campaign.</figcaption>
+          <img src="{% static 'register/manual/a4_team.jpg' %}" class="border-radius-lg shadow-sm" alt="Choosing the event team">
+          <figcaption>Campaign Team — click the box and choose the users who will run this event.</figcaption>
         </figure>
 
         <h6 class="manual-step"><span class="step-pill">Step A4</span>Check the dialog, then Save</h6>
         <p>Compare your entries against the example below, then press <strong>Save</strong>. The dialog closes and the
-          new campaign appears in the list.</p>
+          new event appears in the list. If a required field is missing or the dates are the wrong way round, the
+          field is outlined in red with a message underneath, and nothing is saved until you fix it.</p>
         <figure class="manual-fig">
-          <img src="{% static 'register/manual/a5_add_campaign_filled.jpg' %}" class="border-radius-lg shadow-sm" alt="A completed Add New Campaign dialog">
-          <figcaption>A completed Add New Campaign dialog, ready to save.</figcaption>
+          <img src="{% static 'register/manual/a5_add_campaign_filled.jpg' %}" class="border-radius-lg shadow-sm" alt="A completed Create event dialog">
+          <figcaption>A completed Create event dialog, ready to save.</figcaption>
         </figure>
 
         <h6 class="manual-step"><span class="step-pill">Step A5</span>Know the row icons</h6>
-        <p>Once the campaign exists, its row carries the icons below. Which ones appear depends on whether a
-          registration form is attached yet.</p>
+        <p>Once the event exists, its row carries the icons below. Hover over any icon to see its name. Which ones
+          appear depends on whether a registration form is attached yet.</p>
         <figure class="manual-fig">
-          <img src="{% static 'register/manual/a8_icons_where.jpg' %}" class="border-radius-lg shadow-sm" alt="Where the action icons sit on the Campaigns list">
+          <img src="{% static 'register/manual/a8_icons_where.jpg' %}" class="border-radius-lg shadow-sm" alt="Where the action icons sit on the Events list">
           <figcaption><strong>Where they are:</strong> the right-hand end of every row, after the status badge.</figcaption>
         </figure>
         <figure class="manual-fig">
-          <img src="{% static 'register/manual/a7_icons.jpg' %}" class="icon-strip" alt="Campaign row action icons close-up">
-          <figcaption><strong>Close-up, left to right</strong> — a campaign that already has a registration form.</figcaption>
+          <img src="{% static 'register/manual/a7_icons.jpg' %}" class="icon-strip" alt="Event row action icons close-up">
+          <figcaption><strong>Close-up, left to right</strong> — an event that already has a registration form.</figcaption>
         </figure>
           <table class="table align-items-center mb-0 manual-table">
             <thead>
@@ -271,9 +302,9 @@
               </tr>
             </thead>
             <tbody>
-              <tr><td class="k">Chart</td><td><strong>Campaign dashboard</strong> — headline numbers for the campaign.</td></tr>
+              <tr><td class="k">Chart</td><td><strong>Campaign dashboard</strong> — the event’s dashboard (Step A6).</td></tr>
               <tr><td class="k">Eye</td><td><strong>View registered participants</strong> — the registrations list for the attached form.</td></tr>
-              <tr><td class="k">Pencil</td><td><strong>Edit</strong> — reopens the same dialog you used to create the campaign.</td></tr>
+              <tr><td class="k">Pencil</td><td><strong>Edit</strong> — reopens the same dialog you used to create the event, filled in with its current details. Only shown if you are allowed to change events.</td></tr>
               <tr><td class="k">Globe</td><td><strong>Open registration form</strong> — the live public page, in a new tab.</td></tr>
               <tr><td class="k">Link</td><td><strong>Copy registration link</strong> — copies the public URL to your clipboard.</td></tr>
               <tr><td class="k">Sliders</td><td><strong>Build / edit form</strong> — opens Form Builder (Part C).</td></tr>
@@ -283,12 +314,26 @@
             </tbody>
           </table>
 
-        <h6 class="manual-step"><span class="step-pill">Step A6</span>The campaign dashboard</h6>
-        <p>The chart icon opens a live summary: total registrations, how many are approved, how many checked in, the
-          no-show count, the registration funnel, registrations over time, top organisations and approval status.</p>
+        <h6 class="manual-step"><span class="step-pill">Step A6</span>The event dashboard</h6>
+        <p>The chart icon opens the event’s dashboard. From top to bottom it shows:</p>
+        <ul>
+          <li><strong>The header</strong> — event name, dates, time, venue and an <em>Event active</em> or
+              <em>Event inactive</em> label, with buttons for <strong>Configure registration</strong> (Form Builder),
+              <strong>View attendees</strong> and <strong>All events</strong>. If no registration form exists yet, a
+              <strong>Create registration form</strong> button appears instead.</li>
+          <li><strong>Key figures</strong> — registrations (and how many are pending), approved, checked in, and whether
+              registration is open or closed.</li>
+          <li><strong>Event details</strong> — registration status, event time, venue, organiser contact and the
+              description.</li>
+          <li><strong>Event setup</strong> — shortcuts to <em>Agenda, maps &amp; booths</em>, the
+              <em>Career directory</em> and <em>Attendees</em>.</li>
+          <li><strong>Charts</strong> — the registration funnel, registrations over time, top organisations and
+              approval status. Until the first registration arrives, a message reminds you to share the registration
+              link instead.</li>
+        </ul>
         <figure class="manual-fig">
-          <img src="{% static 'register/manual/a6_dashboard.jpg' %}" class="border-radius-lg shadow-sm" alt="Campaign dashboard">
-          <figcaption>Campaign dashboard. Figures update as registrations come in.</figcaption>
+          <img src="{% static 'register/manual/a6_dashboard.jpg' %}" class="border-radius-lg shadow-sm" alt="Event dashboard">
+          <figcaption>Event dashboard. Figures update as registrations come in.</figcaption>
         </figure>
 
       </div>
@@ -665,7 +710,7 @@
           <ul class="manual-nav-list">
             <li><a href="#before">1. Before you begin</a></li>
             <li><a href="#concepts">2. How the pieces fit together</a></li>
-            <li><a href="#partA">3. Create a campaign</a></li>
+            <li><a href="#partA">3. Create an event</a></li>
             <li><a href="#partB">4. Create a registration form</a></li>
             <li><a href="#partC">5. Set up the form</a></li>
             <li><a href="#clone">6. Clone a form</a></li>

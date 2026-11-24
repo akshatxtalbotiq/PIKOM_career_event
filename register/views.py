@@ -37,7 +37,6 @@ from django.views.decorators.clickjacking import xframe_options_sameorigin
 
 from email.mime.image import MIMEImage
 import os
-from weasyprint import HTML
 
 from django.template.loader import render_to_string
 
@@ -4047,6 +4046,10 @@ def survey_consolidated_pdf(request, survey_id):
     )
 
     base_url = request.build_absolute_uri("/")  # helps WeasyPrint resolve relative assets
+
+    # Imported lazily: WeasyPrint needs native GTK/Pango libraries that are not
+    # available on every development machine (e.g. Windows without GTK).
+    from weasyprint import HTML
 
     pdf_bytes = HTML(string=html_string, base_url=base_url).write_pdf()
 
