@@ -171,9 +171,10 @@
               the <strong>menu</strong> button in the top bar to open it.</li>
           <li><strong>Permissions.</strong> Superusers see everything. Everyone else only sees events whose
               <em>Campaign Team</em> they belong to, and can only build forms and read registrations for those
-              events. The <strong>+ Add New</strong> button and the <strong>Edit</strong> pencil only appear if your
-              account is allowed to create or change events. If a page returns a permission error, ask a superuser to
-              add you to the event’s team.</li>
+              events. Being on the team is not the whole story, though: the <strong>+ Add New</strong> button and the
+              <strong>Edit</strong> pencil on Events, and the <strong>+ New Registration Form</strong> button, only
+              appear if a superuser has also given your account permission to create or change events and forms. If a
+              button is missing or a page returns a permission error, ask a superuser.</li>
         </ul>
         <div class="manual-note">
           <strong>“Event” and “campaign” mean the same thing.</strong> The menu and page titles now say
@@ -222,7 +223,8 @@
 
         <h6 class="manual-step"><span class="step-pill">Step A1</span>Open the Events list</h6>
         <p>Click <strong>Events</strong> in the left menu. Each row is one event, with its <strong>Starts</strong>
-          and <strong>Ends</strong> dates, an
+          and <strong>Ends</strong> date and time (an event starts at 12:00 AM on its start date and ends at 11:59 PM
+          on its end date), an
           <span class="badge badge-sm bg-gradient-success">Active</span> or
           <span class="badge badge-sm bg-gradient-danger">Inactive</span> badge, and a set of action icons on the
           right. Click an event’s name to go straight to its registrations. Use <strong>Search</strong> and
@@ -255,8 +257,8 @@
               <tr><td class="k">Start date</td><td>Required. Click the field and choose the day from the calendar. There is no time to set — the event starts at the beginning of that day.</td></tr>
               <tr><td class="k">End date</td><td>Required, and it cannot be before the start date. The event runs to the end of that day. <strong>This date is reused as the event date</strong> in the confirmation and reminder emails, so set it to the actual event day.</td></tr>
               <tr><td class="k">Description</td><td>A short introduction to the event. It appears on the event dashboard and in the attendee app, and on the public registration form if the form has no description of its own.</td></tr>
-              <tr><td class="k">Organizer / contact name, Contact email, Contact phone</td><td>Who attendees should contact about the event. Optional. They appear in the event details on the dashboard and in the attendee app.</td></tr>
-              <tr><td class="k">Event banner</td><td>Optional. An image file under 5 MB. It is shown at the top of the public registration form unless the form has its own banner, and in the attendee app. When editing an event that already has a banner, the dialog says so; choose a new file only if you want to replace it.</td></tr>
+              <tr><td class="k">Organizer / contact name, Contact email, Contact phone</td><td>Who to contact about the event. Optional. They appear in the event details on the event dashboard. The attendee app does not show them.</td></tr>
+              <tr><td class="k">Event banner</td><td>Optional. An image file under 5 MB. It is shown at the top of the public registration form unless the form has its own banner. The attendee app does not show it. A larger file, or one that is not an image, is rejected when you press Save with a “Something went wrong!” message — choose a smaller image and save again. When editing an event that already has a banner, the dialog says so; choose a new file only if you want to replace it.</td></tr>
               <tr><td class="k">‘Reply To’ Email</td><td>Required. Where replies from registrants go. More than one address is allowed — separate them with commas and no spaces, e.g. <em>pic1@mail.com,pic2@mail.com</em>.</td></tr>
               <tr><td class="k">Campaign Team</td><td>The users allowed to manage this event and its forms. Click the box and pick from the list; repeat to add several people.</td></tr>
               <tr><td class="k">Event Theme Colour</td><td>Accent colour used on the public form and in registrant emails. Click <strong>Choose colour</strong> (or the swatch) and pick a colour in your browser’s colour picker. The chosen code is shown next to <em>Selected:</em>.</td></tr>
@@ -361,9 +363,9 @@
             <tbody>
               <tr><td class="k">Form Title</td><td>Required. Shown as the heading of the public page and in the forms list.</td></tr>
               <tr><td class="k">Public URL (optional)</td><td>The readable part of the public address. Lowercase letters, numbers and hyphens only. Leave it blank and one is generated from the title. It must be unique — if another form already uses it, saving fails with a message telling you so.</td></tr>
-              <tr><td class="k">Survey Start Date / Survey End Date</td><td>The window in which the public form accepts entries. Outside it, visitors see the “registration closed” wording.</td></tr>
-              <tr><td class="k">Survey Description</td><td>Rich text shown to registrants under the title — venue, closing date, who to contact. The small toolbar handles bold, headings, lists and links.</td></tr>
-              <tr><td class="k">Select Campaign</td><td>The event this form belongs to. Pick it here: the event details and email wording in Form Builder depend on it. The list only offers events you are allowed to manage.</td></tr>
+              <tr><td class="k">Survey Start Date / Survey End Date</td><td>Required. Pick a date and time for each. They are kept as a record of when registration is meant to run, but <strong>they do not open or close the form</strong> — see the note below.</td></tr>
+              <tr><td class="k">Survey Description</td><td>Rich text shown to registrants under the title — venue, closing date, who to contact. The small toolbar handles bold, italic, underline, strikethrough, headings, lists, indents, text direction and text/highlight colour. It has no link button.</td></tr>
+              <tr><td class="k">Select Campaign</td><td>The event this form belongs to. Pick it here: the event details and email wording in Form Builder depend on it. The list only offers <strong>active</strong> events you are allowed to manage, so an inactive event will not appear.</td></tr>
               <tr><td class="k">Active or Inactive the Survey</td><td>Leave on so the form can be opened.</td></tr>
             </tbody>
           </table>
@@ -371,6 +373,15 @@
           <img src="{% static 'register/manual/b3_new_form_filled.jpg' %}" class="border-radius-lg shadow-sm" alt="A completed Add New Registration Form dialog">
           <figcaption>A completed Add New Registration Form dialog.</figcaption>
         </figure>
+        <div class="manual-note">
+          <strong>What opens and closes registration.</strong> The public form accepts registrations whenever the form
+          is <em>Active</em> and its event is active — whatever the start and end dates say. To close registration,
+          switch the form (or the event) to Inactive; visitors then see the “Registration Closed” page.
+        </div>
+        <div class="manual-note">
+          <strong>More than one form on an event?</strong> Registrations made through the attendee app always go into
+          the event’s <em>newest</em> active form. The public web links still go to whichever form they belong to.
+        </div>
         <div class="manual-note">
           <strong>Where is the real link?</strong> Don’t hand-build the public URL from this dialog. After saving, open
           Form Builder — the complete, correct link is displayed at the top under <em>Shareable link</em>, with a
@@ -389,7 +400,7 @@
             </thead>
             <tbody>
               <tr><td class="k">Name</td><td>Yes</td></tr>
-              <tr><td class="k">Participant Type</td><td>No — a fixed picklist (Delegate, Speaker, Sponsor, Organizer …)</td></tr>
+              <tr><td class="k">Participant Type</td><td>No — a fixed picklist (Delegate, Speaker, Sponsor, Organizer …). It is <strong>not shown on the public form</strong>; see the note below.</td></tr>
               <tr><td class="k">Email</td><td>Yes</td></tr>
               <tr><td class="k">Phone</td><td>No</td></tr>
               <tr><td class="k">Organization</td><td>No</td></tr>
@@ -398,6 +409,13 @@
         <p class="mt-2">These are <strong>identity fields</strong>. They feed the registrations list, the QR
           confirmation and the check-in screen, so they cannot be deleted — you can only make them optional or
           reword them.</p>
+        <div class="manual-note">
+          <strong>Participant Type is set by your team, not by registrants.</strong> The public form never asks for
+          it, so people who register online arrive with no participant type. Set it afterwards from the registrations
+          list with the <strong>Participant Type</strong> toolbar button. <strong>Never mark Participant Type as
+          Required</strong> — registrants cannot fill it in, so every public registration would fail with
+          “Please complete all required fields: …” naming that field.
+        </div>
 
         <h6 class="manual-step"><span class="step-pill">Step B4</span>Row icons on the forms list</h6>
         <figure class="manual-fig">
@@ -449,8 +467,8 @@
         </figure>
 
         <h6 class="manual-sub">Event details</h6>
-        <p>These lines appear in the confirmation and reminder emails, and — if you switch the toggle on — at the top
-          of the public form as well.</p>
+        <p>These lines appear in any email whose <em>Include the event details block</em> switch is on (see Email
+          content below), and — if you switch the toggle on — at the top of the public form as well.</p>
           <table class="table align-items-center mb-0 manual-table">
             <tbody>
               <tr><td class="k">Date</td><td>Read-only. Taken from the event’s end date. To change it, edit the event (Part A).</td></tr>
@@ -458,7 +476,7 @@
               <tr><td class="k">Venue</td><td>Free text, multiple lines allowed.</td></tr>
               <tr><td class="k">Dress code</td><td>Free text.</td></tr>
               <tr><td class="k">Additional info rows</td><td>Extra lines such as parking, agenda or lucky draw. Each row takes an emoji, a bold label, the text, and an optional link — when a link is given the text becomes clickable. <strong>+ Add row</strong> adds more.</td></tr>
-              <tr><td class="k">Show event details on this registration form</td><td>Per-form toggle. On = the block above is also shown at the top of the public page.</td></tr>
+              <tr><td class="k">Show event details on this registration form</td><td>Per-form toggle. On = the block above is also shown on the public page. It is off on a cloned form until you switch it on.</td></tr>
             </tbody>
           </table>
         <p class="mt-2">Press <strong>Save event details</strong> when done — this block has its own save button.
@@ -470,15 +488,23 @@
         </figure>
 
         <h6 class="manual-sub">Email content</h6>
-        <p>This block is also shared by every form on the event. Four tabs, one per message:
-          <strong>Thank-you</strong> (sent on submission),
-          <strong>QR confirmation</strong>, <strong>Attendance reminder</strong> and
-          <strong>Registration closed</strong>. For each you can write a subject line and the body.</p>
+        <p>This block is also shared by every form on the event. It has four tabs — three emails and one web page:</p>
+          <table class="table align-items-center mb-0 manual-table">
+            <tbody>
+              <tr><td class="k">Thank-you</td><td>Email sent <strong>automatically</strong> as soon as someone submits the form.</td></tr>
+              <tr><td class="k">QR confirmation</td><td>Email with the registrant’s QR code. Sent <strong>only when you send it</strong> — select registrants in the registrations list and use <strong>Send</strong>, or choose to send the QR when you register a walk-in. Approving someone does not send it by itself.</td></tr>
+              <tr><td class="k">Attendance reminder</td><td>Email reminder before the event. Also sent only from <strong>Send</strong> in the registrations list.</td></tr>
+              <tr><td class="k">Registration closed</td><td>Not an email: the message shown on the public form while it is switched to Inactive. The page already shows a “Registration Closed” heading and the ‘Reply To’ contact; you write the text in between. Only the <code>Event</code> and <code>Date</code> buttons apply, and <strong>Open form</strong> shows the public page. Leave it blank for the default wording.</td></tr>
+            </tbody>
+          </table>
+        <p class="mt-2">For each of the three emails:</p>
         <ul>
-          <li>The small buttons — <code>Name</code>, <code>Reg no</code>, <code>Date</code>, <code>Event</code> — drop
-              in a placeholder that is filled per recipient. There is one set for the subject and one for the body.</li>
+          <li>Write a subject line and the body. The small buttons — <code>Name</code>, <code>Reg no</code>,
+              <code>Date</code>, <code>Event</code> — drop in a placeholder that is filled per recipient. There is one
+              set for the subject and one for the body.</li>
           <li>Leave the subject blank to use the system default.</li>
-          <li>Two switches per message: show the banner image at the top, and include the event details block.</li>
+          <li>Two switches: show the banner image at the top, and include the event details block. On the Thank-you
+              email the event details switch starts off.</li>
           <li><strong>Sign-off</strong> is the closing block — several lines allowed, with bold and colour.</li>
           <li>Press <strong>Save email content</strong>, and use <strong>Preview</strong> to see the rendered email.</li>
         </ul>
@@ -566,21 +592,24 @@
             </thead>
             <tbody>
               <tr><td class="k">New Form Title</td><td>Arrives pre-filled as <em>Copy of …</em>. Replace it with the real name for this year’s event — the copy’s public URL is generated from this title, so a clean title gives a clean link.</td></tr>
-              <tr><td class="k">Assign to Campaign</td><td>The event the copy belongs to — normally the new event you created for this year. Only events you are allowed to manage are listed.</td></tr>
+              <tr><td class="k">Assign to Campaign</td><td>The event the copy belongs to. It <strong>arrives set to the original form’s event</strong>, so change it to the new event you created for this year. Only active events you are allowed to manage are listed.</td></tr>
             </tbody>
           </table>
         <p class="mt-2">Press <strong>Clone</strong>. The list reloads with the new form on it, ready to edit.
           <strong>Cancel</strong> leaves everything untouched.</p>
 
-        <h6 class="manual-step"><span class="step-pill">Step 3</span>Fix the three things a copy can’t know</h6>
+        <h6 class="manual-step"><span class="step-pill">Step 3</span>Fix the things a copy can’t know</h6>
         <ol>
           <li><strong>The dates.</strong> Survey start and end are copied from the original, so they are still last
-              year’s window. Click the pencil on the new row and set the new one.</li>
+              year’s. They don’t open or close registration, but update them so the record is right: click the pencil
+              on the new row.</li>
           <li><strong>The public URL.</strong> It is generated from the new title. Open Form Builder and check the
               link under <em>Shareable link</em> before you share it.</li>
           <li><strong>Event details and email wording.</strong> These belong to the <em>event</em>, not the form,
               so the copy shows whatever the new event holds — usually empty. Fill them in from Form Builder
               (Part C).</li>
+          <li><strong>Show event details on this registration form.</strong> This switch is not copied and starts
+              off on the copy. Turn it back on in Form Builder if the public form should show the event details.</li>
         </ol>
 
         <h6 class="manual-sub">What a clone does and does not carry over</h6>
@@ -600,8 +629,9 @@
                   on one form never touches the other.
                 </td>
                 <td>
-                  Registrations and their answers · QR and check-in state · the event details and email
-                  wording, which live on the event rather than the form.
+                  Registrations and their answers · QR and check-in state · the <em>Show event details on this
+                  registration form</em> switch (it starts off) · the event details and email wording, which live on
+                  the event rather than the form.
                 </td>
               </tr>
             </tbody>
@@ -620,7 +650,8 @@
         <ol>
           <li>In Form Builder, click <strong>Preview</strong> to check the page without writing any data.</li>
           <li>Then <strong>Open live</strong> and submit one real test entry yourself, so you can confirm the
-              thank-you page and the confirmation email.</li>
+              thank-you page and the Thank-you email. To check the QR confirmation email too, send it to your test
+              entry from the registrations list.</li>
           <li>Check the entry landed in the registrations list, then delete it before you publish the link.</li>
           <li>Share the link from <strong>Copy</strong> — not a URL you typed by hand.</li>
         </ol>
@@ -642,6 +673,12 @@
           registrant, with the registration number, approval status, check-in and QR state. Header counters summarise
           Total, Pending, Approved, Rejected, QR sent, Reminder and Checked in. From the toolbar you can register a
           walk-in, edit an entry, change status or participant type, and send QR codes or reminders.</p>
+        <div class="manual-note">
+          <strong>Nothing after the Thank-you email is automatic.</strong> Approving a registrant does not email them.
+          When you are ready, select the approved registrants and use <strong>Send</strong> for the QR confirmation,
+          and again later for the attendance reminder. Online registrants also have no participant type until you
+          set one here.
+        </div>
         <figure class="manual-fig">
           <img src="{% static 'register/manual/b14_reg_list.jpg' %}" class="border-radius-lg shadow-sm" alt="The registrations list">
           <figcaption>The registrations list, with the counters at the top right and the toolbar above the table.</figcaption>
@@ -657,11 +694,14 @@
           <li>The event’s end date is the real event date — the emails read it from there.</li>
           <li>‘Reply To’ email is a mailbox someone actually watches.</li>
           <li>Everyone who needs access is on the event’s Campaign Team.</li>
-          <li>The form is attached to the right event, and its start/end window is correct.</li>
-          <li>Banner uploaded; event details (time, venue) saved; the four emails read the way you want.</li>
+          <li>The form is attached to the right event, and its start/end dates are filled in correctly for the record.</li>
+          <li>Banner uploaded; event details (time, venue) saved; the three emails and the Registration closed message
+              read the way you want.</li>
+          <li>Participant Type is <em>not</em> marked Required.</li>
           <li>Required flags are right, and the answers your team works from have <em>Show in list</em> on.</li>
           <li>One test registration submitted, checked and removed.</li>
-          <li>The event is active and the form is Active.</li>
+          <li>The event is active and the form is Active — this is what opens registration.</li>
+          <li>You know who will send the QR confirmation emails, and when — they are not sent automatically.</li>
         </ul>
       </div>
     </div>
@@ -678,18 +718,22 @@
               </tr>
             </thead>
             <tbody>
-              <tr><td class="k">“This URL is already used by another form.”</td><td>The Public URL you typed is taken. Choose another, or leave it blank to auto-generate.</td></tr>
+              <tr><td class="k">“URL ‘…’ is already used by another form.”</td><td>The Public URL you typed is taken. Choose another, or leave it blank to auto-generate.</td></tr>
               <tr><td class="k">Permission error opening Form Builder</td><td>You are not a superuser and not on that event’s Campaign Team. Ask to be added.</td></tr>
-              <tr><td class="k">The event does not appear in Select Campaign</td><td>Same reason — the dropdown only lists events you may manage.</td></tr>
+              <tr><td class="k">The event does not appear in Select Campaign or Assign to Campaign</td><td>Either the event is inactive — these lists only show active events — or you are not on its Campaign Team. Activate the event, or ask to be added.</td></tr>
               <tr><td class="k">No + Add New button or Edit pencil on Events</td><td>Your account is not allowed to create or change events. Ask a superuser.</td></tr>
               <tr><td class="k">Wrong date in the emails</td><td>The date comes from the event’s <em>end</em> date. Edit the event, not the form.</td></tr>
               <tr><td class="k">Dashboard shows “Add venue” or “Add event time”</td><td>They are not set yet. Fill them in under Event details in Form Builder and press <strong>Save event details</strong>.</td></tr>
               <tr><td class="k">Event details missing from the public page</td><td><em>Show event details on this registration form</em> is off, or <strong>Save event details</strong> was not pressed.</td></tr>
-              <tr><td class="k">Registrants see “registration closed”</td><td>Today is outside the form’s start/end window, or the form or event is inactive.</td></tr>
-              <tr><td class="k">Theme colour ignored</td><td>The value was not a valid 6-digit hex code, so the default was used.</td></tr>
+              <tr><td class="k">Registrants see “Registration Closed”</td><td>The form or its event is inactive. The start and end dates have no effect — switch both to active to reopen.</td></tr>
+              <tr><td class="k">Registration still open after the end date</td><td>Expected — dates don’t close the form. Switch the form to Inactive.</td></tr>
+              <tr><td class="k">Every public registration fails with “Please complete all required fields: …” naming the participant type question</td><td>Participant Type has been marked Required, but the public form never asks for it. Edit that field in Form Builder and turn Required off.</td></tr>
+              <tr><td class="k">Registrants did not get a QR code</td><td>QR confirmation emails are only sent when you use <strong>Send</strong> in the registrations list (or send one when registering a walk-in). Approving alone does not send it.</td></tr>
+              <tr><td class="k">Saving an event shows “Something went wrong!”</td><td>Often the event banner: it must be an image under 5 MB. Choose a smaller image and save again.</td></tr>
               <tr><td class="k">An identity field has no delete button</td><td>By design. Make it optional instead.</td></tr>
-              <tr><td class="k">“Permission denied” when cloning</td><td>You need rights over both ends: the form you are copying <em>and</em> the event you are copying it into.</td></tr>
-              <tr><td class="k">A cloned form shows last year’s dates</td><td>Expected — dates are copied with the questions. Edit the new form and set its own window.</td></tr>
+              <tr><td class="k">“Permission denied” or “Permission denied for that campaign” when cloning</td><td>You need rights over both ends: the first message means the form you are copying, the second means the event you are copying it into.</td></tr>
+              <tr><td class="k">A cloned form shows last year’s dates</td><td>Expected — dates are copied with the questions. Edit the new form and update them.</td></tr>
+              <tr><td class="k">A cloned form doesn’t show the event details</td><td>The <em>Show event details on this registration form</em> switch is not copied. Turn it on in Form Builder.</td></tr>
             </tbody>
           </table>
       </div>
