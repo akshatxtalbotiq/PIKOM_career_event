@@ -269,10 +269,6 @@
           <strong>Venue and event time</strong> are not in this dialog. Set them in Form Builder under the event
           details (Part C). Until then the dashboard shows <em>Add venue</em> and <em>Add event time</em>.
         </div>
-        <figure class="manual-fig">
-          <img src="{% static 'register/manual/a4_team.jpg' %}" class="border-radius-lg shadow-sm" alt="Choosing the event team">
-          <figcaption>Campaign Team — click the box and choose the users who will run this event.</figcaption>
-        </figure>
 
         <h6 class="manual-step"><span class="step-pill">Step A4</span>Check the dialog, then Save</h6>
         <p>Compare your entries against the example below, then press <strong>Save</strong>. The dialog closes and the
@@ -280,7 +276,7 @@
           field is outlined in red with a message underneath, and nothing is saved until you fix it.</p>
         <figure class="manual-fig">
           <img src="{% static 'register/manual/a5_add_campaign_filled.jpg' %}" class="border-radius-lg shadow-sm" alt="A completed Create event dialog">
-          <figcaption>A completed Create event dialog, ready to save.</figcaption>
+          <figcaption>The bottom of a completed Create event dialog, ready to save.</figcaption>
         </figure>
 
         <h6 class="manual-step"><span class="step-pill">Step A5</span>Know the row icons</h6>
@@ -309,8 +305,8 @@
               <tr><td class="k">Link</td><td><strong>Copy registration link</strong> — copies the public URL to your clipboard.</td></tr>
               <tr><td class="k">Sliders</td><td><strong>Build / edit form</strong> — opens Form Builder (Part C).</td></tr>
               <tr><td class="k">QR scanner</td><td><strong>Check-in scanner</strong> — the on-site scanning page for phones and Sunmi devices.</td></tr>
-              <tr><td class="k">Plus box</td><td>Shown <em>instead</em> of the four form icons when no form exists yet: <strong>“No registration form yet — click to create one”</strong>. It jumps straight to Part B with this campaign pre-selected.</td></tr>
-              <tr><td class="k">Clock</td><td>Legacy entry form, for older campaigns that still use one.</td></tr>
+              <tr><td class="k">Plus box</td><td>Shown <em>instead</em> of the four form icons when no form exists yet: <strong>“No registration form yet — click to create one”</strong>. It jumps straight to Part B with this event pre-selected.</td></tr>
+              <tr><td class="k">Clock</td><td>Legacy entry form, for older events that still use one.</td></tr>
             </tbody>
           </table>
 
@@ -346,15 +342,15 @@
 
         <h6 class="manual-step"><span class="step-pill">Step B1</span>Open Registration Forms</h6>
         <p>Click <strong>Registration Forms</strong> in the left menu — or click the <strong>plus-box</strong> icon on
-          a campaign row, which opens this page with that campaign already selected for you.</p>
+          an event row, which opens this page with that event already selected for you.</p>
         <figure class="manual-fig">
           <img src="{% static 'register/manual/b1_form_list.jpg' %}" class="border-radius-lg shadow-sm" alt="The Registration Forms list">
           <figcaption>The Registration Forms list.</figcaption>
         </figure>
 
         <h6 class="manual-step"><span class="step-pill">Step B2</span>Click + New Registration Form and fill it in</h6>
-        <p>The <strong>Add New Registration Form</strong> dialog opens. Nothing is saved until you press
-          <strong>Save</strong>.</p>
+        <p>Click <strong>+ New Registration Form</strong> at the top right. The <strong>Add New Registration
+          Form</strong> dialog opens. Nothing is saved until you press <strong>Save</strong>.</p>
           <table class="table align-items-center mb-0 manual-table">
             <thead>
               <tr>
@@ -367,7 +363,7 @@
               <tr><td class="k">Public URL (optional)</td><td>The readable part of the public address. Lowercase letters, numbers and hyphens only. Leave it blank and one is generated from the title. It must be unique — if another form already uses it, saving fails with a message telling you so.</td></tr>
               <tr><td class="k">Survey Start Date / Survey End Date</td><td>The window in which the public form accepts entries. Outside it, visitors see the “registration closed” wording.</td></tr>
               <tr><td class="k">Survey Description</td><td>Rich text shown to registrants under the title — venue, closing date, who to contact. The small toolbar handles bold, headings, lists and links.</td></tr>
-              <tr><td class="k">Select Campaign</td><td>The campaign this form belongs to. Pick it here: the event details and email wording in Form Builder depend on it. The list only offers campaigns you are allowed to manage.</td></tr>
+              <tr><td class="k">Select Campaign</td><td>The event this form belongs to. Pick it here: the event details and email wording in Form Builder depend on it. The list only offers events you are allowed to manage.</td></tr>
               <tr><td class="k">Active or Inactive the Survey</td><td>Leave on so the form can be opened.</td></tr>
             </tbody>
           </table>
@@ -426,8 +422,8 @@
               <tr><td class="k">Globe</td><td><strong>Open public registration form</strong> — the live page.</td></tr>
               <tr><td class="k">Link</td><td><strong>Copy public link</strong>.</td></tr>
               <tr><td class="k">QR scanner</td><td><strong>Check-in scanner</strong> for the event day.</td></tr>
-              <tr><td class="k">Clock face</td><td><strong>Consolidated report</strong> of the responses.</td></tr>
-              <tr><td class="k">Copy</td><td><strong>Clone form</strong> — copy its questions into another campaign. The fastest way to run this year’s event off last year’s form.</td></tr>
+              <tr><td class="k">Exclamation mark</td><td><strong>Consolidated report</strong> of the responses.</td></tr>
+              <tr><td class="k">Copy</td><td><strong>Clone form</strong> — copy its questions into another event. The fastest way to run this year’s event off last year’s form.</td></tr>
               <tr><td class="k">Red bin</td><td><strong>Delete form</strong>. Irreversible — check the registration count first.</td></tr>
             </tbody>
           </table>
@@ -457,7 +453,7 @@
           of the public form as well.</p>
           <table class="table align-items-center mb-0 manual-table">
             <tbody>
-              <tr><td class="k">Date</td><td>Read-only. Taken from the campaign’s end date. To change it, edit the campaign.</td></tr>
+              <tr><td class="k">Date</td><td>Read-only. Taken from the event’s end date. To change it, edit the event (Part A).</td></tr>
               <tr><td class="k">Time</td><td>Free text, e.g. <code>10.00 am – 1.00 pm</code>.</td></tr>
               <tr><td class="k">Venue</td><td>Free text, multiple lines allowed.</td></tr>
               <tr><td class="k">Dress code</td><td>Free text.</td></tr>
@@ -466,14 +462,16 @@
             </tbody>
           </table>
         <p class="mt-2">Press <strong>Save event details</strong> when done — this block has its own save button.
-          Event details apply to the whole campaign, so every form on that campaign shares them.</p>
+          Event details apply to the whole event, so every form on that event shares them. The time and venue you
+          enter here are also what the event dashboard and the attendee app show.</p>
         <figure class="manual-fig">
           <img src="{% static 'register/manual/b5_event_details.jpg' %}" class="border-radius-lg shadow-sm" alt="Event details block">
           <figcaption>Event details, with the additional info rows at the bottom.</figcaption>
         </figure>
 
         <h6 class="manual-sub">Email content</h6>
-        <p>Four tabs, one per message: <strong>Thank-you</strong> (sent on submission),
+        <p>This block is also shared by every form on the event. Four tabs, one per message:
+          <strong>Thank-you</strong> (sent on submission),
           <strong>QR confirmation</strong>, <strong>Attendance reminder</strong> and
           <strong>Registration closed</strong>. For each you can write a subject line and the body.</p>
         <ul>
@@ -486,12 +484,13 @@
         </ul>
         <figure class="manual-fig">
           <img src="{% static 'register/manual/b6_email.jpg' %}" class="border-radius-lg shadow-sm" alt="Email content block">
-          <figcaption>The Thank-you tab: subject line, placeholder buttons, body, and the two switches.</figcaption>
+          <figcaption>The Thank-you tab: subject line, placeholder buttons and the start of the body. The two switches, Sign-off and <strong>Save email content</strong> sit below the body.</figcaption>
         </figure>
 
         <h6 class="manual-sub">Form fields</h6>
-        <p>The question list. Each row shows its number, its type, a <em>Required</em> tag, a <em>List col</em> tag
-          when the answer is shown as a column in the registrations list, and the question text.</p>
+        <p>The question list. Each row shows its number, its type (identity fields show <em>Identity</em> and a
+          padlock), a <em>Required</em> tag, a <em>List col</em> tag when the answer is shown as a column in the
+          registrations list, and the question text.</p>
         <figure class="manual-fig">
           <img src="{% static 'register/manual/b8_fields.jpg' %}" class="border-radius-lg shadow-sm" alt="Form Fields block">
           <figcaption>The Form Fields block. Identity fields carry a padlock.</figcaption>
@@ -506,7 +505,7 @@
         <p>Click <strong>+ Add Question</strong> at the top right of the Form Fields block.</p>
         <figure class="manual-fig">
           <img src="{% static 'register/manual/b9_question_top.jpg' %}" class="border-radius-lg shadow-sm" alt="The Add Question dialog">
-          <figcaption>The Add Question dialog, set to Single choice with three options.</figcaption>
+          <figcaption>The top of the Add Question dialog, set to Single choice.</figcaption>
         </figure>
           <table class="table align-items-center mb-0 manual-table">
             <thead>
@@ -522,7 +521,7 @@
               <tr><td class="k">Required</td><td>On = the registrant cannot submit without answering.</td></tr>
               <tr><td class="k">Show in list</td><td>On = the answer becomes a column in the registrations list. Use it for the handful of answers your team sorts and filters on, not for everything.</td></tr>
               <tr><td class="k">Column header for the registrations list</td><td>Short label for that column, up to 60 characters. Blank = the question text, truncated. Only used when <em>Show in list</em> is on.</td></tr>
-              <tr><td class="k">Choices</td><td>Shown for Dropdown, Single choice and Multiple choice. One row per option; <strong>+ Add choice</strong> adds more, the drag handle reorders, the red button removes. <em>Add follow-up text</em> attaches a free-text box to a specific option — useful for “Other, please specify”.</td></tr>
+              <tr><td class="k">Choices</td><td>Shown for Dropdown, Single choice and Multiple choice. One row per option; <strong>+ Add choice</strong> adds more, the drag handle or the up and down arrows reorder, the red <strong>×</strong> removes. <em>Add follow-up text</em> attaches a free-text box to a specific option — useful for “Other, please specify”.</td></tr>
               <tr><td class="k">Include an “Other” free-text input</td><td>Adds a catch-all “Other” option with its own text box.</td></tr>
               <tr><td class="k">Max selections</td><td>Multiple choice only. Caps how many boxes a registrant may tick; blank = no limit.</td></tr>
             </tbody>
@@ -531,7 +530,7 @@
           into position. <strong>Cancel</strong> discards it.</p>
         <figure class="manual-fig">
           <img src="{% static 'register/manual/b10_question_bottom.jpg' %}" class="border-radius-lg shadow-sm" alt="The bottom of the Add Question dialog">
-          <figcaption>The bottom of the Add Question dialog: choices, the “Other” option and Save Question.</figcaption>
+          <figcaption>The bottom of the Add Question dialog: three choices, the “Other” option and Save Question.</figcaption>
         </figure>
 
       </div>
@@ -542,7 +541,7 @@
       <div class="card-header pb-2"><h6 class="mb-0">6. Clone a form for a repeat event</h6></div>
       <div class="card-body pt-2">
         <p>When you run the same event again, don’t rebuild the form. Clone last year’s and point the copy at this
-          year’s campaign — every question comes across with its type, choices, required flags and
+          year’s event — every question comes across with its type, choices, required flags and
           <em>Show in list</em> settings. Registrations do not.</p>
 
         <h6 class="manual-step"><span class="step-pill">Step 1</span>Click the copy icon on the form’s row</h6>
@@ -553,7 +552,7 @@
           <figcaption>The <strong>Clone form</strong> icon, outlined here in pink.</figcaption>
         </figure>
 
-        <h6 class="manual-step"><span class="step-pill">Step 2</span>Name the copy and choose its campaign</h6>
+        <h6 class="manual-step"><span class="step-pill">Step 2</span>Name the copy and choose its event</h6>
         <figure class="manual-fig">
           <img src="{% static 'register/manual/c2_clone_modal.jpg' %}" class="border-radius-lg shadow-sm img-natural" alt="The Clone Form dialog">
           <figcaption>The Clone Form dialog. Both fields are required.</figcaption>
@@ -567,7 +566,7 @@
             </thead>
             <tbody>
               <tr><td class="k">New Form Title</td><td>Arrives pre-filled as <em>Copy of …</em>. Replace it with the real name for this year’s event — the copy’s public URL is generated from this title, so a clean title gives a clean link.</td></tr>
-              <tr><td class="k">Assign to Campaign</td><td>The campaign the copy belongs to — normally the new campaign you created for this year. Only campaigns you are allowed to manage are listed.</td></tr>
+              <tr><td class="k">Assign to Campaign</td><td>The event the copy belongs to — normally the new event you created for this year. Only events you are allowed to manage are listed.</td></tr>
             </tbody>
           </table>
         <p class="mt-2">Press <strong>Clone</strong>. The list reloads with the new form on it, ready to edit.
@@ -579,8 +578,8 @@
               year’s window. Click the pencil on the new row and set the new one.</li>
           <li><strong>The public URL.</strong> It is generated from the new title. Open Form Builder and check the
               link under <em>Shareable link</em> before you share it.</li>
-          <li><strong>Event details and email wording.</strong> These belong to the <em>campaign</em>, not the form,
-              so the copy shows whatever the new campaign holds — usually empty. Fill them in from Form Builder
+          <li><strong>Event details and email wording.</strong> These belong to the <em>event</em>, not the form,
+              so the copy shows whatever the new event holds — usually empty. Fill them in from Form Builder
               (Part C).</li>
         </ol>
 
@@ -601,8 +600,8 @@
                   on one form never touches the other.
                 </td>
                 <td>
-                  Registrations and their answers · QR and check-in state · the campaign’s event details and email
-                  wording, which live on the campaign rather than the form.
+                  Registrations and their answers · QR and check-in state · the event details and email
+                  wording, which live on the event rather than the form.
                 </td>
               </tr>
             </tbody>
@@ -626,26 +625,26 @@
           <li>Share the link from <strong>Copy</strong> — not a URL you typed by hand.</li>
         </ol>
         <figure class="manual-fig">
-          <img src="{% static 'register/manual/b11_public_top.jpg' %}" class="border-radius-lg shadow-sm" alt="The public form banner">
-          <figcaption>The public form opens with the banner image.</figcaption>
+          <img src="{% static 'register/manual/b11_public_top.jpg' %}" class="border-radius-lg shadow-sm" alt="The top of the public registration form">
+          <figcaption>The public form: the title, description and event details on the left, the questions on the right. When a banner is uploaded it appears at the top of the page.</figcaption>
         </figure>
         <figure class="manual-fig">
           <img src="{% static 'register/manual/b12_public_fields.jpg' %}" class="border-radius-lg shadow-sm" alt="The public form fields">
-          <figcaption>The fields as a registrant sees them — a red asterisk marks the required ones.</figcaption>
+          <figcaption>The fields as a registrant sees them — an asterisk (<strong>*</strong>) marks the required ones.</figcaption>
         </figure>
         <figure class="manual-fig">
           <img src="{% static 'register/manual/b13_public_submit.jpg' %}" class="border-radius-lg shadow-sm" alt="The Submit Registration button">
-          <figcaption>The end of the public form, with Submit Registration.</figcaption>
+          <figcaption>The end of the public form, with the <strong>Submit Registration</strong> button.</figcaption>
         </figure>
 
         <h6 class="manual-sub">Where registrations arrive</h6>
-        <p>Campaigns → <strong>eye</strong> icon (or Registration Forms → consolidated report). Each row is one
+        <p>Events → <strong>eye</strong> icon, or <strong>View attendees</strong> on the event dashboard. Each row is one
           registrant, with the registration number, approval status, check-in and QR state. Header counters summarise
           Total, Pending, Approved, Rejected, QR sent, Reminder and Checked in. From the toolbar you can register a
           walk-in, edit an entry, change status or participant type, and send QR codes or reminders.</p>
         <figure class="manual-fig">
           <img src="{% static 'register/manual/b14_reg_list.jpg' %}" class="border-radius-lg shadow-sm" alt="The registrations list">
-          <figcaption>The registrations list. Participant names and contact details are blurred in this manual only.</figcaption>
+          <figcaption>The registrations list, with the counters at the top right and the toolbar above the table.</figcaption>
         </figure>
       </div>
     </div>
@@ -655,14 +654,14 @@
       <div class="card-header pb-2"><h6 class="mb-0">8. Pre-launch checklist</h6></div>
       <div class="card-body pt-2">
         <ul>
-          <li>Campaign end date is the real event date — the emails read it from there.</li>
+          <li>The event’s end date is the real event date — the emails read it from there.</li>
           <li>‘Reply To’ email is a mailbox someone actually watches.</li>
-          <li>Everyone who needs access is on the Campaign Team.</li>
-          <li>The form is attached to the right campaign, and its start/end window is correct.</li>
-          <li>Banner uploaded; event details saved; the four emails read the way you want.</li>
+          <li>Everyone who needs access is on the event’s Campaign Team.</li>
+          <li>The form is attached to the right event, and its start/end window is correct.</li>
+          <li>Banner uploaded; event details (time, venue) saved; the four emails read the way you want.</li>
           <li>Required flags are right, and the answers your team works from have <em>Show in list</em> on.</li>
           <li>One test registration submitted, checked and removed.</li>
-          <li>Campaign is Active and the form is Active.</li>
+          <li>The event is active and the form is Active.</li>
         </ul>
       </div>
     </div>
@@ -680,14 +679,16 @@
             </thead>
             <tbody>
               <tr><td class="k">“This URL is already used by another form.”</td><td>The Public URL you typed is taken. Choose another, or leave it blank to auto-generate.</td></tr>
-              <tr><td class="k">Permission error opening Form Builder</td><td>You are not a superuser and not on that campaign’s team. Ask to be added.</td></tr>
-              <tr><td class="k">The campaign does not appear in Select Campaign</td><td>Same reason — the dropdown only lists campaigns you may manage.</td></tr>
-              <tr><td class="k">Wrong date in the emails</td><td>The date comes from the campaign’s <em>end</em> date. Edit the campaign, not the form.</td></tr>
+              <tr><td class="k">Permission error opening Form Builder</td><td>You are not a superuser and not on that event’s Campaign Team. Ask to be added.</td></tr>
+              <tr><td class="k">The event does not appear in Select Campaign</td><td>Same reason — the dropdown only lists events you may manage.</td></tr>
+              <tr><td class="k">No + Add New button or Edit pencil on Events</td><td>Your account is not allowed to create or change events. Ask a superuser.</td></tr>
+              <tr><td class="k">Wrong date in the emails</td><td>The date comes from the event’s <em>end</em> date. Edit the event, not the form.</td></tr>
+              <tr><td class="k">Dashboard shows “Add venue” or “Add event time”</td><td>They are not set yet. Fill them in under Event details in Form Builder and press <strong>Save event details</strong>.</td></tr>
               <tr><td class="k">Event details missing from the public page</td><td><em>Show event details on this registration form</em> is off, or <strong>Save event details</strong> was not pressed.</td></tr>
-              <tr><td class="k">Registrants see “registration closed”</td><td>Today is outside the form’s start/end window, or the form or campaign is inactive.</td></tr>
+              <tr><td class="k">Registrants see “registration closed”</td><td>Today is outside the form’s start/end window, or the form or event is inactive.</td></tr>
               <tr><td class="k">Theme colour ignored</td><td>The value was not a valid 6-digit hex code, so the default was used.</td></tr>
               <tr><td class="k">An identity field has no delete button</td><td>By design. Make it optional instead.</td></tr>
-              <tr><td class="k">“Permission denied” when cloning</td><td>You need rights over both ends: the form you are copying <em>and</em> the campaign you are copying it into.</td></tr>
+              <tr><td class="k">“Permission denied” when cloning</td><td>You need rights over both ends: the form you are copying <em>and</em> the event you are copying it into.</td></tr>
               <tr><td class="k">A cloned form shows last year’s dates</td><td>Expected — dates are copied with the questions. Edit the new form and set its own window.</td></tr>
             </tbody>
           </table>
@@ -695,9 +696,9 @@
     </div>
 
     <p class="text-xs text-secondary px-1 pb-3">
-      Screenshots were captured from this system. The campaign and form shown in the “Add New” dialogs were filled in
-      for illustration only and never saved, so that sample data does not exist in the database. Campaign titles, form
-      titles, participant names and contact details are blurred in this manual.
+      Screenshots were captured from this system using synthetic sample data (the “PIKOM Synthetic Showcase 2026”
+      event); every name and contact detail shown is made up. The values in the Create event, Add New Registration
+      Form and Add Question dialogs were typed in for illustration only and never saved.
     </p>
 
     </div><!-- /.manual-col -->
