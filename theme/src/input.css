@@ -14,6 +14,7 @@
 @source "../../register/static/register/js";
 
 /* ---------- PIKOM theme (shadcn tokens) ---------- */
+/* Brand blue = PIKOM logo #47ABE9; #1C80C6 / #1A78BD are its deeper shades for fills and text (white-on >= 4.2:1). */
 :root {
   --radius: 0.7rem;
   --background: #F6F8FC;
@@ -22,26 +23,26 @@
   --card-foreground: #0F1B33;
   --popover: #FFFFFF;
   --popover-foreground: #0F1B33;
-  --primary: #1F5FE0;
+  --primary: #1C80C6;
   --primary-foreground: #FFFFFF;
   --secondary: #EEF3FB;
   --secondary-foreground: #13306A;
   --muted: #EFF3F9;
   --muted-foreground: #5D6E87;
-  --accent: #E8F0FE;
-  --accent-foreground: #13306A;
+  --accent: #EAF6FD;
+  --accent-foreground: #0F5A8E;
   --destructive: #D23452;
   --border: #E2E8F1;
   --input: #D5DDEA;
-  --ring: #3B78F0;
-  --chart-1: #1F5FE0;
+  --ring: #47ABE9;
+  --chart-1: #1C80C6;
   --chart-2: #3AA0D8;
   --chart-3: #7C6AE8;
   --chart-4: #14A38B;
   --chart-5: #7FB8FF;
   --sidebar: #0B2149;
   --sidebar-foreground: #C9D5EC;
-  --sidebar-primary: #3AA0D8;
+  --sidebar-primary: #47ABE9;
   --sidebar-primary-foreground: #071739;
   --sidebar-accent: rgba(255, 255, 255, 0.07);
   --sidebar-accent-foreground: #FFFFFF;
@@ -50,16 +51,16 @@
 
   /* PIKOM extensions (beyond shadcn's set) */
   --brand-navy: #0A2154;
-  --brand-royal: #1B3AAE;
+  --brand-royal: #1A78BD;
   --brand-orange: #F0801F;
   --brand-orange-deep: #C25F0C;
   --font-label: "Barlow Condensed", "Arial Narrow", ui-sans-serif, system-ui, sans-serif;
-  --brand-sky: #3AA0D8;
+  --brand-sky: #47ABE9;
   --brand-violet: #6D5DD3;
   --success: #0D8A5F;   --success-soft: #E4F5EE;
   --warning: #B25E00;   --warning-soft: #FFF2DE;
   --danger: #C9304A;    --danger-soft: #FDEBEF;
-  --info: #1F5FE0;      --info-soft: #E8F0FE;
+  --info: #1A78BD;      --info-soft: #EAF6FD;
   --violet: #5B47C2;    --violet-soft: #EFECFC;
   --teal: #0B7F8C;      --teal-soft: #E0F4F6;
   --golf: #1F7A4D;      --golf-soft: #E3F3EA;
@@ -150,7 +151,9 @@
 }
 
 /* ---------- Motion (Framer-style, respectful) ---------- */
-@keyframes pk-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+/* Animates `translate`, not `transform`: a filled transform animation would override the inline transform
+   Popper uses to place dropdown menus (they jumped to the window corner) and block hover lifts. */
+@keyframes pk-rise { from { opacity: 0; translate: 0 8px; } to { opacity: 1; translate: none; } }
 .animate-rise { animation: pk-rise .45s cubic-bezier(.2,.7,.2,1) both; }
 .animate-rise-1 { animation-delay: .04s; } .animate-rise-2 { animation-delay: .08s; } .animate-rise-3 { animation-delay: .12s; } .animate-rise-4 { animation-delay: .16s; }
 @media (prefers-reduced-motion: reduce) { .animate-rise { animation: none; } }
@@ -330,7 +333,7 @@ textarea.form-control { height: auto; padding: .5rem .75rem; }
   .input:focus-visible, .textarea:focus-visible, .select:focus-visible { box-shadow: 0 0 0 4px color-mix(in srgb, var(--ring) 18%, transparent); }
 
   /* Tables inside cards: airy rows, blue-tinted hover */
-  table.dataTable tbody tr:hover > td, .table tbody tr:hover > td { background: color-mix(in srgb, var(--primary) 4%, transparent) !important; }
+  table.dataTable tbody tr:hover > td, .table tbody tr:hover > td { background: color-mix(in srgb, var(--primary) 4%, var(--card)) !important; } /* opaque: pinned (sticky) cells must hide what scrolls under them */
   table.dataTable thead th { background: color-mix(in srgb, var(--primary) 3%, var(--card)) !important; }
 }
 
@@ -355,7 +358,7 @@ textarea.form-control { height: auto; padding: .5rem .75rem; }
    royal blue + navy with one orange accent, "— Label" eyebrows, stat cards
    with an orange top edge. Built on the same shadcn components.
    ========================================================================== */
-:root { --primary: #1B3AAE; --ring: #2F55D4; --sidebar: #0A2154; }
+:root { --primary: #1C80C6; --ring: #47ABE9; --sidebar: #0A2154; }
 .dark { --primary: #5B7CF0; --ring: #5B7CF0; }
 
 /* Display type */
@@ -446,7 +449,7 @@ table.dataTable thead th.dt-orderable-asc, table.dataTable thead th.dt-orderable
    Blue-and-white palette (owner request): the single accent is now blue.
    All former orange accents resolve to PIKOM sky/blue.
    ========================================================================== */
-:root { --brand-orange: #2F7CF6; --brand-orange-deep: #1F5FE0; --brand-orange-text: #1F5FE0; }
+:root { --brand-orange: #47ABE9; --brand-orange-deep: #1C80C6; --brand-orange-text: #1A78BD; }
 .dark { --brand-orange: #6FA8FF; --brand-orange-text: #8CB8FF; }
 .btn[data-variant='cta'] { background: var(--brand-royal); color: #fff; border-color: #142C8A; }
 .btn[data-variant='cta']:hover { background: #2347C2; }

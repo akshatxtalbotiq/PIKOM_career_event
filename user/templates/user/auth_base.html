@@ -7,9 +7,9 @@
   <link rel="apple-touch-icon" sizes="76x76" href="{% static 'user/img/apple-icon.png' %}">
   <link rel="icon" type="image/png" href="{% static 'user/img/favicon.png' %}">
   <title>{% block title %}Sign in{% endblock %} | PIKOM Events</title>
-  <script>(function(){try{var t=localStorage.getItem('pk-theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}})();</script>
+  <script>(function(){var DARK_MODE_ENABLED=false;try{if(!DARK_MODE_ENABLED)return;var t=localStorage.getItem('pk-theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}})();</script>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap">
-    <link rel="stylesheet" href="{% static 'register/css/app.css' %}">
+    <link rel="stylesheet" href="{% static 'register/css/app.css' %}?v=2026-11-25b">
 </head>
 <body class="min-h-svh bg-background text-foreground">
   {# Sign-in family: one centred column on a plain surface. No illustration, no gradients. #}
@@ -17,7 +17,6 @@
 
     <header class="flex items-center justify-between px-5 py-5 sm:px-8">
       <span class="pk-micro"><b>[PIKOM]</b> Events console</span>
-      <button type="button" class="btn !text-[#C9D5EC] hover:!bg-white/10" data-variant="ghost" data-size="icon-sm" data-pk-theme-toggle aria-label="Toggle dark mode"><i data-lucide="sun-moon"></i></button>
     </header>
 
     <main class="flex flex-1 items-center justify-center px-5 pb-16">

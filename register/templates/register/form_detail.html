@@ -8,12 +8,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="{% static 'register/sweetalert2/sweetalert2.css' %}">
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap">
-  <link rel="stylesheet" href="{% static 'register/css/app.css' %}">
+  <link rel="stylesheet" href="{% static 'register/css/app.css' %}?v=2026-11-25b">
   <style>
     :root {
       /* Campaign colour drives every shadcn token on this page; PIKOM blue when the form has no campaign. */
-      --theme: {% if survey.fkcampaign %}{{ survey.fkcampaign.theme }}{% else %}#1F5FE0{% endif %};
-      --theme-soft: {% if survey.fkcampaign %}{{ survey.fkcampaign.theme_soft }}{% else %}#E3ECFE{% endif %};
+      --theme: {% if survey.fkcampaign %}{{ survey.fkcampaign.theme }}{% else %}#1C80C6{% endif %};
+      --theme-soft: {% if survey.fkcampaign %}{{ survey.fkcampaign.theme_soft }}{% else %}#E3F2FC{% endif %};
       --primary: var(--theme); --ring: var(--theme); --accent: var(--theme-soft); --accent-foreground: var(--theme);
       --primary-foreground: #fff;
     }

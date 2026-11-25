@@ -6,11 +6,11 @@
     <meta name="theme-color" content="#0B2149"/>
     <title>Check-in: {{ name }} | PIKOM</title>
     <link rel="icon" type="image/png" href="{% static 'user/img/favicon.png' %}">
-    <script>(function(){try{var t=localStorage.getItem('pk-theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}})();</script>
+    <script>(function(){var DARK_MODE_ENABLED=false;try{if(!DARK_MODE_ENABLED)return;var t=localStorage.getItem('pk-theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}})();</script>
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap">
-    <link rel="stylesheet" href="{% static 'register/css/app.css' %}">
+    <link rel="stylesheet" href="{% static 'register/css/app.css' %}?v=2026-11-25b">
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="{% static 'register/js/lucide.min.js' %}"></script>
@@ -59,24 +59,25 @@
         .sc-sw-body dt { color: var(--muted-foreground); }
         .sc-sw-body dd { margin: 0; color: var(--foreground); font-weight: 600; overflow-wrap: anywhere; }
         @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
-    </style>
+        /* Desktop: use the full screen width (phones keep the narrow column) */
+    @media (min-width: 1024px) { .gf-wrap, .fw-wrap { max-width: none !important; padding-inline: clamp(1rem, 2.5vw, 3rem) !important; } }
+</style>
 </head>
 <body class="min-h-svh bg-background text-foreground">
 
 <header class="sticky top-0 z-20 border-b bg-[var(--sidebar)] text-white" style="padding-top: env(safe-area-inset-top)">
-    <div class="mx-auto flex h-14 max-w-xl items-center gap-3 px-4 lg:max-w-5xl">
+    <div class="fw-wrap mx-auto flex h-14 max-w-xl items-center gap-3 px-4">
         <img src="{% static 'user/img/PIKOM.png' %}" alt="PIKOM" class="h-11 w-auto shrink-0">
         <span class="h-6 w-px bg-white/15" aria-hidden="true"></span>
         <div class="min-w-0 flex-1">
-            <p class="font-medium text-[11px] font-semibold uppercase leading-tight tracking-[.16em] text-[#8EA3C8]"><b class="text-[#2F7CF6]">[Live]</b> On-site check-in</p>
+            <p class="font-medium text-[11px] font-semibold uppercase leading-tight tracking-[.16em] text-[#8EA3C8]"><b class="text-[#2389CF]">[Live]</b> On-site check-in</p>
             <h1 class="truncate font-semibold text-[15px] font-bold leading-tight tracking-tight">{{ name }}</h1>
         </div>
         <span class="hidden items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-[#C9D5EC] min-[380px]:inline-flex" id="scNet"><span class="size-1.5 rounded-full bg-[#3FCB97]"></span>Online</span>
-        <button type="button" class="grid size-10 shrink-0 place-items-center rounded-lg text-[#C9D5EC] hover:bg-white/10" data-pk-theme-toggle aria-label="Toggle dark mode"><i data-lucide="sun-moon" class="size-5"></i></button>
     </div>
 </header>
 
-<main class="mx-auto grid max-w-xl gap-3 px-4 pb-10 pt-4 sm:pt-6 lg:max-w-5xl lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:items-start lg:gap-5 lg:pt-8" style="padding-bottom: max(2.5rem, env(safe-area-inset-bottom))">
+<main class="fw-wrap mx-auto grid max-w-xl gap-3 px-4 pb-10 pt-4 sm:pt-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:items-start lg:gap-5 lg:pt-8" style="padding-bottom: max(2.5rem, env(safe-area-inset-bottom))">
     <input type="hidden" id="flg" value="0"/>
 
     <div class="grid min-w-0 gap-3 lg:gap-5">

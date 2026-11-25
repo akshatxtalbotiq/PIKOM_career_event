@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#0B2149"/>
   <title>Golf check-in | PIKOM</title>
   <link rel="icon" type="image/png" href="{% static 'user/img/favicon.png' %}">
-  <script>(function(){try{var t=localStorage.getItem('pk-theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}})();</script>
+  <script>(function(){var DARK_MODE_ENABLED=false;try{if(!DARK_MODE_ENABLED)return;var t=localStorage.getItem('pk-theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}})();</script>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap">
-  <link rel="stylesheet" href="{% static 'register/css/app.css' %}">
+  <link rel="stylesheet" href="{% static 'register/css/app.css' %}?v=2026-11-25b">
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     #reader { width: 100%; aspect-ratio: 1 / 1; border-radius: .9rem; overflow: hidden; background: #050C1D; }
@@ -21,7 +21,7 @@
       <img src="{% static 'user/img/PIKOM.png' %}" alt="PIKOM" class="h-11 w-auto">
       <span class="h-6 w-px bg-white/15" aria-hidden="true"></span>
       <div class="min-w-0">
-        <p class="font-medium text-[11px] font-semibold uppercase leading-tight tracking-[.16em] text-[#8EA3C8]"><b class="text-[#2F7CF6]">[Live]</b> Golf check-in (2025)</p>
+        <p class="font-medium text-[11px] font-semibold uppercase leading-tight tracking-[.16em] text-[#8EA3C8]"><b class="text-[#2389CF]">[Live]</b> Golf check-in (2025)</p>
         <h1 class="truncate font-semibold text-[15px] font-bold leading-tight tracking-tight">PIKOM Golf Invitational &amp; Charity Drive 2025</h1>
       </div>
     </div>

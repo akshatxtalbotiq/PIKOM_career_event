@@ -7,14 +7,14 @@
   <title>Thank you - {{ survey.title }}</title>
   <style>
     :root {
-      --theme: {% if survey.fkcampaign %}{{ survey.fkcampaign.theme }}{% else %}#1F5FE0{% endif %};
-      --theme-soft: {% if survey.fkcampaign %}{{ survey.fkcampaign.theme_soft }}{% else %}#E3ECFE{% endif %};
+      --theme: {% if survey.fkcampaign %}{{ survey.fkcampaign.theme }}{% else %}#1C80C6{% endif %};
+      --theme-soft: {% if survey.fkcampaign %}{{ survey.fkcampaign.theme_soft }}{% else %}#E3F2FC{% endif %};
     }
   </style>
 {% include "register/includes/thanks_css.html" %}
 </head>
 <body>
-  <header class="ty-top"><div><img src="{% static 'user/img/PIKOM.png' %}" alt="PIKOM">PIKOM Events</div></header>
+  <header class="ty-top"><div><img src="{% static 'user/img/PIKOM.png' %}" alt="PIKOM"></div></header>
   <main>
     <section class="ty-panel">
       <div class="ty-head">

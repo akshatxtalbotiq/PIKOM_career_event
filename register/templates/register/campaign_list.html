@@ -41,12 +41,6 @@
   .cl-actions { display: flex; align-items: center; gap: .125rem; justify-content: flex-end; }
   #campaigns tbody tr { transition: background-color .12s; }
   #campaigns tbody tr:hover { background: color-mix(in srgb, var(--muted) 60%, transparent); }
-  .dt-scroll-body thead th .col-filter-btn { display: none; }
-
-
-  /* v3: scrollY tables keep their own header; the global sticky thead hid row 1 */
-  #campaigns_wrapper .dt-scroll-head { position: relative; top: auto; }
-  #campaigns_wrapper .dt-scroll-body table.dataTable > thead { position: static; }
   /* v3: editorial stat strip (one panel, hairline columns) */
   .cl-stats { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); border: 1px solid var(--border); border-radius: 1rem; background: var(--card); overflow: hidden; }
   @media (min-width: 1024px) { .cl-stats { grid-template-columns: repeat(4, minmax(0,1fr)); } }
@@ -92,38 +86,69 @@
   .cl-stat > div { position: relative; z-index: 1; display: grid; gap: .15rem; }
   .cl-lbl { display: inline-flex; align-items: center; gap: .4rem; font-size: .875rem; font-weight: 500; color: #1E2A47; }
   .cl-stat b { font-size: 2rem !important; font-weight: 700 !important; color: #0B1739 !important; }
-  .cl-panel { border: 1px solid #E6ECF8; border-radius: 1.1rem; box-shadow: 0 16px 36px -26px rgba(30,60,140,.35); }
-  .cl-tabsrow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; padding: 0 1rem; border-bottom: 1px solid #E6ECF8; }
-  .cl-tabs { display: flex; gap: 1.25rem; }
-  .cl-tabs button { display: inline-flex; align-items: center; gap: .5rem; height: 3.1rem; padding: 0 .25rem; border: 0; border-bottom: 2px solid transparent; background: none; font-size: .9rem; font-weight: 500; color: #4A5570; cursor: pointer; margin-bottom: -1px; }
+  /* ---- Campaigns panel: one clean card = tabs, timing filter, toolbar, table, footer ---- */
+  .cl-panel { border: 1px solid #E6ECF8; border-radius: 1.1rem; background: #fff; box-shadow: 0 16px 36px -26px rgba(30,60,140,.35); }
+
+  /* Row 1: status tabs (left) and timing filter (right) */
+  .cl-tabsrow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem 1.5rem; padding: .75rem 1.25rem 0; border-bottom: 1px solid #E6ECF8; }
+  .cl-tabs { display: flex; gap: 1.75rem; }
+  .cl-tabs button { display: inline-flex; align-items: center; gap: .5rem; height: 3rem; padding: 0; border: 0; border-bottom: 2px solid transparent; background: none; font-size: .9rem; font-weight: 500; color: #5C6F96; cursor: pointer; margin-bottom: -1px; }
+  .cl-tabs button:hover { color: #0B1739; }
   .cl-tabs button svg { width: 1.05rem; height: 1.05rem; }
-  .cl-tabs button[aria-pressed='true'] { color: #1D4FD6; font-weight: 600; border-bottom-color: #1D4FD6; }
+  .cl-tabs button[aria-pressed='true'] { color: #1A78BD; font-weight: 600; border-bottom-color: #1A78BD; }
+  .cl-count { display: inline-grid; place-items: center; min-width: 1.5rem; height: 1.25rem; padding: 0 .4rem; border-radius: 999px; background: #EEF3FE; color: #4A5570; font-size: .72rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .cl-tabs button[aria-pressed='true'] .cl-count { background: #D3EBFA; color: #1A78BD; }
   .cl-gdot { width: .5rem; height: .5rem; border-radius: 99px; background: #16A34A; box-shadow: 0 0 0 3px #DCF5E5; }
-  .cl-phases { background: #fff; border: 1px solid #E6ECF8; border-radius: 999px; padding: .15rem; }
-  .cl-phases button { border-radius: 999px; height: 1.85rem; }
-  .cl-phases button[aria-pressed='true'] { background: #1D4FD6; color: #fff; box-shadow: 0 4px 10px -4px rgba(29,79,214,.6); }
-  .cl-phases button[aria-pressed='true'] span { color: #DCE7FF; }
-  .cl-panel .dt-container > .row:first-child { border-bottom: 0; padding: .9rem 1rem; }
-  .cl-panel .dt-container .dt-search input { border-radius: 999px; width: min(26rem, 100%); background-color: #F7F9FE !important; }
-  .cl-panel .dt-container .dt-search { display: flex; justify-content: flex-start; }
+  .cl-phases { display: inline-flex; gap: .2rem; padding: .25rem; border-radius: 999px; background: #F3F6FD; margin-bottom: .75rem; }
+  .cl-phases button { display: inline-flex; align-items: center; gap: .35rem; height: 2rem; padding: 0 .85rem; border: 0; border-radius: 999px; background: none; font-size: .85rem; font-weight: 500; color: #4A5570; cursor: pointer; }
+  .cl-phases button:hover { color: #0B1739; }
+  .cl-phases button span { font-size: .75rem; font-weight: 600; color: inherit; opacity: .7; font-variant-numeric: tabular-nums; }
+  .cl-phases button[aria-pressed='true'] { background: #1A78BD; color: #fff; box-shadow: 0 4px 10px -4px rgba(26,120,189,.6); }
+  .cl-phases button[aria-pressed='true'] span { opacity: .85; }
+
+  /* Row 2: DataTables toolbar (search + rows per page) */
+  .cl-panel .dt-container { padding: 0; }
+  .cl-panel .dt-container > .row { margin: 0; padding: 0; gap: 0; }
+  .cl-panel .dt-container > .row:first-child { padding: 1rem 1.25rem; border-top: 0; border-bottom: 1px solid #EEF2FA; }
+  .cl-panel .dt-container > .row:first-child .dt-layout-start { width: 100%; justify-content: space-between; gap: .75rem; flex-wrap: nowrap; }
+  .cl-panel .dt-container .dt-search { flex: 1 1 auto; max-width: 24rem; margin: 0; }
   .cl-panel .dt-container .dt-search label { display: none; }
-  .cl-panel table.dataTable thead th { background: #F3F6FD; color: #1E2A47; font-weight: 600; }
-  .cl-panel table.dataTable thead th:last-child { text-align: right !important; padding-right: 1.4rem !important; }
-  /* "Show 10 per page" pill, right beside the search box */
-  .cl-panel .dt-container > .row:first-child .dt-layout-start { justify-content: flex-start; gap: .75rem; }
-  .cl-panel .dt-container .dt-search { flex: 0 1 26rem; max-width: 100%; }
-  .cl-panel .dt-container .dt-search input { width: 100% !important; }
-  .cl-panel .dt-container .dt-length { display: inline-flex; align-items: center; gap: .55rem; height: 2.25rem; padding: 0 .3rem 0 .95rem; border: 1px solid #E3E9F6; border-radius: 999px; background: #fff; color: #4A5570; font-size: .875rem; white-space: nowrap; box-shadow: 0 2px 6px -3px rgba(30,60,140,.2); }
-  .cl-panel .dt-container .dt-length label { display: inline-flex; align-items: center; gap: .55rem; margin: 0; padding-right: .7rem; }
-  .cl-panel .dt-container .dt-length select { order: 0; height: 1.7rem !important; width: 4rem; border: 0; border-radius: 999px; background-color: #F3F6FD; padding: 0 .4rem 0 .7rem; font-weight: 600; color: #0B1739; box-shadow: none; }
-  .dark .cl-panel .dt-container .dt-length { background: var(--card); border-color: var(--border); color: var(--muted-foreground); }
-  .dark .cl-panel .dt-container .dt-length select { background-color: var(--muted); color: var(--foreground); }
+  .cl-panel .dt-container .dt-search input { width: 100% !important; height: 2.5rem; padding-left: 2.4rem !important; border: 1px solid #E3E9F6; border-radius: 999px; background-color: #F7F9FE !important; font-size: .9rem; }
+  .cl-panel .dt-container .dt-search input:focus { background-color: #fff !important; border-color: #9DB8F5; outline: 0; box-shadow: 0 0 0 3px #E3F2FC; }
+  .cl-panel .dt-container .dt-length { display: inline-flex; align-items: center; gap: .5rem; margin: 0; color: #5C6F96; font-size: .85rem; white-space: nowrap; }
+  .cl-panel .dt-container .dt-length label { display: inline-flex; align-items: center; gap: .5rem; margin: 0; }
+  .cl-panel .dt-container .dt-length select { height: 2.25rem; min-width: 4.5rem; padding: 0 .65rem; border: 1px solid #E3E9F6; border-radius: 999px; background-color: #fff; color: #0B1739; font-weight: 600; box-shadow: none; }
+
+  /* Row 3: table. The box scrolls sideways on narrow screens, with no visible bar. */
+  .cl-panel .dt-layout-table { overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; }
+  .cl-panel .dt-layout-table::-webkit-scrollbar { display: none; }
+  .cl-panel table.dataTable { border-collapse: separate; border-spacing: 0; }
+  .cl-panel table.dataTable thead th { background: #F7F9FD; color: #5C6F96; font-size: .72rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; padding: .8rem 1rem; border-bottom: 1px solid #E6ECF8; }
+  .cl-panel table.dataTable tbody td { padding: .95rem 1rem; border-bottom: 1px solid #EEF2FA; vertical-align: middle; }
+  .cl-panel table.dataTable tbody tr:last-child td { border-bottom: 0; }
+  .cl-panel table.dataTable thead th:last-child, .cl-panel table.dataTable tbody td:last-child { text-align: right !important; padding-right: 1.25rem !important; }
+
+  /* Row 4: footer (count + pager) */
+  .cl-panel .dt-container > .row:not(:first-child):not(.dt-layout-table) { padding: .85rem 1.25rem; border-top: 1px solid #E6ECF8; background: #FBFCFF; }
+  .cl-panel .dt-info { color: #5C6F96; font-size: .85rem; }
+  .cl-panel .dt-paging { display: inline-flex; align-items: center; gap: .25rem; }
+  .cl-panel .dt-paging .dt-paging-button { display: inline-grid; place-items: center; min-width: 2.1rem; height: 2.1rem; padding: 0 .5rem; border: 1px solid transparent; border-radius: 999px; background: transparent; color: #1E2A47; font-size: .85rem; font-weight: 500; cursor: pointer; }
+  .cl-panel .dt-paging .dt-paging-button:hover:not(.disabled):not(.current) { background: #EEF3FE; border-color: #E3E9F6; }
+  .cl-panel .dt-paging .dt-paging-button.current { background: #1A78BD; border-color: #1A78BD; color: #fff; }
+  .cl-panel .dt-paging .dt-paging-button.disabled { display: none; }
+  .cl-panel .dt-paging .dt-paging-button, .cl-panel .dt-paging .ellipsis { margin: 0 !important; }
+  .cl-panel .dt-paging .dt-paging-button svg { width: 1rem; height: 1rem; }
+
+  @media (max-width: 639px) {
+    .cl-tabs { gap: 1.1rem; }
+    .cl-panel .dt-container > .row:first-child .dt-layout-start { flex-wrap: wrap; }
+  }
   .cl-date { display: inline-flex; align-items: center; gap: .45rem; }
   .cl-date svg { width: .95rem; height: .95rem; color: #7A879F; }
   .cl-time { padding-left: 1.4rem; }
   .cl-actions { gap: .35rem; }
   .cl-actions > .btn, .cl-actions .cl-more > .btn { width: 2.1rem; height: 2.1rem; border-radius: 999px; border: 1px solid #E3E9F6; background: #fff; box-shadow: 0 2px 6px -3px rgba(30,60,140,.25); }
-  .cl-actions > .btn:hover, .cl-actions .cl-more > .btn:hover { border-color: #BFD0F5; color: #1D4FD6; background: #F5F8FF; }
+  .cl-actions > .btn:hover, .cl-actions .cl-more > .btn:hover { border-color: #B5DCF4; color: #1A78BD; background: #F2F9FE; }
   .cl-tile { border-radius: .65rem; box-shadow: 0 4px 10px -6px rgba(30,60,140,.35); }
   .cl-tile em { font-family: inherit; letter-spacing: .06em; }
   .cl-phase { font-family: inherit; letter-spacing: .02em; }
@@ -167,7 +192,6 @@
 
   <header class="page-header animate-rise">
     <div>
-      <span class="pk-pill">Events Dashboard</span>
       <h1 class="page-title">Campaigns</h1>
       <p class="page-description">Each campaign is one event: its registration form, emails, check-in and report.</p>
     </div>
@@ -182,18 +206,18 @@
   {% comment %}Quick stats, counted in the template from the campaigns already in context.{% endcomment %}
   <section class="animate-rise animate-rise-1" aria-label="Quick stats">
     <div class="cl-stats">
-      <div class="cl-stat" style="--k:#2F6BF0;--ks:#E3ECFE"><span class="cl-ic"><i data-lucide="megaphone"></i></span><div><span class="cl-lbl">Campaigns</span><b>{{ campaigns|length }}</b><small>All events you can manage</small></div></div>
+      <div class="cl-stat" style="--k:#2389CF;--ks:#E3F2FC"><span class="cl-ic"><i data-lucide="megaphone"></i></span><div><span class="cl-lbl">Campaigns</span><b>{{ campaigns|length }}</b><small>All events you can manage</small></div></div>
       <div class="cl-stat" style="--k:#16A34A;--ks:#DCF5E5"><span class="cl-ic"><i data-lucide="calendar-days"></i></span><div><span class="cl-lbl"><span class="live-dot" aria-hidden="true"></span>Live now</span><b id="kpiLive">0</b><small>Between start and end date</small></div></div>
       <div class="cl-stat" style="--k:#7C3AED;--ks:#EDE5FD"><span class="cl-ic"><i data-lucide="clock"></i></span><div><span class="cl-lbl">Upcoming</span><b id="kpiUpcoming">0</b><small>Not started yet</small></div></div>
-      <div class="cl-stat" style="--k:#2F6BF0;--ks:#E3ECFE"><span class="cl-ic"><i data-lucide="users"></i></span><div><span class="cl-lbl">Registrants</span><b id="kpiRegs">0</b><small>Across all registration forms</small></div></div>
+      <div class="cl-stat" style="--k:#2389CF;--ks:#E3F2FC"><span class="cl-ic"><i data-lucide="users"></i></span><div><span class="cl-lbl">Registrants</span><b id="kpiRegs">0</b><small>Across all registration forms</small></div></div>
     </div>
   </section>
 
   <div class="card cl-panel gap-0 overflow-hidden p-0 mt-6 animate-rise animate-rise-2">
   <div class="cl-tabsrow">
     <div class="cl-tabs" role="group" aria-label="Filter by status">
-      <button type="button" data-active="" aria-pressed="true"><i data-lucide="layout-grid"></i><span>All Campaigns (<span id="tabAll">0</span>)</span></button>
-      <button type="button" data-active="1" aria-pressed="false"><span class="cl-gdot" aria-hidden="true"></span><span>Active (<span id="tabActive">0</span>)</span></button>
+      <button type="button" data-active="" aria-pressed="true"><i data-lucide="layout-grid"></i>All campaigns<span class="cl-count" id="tabAll">0</span></button>
+      <button type="button" data-active="1" aria-pressed="false"><span class="cl-gdot" aria-hidden="true"></span>Active<span class="cl-count" id="tabActive">0</span></button>
     </div>
     <div class="cl-phases" role="group" aria-label="Filter by timing">
       <button type="button" data-phase="" aria-pressed="true">All <span id="phAll">0</span></button>
@@ -224,7 +248,7 @@
             <tr data-phase="{% if sd > nowstr %}upcoming{% elif ed < nowstr %}ended{% else %}live{% endif %}" data-active="{{ campaign.is_active|yesno:'1,0' }}" data-regs="{{ campaign.registration_form.survey_users.count|default:0 }}">
               <td>
                 <div class="cl-title">
-                  <span class="cl-tile" style="--c: {{ campaign.theme|default:'#1B3AAE' }};" aria-hidden="true"><em>{{ campaign.start_date|date:"M" }}</em><strong>{{ campaign.start_date|date:"j" }}</strong></span>
+                  <span class="cl-tile" style="--c: {{ campaign.theme|default:'#1A78BD' }};" aria-hidden="true"><em>{{ campaign.start_date|date:"M" }}</em><strong>{{ campaign.start_date|date:"j" }}</strong></span>
                   <div class="py-0.5">
                     {% if campaign.registration_form %}
                       <a href="{% url 'survey_submission_list' campaign.registration_form.id %}" class="cl-name" title="View registered participants">{{ campaign.title }}</a>
@@ -623,7 +647,6 @@
           });
           data.start = 0;
         },
-        scrollY: '60vh',
         layout: {
           topStart: [
             {
@@ -639,13 +662,7 @@
         },
         columnDefs: [{ targets: -1, orderable: false }],
         buttons: buttonsConfig,
-        fixedHeader: {
-          header: true,
-          footer: true,
-          headerOffset: 50
-        },
         autoWidth: true,
-        scrollCollapse: true,
         language: {
           paginate: {
             previous: '<i data-lucide="chevron-left"></i>',
@@ -675,7 +692,7 @@
         pagingTag: 'button',
         initComplete: function (settings, json) {
           RegisterTable.enhance(this.api());
-          // Row menus escape the scrolling table body instead of being clipped by it.
+          // Row menus are positioned fixed so the table's overflow box never clips them.
           document.querySelectorAll('#campaigns .cl-actions [data-bs-toggle="dropdown"]').forEach(function (el) {
             bootstrap.Dropdown.getOrCreateInstance(el, { boundary: document.body, popperConfig: { strategy: 'fixed' } });
           });

@@ -56,27 +56,54 @@
   .sl-few .dt-scroll-head, .sl-few #surveys thead { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   .sl-few #surveys, .sl-few #surveys tbody { display: block; width: 100% !important; }
   .sl-few #surveys tbody { display: grid; gap: 1rem; padding: 1rem; }
-  @media (min-width: 900px) { .sl-few #surveys tbody { grid-template-columns: repeat(auto-fill, minmax(26rem, 1fr)); } }
-  .sl-few #surveys tbody tr[data-n] { position: relative; display: grid; grid-template-columns: minmax(0,1fr) auto; grid-template-areas: "title title" "big big" "created status" "actions actions"; gap: .75rem 1rem; padding: 1.25rem 1.25rem 1rem 1.5rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); overflow: hidden; }
-  .sl-few #surveys tbody tr[data-n]::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--c, var(--brand-royal)); }
-  .sl-few #surveys tbody tr[data-n]:hover { background: var(--card); border-color: color-mix(in srgb, var(--c, var(--brand-royal)) 45%, var(--border)); }
-  .sl-few #surveys tbody td { display: block; padding: 0; border: 0; }
-  .sl-few #surveys tbody td.sl-id { display: none; }
-  .sl-few #surveys tbody td:nth-child(2) { grid-area: title; }
-  .sl-few #surveys tbody td:nth-child(3) { grid-area: created; align-self: end; }
-  .sl-few #surveys tbody td:nth-child(4) { grid-area: status; align-self: end; text-align: right; }
-  .sl-few #surveys tbody td:nth-child(5) { grid-area: actions; padding-top: .75rem; border-top: 1px solid var(--border); }
-  .sl-few .sl-title { min-width: 0; }
-  .sl-few #surveys tbody td { white-space: normal; min-width: 0; }
-  .sl-few .sl-name { white-space: normal; overflow-wrap: anywhere; }
-  .sl-few .sl-name { font-family: "DM Sans", var(--font-sans); font-size: 1.15rem; font-weight: 700; letter-spacing: -.015em; }
-  .sl-big { display: none; }
-  .sl-few .sl-big { display: flex; align-items: baseline; gap: .5rem; margin-top: 1rem; }
-  .sl-big b { font-family: "DM Sans", var(--font-sans); font-weight: 800; font-size: 2.6rem; line-height: .9; letter-spacing: -.045em; font-variant-numeric: tabular-nums; color: var(--brand-navy); }
-  .dark .sl-big b { color: var(--foreground); }
+  @media (min-width: 900px) { .sl-few #surveys tbody { grid-template-columns: repeat(auto-fit, minmax(28rem, 1fr)); } }
+  .sl-lbl, .sl-act-lbl { display: none; }
+  .sl-few #surveys tbody tr[data-n] { position: relative; display: grid; grid-template-columns: minmax(0,1fr) auto; grid-template-areas: "title status" "title created" "actions actions"; gap: 0 1.5rem; padding: 1.5rem 1.5rem 0; border: 1px solid #E6ECF8; border-radius: 1.1rem; background: var(--card); overflow: hidden; box-shadow: 0 16px 36px -26px rgba(30,60,140,.35); transition: border-color .15s, box-shadow .15s; }
+  .sl-few #surveys tbody tr[data-n]:hover { background: var(--card); border-color: #CFE0F5; box-shadow: 0 18px 40px -24px rgba(30,60,140,.45); }
+  .sl-few #surveys tbody tr[data-n] > td { display: block; padding: 0; border: 0; background: none !important; white-space: normal; min-width: 0; }
+  .sl-few #surveys tbody tr[data-n] > td.sl-id { display: none; }
+  .sl-few #surveys tbody tr[data-n] > td:nth-child(2) { grid-area: title; display: flex !important; flex-direction: column; justify-content: space-between; gap: 1.5rem; }
+  .sl-few #surveys tbody tr[data-n] > td:nth-child(3) { grid-area: created; align-self: end; text-align: right; padding-bottom: .2rem; }
+  .sl-few #surveys tbody tr[data-n] > td:nth-child(4) { grid-area: status; align-self: start; text-align: right; }
+  .sl-few #surveys tbody tr[data-n] > td:nth-child(5) { grid-area: actions; margin: 1.35rem -1.5rem 0; padding: .75rem 1.5rem; border-top: 1px solid var(--border); background: color-mix(in srgb, var(--muted) 45%, var(--card)) !important; }
+
+  .sl-few .sl-title { min-width: 0; align-items: flex-start; gap: .9rem; }
+  .sl-few .sl-icon { width: 2.75rem; height: 2.75rem; border-radius: .8rem; border: 0; }
+  .sl-few .sl-icon svg { width: 1.25rem; height: 1.25rem; }
+  .sl-few .sl-name { display: block; white-space: normal; overflow-wrap: anywhere; font-size: 1.25rem; font-weight: 700; letter-spacing: -.02em; line-height: 1.25; }
+  .sl-few .sl-sub span { gap: .4rem; }
+  .sl-few .sl-sub { margin-top: .35rem; font-size: .875rem; color: #4A5570; }
+  .sl-few .sl-sub svg { width: 1rem; height: 1rem; color: #93A4C3; }
   .sl-few .sl-sub span:has([data-lucide="users"]), .sl-few .sl-sub span:has(svg.lucide-users) { display: none; }
-  .sl-few .sl-actions { justify-content: flex-start; }
+
+  .sl-big { display: none; }
+  .sl-few .sl-big { display: flex; align-items: baseline; gap: .5rem; }
+  .sl-big b { font-size: 2.5rem; font-weight: 800; line-height: 1; letter-spacing: -.04em; font-variant-numeric: tabular-nums; color: #0B1739; }
+  .dark .sl-big b { color: var(--foreground); }
+  .sl-big span { font-size: .9375rem; color: var(--muted-foreground); }
+
+  .sl-few .sl-lbl { display: block; font-size: .8125rem; color: var(--muted-foreground); margin-bottom: .2rem; }
+  .sl-few .sl-date { font-size: .9375rem; font-weight: 600; color: #0B1739; }
+  .sl-few .sl-time { font-size: .8125rem; }
+
+  .sl-few .sl-actions { justify-content: flex-start; gap: .4rem; }
+  .sl-few .sl-act-lbl { display: inline; }
+  .pk-content .sl-few #surveys tbody td .sl-actions > .btn[data-size='icon-sm'] { width: auto; height: 2.25rem; padding: 0 .9rem; gap: .45rem; border-radius: 999px; border: 1px solid #E3E9F6; background: #fff; color: #1E2A47; font-size: .875rem; font-weight: 500; box-shadow: 0 1px 2px rgba(11,23,57,.05); }
+  .pk-content .sl-few #surveys tbody td .sl-actions > .btn[data-size='icon-sm']:hover { border-color: #B5DCF4; color: #1A78BD; background: #F2F9FE; }
+  .sl-few .sl-actions .btn svg { width: 1rem; height: 1rem; }
+  .sl-few .sl-more { margin-left: auto; }
+  .pk-content .sl-few #surveys tbody td .sl-more > .btn { width: 2.25rem; height: 2.25rem; }
+  @media (max-width: 520px) {
+    .sl-few #surveys tbody tr[data-n] { grid-template-columns: 1fr; grid-template-areas: "status" "title" "created" "actions"; padding: 1.25rem 1.25rem 0; }
+    .sl-few #surveys tbody tr[data-n] > td:nth-child(4) { text-align: left; margin-bottom: .75rem; }
+    .sl-few #surveys tbody tr[data-n] > td:nth-child(3) { text-align: left; margin-top: 1rem; }
+    .sl-few #surveys tbody tr[data-n] > td:nth-child(5) { margin: 1.25rem -1.25rem 0; padding: .75rem 1.25rem; }
+    .sl-few .sl-act-lbl { display: none; }
+    .pk-content .sl-few #surveys tbody td .sl-actions > .btn[data-size='icon-sm'] { width: 2.25rem; padding: 0; }
+  }
   .sl-few #surveys tbody td.dt-empty { grid-column: 1 / -1; }
+  .sl-few #surveys tbody tr:has(> td.dt-empty) { grid-column: 1 / -1; display: block; }
+  .sl-few #surveys tbody:has(td.dt-empty) { padding: 0; }
   /* Modals */
   .sm-slug { display: flex; align-items: stretch; }
   .sm-affix { display: flex; align-items: center; padding: 0 .75rem; background: var(--muted); border: 1px solid var(--input); color: var(--muted-foreground); font-size: .8125rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
@@ -107,7 +134,6 @@
 
   <header class="page-header animate-rise">
     <div>
-      <span class="pk-pill">{% if list_purpose == 'registration' %}Registration{% else %}Feedback{% endif %}</span>
       <h1 class="page-title">{% if list_purpose == 'registration' %}Registration Forms{% else %}Post-event Surveys{% endif %}</h1>
       <p class="page-description">{% if list_purpose == 'registration' %}Forms people fill in to register for an event. Build the questions, then share the public link.{% else %}Feedback surveys sent to attendees after an event.{% endif %}</p>
     </div>
@@ -118,7 +144,7 @@
 
   <section class="mb-8 animate-rise animate-rise-1" aria-label="Quick stats">
     <div class="pk-kpis">
-      <div class="pk-kpi" style="--k:#2F6BF0;--ks:#E3ECFE"><span class="pk-kpi-ic"><i data-lucide="{% if list_purpose == 'registration' %}file-text{% else %}message-square-text{% endif %}"></i></span><div><span class="pk-kpi-lbl">{% if list_purpose == 'registration' %}Forms{% else %}Surveys{% endif %}</span><b>{{ surveys|length }}</b><small>{% if list_purpose == 'registration' %}Registration forms you manage{% else %}Feedback surveys you manage{% endif %}</small></div></div>
+      <div class="pk-kpi" style="--k:#2389CF;--ks:#E3F2FC"><span class="pk-kpi-ic"><i data-lucide="{% if list_purpose == 'registration' %}file-text{% else %}message-square-text{% endif %}"></i></span><div><span class="pk-kpi-lbl">{% if list_purpose == 'registration' %}Forms{% else %}Surveys{% endif %}</span><b>{{ surveys|length }}</b><small>{% if list_purpose == 'registration' %}Registration forms you manage{% else %}Feedback surveys you manage{% endif %}</small></div></div>
       <div class="pk-kpi" style="--k:#16A34A;--ks:#DCF5E5"><span class="pk-kpi-ic"><i data-lucide="circle-check"></i></span><div><span class="pk-kpi-lbl">Active</span><b id="slActive">0</b><small>Open to new {% if list_purpose == 'registration' %}registrations{% else %}responses{% endif %}</small></div></div>
       <div class="pk-kpi" style="--k:#7C3AED;--ks:#EDE5FD"><span class="pk-kpi-ic"><i data-lucide="{% if list_purpose == 'registration' %}users{% else %}inbox{% endif %}"></i></span><div><span class="pk-kpi-lbl">{% if list_purpose == 'registration' %}Registrations{% else %}Responses{% endif %}</span><b id="slResp">0</b><small>Across all {% if list_purpose == 'registration' %}forms{% else %}surveys{% endif %}</small></div></div>
     </div>
@@ -153,9 +179,10 @@
                     </div>
                   </div>
                 </div>
-                <div class="sl-big" aria-hidden="true"><b>{{ n }}</b><span class="pk-micro">{% if list_purpose == 'registration' %}Registration{{ n|pluralize }}{% else %}Response{{ n|pluralize }}{% endif %}</span></div>
+                <div class="sl-big" aria-hidden="true"><b>{{ n }}</b><span>{% if list_purpose == 'registration' %}registration{{ n|pluralize }}{% else %}response{{ n|pluralize }}{% endif %}</span></div>
               </td>
               <td data-order="{{ survey.created_at|date:'c' }}">
+                <span class="sl-lbl">Created</span>
                 <div class="sl-date">{{ survey.created_at|date:"d M Y" }}</div>
                 <div class="sl-time">{{ survey.created_at|date:"h:i A" }}</div>
               </td>
@@ -164,9 +191,9 @@
               </td>
               <td class="text-right">
                 <div class="sl-actions">
-                  <a href="javascript:void(0);" class="btn edit-survey-btn" data-variant="ghost" data-size="icon-sm" role="button" data-id="{{ survey.id }}" data-tooltip="Edit details" aria-label="Edit details of {{ survey.title }}"><i data-lucide="pencil"></i></a>
-                  <a href="{% url 'form_builder' survey.id %}" class="btn" data-variant="ghost" data-size="icon-sm" data-tooltip="Build questions" aria-label="Build questions for {{ survey.title }}"><i data-lucide="sliders-horizontal"></i></a>
-                  <a href="{% url 'form_preview' survey.id %}" target="_blank" rel="noopener" class="btn" data-variant="ghost" data-size="icon-sm" data-tooltip="Preview (no data saved)" aria-label="Preview {{ survey.title }}"><i data-lucide="eye"></i></a>
+                  <a href="javascript:void(0);" class="btn edit-survey-btn" data-variant="ghost" data-size="icon-sm" role="button" data-id="{{ survey.id }}" data-tooltip="Edit details" aria-label="Edit details of {{ survey.title }}"><i data-lucide="pencil"></i><span class="sl-act-lbl">Details</span></a>
+                  <a href="{% url 'form_builder' survey.id %}" class="btn" data-variant="ghost" data-size="icon-sm" data-tooltip="Build questions" aria-label="Build questions for {{ survey.title }}"><i data-lucide="sliders-horizontal"></i><span class="sl-act-lbl">Questions</span></a>
+                  <a href="{% url 'form_preview' survey.id %}" target="_blank" rel="noopener" class="btn" data-variant="ghost" data-size="icon-sm" data-tooltip="Preview (no data saved)" aria-label="Preview {{ survey.title }}"><i data-lucide="eye"></i><span class="sl-act-lbl">Preview</span></a>
                   <div class="sl-more dropdown">
                     <button type="button" class="btn" data-variant="ghost" data-size="icon-sm" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" aria-label="More actions for {{ survey.title }}"><i data-lucide="ellipsis"></i></button>
                     <ul class="dropdown-menu dropdown-menu-end" data-dropdown-menu-initialized>

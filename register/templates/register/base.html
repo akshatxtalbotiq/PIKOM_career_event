@@ -6,8 +6,11 @@
   <title>{% block title %}PIKOM Events{% endblock %}</title>
   <meta name="theme-color" content="#0B2149">
   <link rel="icon" type="image/png" href="{% static 'user/img/favicon.png' %}">
-  {% comment %}Theme first, so there is no flash of the wrong colour scheme.{% endcomment %}
-  <script>(function(){try{var t=localStorage.getItem('pk-theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}})();</script>
+  {% comment %}Fast navigation: page changes cross-fade instead of flashing white, and sidebar/breadcrumb pages are prerendered on hover so they open instantly (Chrome/Edge; other browsers just navigate normally). Only read-only list pages are prerendered: never logout, new tabs, or action links.{% endcomment %}
+  <style>@view-transition { navigation: auto; }</style>
+  <script type="speculationrules">{"prerender":[{"where":{"and":[{"selector_matches":".pk-sidebar section a, .pk-crumbs a"},{"not":{"selector_matches":"[target=_blank], .pk-logout"}},{"not":{"href_matches":"/logout*"}}]},"eagerness":"moderate"}]}</script>
+  {% comment %}Theme first, so there is no flash of the wrong colour scheme. Light mode only: DARK_MODE_ENABLED is off, so the dark palette is never applied and no toggle is shown. Flip it to true (and re-add a toggle button) to bring dark mode back.{% endcomment %}
+  <script>(function(){var DARK_MODE_ENABLED=false;try{if(!DARK_MODE_ENABLED)return;var t=localStorage.getItem('pk-theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}})();</script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   {% comment %}Legacy icon font kept only for pages/fragments that still emit material-symbols markup.{% endcomment %}
@@ -24,7 +27,7 @@
 
   {% comment %}shadcn/ui design system (Basecoat + Tailwind v4), built from theme/src/input.css.{% endcomment %}
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap">
-  <link rel="stylesheet" href="{% static 'register/css/app.css' %}">
+  <link rel="stylesheet" href="{% static 'register/css/app.css' %}?v=2026-11-25b">
 
   {% comment %}Smooth navigation: cross-fade between pages, and fetch read-only pages on hover (allowlist only; never logout/delete/actions).{% endcomment %}
   <style>
@@ -42,8 +45,8 @@
 
 <body class="min-h-svh bg-background text-foreground antialiased pk-inset">
   {% comment %}
-    App shell: shadcn Sidebar (navy, collapsible, drawer on mobile) + sticky top bar
-    with breadcrumbs, command palette (Cmd/Ctrl+K), theme switch and account menu.
+    App shell: shadcn Sidebar (white, collapsible, drawer on mobile) + sticky top bar
+    with breadcrumbs and account menu. Light mode only (see the theme script in <head>).
     Sidebar link IDs are kept from the old shell.
   {% endcomment %}
   <aside class="sidebar pk-sidebar" id="sidenav-main" data-side="left" aria-hidden="false">
@@ -90,23 +93,15 @@
       </section>
 
       <footer>
-        <div class="pk-brand-text pk-brand-foot"><b>PIKOM Events</b><small>Operations Console</small></div>
-        <div id="account-menu" class="dropdown-menu-wrap">
-          <button type="button" class="pk-account" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Account menu">
+        <div class="pk-account-card">
+          <div class="pk-account-row">
             <span class="avatar pk-avatar" aria-hidden="true">{{ request.user.get_full_name|default:request.user.username|make_list|first|upper }}</span>
             <span class="pk-account-meta">
               <b>{{ request.user.get_full_name|default:request.user.username }}</b>
               <small>{% if user.is_superuser %}Administrator{% else %}Event team{% endif %}</small>
             </span>
-            <i data-lucide="chevrons-up-down"></i>
-          </button>
-          <div class="dropdown-menu" style="min-width:15rem">
-            <div class="dropdown-header">{{ request.user.email|default:request.user.username }}</div>
-            <button type="button" class="dropdown-item" data-pk-theme-toggle><i data-lucide="moon"></i><span>Dark mode</span><kbd class="kbd ms-auto">D</kbd></button>
-            <a class="dropdown-item" href="{% url 'user_manual' %}" target="_blank" rel="noopener"><i data-lucide="life-buoy"></i><span>Help &amp; manual</span></a>
-            <div class="dropdown-divider"></div>
-            <a class="dropdown-item text-danger" href="{% url 'logout' %}"><i data-lucide="log-out"></i><span>Log out</span></a>
           </div>
+          <a class="pk-logout" href="{% url 'logout' %}"><i data-lucide="log-out"></i><span>Log out</span></a>
         </div>
       </footer>
     </nav>
@@ -126,10 +121,6 @@
       <span class="pk-topbar-sep" aria-hidden="true"></span>
       <nav aria-label="Breadcrumb" class="pk-crumbs">{% block crumbs %}{% endblock %}</nav>
       <div class="pk-topbar-actions">
-        <button type="button" class="pk-search" onclick="pkOpenCommand()" aria-label="Search and jump to (Ctrl K)">
-          <i data-lucide="search"></i><span>Search or jump to…</span><kbd class="kbd">⌘K</kbd>
-        </button>
-        <button type="button" class="btn" data-variant="ghost" data-size="icon-sm" data-pk-theme-toggle aria-label="Toggle dark mode"><i data-lucide="sun-moon"></i></button>
         <div class="dropdown">
           <button type="button" class="pk-top-avatar" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Account menu">{{ request.user.get_full_name|default:request.user.username|make_list|first|upper }}</button>
           <div class="dropdown-menu dropdown-menu-end" style="min-width:15rem">
@@ -146,37 +137,6 @@
       {% block content %}{% endblock %}
     </div>
   </main>
-
-  {% comment %}Command palette (shadcn Command in a Dialog). Every item is a real link.{% endcomment %}
-  <dialog id="pk-command" class="command-dialog" aria-label="Command menu" onclick="if (event.target === this) this.close()">
-    <div class="command">
-      <header>
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <input type="text" id="pk-command-input" placeholder="Search pages and actions…" autocomplete="off" spellcheck="false" aria-autocomplete="list" role="combobox" aria-expanded="true" aria-controls="pk-command-menu">
-      </header>
-      <div role="menu" id="pk-command-menu" aria-orientation="vertical" data-empty="No matching pages.">
-        <div role="group" aria-labelledby="cmd-g1">
-          <span role="heading" id="cmd-g1">Events</span>
-          <a role="menuitem" href="{% url 'campaign_list' %}"><i data-lucide="megaphone"></i><span>Campaigns</span></a>
-          <a role="menuitem" href="{% url 'registration_form_list' %}"><i data-lucide="clipboard-list"></i><span>Registration forms</span></a>
-          <a role="menuitem" href="{% url 'survey_list' %}"><i data-lucide="message-square-text"></i><span>Post-event surveys</span></a>
-        </div>
-        <div role="group" aria-labelledby="cmd-g2">
-          <span role="heading" id="cmd-g2">Golf</span>
-          <a role="menuitem" href="{% url 'golf_event_list' %}"><i data-lucide="flag"></i><span>Golf events</span></a>
-          <a role="menuitem" href="{% url 'golf_participant_form_list' %}"><i data-lucide="user-round-plus"></i><span>Player registration forms</span></a>
-          <a role="menuitem" href="{% url 'golf_sponsor_form_list' %}"><i data-lucide="handshake"></i><span>Sponsorship forms</span></a>
-        </div>
-        <div role="group" aria-labelledby="cmd-g3">
-          <span role="heading" id="cmd-g3">Workspace</span>
-          {% if user.is_superuser %}<a role="menuitem" href="{% url 'user_list' %}"><i data-lucide="users"></i><span>Team &amp; access</span></a>{% endif %}
-          <a role="menuitem" href="{% url 'user_manual' %}" target="_blank" rel="noopener"><i data-lucide="book-open"></i><span>User manual</span></a>
-          <a role="menuitem" href="#" data-pk-theme-toggle><i data-lucide="moon"></i><span>Toggle dark mode</span></a>
-          <a role="menuitem" href="{% url 'logout' %}"><i data-lucide="log-out"></i><span>Log out</span></a>
-        </div>
-      </div>
-    </div>
-  </dialog>
 
   <ol id="toaster" class="toaster" role="list" aria-label="Notifications"></ol>
 
@@ -200,15 +160,10 @@
     .pk-sidebar svg { color: #8EA3C8; }
     .pk-sidebar .pk-ext { margin-left: auto; width: .85rem !important; height: .85rem !important; opacity: .6; }
     .pk-sidebar footer { padding: .5rem !important; border-top: 1px solid var(--sidebar-border); }
-    .dropdown-menu-wrap { position: relative; }
-    .pk-account { display: flex; align-items: center; gap: .65rem; width: 100%; padding: .5rem; border: 0; border-radius: .6rem; background: transparent; color: #fff; text-align: left; cursor: pointer; }
-    .pk-account:hover, .pk-account[aria-expanded="true"] { background: var(--sidebar-accent); }
-    .pk-account svg { color: #8EA3C8; width: 1rem; height: 1rem; margin-left: auto; flex: none; }
     .pk-avatar { display: grid !important; place-items: center; width: 2rem; height: 2rem; border-radius: .55rem; background: rgba(255,255,255,.12); color: #fff; font-weight: 700; font-size: .8rem; flex: none; }
     .pk-account-meta { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
     .pk-account-meta b { font-size: .85rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .pk-account-meta small { color: #8EA3C8; font-size: .72rem; }
-    #account-menu .dropdown-menu { bottom: calc(100% + .35rem); top: auto !important; left: 0; transform: none !important; inset: auto auto calc(100% + .35rem) 0 !important; }
 
     .pk-main { min-width: 0; display: flex; flex-direction: column; min-height: 100svh; }
     .pk-topbar { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: .5rem; height: 3.5rem; padding: 0 1rem; background: color-mix(in srgb, var(--background) 82%, transparent); backdrop-filter: saturate(1.6) blur(12px); -webkit-backdrop-filter: saturate(1.6) blur(12px); border-bottom: 1px solid var(--border); }
@@ -219,77 +174,148 @@
     .pk-crumbs li[aria-current] { color: var(--foreground); font-weight: 500; overflow: hidden; text-overflow: ellipsis; }
     .pk-crumbs svg { width: .85rem; height: .85rem; opacity: .6; }
     .pk-topbar-actions { margin-left: auto; display: flex; align-items: center; gap: .35rem; }
-    .pk-search { display: inline-flex; align-items: center; gap: .5rem; height: 2.25rem; width: 17rem; padding: 0 .5rem 0 .75rem; border: 1px solid var(--border); border-radius: calc(var(--radius) - 2px); background: var(--card); color: var(--muted-foreground); font-size: .85rem; cursor: pointer; box-shadow: 0 1px 2px rgba(7,23,57,.04); }
-    .pk-search:hover { border-color: var(--input); color: var(--foreground); }
-    .pk-search svg { width: 1rem; height: 1rem; }
-    .pk-search .kbd { margin-left: auto; }
-    .pk-content { flex: 1; width: 100%; max-width: 1600px; margin: 0 auto; padding: 1.5rem 1.5rem 3rem; }
+    .pk-content { flex: 1; width: 100%; max-width: none; margin: 0; padding: 1.5rem 1.5rem 3rem; }
     .pk-impersonation { display: flex; align-items: center; justify-content: center; gap: .6rem; padding: .5rem 1rem; background: var(--warning-soft); color: var(--warning); font-size: .875rem; border-bottom: 1px solid color-mix(in srgb, var(--warning) 25%, transparent); }
     .pk-impersonation svg { width: 1rem; height: 1rem; }
     .pk-impersonation a { color: inherit; font-weight: 600; text-decoration: underline; }
-    #pk-command .command a svg { width: 1rem; height: 1rem; color: var(--muted-foreground); }
-    @media (max-width: 767px) { .pk-search { width: auto; } .pk-search span, .pk-search .kbd { display: none; } .pk-content { padding: 1rem .875rem 2.5rem; } }
+    @media (max-width: 767px) { .pk-content { padding: 1rem .875rem 2.5rem; } }
     [data-lucide] { width: 1.05rem; height: 1.05rem; }
 
     /* ---- v4 shell (approved Campaigns mockup): blue-gradient sidebar, calm light page, pill buttons ---- */
     body.pk-inset { background: #F4F7FE; }
     body.pk-inset .pk-main { margin-top: 0 !important; margin-right: 0 !important; margin-bottom: 0 !important; min-height: 100svh; border: 0 !important; border-radius: 0 !important; box-shadow: none !important;
       background: linear-gradient(180deg, #EEF3FE 0, #F6F8FE 18rem, #F7F9FE 100%) !important; }
-    .pk-sidebar > nav { background: linear-gradient(180deg, #0C1F5C 0%, #0F2E86 48%, #1A49C9 100%) !important; overflow: hidden; }
-    .pk-sidebar > nav::after { content: ""; position: absolute; left: -30%; right: -30%; bottom: -8rem; height: 16rem; pointer-events: none; background: radial-gradient(closest-side, rgba(120,170,255,.28), transparent); }
+    /* White sidebar: ink text, light-blue hover, the blue active pill kept, hairline divider */
+    .pk-sidebar { --sidebar: #FFFFFF; --sidebar-foreground: #1E2A47; --sidebar-accent: #F1F5FD; --sidebar-border: #E6ECF8; background: #FFFFFF; border-right: 1px solid #E6ECF8; }
+    body.pk-inset .pk-sidebar > nav { border-right: 0 !important; }
+    .pk-sidebar > nav { background: #FFFFFF !important; overflow: hidden; }
+    .pk-sidebar > nav::after { display: none; }
     .pk-sidebar > nav > * { position: relative; z-index: 1; }
-    .pk-sidebar h3 { color: #A9BCE6 !important; }
-    .pk-sidebar a, .pk-sidebar summary { color: #E3EAFB !important; border-radius: .7rem !important; }
-    .pk-sidebar svg { color: #C9D6F5; }
-    .pk-sidebar a:hover, .pk-sidebar summary:hover { background: rgba(255,255,255,.08) !important; }
-    .pk-sidebar a[aria-current="page"] { background: linear-gradient(90deg, #2463EB, #3B7BF6) !important; color: #fff !important; box-shadow: 0 6px 16px -8px rgba(37,99,235,.9), inset 0 1px 0 rgba(255,255,255,.18); }
+    .pk-sidebar h3 { color: #5C6F96 !important; }
+    .pk-sidebar a, .pk-sidebar summary { color: #1E2A47 !important; border-radius: .7rem !important; }
+    .pk-sidebar svg { color: #5C6F96; }
+    .pk-sidebar a:hover, .pk-sidebar summary:hover { background: #F1F5FD !important; color: #0B1739 !important; }
+    .pk-sidebar a[aria-current="page"] { background: linear-gradient(90deg, #1C80C6, #3A9FE0) !important; color: #fff !important; box-shadow: 0 6px 16px -8px rgba(28,128,198,.7), inset 0 1px 0 rgba(255,255,255,.18); }
     .pk-sidebar a[aria-current="page"]::before { display: none; }
     .pk-sidebar a[aria-current="page"] svg { color: #fff; }
-    .pk-sidebar footer { border-top: 0 !important; padding: .6rem !important; }
-    .pk-account { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.1); }
-    .pk-avatar { border-radius: 999px !important; background: #3B6FE0 !important; }
-    .pk-brand-text small { color: #B7C7EC; }
+    .pk-sidebar footer { border-top: 1px solid #E6ECF8 !important; padding: .6rem !important; }
+    .pk-brand-logo { background: #fff; border: 1px solid #E6ECF8; box-shadow: 0 6px 16px -12px rgba(30,60,140,.35) !important; }
+    .pk-avatar { border-radius: 999px !important; background: #2389CF !important; }
+    /* Account card: who is signed in, with Log out always visible (no dropdown) */
+    .pk-account-card { display: flex; flex-direction: column; gap: .7rem; padding: .8rem; border: 1px solid #E6ECF8; border-radius: 1rem; background: #F7F9FE; }
+    .pk-account-row { display: flex; align-items: center; gap: .65rem; min-width: 0; }
+    .pk-account-meta { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+    .pk-account-meta b { color: #0B1739; font-size: .9rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pk-account-meta small { color: #5C6F96; font-size: .75rem; }
+    .pk-sidebar a.pk-logout { display: flex; align-items: center; justify-content: center; gap: .5rem; min-height: 2.6rem; padding: .5rem .9rem !important; border: 1px solid #D5DFF3 !important; border-radius: .7rem !important; background: #FFFFFF !important; color: #1E2A47 !important; font-size: .9rem !important; font-weight: 600; text-decoration: none; box-shadow: 0 2px 6px -4px rgba(30,60,140,.3); }
+    .pk-sidebar a.pk-logout svg { width: 1.05rem !important; height: 1.05rem !important; color: #5C6F96 !important; }
+    .pk-sidebar a.pk-logout:hover { background: #FDECEF !important; border-color: #F3B9C4 !important; color: #B42843 !important; }
+    .pk-sidebar a.pk-logout:hover svg { color: #B42843 !important; }
 
     .pk-topbar { background: #EEF3FE !important; border-bottom: 0 !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; height: 4rem; padding: 0 1.75rem; }
-    .pk-search { border-radius: 999px; background: #fff; border-color: #E3E9F6; height: 2.5rem; width: 19rem; padding: 0 .6rem 0 1rem; box-shadow: 0 4px 14px -8px rgba(30,60,140,.25); }
-    .pk-top-avatar { width: 2.25rem; height: 2.25rem; margin-left: .35rem; border-radius: 999px; border: 0; background: #0F2E86; color: #fff; font-weight: 600; font-size: .9rem; cursor: pointer; }
-    .pk-top-avatar:hover { background: #1A49C9; }
+    .pk-top-avatar { width: 2.25rem; height: 2.25rem; margin-left: .35rem; border-radius: 999px; border: 0; background: #1A78BD; color: #fff; font-weight: 600; font-size: .9rem; cursor: pointer; }
+    .pk-top-avatar:hover { background: #1C80C6; }
     .pk-content { padding: .75rem 1.75rem 3rem; }
+    /* Table scrollbars are hidden, but the tables still scroll (trackpad, shift+wheel, touch, drag). */
+    .pk-content :is(.dt-scroll-body, .dt-scroll-head, .dataTables_scrollBody, .dataTables_scrollHead, .legacy-table, .table-responsive, .overflow-x-auto, .gd-table-wrap, .manual-tw) { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+    .pk-content :is(.dt-scroll-body, .dt-scroll-head, .dataTables_scrollBody, .dataTables_scrollHead, .legacy-table, .table-responsive, .overflow-x-auto, .gd-table-wrap, .manual-tw)::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
 
     .btn[data-variant='cta'] { border-radius: 999px !important; font-family: inherit !important; letter-spacing: 0 !important; text-transform: none !important; font-weight: 600 !important;
-      background: linear-gradient(180deg, #2E6BF0, #1D4FD6) !important; color: #fff !important; border: 0 !important; box-shadow: 0 8px 18px -8px rgba(29,79,214,.75), inset 0 1px 0 rgba(255,255,255,.22) !important; padding-inline: 1.15rem; }
+      background: linear-gradient(180deg, #3A9FE0, #1A78BD) !important; color: #fff !important; border: 0 !important; box-shadow: 0 8px 18px -8px rgba(26,120,189,.75), inset 0 1px 0 rgba(255,255,255,.22) !important; padding-inline: 1.15rem; }
     .btn[data-variant='cta']:hover { filter: brightness(1.07); }
     .page-header .btn[data-variant='outline'] { border-radius: 999px; background: #fff; border-color: #E3E9F6; box-shadow: 0 4px 14px -8px rgba(30,60,140,.3); padding-inline: 1.1rem; }
-    .pk-pill { width: fit-content; align-self: flex-start; display: inline-flex; align-items: center; gap: .45rem; height: 1.75rem; padding: 0 .75rem; border-radius: 999px; background: #E4ECFD; color: #1D4FD6; font-size: .8125rem; font-weight: 600; margin-bottom: .6rem; }
+    .pk-pill { width: fit-content; align-self: flex-start; display: inline-flex; align-items: center; gap: .45rem; height: 1.75rem; padding: 0 .75rem; border-radius: 999px; background: #E3F2FC; color: #1A78BD; font-size: .8125rem; font-weight: 600; margin-bottom: .6rem; }
     .pk-pill::before { content: ""; width: .4rem; height: .4rem; border-radius: 99px; background: currentColor; }
     .dark body.pk-inset .pk-main, .dark .pk-main { background: var(--background) !important; }
     .dark .pk-topbar { background: var(--background) !important; }
-    .dark .pk-search, .dark .page-header .btn[data-variant='outline'] { background: var(--card); border-color: var(--border); }
+    .dark .page-header .btn[data-variant='outline'] { background: var(--card); border-color: var(--border); }
     /* v4.1 (Swayam): logo alone and bigger at top left, product name at bottom left, chunkier nav buttons */
     .pk-sidebar-head { padding: 1.1rem .85rem .75rem !important; }
     .pk-brand { padding: 0; display: block; }
     .pk-brand-logo { width: 100%; height: 5rem; border-radius: 1rem; box-shadow: 0 10px 24px -14px rgba(0,0,0,.45); }
     .pk-brand-logo img { width: 11rem; max-width: 78%; }
-    .pk-brand-foot { padding: .35rem .6rem .7rem; color: #fff; }
-    .pk-brand-foot b { font-size: .95rem; } .pk-brand-foot small { font-size: .75rem; }
     .pk-sidebar section ul { gap: .3rem !important; }
     .pk-sidebar section a, .pk-sidebar section summary { min-height: 2.85rem; padding: .6rem .85rem !important; font-size: .95rem !important; gap: .8rem !important; }
     .pk-sidebar section a svg, .pk-sidebar section summary svg { width: 1.25rem !important; height: 1.25rem !important; }
     .pk-sidebar section [role="group"] + [role="group"] { margin-top: .6rem; }
     .pk-sidebar section h3 { font-size: .8rem !important; padding-left: .85rem !important; }
+    /* Breathing room: inset the nav, logo and account card from the sidebar edges */
+    /* Set on :root so the sidebar and the main column's left margin (.sidebar + *) agree */
+    :root { --sidebar-width: 17.5rem; }
+    .pk-sidebar { --sidebar-width: 17.5rem; }
+    .pk-sidebar-head { padding: 1.25rem 1.1rem .9rem !important; }
+    .pk-sidebar section { padding: .25rem 1.1rem 1rem !important; }
+    .pk-sidebar section [role="group"] + [role="group"] { margin-top: 1rem; }
+    .pk-sidebar footer { padding: 1rem 1.1rem 1.1rem !important; }
+
+    /* Logo: no box behind it, just the mark */
+    .pk-brand-logo { background: transparent !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; height: 4rem; }
+    .pk-brand-logo img { width: 12rem; max-width: 88%; filter: drop-shadow(0 6px 10px rgba(28,128,198,.18)); }
+
+    /* Depth: the sidebar reads as a lit panel standing above the page */
+    .pk-sidebar > nav { background: linear-gradient(180deg, #FFFFFF 0%, #F7FAFE 55%, #EEF5FC 100%) !important;
+      box-shadow: 1px 0 0 #E3EBF6, 10px 0 32px -14px rgba(20,60,120,.22), inset -1px 0 0 rgba(255,255,255,.9); }
+    .pk-sidebar { border-right: 0 !important; }
+    .pk-sidebar section a, .pk-sidebar section summary { transition: background-color .15s, box-shadow .15s, transform .15s; }
+    .pk-sidebar section a:hover, .pk-sidebar section summary:hover { background: #FFFFFF !important; transform: translateY(-1px);
+      box-shadow: 0 1px 0 #E3EBF6, 0 8px 16px -10px rgba(20,60,120,.35); }
+    .pk-sidebar a[aria-current="page"], .pk-sidebar section a[aria-current="page"]:hover { background: linear-gradient(180deg, #4DAFEB 0%, #2389CF 100%) !important; transform: none;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.35), inset 0 -2px 0 rgba(10,70,130,.25), 0 10px 20px -10px rgba(28,128,198,.9), 0 2px 4px -1px rgba(20,60,120,.2) !important; }
+    .pk-sidebar a[aria-current="page"] svg { filter: drop-shadow(0 1px 1px rgba(10,60,110,.35)); }
+    .pk-account-card { background: linear-gradient(180deg, #FFFFFF, #F3F8FD); border-color: #E1E9F5;
+      box-shadow: inset 0 1px 0 #FFFFFF, 0 1px 0 #E3EBF6, 0 12px 24px -16px rgba(20,60,120,.4); }
+    .pk-avatar { background: linear-gradient(180deg, #4DAFEB, #1C80C6) !important; box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 4px 10px -4px rgba(28,128,198,.7); }
+    .pk-sidebar a.pk-logout { background: linear-gradient(180deg, #FFFFFF, #F6F9FD) !important; box-shadow: inset 0 1px 0 #FFFFFF, 0 1px 0 #DCE5F2, 0 4px 10px -6px rgba(20,60,120,.35); transition: transform .15s, box-shadow .15s; }
+    .pk-sidebar a.pk-logout:hover { transform: translateY(-1px); box-shadow: 0 1px 0 #F3B9C4, 0 8px 16px -8px rgba(180,40,67,.35); }
+    .pk-sidebar a.pk-logout:active, .pk-sidebar section a:active { transform: translateY(0); }
+    @media (prefers-reduced-motion: reduce) { .pk-sidebar section a, .pk-sidebar a.pk-logout { transition: none; transform: none !important; } }
+
+    /* ---- Smooth shell: one continuous page background; the sidebar floats on it as a rounded card ---- */
+    body.pk-inset { background: linear-gradient(180deg, #EEF3FE 0, #F4F7FE 20rem, #F7F9FE 100%) fixed !important; }
+    body.pk-inset .pk-main { background: transparent !important; }
+    .pk-topbar { background: color-mix(in srgb, #EEF3FE 82%, transparent) !important; backdrop-filter: saturate(1.3) blur(10px) !important; -webkit-backdrop-filter: saturate(1.3) blur(10px) !important; }
+    .pk-sidebar { background: transparent !important; border: 0 !important; }
+    .pk-sidebar > nav { background: #FFFFFF !important; border: 1px solid #E6EDF8;
+      box-shadow: 0 1px 2px rgba(20,45,110,.05), 0 18px 40px -22px rgba(20,45,110,.28) !important; }
+    .pk-sidebar footer { border-top: 0 !important; }
+    /* Menu still scrolls on short windows, but without a bar squeezing the labels */
+    .pk-sidebar section { scrollbar-width: none; }
+    .pk-sidebar section::-webkit-scrollbar { display: none; }
+    /* Selected item: blue text + icon only, no filled background */
+    .pk-sidebar a[aria-current="page"], .pk-sidebar section a[aria-current="page"]:hover { background: transparent !important; box-shadow: none !important; transform: none !important; color: #1A78BD !important; font-weight: 600; }
+    .pk-sidebar a[aria-current="page"] svg { color: #1C80C6 !important; filter: none !important; }
+    /* Account card: flat (no shadows, gradients or lift) */
+    .pk-account-card { background: #F7F9FE !important; border-color: #E6ECF8 !important; box-shadow: none !important; }
+    .pk-avatar { background: #1C80C6 !important; box-shadow: none !important; }
+    .pk-sidebar a.pk-logout { background: #FFFFFF !important; box-shadow: none !important; transform: none !important; }
+    .pk-sidebar a.pk-logout:hover { box-shadow: none !important; transform: none !important; }
+    /* Tooltips: the CSS-only version is clipped by scrolling tables, so the page body uses the
+       window-positioned .pk-tip (script below) instead. */
+    .pk-main [data-tooltip]::before, .pk-main [data-tooltip]::after { display: none !important; }
+    .pk-tip { position: fixed; z-index: 1080; max-width: 18rem; padding: .4rem .65rem; border-radius: .55rem; background: #0B1739; color: #fff;
+      font-size: .75rem; font-weight: 500; line-height: 1.35; white-space: nowrap; pointer-events: none; box-shadow: 0 8px 20px -8px rgba(11,23,57,.45);
+      opacity: 0; transform: translateY(2px); transition: opacity .12s, transform .12s; }
+    .pk-tip.is-on { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) { .pk-tip { transition: none; } }
+    @media (min-width: 48rem) {
+      /* Inset from the window edges; the main column's margin (= --sidebar-width) leaves the same gap on its right */
+      .pk-sidebar > nav { top: .75rem !important; bottom: .75rem !important; left: .75rem !important; width: calc(var(--sidebar-width) - 1.25rem) !important; border-radius: 1.4rem; }
+      /* Collapsed: slide fully off-screen, including the inset */
+      .pk-sidebar[aria-hidden=true] > nav { --tw-translate-x: calc(-100% - 1.5rem) !important; }
+    }
     .page-header .btn[data-variant='cta'], .page-header .btn[data-variant='outline'] { height: 2.75rem; padding-inline: 1.35rem; font-size: .95rem; gap: .55rem; }
     .page-header .btn svg { width: 1.15rem; height: 1.15rem; }
 
     /* ---- v4 shared kit (same look as Campaigns on every page) ---- */
     .page-title { font-size: clamp(2.2rem, 1.6rem + 1.6vw, 2.9rem) !important; font-weight: 700 !important; letter-spacing: -.03em; color: #0B1739; }
     .dark .page-title { color: var(--foreground); }
-    /* Icon stat cards: <div class="pk-kpis"><div class="pk-kpi" style="--k:#2F6BF0;--ks:#E3ECFE"><span class="pk-kpi-ic"><i data-lucide=".."></i></span><div><span class="pk-kpi-lbl">..</span><b>..</b><small>..</small></div></div></div> */
+    /* Icon stat cards: <div class="pk-kpis"><div class="pk-kpi" style="--k:#2389CF;--ks:#E3F2FC"><span class="pk-kpi-ic"><i data-lucide=".."></i></span><div><span class="pk-kpi-lbl">..</span><b>..</b><small>..</small></div></div></div> */
     .pk-kpis { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); }
     .pk-kpi { position: relative; display: flex; align-items: center; gap: 1rem; padding: 1.25rem 1.3rem; border: 1px solid #E6ECF8; border-radius: 1.1rem; background: rgba(255,255,255,.85); box-shadow: 0 10px 24px -18px rgba(30,60,140,.35); overflow: hidden; }
-    .pk-kpi::after { content: ""; position: absolute; right: -1.5rem; top: 1.1rem; width: 7.5rem; height: 3.2rem; pointer-events: none; opacity: .55; background: linear-gradient(180deg, color-mix(in srgb, var(--k, #2F6BF0) 45%, transparent), transparent);
+    .pk-kpi::after { content: ""; position: absolute; right: -1.5rem; top: 1.1rem; width: 7.5rem; height: 3.2rem; pointer-events: none; opacity: .55; background: linear-gradient(180deg, color-mix(in srgb, var(--k, #2389CF) 45%, transparent), transparent);
       -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 50' preserveAspectRatio='none'%3E%3Cpath d='M0 50V40C20 40 30 30 48 30S75 8 95 6 120 4 120 4V50Z'/%3E%3C/svg%3E") center/100% 100% no-repeat;
               mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 50' preserveAspectRatio='none'%3E%3Cpath d='M0 50V40C20 40 30 30 48 30S75 8 95 6 120 4 120 4V50Z'/%3E%3C/svg%3E") center/100% 100% no-repeat; }
-    .pk-kpi-ic { flex: none; display: grid; place-items: center; width: 3.1rem; height: 3.1rem; border-radius: 999px; background: var(--ks, #E3ECFE); color: var(--k, #2F6BF0); }
+    .pk-kpi-ic { flex: none; display: grid; place-items: center; width: 3.1rem; height: 3.1rem; border-radius: 999px; background: var(--ks, #E3F2FC); color: var(--k, #2389CF); }
     .pk-kpi-ic svg { width: 1.4rem !important; height: 1.4rem !important; }
     .pk-kpi > div { position: relative; z-index: 1; display: grid; gap: .15rem; min-width: 0; }
     .pk-kpi-lbl { display: inline-flex; align-items: center; gap: .4rem; font-size: .875rem; font-weight: 500; color: #1E2A47; }
@@ -304,22 +330,48 @@
     .dt-container .dt-search input { border-radius: 999px !important; background-color: #F7F9FE !important; width: 100% !important; }
     .pk-content .dt-container > .row:first-child .dt-layout-start { justify-content: flex-start !important; gap: .75rem !important; width: 100%; }
     .pk-content .dt-container > .row:first-child .dt-search { flex: 0 1 26rem !important; max-width: 100%; }
-    .dt-container .dt-length { display: inline-flex; align-items: center; gap: .55rem; height: 2.25rem; padding: 0 .7rem 0 .95rem; border: 1px solid #E3E9F6; border-radius: 999px; background: #fff; color: #4A5570; font-size: .875rem; white-space: nowrap; box-shadow: 0 2px 6px -3px rgba(30,60,140,.2); }
-    .dt-container .dt-length label { display: inline-flex; align-items: center; gap: .55rem; margin: 0; }
-    .dt-container .dt-length select { height: 1.7rem !important; width: 4rem; border: 0 !important; border-radius: 999px !important; background-color: #F3F6FD !important; padding: 0 .4rem 0 .7rem !important; font-weight: 600; color: #0B1739; box-shadow: none !important; }
-    .dark .dt-container .dt-length { background: var(--card); border-color: var(--border); } .dark .dt-container .dt-length select { background-color: var(--muted) !important; color: var(--foreground); }
+    /* Page size ("Show [10] per page"): plain muted text around one compact select, no wrapper pill. */
+    .pk-content .dt-container .dt-length, .pk-content .dt-container .dt-length label { display: inline-flex !important; align-items: center; gap: .5rem; height: auto !important; margin: 0 !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; background: none !important; box-shadow: none !important; color: #5C6F96; font-size: .8125rem; font-weight: 400; white-space: nowrap; }
+    .pk-content .dt-container .dt-length select { -webkit-appearance: none; appearance: none; height: 2.25rem !important; min-width: 4.5rem; width: auto !important; margin: 0 !important; padding: 0 2rem 0 .9rem !important; border: 1px solid #DCE3F0 !important; border-radius: 999px !important; box-shadow: 0 1px 2px rgba(11,23,57,.05) !important; cursor: pointer;
+      background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235C6F96' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") right .7rem center / .85rem no-repeat !important;
+      color: #0B1739 !important; font-size: .8125rem !important; font-weight: 600; font-variant-numeric: tabular-nums; transition: border-color .12s, box-shadow .12s; }
+    .pk-content .dt-container .dt-length select:hover { border-color: #B5CBEA !important; }
+    .pk-content .dt-container .dt-length select:focus-visible { outline: 0; border-color: #1A78BD !important; box-shadow: 0 0 0 3px rgba(26,120,189,.18) !important; }
+    .dark .pk-content .dt-container .dt-length select { background-color: var(--card) !important; border-color: var(--border) !important; color: var(--foreground) !important; }
+    /* Paging: DataTables pads each <li>, which spread the arrows far apart. Compact round buttons instead. */
+    .dt-paging li.dt-paging-button { padding: 0 !important; margin: 0 !important; border: 0 !important; min-width: 0 !important; background: none !important; box-shadow: none !important; }
+    .dt-paging .pagination { gap: .25rem !important; align-items: center; }
+    .dt-paging .page-link { width: auto; min-width: 2.25rem !important; height: 2.25rem !important; padding: 0 .65rem !important; border-radius: 999px !important; border: 1px solid transparent; font-weight: 500; color: #33425E; }
+    .dt-paging .page-item:not(.disabled):not(.active) .page-link:hover { background: #F2F9FE !important; color: #1A78BD; }
+    .dt-paging .page-item.active .page-link { background: #1A78BD !important; border-color: #1A78BD !important; color: #fff !important; box-shadow: 0 6px 14px -8px rgba(26,120,189,.7) !important; }
+    .dt-paging .page-item.disabled .page-link { opacity: .35; }
+    /* Paging with nothing to page through (no rows, or a single page) adds noise: hide it. */
+    .dt-paging:not(:has(.page-item:not(.disabled):not(.active))) { display: none; }
+    /* Empty table: no footer ("Nothing to show" repeats the empty state), and the message is centred
+       across the visible card rather than pinned to the first column of a wide, scrolling table. */
+    .pk-content .dt-container { container-type: inline-size; }
+    .pk-content .dt-container:has(td.dt-empty) > :is(.row, .dt-layout-row, .reg-foot):has(.dt-info) { display: none !important; }
+    .pk-content .dt-container td.dt-empty { padding: 3.5rem 1rem !important; white-space: normal; background: none !important; }
+    .pk-content .dt-container td.dt-empty .empty { position: sticky; left: 1rem; width: calc(100cqw - 2rem) !important; max-width: none; margin: 0; padding: 0; border: 0; }
+    .pk-content .dt-container td.dt-empty .empty figure:has(> svg:only-child) { width: 3rem; height: 3rem; border-radius: 999px; background: #E3F2FC; color: #1A78BD; }
+    .pk-content .dt-container td.dt-empty .empty figure svg { width: 1.25rem; height: 1.25rem; }
+    .pk-content .dt-container td.dt-empty .empty h3 { font-size: 1rem; font-weight: 600; }
     .pk-content table.dataTable thead th { background: #F3F6FD !important; color: #1E2A47 !important; }
     .dark .pk-content table.dataTable thead th { background: var(--muted) !important; color: var(--foreground) !important; }
     .pk-content table.dataTable tbody td .btn[data-variant='ghost'][data-size='icon-sm'], .pk-content table.dataTable tbody td .btn[data-variant='ghost'][data-size='icon'] { width: 2.1rem; height: 2.1rem; border-radius: 999px; border: 1px solid #E3E9F6; background: #fff; box-shadow: 0 2px 6px -3px rgba(30,60,140,.25); }
-    .pk-content table.dataTable tbody td .btn[data-variant='ghost'][data-size='icon-sm']:hover, .pk-content table.dataTable tbody td .btn[data-variant='ghost'][data-size='icon']:hover { border-color: #BFD0F5; color: #1D4FD6; background: #F5F8FF; }
+    .pk-content table.dataTable tbody td .btn[data-variant='ghost'][data-size='icon-sm']:hover, .pk-content table.dataTable tbody td .btn[data-variant='ghost'][data-size='icon']:hover { border-color: #B5DCF4; color: #1A78BD; background: #F2F9FE; }
     .dark .pk-content table.dataTable tbody td .btn[data-variant='ghost'] { background: var(--card); border-color: var(--border); }
     .pk-content .card[data-variant] .btn[data-size='icon-sm'][data-variant='ghost'] { border-radius: 999px; }
-    /* Segmented filters as blue pills */
-    .pk-content [role='group']:not(.cl-tabs) > button[aria-pressed] { border-radius: 999px !important; }
-    .pk-content [role='group']:not(.cl-tabs) > button[aria-pressed='true'] { background: #1D4FD6 !important; color: #fff !important; box-shadow: 0 4px 10px -4px rgba(29,79,214,.6) !important; }
-    .pk-content [role='group']:not(.cl-tabs) > button[aria-pressed='true'] span { color: #DCE7FF !important; }
-    .pk-content [role='group']:not(.cl-tabs):has(> button[aria-pressed]) { background: #fff; border: 1px solid #E6ECF8; border-radius: 999px !important; padding: .15rem; }
-    .dark .pk-content [role='group']:not(.cl-tabs):has(> button[aria-pressed]) { background: var(--card); border-color: var(--border); }
+    /* Segmented filters: soft track, the selected option is a raised white chip (counts turn blue) */
+    .pk-content [role='group']:not(.cl-tabs):has(> button[aria-pressed]) { display: inline-flex; align-items: center; gap: .125rem; height: 2.5rem; padding: .25rem !important; border: 0 !important; border-radius: 999px !important; background: #EEF2FA !important; box-shadow: none !important; }
+    .pk-content [role='group']:not(.cl-tabs) > button[aria-pressed] { height: 2rem !important; padding: 0 .85rem !important; border: 0 !important; border-radius: 999px !important; background: transparent !important; color: #5C6F96 !important; font-size: .8125rem !important; font-weight: 500 !important; box-shadow: none !important; }
+    .pk-content [role='group']:not(.cl-tabs) > button[aria-pressed]:hover { color: #0B1739 !important; }
+    .pk-content [role='group']:not(.cl-tabs) > button[aria-pressed='true'] { background: #fff !important; color: #0B1739 !important; font-weight: 600 !important; box-shadow: 0 1px 2px rgba(11,23,57,.08), 0 2px 8px -4px rgba(11,23,57,.18) !important; }
+    .pk-content [role='group']:not(.cl-tabs) > button[aria-pressed] > span { min-width: 1.35rem; height: 1.25rem; padding: 0 .35rem; display: inline-grid; place-items: center; border-radius: 999px; background: rgba(92,111,150,.12) !important; color: #5C6F96 !important; font-size: .72rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .pk-content [role='group']:not(.cl-tabs) > button[aria-pressed='true'] > span { background: #E3F2FC !important; color: #1A78BD !important; }
+    .pk-content [role='group']:not(.cl-tabs) > button[aria-pressed]:focus-visible { outline: 2px solid #1A78BD; outline-offset: 1px; }
+    .dark .pk-content [role='group']:not(.cl-tabs):has(> button[aria-pressed]) { background: var(--muted) !important; }
+    .dark .pk-content [role='group']:not(.cl-tabs) > button[aria-pressed='true'] { background: var(--card) !important; color: var(--foreground) !important; }
   </style>
 
   <!-- Behaviour: Bootstrap JS (modals/dropdowns/collapse used by page scripts), DataTables & friends -->
@@ -340,6 +392,34 @@
     window.pkIcons();
     if (window.jQuery) $(document).on('draw.dt init.dt', function () { window.pkIcons(); });
 
+    /* Tooltips for [data-tooltip] in the page body. Basecoat draws them with CSS ::before,
+       which gets clipped inside scrolling tables; this one is fixed to the window, so it is
+       never cut off, stays on screen, and flips below the element when there is no room above. */
+    (function () {
+      const tip = document.createElement('div');
+      tip.className = 'pk-tip'; tip.setAttribute('role', 'tooltip'); tip.hidden = true;
+      document.body.appendChild(tip);
+      let cur = null;
+      const show = el => {
+        const text = el.getAttribute('data-tooltip'); if (!text) return;
+        cur = el; tip.textContent = text; tip.hidden = false; tip.classList.remove('is-on');
+        const r = el.getBoundingClientRect(), t = tip.getBoundingClientRect(), gap = 8, pad = 8;
+        const below = el.getAttribute('data-side') === 'bottom' || r.top - t.height - gap < pad;
+        const top = below ? r.bottom + gap : r.top - t.height - gap;
+        const left = Math.min(Math.max(r.left + r.width / 2 - t.width / 2, pad), window.innerWidth - t.width - pad);
+        tip.style.top = top + 'px'; tip.style.left = left + 'px';
+        requestAnimationFrame(() => tip.classList.add('is-on'));
+      };
+      const hide = () => { cur = null; tip.hidden = true; tip.classList.remove('is-on'); };
+      const target = e => e.target.closest && e.target.closest('.pk-main [data-tooltip]');
+      document.addEventListener('mouseover', e => { const el = target(e); if (el && el !== cur) show(el); else if (!el && cur) hide(); });
+      document.addEventListener('focusin', e => { const el = target(e); if (el) show(el); });
+      document.addEventListener('focusout', hide);
+      document.addEventListener('mouseleave', hide);
+      window.addEventListener('scroll', hide, true);
+      document.addEventListener('click', hide, true);
+    })();
+
     /* Toasts: window.pkToast('success'|'error'|'info'|'warning', title, description) */
     window.pkToast = function (category, title, description) {
       const t = document.getElementById('toaster');
@@ -350,15 +430,9 @@
       {% for m in messages %}window.pkToast('{% if m.level_tag == "error" %}error{% elif m.level_tag == "warning" %}warning{% elif m.level_tag == "success" %}success{% else %}info{% endif %}', '{{ m|escapejs }}');{% endfor %}
     });{% endif %}
 
-    /* Theme */
+    /* Theme: kept for when dark mode returns (see DARK_MODE_ENABLED in <head>). No toggle is rendered, so nothing calls this now. */
     function pkToggleTheme(e) { if (e) e.preventDefault(); const d = document.documentElement.classList.toggle('dark'); try { localStorage.setItem('pk-theme', d ? 'dark' : 'light'); } catch (_) {} document.dispatchEvent(new CustomEvent('basecoat:theme')); }
     document.querySelectorAll('[data-pk-theme-toggle]').forEach(b => b.addEventListener('click', pkToggleTheme));
-
-    /* Command palette */
-    function pkOpenCommand() { const d = document.getElementById('pk-command'); if (!d.open) { d.showModal(); const i = document.getElementById('pk-command-input'); i.value = ''; i.dispatchEvent(new Event('input')); i.focus(); } }
-    document.addEventListener('keydown', function (e) {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); pkOpenCommand(); }
-    });
 
     /* Active navigation item from the URL (same rules as the old shell) */
     (function () {

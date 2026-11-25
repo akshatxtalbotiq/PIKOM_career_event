@@ -9,9 +9,9 @@
   <meta name="author" content="PIKOM" />
   <link rel="icon" href="{% static 'register/images/favicon.png' %}" type="image/png" />
   <link rel="apple-touch-icon" href="{% static 'register/images/favicon.png' %}" type="image/png" />
-  <script>(function(){try{var t=localStorage.getItem('pk-theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}})();</script>
+  <script>(function(){var DARK_MODE_ENABLED=false;try{if(!DARK_MODE_ENABLED)return;var t=localStorage.getItem('pk-theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}})();</script>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap">
-  <link rel="stylesheet" href="{% static 'register/css/app.css' %}">
+  <link rel="stylesheet" href="{% static 'register/css/app.css' %}?v=2026-11-25b">
 </head>
 <body class="min-h-svh bg-background text-foreground">
   <main class="mx-auto max-w-3xl px-4 py-10 sm:py-16">

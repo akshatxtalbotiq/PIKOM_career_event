@@ -11,6 +11,7 @@ Shared list page for both golf form menus. `list_kind` is 'participant' or
 {% block crumbs %}<ol><li><a href="{% url 'golf_event_list' %}">Golf events</a></li><li><i data-lucide="chevron-right"></i></li><li aria-current="page">{% if list_kind == 'sponsor' %}Sponsorship forms{% else %}Player registration forms{% endif %}</li></ol>{% endblock %}
 
 {% block extracss %}
+<link rel="stylesheet" href="{% static 'register/css/golf.css' %}">
 <style>
   /* DataTables (Bootstrap 5 integration markup) toolbar rows -> shadcn toolbar */
   .dt-container > .row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .625rem; padding: .75rem 1rem; margin: 0; }
@@ -28,28 +29,6 @@ Shared list page for both golf form menus. `list_kind` is 'participant' or
   .dt-container .dt-scroll-body, table.dataTable.no-footer { border-bottom: 0 !important; }
   #gfDescEditor { background: var(--background); }
 
-  /* fix: with only a few rows the table leaves the page empty, so they are also shown as cards */
-  .gx-cards { display: grid; gap: 1rem; margin-bottom: 2rem; }
-  @media (min-width: 1024px) { .gx-cards.n-2 { grid-template-columns: 1fr 1fr; } }
-  .gx-card { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 1.25rem 1.5rem; padding: 1.5rem; position: relative; overflow: hidden; }
-  .gx-card { border-radius: 1.1rem; border-color: #E6ECF8; box-shadow: 0 16px 36px -26px rgba(30,60,140,.35); }
-  .gx-date { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 5.25rem; padding: .75rem .5rem; border-radius: .875rem; background: var(--brand-navy); color: #fff; line-height: 1; }
-  .dark .gx-date { background: color-mix(in srgb, var(--primary) 70%, var(--card)); }
-  .gx-date .m { font-family: var(--font-label); font-size: .8rem; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--brand-orange); }
-  .gx-date .d { font-family: "DM Sans", var(--font-sans); font-size: 2.4rem; font-weight: 800; letter-spacing: -.04em; margin: .2rem 0; font-variant-numeric: tabular-nums; }
-  .gx-date .y { font-size: .75rem; opacity: .7; font-variant-numeric: tabular-nums; }
-  .gx-title { font-family: "DM Sans", var(--font-sans); font-size: 1.45rem; font-weight: 800; letter-spacing: -.03em; line-height: 1.15; margin: .35rem 0 .25rem; word-break: break-word; }
-  .gx-title a { color: var(--foreground); text-decoration: none; } .gx-title a:hover { color: var(--primary); }
-  .gx-sub { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .9rem; font-size: .8125rem; color: var(--muted-foreground); }
-  .gx-sub svg { width: .85rem; height: .85rem; }
-  .gx-stats { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); border-top: 1px solid var(--border); padding-top: 1rem; gap: 1rem; }
-  .gx-stat .lbl { font-family: var(--font-label); font-size: .72rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--muted-foreground); }
-  .gx-stat .val { font-family: "DM Sans", var(--font-sans); font-size: 1.5rem; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; line-height: 1.2; }
-  .gx-stat .val small { font-size: .8rem; font-weight: 500; color: var(--muted-foreground); letter-spacing: 0; margin-left: .25rem; }
-  .gx-stat a { font-size: .8125rem; font-weight: 500; color: var(--primary); text-decoration: none; display: inline-flex; align-items: center; gap: .3rem; }
-  .gx-stat a:hover { text-decoration: underline; text-underline-offset: 4px; } .gx-stat a svg { width: .85rem; height: .85rem; }
-  .gx-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: .5rem; }
-  @media (max-width: 575.98px) { .gx-card { grid-template-columns: 1fr; padding: 1.25rem; } .gx-date { flex-direction: row; gap: .5rem; justify-content: flex-start; padding: .5rem .75rem; width: fit-content; } .gx-date .d { font-size: 1.5rem; margin: 0; } .gx-actions .btn { flex: 1; } }
 </style>
 {% endblock %}
 
@@ -64,7 +43,6 @@ on this page work even in a session that never posted a form.{% endcomment %}
 
 <header class="page-header animate-rise mb-6">
   <div class="flex min-w-0 flex-col gap-2">
-    <span class="pk-pill">{% if list_kind == 'sponsor' %}Sponsorship{% else %}Players{% endif %}</span>
     <h1 class="page-title">{% if list_kind == 'sponsor' %}Sponsorship Forms{% else %}Player Registration Forms{% endif %}</h1>
     <p class="page-description max-w-[60ch]">{{ list_subtitle }}.</p>
   </div>
@@ -80,31 +58,42 @@ on this page work even in a session that never posted a form.{% endcomment %}
   {% for form in forms %}
   {% with ev=form.fkevent n=form.registrations.count %}
   <article class="card gx-card" aria-label="{{ form.title }}">
-    {% if ev %}
-      <div class="gx-date" aria-label="Event day {{ ev.end_date|date:'j F Y' }}"><span class="m">{{ ev.end_date|date:"M" }}</span><span class="d">{{ ev.end_date|date:"j" }}</span><span class="y">{{ ev.end_date|date:"Y" }}</span></div>
-    {% else %}
-      <div class="gx-date" aria-label="No event assigned"><span class="m">Event</span><span class="d">—</span><span class="y">Not set</span></div>
-    {% endif %}
-    <div class="min-w-0">
-      <div class="flex flex-wrap items-center gap-2">
-        {% if form.is_active %}<span class="badge badge-success badge-dot" data-variant="soft">Active</span>{% else %}<span class="badge badge-muted badge-dot" data-variant="soft">Inactive</span>{% endif %}
-        <span class="text-xs text-muted-foreground tabular-nums">ID {{ form.id }}</span>
+    <div class="gx-main">
+      {% if ev %}
+        <div class="gx-date" aria-label="Event day {{ ev.end_date|date:'j F Y' }}"><span class="m">{{ ev.end_date|date:"M" }}</span><span class="d">{{ ev.end_date|date:"j" }}</span><span class="y">{{ ev.end_date|date:"Y" }}</span></div>
+      {% else %}
+        <div class="gx-date is-empty" aria-label="No event assigned"><span class="m">Event</span><span class="d">—</span><span class="y">Not set</span></div>
+      {% endif %}
+      <div class="gx-head">
+        <div class="gx-kicker">
+          {% if form.is_active %}<span class="badge badge-success badge-dot" data-variant="soft">Active</span>{% else %}<span class="badge badge-muted badge-dot" data-variant="soft">Inactive</span>{% endif %}
+          <span class="tabular-nums">Form #{{ form.id }}</span>
+        </div>
+        <h2 class="gx-title"><a href="{% url 'golf_submission_list' form.id %}">{{ form.title }}</a></h2>
+        <div class="gx-sub">
+          <span><i data-lucide="flag"></i>{% if ev %}{{ ev.title }}{% else %}Not assigned to an event{% endif %}</span>
+          {% if ev %}<span><i data-lucide="map-pin"></i>{{ ev.venue|default:"No venue set"|truncatechars:60 }}</span>{% endif %}
+        </div>
       </div>
-      <h2 class="gx-title"><a href="{% url 'golf_submission_list' form.id %}">{{ form.title }}</a></h2>
-      <div class="gx-sub">
-        <span class="inline-flex items-center gap-1"><i data-lucide="flag"></i>{% if ev %}{{ ev.title }}{% else %}Not assigned to an event{% endif %}</span>
-        {% if ev %}<span class="inline-flex items-center gap-1"><i data-lucide="map-pin"></i>{{ ev.venue|default:"No venue set"|truncatechars:60 }}</span>{% endif %}
+      <div class="gx-count">
+        <b>{{ n }}</b>
+        <span>{% if list_kind == 'sponsor' %}sponsorship{{ n|pluralize }}{% else %}registration{{ n|pluralize }}{% endif %}</span>
       </div>
     </div>
-    <div class="gx-stats">
-      <div class="gx-stat"><div class="lbl">Entries</div><div class="val">{{ n }}<small>{% if list_kind == 'sponsor' %}sponsorship{{ n|pluralize }}{% else %}registration{{ n|pluralize }}{% endif %}</small></div></div>
-      <div class="gx-stat"><div class="lbl">Public link</div><a href="{% url 'golf_form_public' form.public_ident %}" target="_blank" class="font-mono"><i data-lucide="globe"></i>/golf/{{ form.public_ident }}/</a></div>
-      <div class="gx-stat"><div class="lbl">Created</div><div class="text-sm font-medium tabular-nums mt-1">{{ form.created_at|date:"j M Y, g:i A" }}</div></div>
-    </div>
-    <div class="gx-actions">
-      <a href="{% url 'golf_submission_list' form.id %}" class="btn" data-size="sm"><i data-lucide="list-checks"></i> View entries</a>
-      <a href="{% url 'golf_form_builder' form.id %}" class="btn" data-variant="outline" data-size="sm"><i data-lucide="sliders-horizontal"></i> Build form</a>
-      <button type="button" class="btn edit-form-btn" data-variant="ghost" data-size="sm" data-id="{{ form.id }}"><i data-lucide="pencil"></i> Settings</button>
+    <div class="gx-foot">
+      <div class="gx-meta">
+        <span class="gx-link">
+          <i data-lucide="globe"></i>
+          <a href="{% url 'golf_form_public' form.public_ident %}" target="_blank" rel="noopener" title="Open the public form">/golf/{{ form.public_ident }}/</a>
+          <button type="button" class="copy-link-btn" data-link="{% url 'golf_form_public' form.public_ident %}" aria-label="Copy public link"><i data-lucide="copy"></i></button>
+        </span>
+        <span class="gx-created"><i data-lucide="calendar-plus"></i>Created {{ form.created_at|date:"j M Y" }}</span>
+      </div>
+      <div class="gx-actions">
+        <button type="button" class="btn edit-form-btn" data-variant="ghost" data-id="{{ form.id }}"><i data-lucide="settings-2"></i> Settings</button>
+        <a href="{% url 'golf_form_builder' form.id %}" class="btn" data-variant="outline"><i data-lucide="sliders-horizontal"></i> Build form</a>
+        <a href="{% url 'golf_submission_list' form.id %}" class="btn" data-variant="cta"><i data-lucide="list-checks"></i> View entries</a>
+      </div>
     </div>
   </article>
   {% endwith %}
@@ -510,21 +499,17 @@ on this page work even in a session that never posted a form.{% endcomment %}
       order: [[0, 'desc']],
       columnDefs: [{ orderable: false, targets: [5] }],
       layout: {
-        topStart: [
-          { search: { className: 'input', placeholder: 'Search forms', ariaLabel: 'Search forms' } },
-          'pageLength',
-        ],
+        topStart: { search: { className: 'input', placeholder: 'Search forms', ariaLabel: 'Search forms' } },
         topEnd: null,
+        bottomStart: ['info', 'pageLength'],
+        bottomEnd: 'paging',
       },
       autoWidth: true,
       scrollCollapse: true,
       language: {
         search: '',
         lengthMenu: 'Show _MENU_ per page',
-        paginate: {
-          previous: '<i data-lucide=\"chevron-left\"></i>',
-          next: '<i data-lucide=\"chevron-right\"></i>',
-        },
+        paginate: { first: '«', previous: '‹', next: '›', last: '»' },
         emptyTable: "<div class='empty py-12 gap-2'><span class='icon-chip bg-golf-soft text-golf'><i data-lucide='file-text'></i></span><h3 class='font-medium text-foreground'>No forms yet</h3><p class='text-sm text-muted-foreground'>Create a form for a golf event, then build its fields and share the public link.</p></div>",
         infoEmpty: 'No forms',
         zeroRecords: "<div class='empty py-10 gap-1'><h3 class='font-medium text-foreground'>No matching forms</h3><p class='text-sm text-muted-foreground'>Try a different search or clear the column filters.</p></div>",

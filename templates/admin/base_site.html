@@ -1,0 +1,95 @@
+{% extends "admin/base.html" %}
+{% load static i18n %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | PIKOM Events admin{% endblock %}
+
+{% block extrastyle %}{{ block.super }}
+<meta name="theme-color" content="#ffffff">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap">
+<link rel="icon" type="image/png" href="{% static 'user/img/favicon.png' %}">
+<link rel="stylesheet" href="{% static 'register/css/admin_theme.css' %}">
+{% endblock %}
+
+{% block dark-mode-vars %}{% endblock %}
+{% block nav-sidebar %}{% endblock %}
+{% block nav-global %}{% endblock %}
+
+{# The sidebar replaces Django's blue header. Same shell as the events console. #}
+{% block header %}
+<aside class="pk-side" id="pk-side" aria-label="Main navigation">
+  <a class="pk-side-brand" href="{% url 'admin:index' %}"><img src="{% static 'user/img/PIKOM.png' %}" alt="PIKOM Events"></a>
+  {% if has_permission %}
+  <nav class="pk-side-scroll">
+    <div class="pk-side-group">
+      <h3>Console</h3>
+      <a href="{% url 'campaign_list' %}"><i data-lucide="arrow-left"></i><span>Back to events console</span></a>
+    </div>
+    <div class="pk-side-group">
+      <h3>Admin</h3>
+      <a href="{% url 'admin:index' %}" data-match="exact"><i data-lucide="layout-dashboard"></i><span>Overview</span></a>
+    </div>
+    {% for app in available_apps %}
+    <div class="pk-side-group">
+      <h3>{{ app.name }}</h3>
+      {% for model in app.models %}
+        {% if model.admin_url %}<a href="{{ model.admin_url }}"><i data-lucide="{% if app.app_label == 'auth' %}{% if model.object_name == 'Group' %}shield{% else %}users{% endif %}{% elif model.object_name == 'Campaign' %}megaphone{% elif model.object_name == 'Survey' %}chart-column{% else %}database{% endif %}"></i><span>{{ model.name }}</span></a>{% endif %}
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </nav>
+  <div class="pk-side-foot">
+    <div class="pk-side-user">
+      <span class="pk-avatar" aria-hidden="true">{% firstof user.get_short_name user.get_username as uname %}{{ uname|slice:":1"|upper }}</span>
+      <span class="pk-side-who"><b>{% firstof user.get_full_name user.get_username %}</b><small>Administrator</small></span>
+    </div>
+    <div class="pk-side-links">
+      {% if user.has_usable_password %}<a href="{% url 'admin:password_change' %}"><i data-lucide="key-round"></i><span>Change password</span></a>{% endif %}
+      <form id="logout-form" method="post" action="{% url 'admin:logout' %}">{% csrf_token %}<button type="submit"><i data-lucide="log-out"></i><span>Log out</span></button></form>
+    </div>
+  </div>
+  {% endif %}
+</aside>
+<div class="pk-scrim" id="pk-scrim"></div>
+{% if has_permission and not is_popup and title == "Site administration" %}
+<div class="pk-topbar pk-topbar-index">
+  <button type="button" class="pk-menu-btn" id="pk-menu-btn" aria-label="Toggle navigation" aria-controls="pk-side"><i data-lucide="panel-left"></i></button>
+  <div class="breadcrumbs"><span aria-current="page">Admin</span></div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block nav-breadcrumbs %}
+<div class="pk-topbar">
+  <button type="button" class="pk-menu-btn" id="pk-menu-btn" aria-label="Toggle navigation" aria-controls="pk-side"><i data-lucide="panel-left"></i></button>
+  <nav aria-label="{% translate 'Breadcrumbs' %}">
+    {% block breadcrumbs %}
+    <div class="breadcrumbs">
+      <a href="{% url 'admin:index' %}">Admin</a>
+      {% if title %}<i data-lucide="chevron-right"></i><span aria-current="page">{{ title }}</span>{% endif %}
+    </div>
+    {% endblock %}
+  </nav>
+</div>
+{% endblock %}
+
+{% block extrabody %}{{ block.super }}
+<script src="{% static 'register/js/lucide.min.js' %}"></script>
+<script>
+  (function () {
+    var path = location.pathname, best = null, bestLen = 0;
+    document.querySelectorAll('.pk-side-scroll a[href]').forEach(function (a) {
+      var h = a.getAttribute('href');
+      if (!h || h.charAt(0) !== '/' || h.indexOf('/admin/') !== 0) return;
+      var hit = a.dataset.match === 'exact' ? path === h : path.indexOf(h) === 0;
+      if (hit && h.length > bestLen) { best = a; bestLen = h.length; }
+    });
+    if (best) best.setAttribute('aria-current', 'page');
+    var side = document.getElementById('pk-side'), open = function (v) { document.body.classList.toggle('pk-side-open', v); };
+    var btn = document.getElementById('pk-menu-btn'), scrim = document.getElementById('pk-scrim');
+    if (btn) btn.addEventListener('click', function () { open(!document.body.classList.contains('pk-side-open')); });
+    if (scrim) scrim.addEventListener('click', function () { open(false); });
+    if (window.lucide) lucide.createIcons({ attrs: { 'stroke-width': 1.75 } });
+  })();
+</script>
+{% endblock %}

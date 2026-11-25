@@ -1,0 +1,102 @@
+/* Shared by the golf pages (events, form lists): summary cards and table chrome. */
+/* Few forms: each one also gets a summary card above the table */
+.gx-cards { display: grid; gap: 1rem; margin-bottom: 2rem; }
+@media (min-width: 1280px) { .gx-cards.n-2, .gx-cards.n-4 { grid-template-columns: 1fr 1fr; } }
+.gx-card { container-type: inline-size; padding: 0 !important; gap: 0 !important; overflow: hidden; border-radius: 1.1rem; border-color: #E6ECF8; box-shadow: 0 16px 36px -26px rgba(30,60,140,.35); }
+.gx-main { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 1.25rem 1.5rem; padding: 1.5rem 1.5rem 1.35rem; }
+
+.gx-date { display: grid; justify-items: center; align-content: center; width: 4.75rem; height: 5rem; border-radius: .9rem; background: #E8F3FC; color: #1A78BD; line-height: 1; }
+.dark .gx-date { background: color-mix(in srgb, var(--primary) 18%, var(--card)); color: var(--foreground); }
+.gx-date .m { font-size: .78rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.gx-date .d { font-size: 2rem; font-weight: 800; letter-spacing: -.04em; margin: .2rem 0 .15rem; color: #0B1739; font-variant-numeric: tabular-nums; }
+.dark .gx-date .d { color: var(--foreground); }
+.gx-date .y { font-size: .75rem; font-weight: 500; color: #5C6F96; font-variant-numeric: tabular-nums; }
+.gx-date.is-empty .d { font-size: 1.5rem; color: #93A4C3; }
+
+.gx-head { min-width: 0; display: grid; gap: .5rem; }
+.gx-kicker { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; font-size: .8125rem; color: var(--muted-foreground); }
+.gx-title { margin: 0; font-size: 1.375rem; font-weight: 700; letter-spacing: -.02em; line-height: 1.25; overflow-wrap: anywhere; }
+.gx-title a { color: var(--foreground); text-decoration: none; }
+.gx-title a:hover { color: var(--primary); }
+.gx-sub { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem 1.25rem; font-size: .9375rem; color: #4A5570; }
+.gx-sub span { display: inline-flex; align-items: center; gap: .45rem; min-width: 0; }
+.gx-sub svg { width: 1rem; height: 1rem; color: #93A4C3; flex: none; }
+
+.gx-count { text-align: right; padding-left: 1.5rem; border-left: 1px solid var(--border); }
+.gx-count b { display: block; font-size: 2.5rem; font-weight: 800; letter-spacing: -.04em; line-height: 1; color: #0B1739; font-variant-numeric: tabular-nums; }
+.dark .gx-count b { color: var(--foreground); }
+.gx-count span { display: block; margin-top: .35rem; font-size: .875rem; color: var(--muted-foreground); }
+
+.gx-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem 1.5rem; padding: .9rem 1.5rem; border-top: 1px solid var(--border); background: color-mix(in srgb, var(--muted) 45%, var(--card)); }
+.gx-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.5rem; font-size: .875rem; color: #4A5570; min-width: 0; }
+.gx-link { display: inline-flex; align-items: center; gap: .25rem; height: 2.25rem; padding: 0 .25rem 0 .85rem; border: 1px solid #E3E9F6; border-radius: 999px; background: #fff; max-width: 100%; }
+.gx-link > svg { width: 1rem; height: 1rem; color: #93A4C3; flex: none; }
+.gx-link a { color: #1E2A47; text-decoration: none; padding: 0 .25rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gx-link a:hover { color: #1A78BD; text-decoration: underline; text-underline-offset: 3px; }
+.gx-link button { display: inline-grid; place-items: center; width: 1.85rem; height: 1.85rem; border: 0; border-radius: 999px; background: #F3F6FD; color: #4A5570; cursor: pointer; flex: none; }
+.gx-link button:hover { background: #E3F2FC; color: #1A78BD; }
+.gx-link button svg { width: .95rem; height: .95rem; }
+.gx-created { display: inline-flex; align-items: center; gap: .45rem; font-variant-numeric: tabular-nums; }
+.gx-created svg { width: 1rem; height: 1rem; color: #93A4C3; }
+.gx-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.gx-actions .btn { height: 2.25rem; padding: 0 1rem; font-size: .875rem; border-radius: 999px; }
+
+/* Narrow cards (two per row, tablets, phones) */
+@container (max-width: 44rem) {
+  .gx-main { grid-template-columns: auto minmax(0,1fr); }
+  .gx-count { grid-column: 1 / -1; display: flex; align-items: baseline; gap: .5rem; text-align: left; padding: 1rem 0 0; border-left: 0; border-top: 1px solid var(--border); }
+  .gx-count b { font-size: 1.75rem; } .gx-count span { margin: 0; }
+  .gx-foot { flex-direction: column; align-items: stretch; }
+  .gx-actions .btn { flex: 1 1 auto; justify-content: center; }
+}
+@container (max-width: 26rem) {
+  .gx-main { grid-template-columns: 1fr; padding: 1.25rem; }
+  .gx-date { width: auto; height: auto; grid-auto-flow: column; justify-content: start; gap: .4rem; padding: .45rem .75rem; justify-self: start; border-radius: 999px; }
+  .gx-date .d { font-size: 1rem; margin: 0; }
+  .gx-foot { padding: 1rem 1.25rem; }
+}
+
+/* ---------- Golf event card: player + sponsorship panels ---------- */
+.gx-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 0 1.5rem 1.5rem; }
+.gx-panel { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: .25rem 1rem; padding: 1rem 1.1rem; border: 1px solid #E6ECF8; border-radius: .9rem; background: color-mix(in srgb, var(--muted) 35%, var(--card)); }
+.gx-ic { grid-row: span 2; display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: .8rem; background: #E3F2FC; color: #1A78BD; }
+.gx-ic.is-sponsor { background: #FDF0DA; color: #B45309; }
+.gx-ic svg { width: 1.25rem; height: 1.25rem; }
+.gx-panel h3 { margin: 0; font-size: .875rem; font-weight: 600; color: #33425E; }
+.gx-panel .gx-num { display: flex; align-items: baseline; gap: .4rem; }
+.gx-panel .gx-num b { font-size: 1.75rem; font-weight: 800; letter-spacing: -.035em; line-height: 1.1; color: #0B1739; font-variant-numeric: tabular-nums; }
+.gx-panel .gx-num span { font-size: .875rem; color: var(--muted-foreground); }
+.gx-panel .gx-num.is-empty b { color: #93A4C3; }
+.gx-panel-acts { grid-row: span 2; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .4rem; }
+.gx-panel-acts .btn { height: 2.25rem; padding: 0 .95rem; font-size: .8125rem; border-radius: 999px; }
+.dark .gx-panel .gx-num b { color: var(--foreground); }
+@container (max-width: 52rem) { .gx-panels { grid-template-columns: 1fr; } }
+@container (max-width: 30rem) {
+  .gx-panels { padding: 0 1.25rem 1.25rem; }
+  .gx-panel { grid-template-columns: auto minmax(0,1fr); }
+  .gx-panel-acts { grid-column: 1 / -1; grid-row: auto; justify-content: stretch; margin-top: .6rem; }
+  .gx-panel-acts .btn { flex: 1; justify-content: center; }
+}
+
+/* ---------- Golf tables: search on top, row count + page size + pages in the footer ---------- */
+.dt-container > .row:first-child { flex-wrap: nowrap; }
+.pk-content .dt-container > .row:first-child .dt-layout-start { width: auto !important; flex: 1 1 auto; min-width: 0; }
+.dt-container > .row:first-child .dt-layout-end { flex: none; }
+.dt-container > .row:first-child .dt-search { flex: 0 1 24rem !important; }
+.dt-container > .row:first-child .dt-search input { width: 100% !important; }
+.dt-container > .row:last-child { padding: .7rem 1rem; }
+.dt-container > .row:last-child .dt-layout-start { gap: .5rem 1.25rem; }
+.dt-container > .row:last-child .dt-info { color: var(--muted-foreground); font-size: .8125rem; font-variant-numeric: tabular-nums; }
+.dt-paging .page-link { font-size: 1rem; line-height: 1; }
+@media (max-width: 640px) { .dt-container > .row:first-child { flex-wrap: wrap; } }
+.gx-main > .edit-event-btn { height: 2.25rem; padding: 0 1rem; border-radius: 999px; font-size: .875rem; }
+@container (max-width: 44rem) { .gx-main > .edit-event-btn { grid-column: 1 / -1; justify-self: start; } }
+/* Panel parts pinned to named areas so the order holds at every width */
+.gx-panel { grid-template-areas: "ic name acts" "ic num acts"; text-align: left; }
+.gx-panel > .gx-ic { grid-area: ic; }
+.gx-panel > h3 { grid-area: name; align-self: end; }
+.gx-panel > .gx-num { grid-area: num; align-self: start; }
+.gx-panel > .gx-panel-acts { grid-area: acts; }
+@container (max-width: 30rem) {
+  .gx-panel { grid-template-columns: auto minmax(0,1fr); grid-template-areas: "ic name" "ic num" "acts acts"; }
+}

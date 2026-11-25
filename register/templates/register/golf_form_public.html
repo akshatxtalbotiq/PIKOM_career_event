@@ -9,8 +9,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="{% static 'register/sweetalert2/sweetalert2.css' %}">
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap">
-  <script>(function(){try{var t=localStorage.getItem('pk-theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}})();</script>
-  <link rel="stylesheet" href="{% static 'register/css/app.css' %}">
+  <script>(function(){var DARK_MODE_ENABLED=false;try{if(!DARK_MODE_ENABLED)return;var t=localStorage.getItem('pk-theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}})();</script>
+  <link rel="stylesheet" href="{% static 'register/css/app.css' %}?v=2026-11-25b">
   <style>
     :root {
       /* Golf event colour drives every shadcn token on this page. */
@@ -25,8 +25,8 @@
 
     /* Microsite frame: crisp event-colour rule + brand bar, no washes. */
     .ms-top { border-top: 4px solid var(--theme); border-bottom: 1px solid var(--border); background: var(--card); }
-    .ms-logo { display: grid; place-items: center; width: 6.75rem; height: 3.6rem; border-radius: .6rem; background: #fff; border: 1px solid var(--border); }
-    .ms-logo img { width: 5.8rem; height: auto; }
+    .ms-logo { display: flex; align-items: center; }
+    .ms-logo img { width: auto; height: 2.1rem; }
     .pk-eyebrow { color: var(--theme) !important; }
     .dark .pk-eyebrow, .dark .q-num, .dark .pk-micro b, .dark .gsec > .mb-6 h2::before { color: color-mix(in srgb, var(--theme) 45%, #fff) !important; }
     .ms-dot { width: .45rem; height: .45rem; border-radius: 999px; background: var(--success); box-shadow: 0 0 0 3px var(--success-soft); }
@@ -154,6 +154,9 @@
     .pk-countdown > div { background: transparent; color: var(--foreground); border: 1px solid var(--border); border-radius: .5rem; box-shadow: none; min-width: 3.75rem; padding: .55rem .5rem .45rem; }
     .pk-countdown b { font-family: "DM Sans", var(--font-sans); font-weight: 700; font-size: 1.45rem; }
     .pk-countdown span { font-family: var(--font-label); color: var(--muted-foreground); }
+      /* Logo bar spans the screen (logo flush top-left); the form keeps its centred column */
+    .gf-main { max-width: 66rem !important; }
+    .gf-wrap, .fw-wrap { max-width: none !important; padding-inline: clamp(1rem, 2.5vw, 3rem) !important; }
   </style>
 </head>
 <body class="min-h-dvh bg-background text-foreground antialiased">
@@ -165,13 +168,13 @@
   {% endif %}
 
   <div class="ms-top">
-    <div class="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
-      <span class="inline-flex items-center gap-2.5"><span class="ms-logo"><img src="{% static 'user/img/PIKOM.png' %}" alt="PIKOM"></span><span class="pk-micro !text-foreground">PIKOM Golf</span></span>
+    <div class="gf-wrap flex h-14 items-center justify-between gap-3 px-4 sm:px-6">
+      <span class="ms-logo"><img src="{% static 'user/img/PIKOM.png' %}" alt="PIKOM"></span>
       {% if registration_closed and not preview_mode %}<span class="pk-micro">Closed</span>{% else %}<span class="pk-micro"><span class="ms-dot" aria-hidden="true"></span>{% if form.is_sponsor %}Sponsorship open{% else %}Entries open{% endif %}</span>{% endif %}
     </div>
   </div>
   <div class="relative">
-  <main class="relative z-10 mx-auto max-w-6xl px-4 pt-8 pb-10 sm:px-6 sm:pt-14">
+  <main class="gf-main relative z-10 mx-auto max-w-6xl px-4 pt-8 pb-10 sm:px-6 sm:pt-14">
 
     {% if messages %}
       <div class="alert mb-6 !border-danger/30 !bg-danger-soft !text-danger" role="alert">
@@ -733,7 +736,7 @@
     const BASE_PRICE = {% if package_price is not None %}{{ package_price }}{% else %}0{% endif %};
     const REQUIRED_PLAYERS = {{ required_players|default:0 }};
     const IS_SPONSOR = {% if form.is_sponsor %}true{% else %}false{% endif %};
-    const themeColor = getComputedStyle(document.documentElement).getPropertyValue('--theme').trim() || '#1F5FE0';
+    const themeColor = getComputedStyle(document.documentElement).getPropertyValue('--theme').trim() || '#1C80C6';
 
     function money(n) {
       return CURRENCY + ' ' + Number(n).toLocaleString('en-MY', {
