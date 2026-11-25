@@ -1,108 +1,140 @@
-{% load static %}
-<!DOCTYPE html>
+{% load static %}<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>{{ name }} Registration</title>
-    <link rel="stylesheet" href="{% static 'user/css/bootstrap.min.css' %}">
-    <link rel="stylesheet" href="{% static 'user/css/style.css' %}">
-
-    <script src="https://unpkg.com/html5-qrcode"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+    <meta name="theme-color" content="#0B2149"/>
+    <title>Check-in: {{ name }} | PIKOM</title>
+    <link rel="icon" type="image/png" href="{% static 'user/img/favicon.png' %}">
+    <script>(function(){try{var t=localStorage.getItem('pk-theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}})();</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap">
+    <link rel="stylesheet" href="{% static 'register/css/app.css' %}">
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{% static 'register/js/lucide.min.js' %}"></script>
     <style>
-        .swal2-rounded {
-            border-radius: 18px !important;
-        }
+        /* Result colours are fixed (not themed) so white text keeps contrast in light and dark. */
+        :root { --sc-ok: #0D8A5F; --sc-exist: #B45F06; --sc-bad: #C9304A; }
+        body { -webkit-tap-highlight-color: transparent; }
 
-        .swal2-shadow {
-            box-shadow: 0 6px 18px rgba(0,0,0,0.15) !important;
-        }
+        .sc-result { transition: background-color .25s ease, border-color .25s ease, color .25s ease; }
+        .sc-result[data-state="ok"]      { background: var(--sc-ok); border-color: var(--sc-ok); color: #fff; }
+        .sc-result[data-state="exist"]   { background: var(--sc-exist); border-color: var(--sc-exist); color: #fff; }
+        .sc-result[data-state="blocked"],
+        .sc-result[data-state="invalid"],
+        .sc-result[data-state="error"]   { background: var(--sc-bad); border-color: var(--sc-bad); color: #fff; }
+        .sc-result:not([data-state="idle"]):not([data-state="busy"]) .sc-result-ico { background: rgba(255,255,255,.18); color: #fff; box-shadow: inset 0 0 0 1px rgba(255,255,255,.25); }
+        .sc-result:not([data-state="idle"]):not([data-state="busy"]) .sc-result-meta,
+        .sc-result:not([data-state="idle"]):not([data-state="busy"]) .sc-result-kicker { color: rgba(255,255,255,.85); }
+        .sc-result:not([data-state="idle"]):not([data-state="busy"]) { animation: sc-pop .35s cubic-bezier(.16,1,.3,1); }
+        .sc-result[data-state="busy"] .sc-result-ico svg { animation: sc-spin 1s linear infinite; }
+        .sc-result-ico svg { width: 2.25rem; height: 2.25rem; }
+        .sc-result:not([data-state="idle"]):not([data-state="busy"]) .sc-result-kicker b { color: #fff; }
+        main .card { box-shadow: none; }
+        @keyframes sc-spin { to { transform: rotate(360deg); } }
+        @keyframes sc-pop { from { transform: scale(.97); } to { transform: none; } }
 
+        #reader { width: 100%; aspect-ratio: 1 / 1; border-radius: .9rem; overflow: hidden; background: #050C1D; position: relative; }
+        #reader[hidden] { display: none; }
+        #reader video { width: 100% !important; height: 100% !important; object-fit: cover; }
+        #start-scan-btn[aria-pressed="true"] { background: var(--background); color: var(--destructive); border: 1px solid color-mix(in srgb, var(--destructive) 35%, transparent); }
 
-        #start-scan-btn {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 1.2rem;
-            font-size: 1.25rem;
-            border-radius: 0.75rem;
-            width: 100%;
-            max-width: 300px;
-            height: 300px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-            transition: background-color 0.3s ease, transform 0.2s ease;
-        }
-
-        #start-scan-btn:hover {
-            background-color: #218838;
-            transform: scale(1.03);
-        }
-
-        #start-scan-btn:active {
-            background-color: #1e7e34;
-            transform: scale(0.97);
-        }
-
-        #reader {
-            width: 300px;
-            height: 300px;
-            aspect-ratio: 1/1;
-            margin-inline: auto;
-            margin-bottom: 2rem;
-            border-radius: .75rem;
-            overflow: hidden;
-            box-shadow: 0 4px 10px 0 rgba(0, 0, 0, 0.1);
-
-            > video {
-                width: 100%;
-                height: 100%;
-                object-fit: cover;
-
-            }
-        }
-
+        /* SweetAlert result popups: state colour band + big next-scan button */
+        .sc-swal.swal2-popup { padding: 0 !important; overflow: hidden; width: min(440px, calc(100vw - 32px)) !important; }
+        .sc-swal .swal2-html-container { margin: 0 !important; padding: 0 !important; text-align: left; overflow: visible; }
+        .sc-swal .swal2-actions { width: 100%; margin: 0 !important; padding: 6px 20px 20px; }
+        .sc-swal .swal2-confirm { width: 100%; min-height: 56px; font-size: 17px !important; font-weight: 600 !important; margin: 0 !important; }
+        .sc-sw-head { padding: 28px 22px 22px; color: #fff; text-align: center; }
+        .sc-sw-head .sc-sw-ico { width: 64px; height: 64px; margin: 0 auto; border-radius: 999px; display: grid; place-items: center; background: rgba(255,255,255,.18); box-shadow: inset 0 0 0 1px rgba(255,255,255,.25); }
+        .sc-sw-head .sc-sw-ico svg { width: 34px; height: 34px; }
+        .sc-sw-head h2 { margin: 14px 0 0; font-family: "DM Sans", sans-serif; font-size: 28px; line-height: 1.05; font-weight: 800; letter-spacing: -.03em; color: #fff; }
+        .sc-sw-head p { margin: 6px 0 0; font-size: 18px; line-height: 1.3; font-weight: 600; overflow-wrap: anywhere; color: rgba(255,255,255,.92); }
+        .sc-sw--ok { background: var(--sc-ok); }
+        .sc-sw--exist { background: var(--sc-exist); }
+        .sc-sw--bad { background: var(--sc-bad); }
+        .sc-sw-body { padding: 16px 22px 12px; }
+        .sc-sw-body dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 10px 16px; font-size: 15px; }
+        .sc-sw-body dt { color: var(--muted-foreground); }
+        .sc-sw-body dd { margin: 0; color: var(--foreground); font-weight: 600; overflow-wrap: anywhere; }
+        @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
     </style>
 </head>
-<body class="bg-body-tertiary">
+<body class="min-h-svh bg-background text-foreground">
 
-<div class="container-xl py-5">
-    <input type="hidden" id="flg" value="0"/>
-    <div class="row mt-3">
-        <div class="col-xl-6 col-lg-12 mx-auto ">
-            <h1 class="mb-3 text-center">{{ name }}</h1>
-
-            <div class="d-flex justify-content-center align-items-center mb-3">
-                <button id="start-scan-btn">Scan QR Code</button>
-            </div>
-            <div id="reader" class="ratio ratio-1x1" style=" background-color: aquamarine;display: none"></div>
-
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <div class="form-check form-switch m-0">
-                    <input class="form-check-input" type="checkbox" id="printLabelToggle" checked>
-                    <label class="form-check-label" for="printLabelToggle">Print badge label on scan</label>
-                </div>
-                <button class="btn btn-sm btn-outline-secondary" type="button" id="testPrintBtn">
-                    Test print
-                </button>
-            </div>
-
-            <div class="nb-3">
-                <label for="Code" class="form-label">Code</label>
-                <input name="code" id="code" class="form-control" placeholder="Code" autofocus/>
-            </div>
-            <div class="nb-3 mt-4">
-                <label for="remark" class="form-label">Remark (Optional)</label>
-                <textarea name="remark" id="remark" class="form-control" placeholder="" rows="5" ></textarea>
-            </div>
+<header class="sticky top-0 z-20 border-b bg-[var(--sidebar)] text-white" style="padding-top: env(safe-area-inset-top)">
+    <div class="mx-auto flex h-14 max-w-xl items-center gap-3 px-4 lg:max-w-5xl">
+        <img src="{% static 'user/img/PIKOM.png' %}" alt="PIKOM" class="h-11 w-auto shrink-0">
+        <span class="h-6 w-px bg-white/15" aria-hidden="true"></span>
+        <div class="min-w-0 flex-1">
+            <p class="font-medium text-[11px] font-semibold uppercase leading-tight tracking-[.16em] text-[#8EA3C8]"><b class="text-[#2F7CF6]">[Live]</b> On-site check-in</p>
+            <h1 class="truncate font-semibold text-[15px] font-bold leading-tight tracking-tight">{{ name }}</h1>
         </div>
+        <span class="hidden items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-[#C9D5EC] min-[380px]:inline-flex" id="scNet"><span class="size-1.5 rounded-full bg-[#3FCB97]"></span>Online</span>
+        <button type="button" class="grid size-10 shrink-0 place-items-center rounded-lg text-[#C9D5EC] hover:bg-white/10" data-pk-theme-toggle aria-label="Toggle dark mode"><i data-lucide="sun-moon" class="size-5"></i></button>
     </div>
-</div>
+</header>
+
+<main class="mx-auto grid max-w-xl gap-3 px-4 pb-10 pt-4 sm:pt-6 lg:max-w-5xl lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:items-start lg:gap-5 lg:pt-8" style="padding-bottom: max(2.5rem, env(safe-area-inset-bottom))">
+    <input type="hidden" id="flg" value="0"/>
+
+    <div class="grid min-w-0 gap-3 lg:gap-5">
+    <section id="message" class="sc-result flex min-h-44 items-center gap-4 rounded-2xl border bg-card p-5 shadow-xs" data-state="idle" role="status" aria-live="assertive" aria-atomic="true">
+        <div class="sc-result-ico grid size-16 shrink-0 place-items-center rounded-full bg-accent text-primary"><i data-lucide="scan-line"></i></div>
+        <div class="min-w-0">
+            <p class="sc-result-kicker pk-micro mb-1">Check-in status</p>
+            <p class="sc-result-state font-semibold text-[1.85rem] font-extrabold leading-[1.05] tracking-[-.03em]">Ready to scan</p>
+            <p class="sc-result-name mt-1 text-lg font-semibold leading-snug [overflow-wrap:anywhere]" hidden></p>
+            <p class="sc-result-meta mt-1 text-[15px] leading-snug text-muted-foreground [overflow-wrap:anywhere]">Scan a delegate's QR code, or type their registration code below.</p>
+        </div>
+    </section>
+
+    <section class="card gap-0 p-4">
+        <label for="code" class="pk-micro mb-2.5"><b>[01]</b> Registration code</label>
+        <div class="relative">
+            <i data-lucide="qr-code" class="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"></i>
+            <input name="code" id="code" class="input !h-14 !rounded-xl pl-12 !text-lg font-semibold tracking-wide" placeholder="Scan or type a code" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="go" autofocus/>
+            <kbd class="kbd pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 sm:inline-flex">Enter</kbd>
+        </div>
+        <p class="mt-2.5 flex items-start gap-2 text-[13px] leading-snug text-muted-foreground"><i data-lucide="keyboard" class="mt-px size-4 shrink-0"></i>Handheld scanners type into this box automatically. Typing by hand? Press Enter to check in.</p>
+    </section>
+
+    <section class="card gap-0 p-3">
+        <span class="pk-micro mb-2.5 px-1 pt-1"><b>[02]</b> Camera</span>
+        <button id="start-scan-btn" class="btn !h-14 w-full !rounded-xl !text-base" type="button" aria-pressed="false" aria-controls="reader">
+            <span class="sc-btn-ico contents"><i data-lucide="camera" class="!size-5"></i></span><span class="sc-btn-lbl">Scan with camera</span>
+        </button>
+        <div id="reader" class="mt-3" hidden></div>
+    </section>
+
+    </div>
+
+    <div class="grid min-w-0 gap-3 lg:gap-5">
+    <section class="card gap-0 p-0">
+        <span class="pk-micro px-4 pt-3.5"><b>[03]</b> Badges</span>
+        <div class="flex items-center justify-between gap-3 px-4 py-3">
+            <label class="flex min-h-11 flex-1 cursor-pointer items-center gap-3" for="printLabelToggle">
+                <span class="icon-chip"><i data-lucide="printer"></i></span>
+                <span class="min-w-0">
+                    <span class="block text-[15px] font-medium leading-tight">Print badge on check-in</span>
+                    <span class="block text-[13px] text-muted-foreground">Uses this device's default printer</span>
+                </span>
+            </label>
+            <input type="checkbox" role="switch" class="input scale-125" id="printLabelToggle" checked>
+        </div>
+        <div class="flex items-center justify-between gap-3 border-t px-4 py-2.5">
+            <span class="text-[13px] text-muted-foreground">Check alignment before doors open</span>
+            <button class="btn h-10" data-variant="outline" type="button" id="testPrintBtn"><i data-lucide="file-check-2"></i>Test print</button>
+        </div>
+    </section>
+
+    <section class="card gap-0 p-4">
+        <label for="remark" class="pk-micro mb-2.5"><b>[04]</b> Activity log</label>
+        <textarea name="remark" id="remark" rows="2" readonly placeholder="The last scan appears here." class="textarea min-h-0 resize-none lg:min-h-48 bg-muted/50 font-mono text-[13px] text-muted-foreground"></textarea>
+    </section>
+    </div>
+</main>
 
 <!-- Hidden iframe used to push individual label print jobs to the OS
      printer dialog. The browser's selected printer (configured once on the
@@ -113,76 +145,18 @@
 <iframe id="labelPrintFrame" title="Label print frame"
         style="position:fixed; right:0; bottom:0; width:0; height:0; border:0; visibility:hidden;"></iframe>
 
-<script src="{% static 'user/js/jquery-3.7.1.min.js' %}"></script>
-<script src="{% static 'user/js/bootstrap.bundle.min.js' %}"></script>
-<!--script>
-    const startScanBtn = document.getElementById("start-scan-btn");
-    const reader = document.getElementById("reader");
-    const message = document.getElementById("message");
-    const result = document.getElementById("remark");
-    const html5QrCode = new Html5Qrcode("reader");
-    const codeinput = document.getElementById('code');
-
-    let isScanning = false;
-
-    startScanBtn.addEventListener("click", () => {
-        result.innerText = "";
-        reader.style.display = "block";
-        startScanBtn.style.display = "none";
-        isScanning = true;
-
-        html5QrCode.start(
-            { facingMode: "environment" },
-            {
-                fps: 10,
-                qrbox: 250
-            },
-            (decodedText) => {
-                if (!isScanning) return;
-
-                isScanning = false;
-                html5QrCode.stop().then(() => {
-                    reader.style.display = "none";
-                    startScanBtn.style.display = "inline-block";
-
-                    $('#code').val(decodedText);
-                    validate(decodedText);
-
-                }).catch(err => {
-                    console.error("Failed to stop camera:", err);
-                });
-            },
-            (errorMsg) => {
-                // Ignore scan failures silently
-            }
-        ).catch(err => {
-            console.error("Unable to start scanning:", err);
-            result.innerText = "Camera error. Please try again.";
-            reader.style.display = "none";
-            startScanBtn.style.display = "inline-block";
-        });
-    });
-
-    function validate(decodedText){
-        fetch(`{{ validate_endpoint|default:'/validate/' }}${decodedText}`)
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.message)
-                                result.innerText = data.message;
-                            codeinput.value='';
-                            codeinput.focus();
-                        })
-                        .catch(err => {
-                            result.innerText = "Error validating QR code.";
-                            console.error(err);
-                        });
-    }
-
-    codeinput.addEventListener('change', function() {
-        console.log('Value committed:', codeinput.value);
-        validate(codeinput.value)
-    });
-</script-->
+<script>
+    // Lucide icons + theme toggle + connection pill (UI only)
+    const pkIcon = (host, name) => { host.innerHTML = '<i data-lucide="' + name + '"></i>'; if (window.lucide) lucide.createIcons({ attrs: { 'stroke-width': 1.9 }, root: host }); };
+    if (window.lucide) lucide.createIcons({ attrs: { 'stroke-width': 1.9 } });
+    document.querySelectorAll('[data-pk-theme-toggle]').forEach(b => b.addEventListener('click', () => {
+        const d = document.documentElement.classList.toggle('dark');
+        try { localStorage.setItem('pk-theme', d ? 'dark' : 'light'); } catch (_) {}
+    }));
+    const netPill = document.getElementById('scNet');
+    const paintNet = () => { netPill.innerHTML = navigator.onLine ? '<span class="size-1.5 rounded-full bg-[#3FCB97]"></span>Online' : '<span class="size-1.5 rounded-full bg-[#F0627C]"></span>Offline'; };
+    window.addEventListener('online', paintNet); window.addEventListener('offline', paintNet); paintNet();
+</script>
 <script>
     // --- Config ---
     const POST_URL = "/api/attendance/scan/";
@@ -197,10 +171,45 @@
     };
     const statusEl = document.getElementById("remark");
     const scanInput = document.getElementById("code");
-    const focusBack = () => setTimeout(() => scanInput.focus(), 0);
+    let cameraOn = false;
+    // While the camera is open, don't pull focus to the input (that would pop
+    // the on-screen keyboard over the viewfinder on phones).
+    const focusBack = () => setTimeout(() => { if (!cameraOn) scanInput.focus(); }, 0);
     const show = (msg) => {
         statusEl.innerText = msg;
     };
+
+    // Registrant names come from public form input: escape before using as HTML.
+    const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    // Big glanceable result panel (#message). state: idle|busy|ok|exist|blocked|invalid|error
+    const RESULT_ICON = { idle: 'scan-line', busy: 'loader-circle', ok: 'circle-check-big', exist: 'history', blocked: 'ban', invalid: 'circle-help', error: 'wifi-off' };
+    function setResult(state, title, name, meta) {
+        const box = document.getElementById('message');
+        box.dataset.state = state;
+        pkIcon(box.querySelector('.sc-result-ico'), RESULT_ICON[state] || 'info');
+        box.querySelector('.sc-result-state').textContent = title;
+        const n = box.querySelector('.sc-result-name');
+        n.textContent = name || ''; n.hidden = !name;
+        box.querySelector('.sc-result-meta').textContent = meta || '';
+    }
+    const metaLine = (d) => [d.organization, d.reg_no ? 'Ref ' + d.reg_no : ''].filter(Boolean).join(' · ');
+
+    // Blocking result popup (operator taps "Next scan" / scanner sends Enter).
+    function resultPopup(tone, icon, title, data, rows) {
+        const dl = rows.filter(r => r[1]).map(r => `<dt>${esc(r[0])}</dt><dd>${esc(r[1])}</dd>`).join('');
+        return Swal.fire({
+            html: `<div class="sc-sw-head sc-sw--${tone}">
+                     <span class="sc-sw-ico" aria-hidden="true"><i data-lucide="${icon}"></i></span>
+                     <h2>${esc(title)}</h2>${data.name ? `<p>${esc(data.name)}</p>` : ''}
+                   </div>${dl ? `<div class="sc-sw-body"><dl>${dl}</dl></div>` : ''}`,
+            confirmButtonText: 'Next scan',
+            customClass: { popup: 'sc-swal' },
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: (el) => { if (window.lucide) lucide.createIcons({ attrs: { 'stroke-width': 2 }, root: el }); },
+        });
+    }
 
     // --- Queue state ---
     const q = [];
@@ -388,24 +397,20 @@
 
         const endpoint = `{{ validate_endpoint|default:'/validate/' }}${decodedText}`;
 
+        setResult('busy', 'Checking…', '', decodedText);
         try {
             const res = await fetch(endpoint, { signal: ctrl.signal });
-            const data = await res.json();
+            // A non-UUID code 404s with an HTML page: treat it as an unknown code, not a network error.
+            const data = await res.json().catch(() => ({ message: res.status === 404 ? 'Invalid QR code.' : '' }));
 
             // Blocked: delegate exists but isn't approved. Show a red alert,
             // don't print a label, don't mark them as checked in.
             if (data && data.typ === 'blocked') {
-                await Swal.fire({
-                    title: 'Not approved',
-                    html: `<div style="text-align:left;">
-                            <p><strong>${data.name || 'Delegate'}</strong>${data.reg_no ? ' (' + data.reg_no + ')' : ''} is not approved for this event.</p>
-                            <p class="text-muted small mb-0">Status: ${data.status || 'unknown'}</p>
-                          </div>`,
-                    icon: 'error',
-                    confirmButtonText: 'OK',
-                    allowOutsideClick: false,
-                    allowEscapeKey: false,
-                });
+                const status = data.status ? data.status.charAt(0).toUpperCase() + data.status.slice(1) : 'Unknown';
+                setResult('blocked', 'Not approved', data.name || 'Delegate', `Do not admit. Status: ${status}` + (data.reg_no ? ` · Ref ${data.reg_no}` : ''));
+                await resultPopup('bad', 'ban', 'Not approved', data, [
+                    ['Status', status], ['Company', data.organization], ['Ref', data.reg_no],
+                    ['Next step', 'Do not admit. Refer to the registration desk.']]);
                 flagElement.value = "0";
                 processQueue();
                 return;
@@ -416,44 +421,29 @@
             // while the operator reads the screen.
             if (data && (data.typ === 'new' || data.typ === 'exist')) {
                 printLabel(data);
+                if (data.typ === 'new') setResult('ok', 'Checked in', data.name, metaLine(data));
+                else setResult('exist', 'Already checked in', data.name, metaLine(data) || 'This code was scanned before.');
             }
 
             const promptInfo = data && data.prompt_checkin_info === '1';
-            const summaryHtml = `
-                <div style="font-size: 1.05rem; color:#444; text-align:left; line-height:1.5;">
-                    <p style="margin: 16px 0 8px 0;"><strong>Name:</strong><br>${data.name || ''}</p>
-                    <p style="margin: 0 0 8px 0;"><strong>Company:</strong><br>${data.organization || ''}</p>
-                    ${data.reg_no ? `<p style="margin: 0; color:#666; font-size:.9rem;">Ref: ${data.reg_no}</p>` : ''}
-                </div>`;
 
             if (data && data.message && (promptInfo || data.typ === 'new' || data.typ === 'exist')) {
-                await Swal.fire({
-                    title: `<span style="font-size: 1.3rem; font-weight: 600; color:#333;">${data.message}</span>`,
-                    html: summaryHtml,
-                    icon: data.typ === 'new' ? 'success' : 'info',
-                    confirmButtonText: 'OK',
-                    confirmButtonColor: '#3085d6',
-                    width: '420px',
-                    customClass: { popup: 'swal2-rounded swal2-shadow' },
-                    allowOutsideClick: false,
-                    allowEscapeKey: false,
-                });
+                const isNew = data.typ === 'new';
+                await resultPopup(isNew ? 'ok' : 'exist', isNew ? 'circle-check-big' : 'history',
+                    isNew ? 'Checked in' : 'Already checked in', data, [
+                    ['Company', data.organization], ['Ref', data.reg_no], ['Remarks', data.remarks],
+                    ['Note', isNew ? '' : 'This code was scanned before. Badge reprinted if printing is on.']]);
                 flagElement.value = "0";
                 processQueue();
             } else {
                 if (data && data.message) show(data.message);
+                setResult('invalid', 'Code not recognised', '', (data && data.message ? data.message + ' ' : '') + 'Check the code, or send the guest to the registration desk.');
                 flagElement.value = "0";
                 processQueue();
             }
         } catch (err) {
-            await Swal.fire({
-                title: 'Error',
-                text: "Error validating QR code.",
-                icon: 'error',
-                confirmButtonText: 'OK',
-                allowOutsideClick: false,
-                allowEscapeKey: false
-            });
+            setResult('error', 'Could not check in', '', 'No response from the server. Check the connection and scan again.');
+            await resultPopup('bad', 'wifi-off', 'Could not check in', {}, [['Reason', 'No response from the server. Check the connection and scan again.']]);
             console.error(err);
             flagElement.value = "0";
 
@@ -534,6 +524,41 @@
 
 
 
+
+    // --- Camera scanning (phones without a hardware scanner) ---
+    const camBtn = document.getElementById('start-scan-btn');
+    const reader = document.getElementById('reader');
+    let qr = null;
+    async function stopCamera() {
+        if (qr && cameraOn) { try { await qr.stop(); } catch (e) {} }
+        cameraOn = false;
+        reader.hidden = true;
+        camBtn.setAttribute('aria-pressed', 'false');
+        camBtn.querySelector('.sc-btn-lbl').textContent = 'Scan with camera';
+        pkIcon(camBtn.querySelector('.sc-btn-ico'), 'camera');
+    }
+    camBtn.addEventListener('click', () => {
+        if (cameraOn) { stopCamera().then(focusBack); return; }
+        if (typeof Html5Qrcode === 'undefined') {
+            setResult('error', 'Camera unavailable', '', 'The camera scanner could not load. Type the code instead.');
+            return;
+        }
+        qr = qr || new Html5Qrcode('reader');
+        cameraOn = true;
+        reader.hidden = false;
+        scanInput.blur();
+        camBtn.setAttribute('aria-pressed', 'true');
+        camBtn.querySelector('.sc-btn-lbl').textContent = 'Stop camera';
+        pkIcon(camBtn.querySelector('.sc-btn-ico'), 'video-off');
+        qr.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 240, height: 240 } },
+            (decodedText) => { stopCamera(); enqueue(decodedText.trim()); },
+            () => {} // ignore per-frame misses
+        ).catch(err => {
+            console.error('Unable to start camera:', err);
+            stopCamera();
+            setResult('error', 'Camera unavailable', '', 'Allow camera access in the browser, or type the code instead.');
+        });
+    });
 
     focusBack();
 </script>

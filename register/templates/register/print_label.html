@@ -10,22 +10,15 @@
          }
          html,
          body {
-            margin: 0;
-            padding: 0;
-         }
-         * {
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-         }
-         body {
-            font-family: Arial, Helvetica, sans-serif;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
             color: #000;
          }
+         /* 70x50mm badge: name is the hero, organisation sits under a short rule. */
          .label {
             width: 70mm;
             height: 50mm;
             box-sizing: border-box;
-            padding: 3mm;
+            padding: 4mm 4.5mm;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -38,21 +31,34 @@
             page-break-after: auto;
          }
          .event {
-            font-size: 8pt;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
+            font-size: 7pt;
+            letter-spacing: 0.06em;
             margin-bottom: 2mm;
          }
          .name {
-            font-size: 18pt;
+            width: 100%;
+            font-size: 20pt;
             font-weight: 700;
-            line-height: 1.00;
-            word-break: break-word;
+            line-height: 1.05;
+            letter-spacing: -0.01em;
+            overflow-wrap: normal;
+            word-break: normal;
+            max-height: 2.2em;
          }
          .org {
-            font-size: 14pt;
-            margin-top: 2mm;
-            word-break: break-word;
+            width: 100%;
+            font-size: 11pt;
+            font-weight: 500;
+            line-height: 1.2;
+            overflow-wrap: anywhere;
+         }
+         .org:not(:empty)::before {
+            content: "";
+            display: block;
+            width: 10mm;
+            height: 0.5mm;
+            background: #000;
+            margin: 2.5mm auto 2.5mm;
          }
       </style>
    </head>
@@ -64,10 +70,11 @@
       </div>
       <script>
          window.onload = function () {
+            // Shrink the name until no word overflows and it fits on two lines.
             document.querySelectorAll(".name").forEach(function (el) {
                var s = 20;
                el.style.fontSize = s + "pt";
-               while (el.scrollWidth > el.clientWidth && s > 9) {
+               while ((el.scrollWidth > el.clientWidth || el.scrollHeight > el.clientHeight + 1) && s > 9) {
                   s -= 0.5;
                   el.style.fontSize = s + "pt";
                }

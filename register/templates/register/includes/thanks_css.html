@@ -1,0 +1,66 @@
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap">
+  <style>
+    /* Confirmation page — Savi-like: white page, soft grey panel, event --theme drives the accent. */
+    :root { --navy: #0A2154; --ink: #0A2154; --muted: #5B6683; --line: #E3E8F2; --panel: #F5F7FB; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body { background: #fff; color: var(--ink); font-family: "DM Sans", system-ui, sans-serif; font-size: 16px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+    .ty-top { border-top: 4px solid var(--theme); border-bottom: 1px solid var(--line); }
+    .ty-top div { max-width: 72rem; margin: 0 auto; height: 5rem; padding: 0 1rem; display: flex; align-items: center; gap: .625rem; font-weight: 600; font-size: .95rem; }
+    .ty-top img { width: auto; height: 3.5rem; object-fit: contain; padding: .35rem .6rem !important; border: 1px solid var(--line); border-radius: .55rem; padding: .2rem; }
+    main { max-width: 38rem; margin: 0 auto; padding: 3rem 1rem 2.5rem; }
+    .ty-panel { background: var(--panel); border-radius: 1.5rem; padding: 2.75rem 2.5rem 2.25rem; }
+    .ty-head { text-align: center; }
+    .ty-badge { width: 5.25rem; height: 5.25rem; margin: 0 auto; border-radius: 50%; display: grid; place-items: center; background: var(--theme); color: #fff;
+      box-shadow: 0 0 0 10px color-mix(in srgb, var(--theme) 13%, transparent), 0 18px 36px -14px color-mix(in srgb, var(--theme) 70%, transparent); }
+    .ty-badge svg { width: 2.6rem; height: 2.6rem; }
+    .ty-badge path { stroke-dasharray: 30; stroke-dashoffset: 0; }
+    .ty-event { margin: 1.75rem 0 0; color: var(--theme); font-weight: 600; font-size: .95rem; }
+    h1 { margin: .5rem 0 0; font-size: clamp(1.9rem, 5.5vw, 2.5rem); line-height: 1.12; letter-spacing: -.02em; font-weight: 700; color: var(--navy); text-wrap: balance; }
+    .ty-sub { margin: .25rem 0 0; font-size: 1.05rem; font-weight: 500; color: var(--navy); }
+    .ty-lead { margin: .75rem auto 0; max-width: 28rem; color: var(--muted); }
+    .ty-lead strong { color: var(--navy); font-weight: 600; }
+    .ty-ref { margin-top: 1.75rem; background: #fff; border: 1px solid var(--line); border-radius: 1rem; padding: 1rem 1rem 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    .ty-ref small { display: block; color: var(--muted); font-size: .85rem; }
+    .ty-ref b { display: block; font-size: 1.6rem; font-weight: 700; letter-spacing: .01em; font-variant-numeric: tabular-nums; color: var(--navy); word-break: break-all; }
+    .ty-copy { flex-shrink: 0; display: inline-flex; align-items: center; gap: .4rem; min-height: 2.75rem; padding: 0 1rem; border-radius: .75rem; border: 1px solid color-mix(in srgb, var(--theme) 35%, var(--line));
+      background: var(--theme-soft); color: var(--theme); font: 600 .9rem "DM Sans", sans-serif; cursor: pointer; }
+    .ty-copy:hover { background: color-mix(in srgb, var(--theme) 16%, #fff); }
+    .ty-copy:focus-visible { outline: 3px solid color-mix(in srgb, var(--theme) 40%, transparent); outline-offset: 2px; }
+    .ty-copy svg { width: 1rem; height: 1rem; }
+    .ty-card { margin-top: 1rem; background: #fff; border: 1px solid var(--line); border-radius: 1rem; padding: 1.25rem; }
+    h2 { margin: 0 0 .9rem; font-size: 1rem; font-weight: 700; color: var(--navy); }
+    .ty-details { margin: 0; display: grid; gap: .7rem; }
+    .ty-details div { display: grid; grid-template-columns: 5.5rem 1fr; gap: .75rem; font-size: .95rem; }
+    .ty-details dt { color: var(--muted); }
+    .ty-details dd { margin: 0; font-weight: 500; overflow-wrap: anywhere; }
+    .ty-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; counter-reset: s; }
+    .ty-steps li { display: grid; grid-template-columns: 2rem 1fr; gap: .85rem; counter-increment: s; }
+    .ty-steps li::before { content: counter(s); width: 2rem; height: 2rem; border-radius: 50%; display: grid; place-items: center; background: var(--theme-soft); color: var(--theme); font-weight: 700; font-size: .9rem; }
+    .ty-steps p { margin: 0; font-size: .95rem; color: var(--muted); overflow-wrap: anywhere; }
+    .ty-steps p b { display: block; color: var(--navy); font-weight: 600; }
+    .ty-rows { display: grid; gap: .55rem; font-size: .95rem; }
+    .ty-row { display: flex; justify-content: space-between; gap: 1rem; }
+    .ty-row span:first-child { color: var(--muted); }
+    .ty-row span:last-child { font-weight: 500; text-align: right; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .ty-total { margin-top: .9rem; padding-top: .9rem; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+    .ty-total b { font-size: 1.45rem; color: var(--theme); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .ty-slot { display: inline-grid; place-items: center; width: 1.6rem; height: 1.6rem; margin-right: .5rem; border-radius: 50%; background: var(--theme-soft); color: var(--theme); font-size: .8rem; font-weight: 700; }
+    .ty-tag { margin-left: .35rem; padding: .05rem .45rem; border-radius: .4rem; background: var(--panel); border: 1px solid var(--line); font-size: .8rem; color: var(--muted); }
+    .ty-close { margin: 1.5rem 0 0; text-align: center; color: var(--muted); font-size: .95rem; }
+    .ty-foot { margin: 1.75rem 0 0; text-align: center; color: var(--muted); font-size: .8rem; }
+    @media (max-width: 480px) {
+      main { padding: 1.25rem 1rem 2rem; }
+      .ty-panel { padding: 2rem 1.25rem 1.5rem; border-radius: 1.25rem; }
+      .ty-badge { width: 4.5rem; height: 4.5rem; }
+      .ty-ref b { font-size: 1.35rem; }
+      .ty-details div { grid-template-columns: 1fr; gap: .1rem; }
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .ty-badge { animation: ty-pop .5s cubic-bezier(.16,1,.3,1) both; }
+      .ty-badge path { stroke-dashoffset: 30; animation: ty-draw .45s .3s ease-out forwards; }
+      @keyframes ty-pop { from { transform: scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
+      @keyframes ty-draw { to { stroke-dashoffset: 0; } }
+    }
+  </style>

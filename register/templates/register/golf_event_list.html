@@ -1,234 +1,301 @@
 {% extends 'register/base.html' %}
 {% load static %}
 
+{% block title %}Golf events · PIKOM Events{% endblock %}
+
+{% block crumbs %}<ol><li><a href="{% url 'golf_event_list' %}">Golf</a></li><li><i data-lucide="chevron-right"></i></li><li aria-current="page">Golf events</li></ol>{% endblock %}
+
+{% block extracss %}
+<style>
+  /* DataTables (Bootstrap 5 integration markup) toolbar rows -> shadcn toolbar */
+  .dt-container > .row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .625rem; padding: .75rem 1rem; margin: 0; }
+  .dt-container > .row.dt-layout-table { display: block; padding: 0; border-top: 1px solid var(--border); }
+  .dt-container > .row:last-child { border-top: 1px solid var(--border); }
+  .dt-container .dt-layout-start, .dt-container .dt-layout-end { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+  .dt-container .dt-layout-end { margin-left: auto; }
+  .dt-container .dt-search input { width: 16rem; max-width: 100%; padding-left: 2.1rem; background: var(--background) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2393A4C3' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") .7rem center/1rem no-repeat; }
+  .dt-container .dt-length { display: inline-flex; align-items: center; gap: .4rem; }
+  .dt-container .dt-buttons .btn > span { display: inline-flex; align-items: center; gap: .375rem; }
+  @media (max-width: 640px) { .dt-container .dt-layout-start, .dt-container .dt-layout-end, .dt-container .dt-search, .dt-container .dt-search input { width: 100%; } .dt-container .dt-layout-end { margin-left: 0; } }
+  .was-validated .input:invalid, .input.is-invalid { border-color: var(--destructive); }
+  .invalid-feedback { display: none; font-size: .8125rem; color: var(--destructive); }
+  .was-validated .input:invalid ~ .invalid-feedback, .input.is-invalid ~ .invalid-feedback { display: block; }
+  #golfEvents td { vertical-align: middle; }
+  .dt-container .dt-scroll-body, table.dataTable.no-footer { border-bottom: 0 !important; }
+
+  /* fix: with only a few rows the table leaves the page empty, so they are also shown as cards */
+  .gx-cards { display: grid; gap: 1rem; margin-bottom: 2rem; }
+  @media (min-width: 1024px) { .gx-cards.n-2 { grid-template-columns: 1fr 1fr; } }
+  .gx-card { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 1.25rem 1.5rem; padding: 1.5rem; position: relative; overflow: hidden; }
+  .gx-card { border-radius: 1.1rem; border-color: #E6ECF8; box-shadow: 0 16px 36px -26px rgba(30,60,140,.35); }
+  .gx-date { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 5.25rem; padding: .75rem .5rem; border-radius: .875rem; background: var(--brand-navy); color: #fff; line-height: 1; }
+  .dark .gx-date { background: color-mix(in srgb, var(--primary) 70%, var(--card)); }
+  .gx-date .m { font-family: var(--font-label); font-size: .8rem; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--brand-orange); }
+  .gx-date .d { font-family: "DM Sans", var(--font-sans); font-size: 2.4rem; font-weight: 800; letter-spacing: -.04em; margin: .2rem 0; font-variant-numeric: tabular-nums; }
+  .gx-date .y { font-size: .75rem; opacity: .7; font-variant-numeric: tabular-nums; }
+  .gx-title { font-family: "DM Sans", var(--font-sans); font-size: 1.45rem; font-weight: 800; letter-spacing: -.03em; line-height: 1.15; margin: .35rem 0 .25rem; word-break: break-word; }
+  .gx-title a { color: var(--foreground); text-decoration: none; } .gx-title a:hover { color: var(--primary); }
+  .gx-sub { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .9rem; font-size: .8125rem; color: var(--muted-foreground); }
+  .gx-sub svg { width: .85rem; height: .85rem; }
+  .gx-stats { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); border-top: 1px solid var(--border); padding-top: 1rem; gap: 1rem; }
+  .gx-stat .lbl { font-family: var(--font-label); font-size: .72rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--muted-foreground); }
+  .gx-stat .val { font-family: "DM Sans", var(--font-sans); font-size: 1.5rem; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .gx-stat .val small { font-size: .8rem; font-weight: 500; color: var(--muted-foreground); letter-spacing: 0; margin-left: .25rem; }
+  .gx-stat a { font-size: .8125rem; font-weight: 500; color: var(--primary); text-decoration: none; display: inline-flex; align-items: center; gap: .3rem; }
+  .gx-stat a:hover { text-decoration: underline; text-underline-offset: 4px; } .gx-stat a svg { width: .85rem; height: .85rem; }
+  .gx-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: .5rem; }
+  @media (max-width: 575.98px) { .gx-card { grid-template-columns: 1fr; padding: 1.25rem; } .gx-date { flex-direction: row; gap: .5rem; justify-content: flex-start; padding: .5rem .75rem; width: fit-content; } .gx-date .d { font-size: 1.5rem; margin: 0; } .gx-actions .btn { flex: 1; } }
+</style>
+{% endblock %}
+
 {% block content %}
-<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
-  <div class="container-fluid py-2">
+<input type="hidden" id="perm" value="{% if user.is_superuser %}True{% else %}False{% endif %}">
+{% comment %}Guarantees Django sets the csrftoken cookie, so the AJAX saves
+on this page work even in a session that never posted a form.{% endcomment %}
+<form id="csrfHolder" style="display:none">{% csrf_token %}</form>
 
-    <input type="hidden" id="perm" value="{% if user.is_superuser %}True{% else %}False{% endif %}">
-    {% comment %}Guarantees Django sets the csrftoken cookie, so the AJAX saves
-    on this page work even in a session that never posted a form.{% endcomment %}
-    <form id="csrfHolder" style="display:none">{% csrf_token %}</form>
-
-
-    <div class="row">
-      <div class="col-8 d-flex justify-content-start align-items-center gap-2">
-        <div class="ms-3">
-          <h3 class="mb-0 h4 font-weight-bolder opacity-7">
-            <i class="ti ti-golf"></i> Golf Events
-          </h3>
-          <nav aria-label="breadcrumb m-0">
-            <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
-              <li class="breadcrumb-item text-sm">
-                <a class="opacity-5 text-dark" href="javascript:;">Golf tournaments and their registration / sponsor forms</a>
-              </li>
-            </ol>
-          </nav>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-12">
-      <div class="card my-2">
-        <div class="card-body px-0 pb-2">
-          <div class="table-responsive p-0">
-            <table id="golfEvents" class="table align-items-center mb-0">
-              <thead>
-                <tr>
-                  <th data-col-key="title" data-filter="text" class="text-uppercase text-secondary text-sm font-weight-bolder">Event Title</th>
-                  <th data-col-key="start" data-filter="date" class="text-uppercase text-secondary text-sm font-weight-bolder">Start Date</th>
-                  <th data-col-key="end" data-filter="date" class="text-uppercase text-secondary text-sm font-weight-bolder">End Date</th>
-                  <th data-col-key="forms" data-filter="number" class="text-uppercase text-secondary text-sm font-weight-bolder">Forms</th>
-                  <th data-col-key="status" data-filter="choice" class="text-uppercase text-secondary text-sm font-weight-bolder">Status</th>
-                  <th class="text-uppercase text-secondary text-sm font-weight-bolder"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for event in events %}
-                  <tr>
-                    <td>
-                      <div class="d-flex px-2 py-1">
-                        <div class="d-flex flex-column justify-content-center">
-                          {% if event.participant_form %}
-                            <a href="{% url 'golf_submission_list' event.participant_form.id %}" class="nav-link text-body p-0" title="View registered flights">
-                              <h6 class="mb-0 text-xs">{{ event.title }}</h6>
-                            </a>
-                          {% else %}
-                            <h6 class="mb-0 text-xs">{{ event.title }}</h6>
-                          {% endif %}
-                          <span class="text-xxs text-secondary">
-                            <span class="d-inline-block rounded-circle me-1" style="width:8px;height:8px;background:{{ event.theme }};"></span>
-                            {{ event.venue|default:"No venue set"|truncatechars:60 }}
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-                    <td><p class="text-xs font-weight-bold mb-0">{{ event.start_date|date:"Y-m-d h:i A" }}</p></td>
-                    <td><p class="text-xs font-weight-bold mb-0">{{ event.end_date|date:"Y-m-d h:i A" }}</p></td>
-                    <td>
-                      <div class="d-flex flex-column gap-1">
-                        {% if event.participant_form %}
-                          <a href="{% url 'golf_form_builder' event.participant_form.id %}"
-                             class="badge bg-gradient-info text-white text-xxs" title="Build the registration form">
-                            Registration
-                          </a>
-                        {% else %}
-                          <a href="{% url 'golf_participant_form_list' %}?for_event={{ event.id }}"
-                             class="badge bg-light text-dark text-xxs" title="No registration form yet — click to create one">
-                            + Registration
-                          </a>
-                        {% endif %}
-                        {% if event.sponsor_form %}
-                          <a href="{% url 'golf_form_builder' event.sponsor_form.id %}"
-                             class="badge bg-gradient-warning text-white text-xxs" title="Build the sponsor form">
-                            Sponsor
-                          </a>
-                        {% else %}
-                          <a href="{% url 'golf_sponsor_form_list' %}?for_event={{ event.id }}"
-                             class="badge bg-light text-dark text-xxs" title="No sponsor form yet — click to create one">
-                            + Sponsor
-                          </a>
-                        {% endif %}
-                      </div>
-                    </td>
-                    <td class="align-middle text-center text-sm">
-                      {% if event.is_active %}
-                        <span class="badge badge-sm bg-gradient-success">Active</span>
-                      {% else %}
-                        <span class="badge badge-sm bg-gradient-danger">Inactive</span>
-                      {% endif %}
-                    </td>
-                    <td class="align-middle">
-                      <div class="d-flex gap-2 align-items-center">
-                        {% if event.participant_form %}
-                          <a href="{% url 'golf_submission_list' event.participant_form.id %}" class="text-body p-0" title="View registered flights">
-                            <i class="material-symbols-rounded">visibility</i>
-                          </a>
-                          <a href="{% url 'golf_form_public' event.participant_form.public_ident %}" target="_blank" class="text-body p-0" title="Open the public registration page">
-                            <i class="material-symbols-rounded">public</i>
-                          </a>
-                        {% endif %}
-                        {% if event.sponsor_form %}
-                          <a href="{% url 'golf_form_public' event.sponsor_form.public_ident %}" target="_blank" class="text-body p-0" title="Open the public sponsor page">
-                            <i class="material-symbols-rounded">handshake</i>
-                          </a>
-                        {% endif %}
-                        <a href="javascript:void(0);" class="text-body p-0 edit-event-btn" data-id="{{ event.id }}" title="Edit">
-                          <i class="material-symbols-rounded">edit</i>
-                        </a>
-                        {% if user.is_superuser %}
-                          <a href="javascript:void(0);" class="text-danger p-0 delete-event-btn"
-                             data-id="{{ event.id }}" data-title="{{ event.title }}" title="Delete">
-                            <i class="material-symbols-rounded">delete</i>
-                          </a>
-                        {% endif %}
-                      </div>
-                    </td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-
+<header class="page-header animate-rise mb-6">
+  <div class="flex min-w-0 flex-col gap-2">
+    <span class="pk-pill">Tournaments</span>
+    <h1 class="page-title">Golf Events</h1>
+    <p class="page-description max-w-[60ch]">Each tournament has one player-registration form and one sponsorship form.</p>
   </div>
-</main>
+  {% if user.is_superuser %}
+  <div class="flex flex-wrap gap-2 max-sm:w-full">
+    <button type="button" class="btn max-sm:w-full" data-variant="cta" id="addGolfEventBtn"><i data-lucide="plus"></i> New Golf Event</button>
+  </div>
+  {% endif %}
+</header>
+
+{% if events and events|length < 5 %}
+<div class="mb-3"><span class="pk-sec">{% if events|length == 1 %}Your tournament{% else %}Your tournaments{% endif %}</span></div>
+<div class="gx-cards n-{{ events|length }} animate-rise animate-rise-1">
+  {% for event in events %}
+  {% with pf=event.participant_form sf=event.sponsor_form %}
+  <article class="card gx-card" aria-label="{{ event.title }}">
+    <div class="gx-date" aria-label="Event day {{ event.end_date|date:'j F Y' }}"><span class="m">{{ event.end_date|date:"M" }}</span><span class="d">{{ event.end_date|date:"j" }}</span><span class="y">{{ event.end_date|date:"Y" }}</span></div>
+    <div class="min-w-0">
+      <div class="flex flex-wrap items-center gap-2">
+        {% if event.is_active %}<span class="badge badge-success badge-dot" data-variant="soft">Active</span>{% else %}<span class="badge badge-muted badge-dot" data-variant="soft">Inactive</span>{% endif %}
+        <span class="size-2.5 shrink-0 rounded-full ring-1 ring-black/10" style="background:{{ event.theme }};" aria-hidden="true"></span>
+      </div>
+      <h2 class="gx-title">{% if pf %}<a href="{% url 'golf_submission_list' pf.id %}">{{ event.title }}</a>{% else %}{{ event.title }}{% endif %}</h2>
+      <div class="gx-sub">
+        <span class="inline-flex items-center gap-1"><i data-lucide="map-pin"></i>{{ event.venue|default:"No venue set"|truncatechars:80 }}</span>
+        <span class="inline-flex items-center gap-1 tabular-nums"><i data-lucide="calendar-clock"></i>Registration opens {{ event.start_date|date:"j M Y, g:i A" }}</span>
+      </div>
+    </div>
+    <div class="gx-stats">
+      <div class="gx-stat">
+        <div class="lbl">Player entries</div>
+        {% if pf %}
+          <div class="val">{{ pf.registrations.count }}<small>registration{{ pf.registrations.count|pluralize }}</small></div>
+          <a href="{% url 'golf_form_builder' pf.id %}"><i data-lucide="user-round-plus"></i>Player registration form</a>
+        {% else %}
+          <div class="val">—</div>
+          <a href="{% url 'golf_participant_form_list' %}?for_event={{ event.id }}"><i data-lucide="circle-plus"></i>Add registration form</a>
+        {% endif %}
+      </div>
+      <div class="gx-stat">
+        <div class="lbl">Sponsorships</div>
+        {% if sf %}
+          <div class="val">{{ sf.registrations.count }}<small>entr{{ sf.registrations.count|pluralize:"y,ies" }}</small></div>
+          <a href="{% url 'golf_form_builder' sf.id %}"><i data-lucide="handshake"></i>Sponsorship form</a>
+        {% else %}
+          <div class="val">—</div>
+          <a href="{% url 'golf_sponsor_form_list' %}?for_event={{ event.id }}"><i data-lucide="circle-plus"></i>Add sponsorship form</a>
+        {% endif %}
+      </div>
+    </div>
+    <div class="gx-actions">
+      {% if pf %}<a href="{% url 'golf_submission_list' pf.id %}" class="btn" data-size="sm"><i data-lucide="list-checks"></i> Player entries</a>{% endif %}
+      {% if sf %}<a href="{% url 'golf_submission_list' sf.id %}" class="btn" data-variant="outline" data-size="sm"><i data-lucide="handshake"></i> Sponsor entries</a>{% endif %}
+      <button type="button" class="btn edit-event-btn" data-variant="ghost" data-size="sm" data-id="{{ event.id }}" aria-label="Edit {{ event.title }}"><i data-lucide="pencil"></i> Edit event</button>
+    </div>
+  </article>
+  {% endwith %}
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="mb-3 flex items-end justify-between gap-3">
+  <span class="pk-sec">All tournaments</span>
+  <span class="text-xs text-muted-foreground tabular-nums">{{ events|length }} event{{ events|length|pluralize }}</span>
+</div>
+<div class="card p-0 gap-0 overflow-hidden shadow-xs animate-rise animate-rise-1">
+  <div class="overflow-x-auto">
+    <table id="golfEvents" class="table w-full">
+      <thead>
+        <tr>
+          <th data-col-key="title" data-filter="text">Event</th>
+          <th data-col-key="start" data-filter="date">Registration opens</th>
+          <th data-col-key="end" data-filter="date">Event day</th>
+          <th data-col-key="forms" data-filter="number">Forms</th>
+          <th data-col-key="status" data-filter="choice">Status</th>
+          <th><span class="visually-hidden">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for event in events %}
+          <tr>
+            <td class="min-w-56">
+              <div class="flex items-center gap-3">
+                <span class="size-2.5 shrink-0 rounded-full ring-1 ring-black/10" style="background:{{ event.theme }};" data-tooltip="Theme colour"></span>
+                <div class="min-w-0">
+                  {% if event.participant_form %}
+                    <a href="{% url 'golf_submission_list' event.participant_form.id %}" class="font-medium text-foreground hover:text-primary hover:underline underline-offset-4">{{ event.title }}</a>
+                  {% else %}
+                    <span class="font-medium">{{ event.title }}</span>
+                  {% endif %}
+                  <div class="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground"><i data-lucide="map-pin" class="!size-3"></i>{{ event.venue|default:"No venue set"|truncatechars:60 }}</div>
+                </div>
+              </div>
+            </td>
+            <td class="whitespace-nowrap tabular-nums" data-date="{{ event.start_date|date:'Y-m-d' }}" data-order="{{ event.start_date|date:'c' }}">
+              {{ event.start_date|date:"j M Y" }}<span class="block text-xs text-muted-foreground">{{ event.start_date|date:"g:i A" }}</span>
+            </td>
+            <td class="whitespace-nowrap tabular-nums" data-date="{{ event.end_date|date:'Y-m-d' }}" data-order="{{ event.end_date|date:'c' }}">
+              {{ event.end_date|date:"j M Y" }}<span class="block text-xs text-muted-foreground">{{ event.end_date|date:"g:i A" }}</span>
+            </td>
+            <td>
+              <div class="flex flex-col items-start gap-1.5">
+                {% if event.participant_form %}
+                  <a href="{% url 'golf_form_builder' event.participant_form.id %}" class="inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-medium text-primary hover:underline underline-offset-4" data-tooltip="Edit the player registration form">
+                    <i data-lucide="user-round-plus" class="!size-3.5"></i> Player registration
+                  </a>
+                {% else %}
+                  <a href="{% url 'golf_participant_form_list' %}?for_event={{ event.id }}" class="inline-flex items-center gap-1.5 whitespace-nowrap text-sm text-muted-foreground hover:text-primary" data-tooltip="No registration form yet">
+                    <i data-lucide="circle-plus" class="!size-3.5"></i> Add registration form
+                  </a>
+                {% endif %}
+                {% if event.sponsor_form %}
+                  <a href="{% url 'golf_form_builder' event.sponsor_form.id %}" class="inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-medium text-primary hover:underline underline-offset-4" data-tooltip="Edit the sponsorship form">
+                    <i data-lucide="handshake" class="!size-3.5"></i> Sponsorship
+                  </a>
+                {% else %}
+                  <a href="{% url 'golf_sponsor_form_list' %}?for_event={{ event.id }}" class="inline-flex items-center gap-1.5 whitespace-nowrap text-sm text-muted-foreground hover:text-primary" data-tooltip="No sponsorship form yet">
+                    <i data-lucide="circle-plus" class="!size-3.5"></i> Add sponsorship form
+                  </a>
+                {% endif %}
+              </div>
+            </td>
+            <td>
+              {% if event.is_active %}
+                <span class="badge badge-success badge-dot" data-variant="soft">Active</span>
+              {% else %}
+                <span class="badge badge-muted badge-dot" data-variant="soft">Inactive</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="flex items-center justify-end gap-0.5">
+                {% if event.participant_form %}
+                  <a href="{% url 'golf_submission_list' event.participant_form.id %}" class="btn" data-variant="ghost" data-size="icon-sm" data-tooltip="View entries" aria-label="View entries for {{ event.title }}"><i data-lucide="list-checks"></i></a>
+                  <a href="{% url 'golf_form_public' event.participant_form.public_ident %}" target="_blank" class="btn" data-variant="ghost" data-size="icon-sm" data-tooltip="Public registration page" aria-label="Open the public registration page"><i data-lucide="globe"></i></a>
+                {% endif %}
+                {% if event.sponsor_form %}
+                  <a href="{% url 'golf_form_public' event.sponsor_form.public_ident %}" target="_blank" class="btn" data-variant="ghost" data-size="icon-sm" data-tooltip="Public sponsorship page" aria-label="Open the public sponsorship page"><i data-lucide="external-link"></i></a>
+                {% endif %}
+                <button type="button" class="btn edit-event-btn" data-variant="ghost" data-size="icon-sm" data-id="{{ event.id }}" data-tooltip="Edit event" aria-label="Edit {{ event.title }}"><i data-lucide="pencil"></i></button>
+                {% if user.is_superuser %}
+                  <button type="button" class="btn delete-event-btn text-muted-foreground hover:text-destructive" data-variant="ghost" data-size="icon-sm"
+                     data-id="{{ event.id }}" data-title="{{ event.title }}" data-tooltip="Delete event" aria-label="Delete {{ event.title }}"><i data-lucide="trash-2"></i></button>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 
 <!-- Add / Edit Golf Event -->
 <div class="modal fade" id="addNewGolfEvent" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
      aria-labelledby="addNewGolfEventLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down">
     <div class="modal-content">
-      <form id="golfEventForm" novalidate>
+      <form id="golfEventForm" novalidate class="flex min-h-0 flex-1 flex-col">
         <div class="modal-header">
           <input type="hidden" id="golfEventID">
-          <h5 class="modal-title" id="addNewGolfEventLabel">Add New Golf Event</h5>
+          <div>
+            <h5 class="modal-title" id="addNewGolfEventLabel">New golf event</h5>
+            <p class="mt-1 text-sm text-muted-foreground">Shown on both public pages and in every email.</p>
+          </div>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-body">
-          <div class="row g-3">
-            <div class="col-12">
-              <div class="mb-3">
-                <label for="gevTitle" class="form-label">Golf Event Title</label>
-                <input type="text" class="form-control border border-1 rounded px-2 py-2" id="gevTitle"
-                       placeholder="e.g. PIKOM Golf Invitational &amp; Charity 2026" required>
-                <div class="invalid-feedback">Event title is required.</div>
-              </div>
+        <div class="modal-body flex flex-col gap-6">
+          <section class="flex flex-col gap-3">
+            <h6 class="pk-micro"><b>[01]</b> Event</h6>
+            <div class="field gap-2">
+              <label for="gevTitle" class="label">Event title</label>
+              <input type="text" class="input" id="gevTitle" placeholder="e.g. PIKOM Golf Invitational &amp; Charity 2026" required>
+              <div class="invalid-feedback">Event title is required.</div>
             </div>
-            <div class="col-xl-6 col-lg-12">
-              <div class="mb-3">
-                <label for="gevStartDate" class="form-label">Registration Opens</label>
-                <input type="text" class="form-control border border-1 rounded px-2 py-2 timepicker" id="gevStartDate" required>
+          </section>
+
+          <section class="flex flex-col gap-3 border-t pt-5">
+            <h6 class="pk-micro"><b>[02]</b> Schedule</h6>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div class="field gap-2">
+                <label for="gevStartDate" class="label">Registration opens</label>
+                <input type="text" class="input timepicker" id="gevStartDate" required>
                 <div class="invalid-feedback">Start date is required.</div>
               </div>
-            </div>
-            <div class="col-xl-6 col-lg-12">
-              <div class="mb-3">
-                <label for="gevEndDate" class="form-label">Event Day</label>
-                <input type="text" class="form-control border border-1 rounded px-2 py-2 timepicker" id="gevEndDate" required>
+              <div class="field gap-2">
+                <label for="gevEndDate" class="label">Event day</label>
+                <input type="text" class="input timepicker" id="gevEndDate" required>
                 <div class="invalid-feedback">Event day is required.</div>
-                <small class="text-muted">Used as the event date on the public pages and in the emails.</small>
+                <p class="text-xs text-muted-foreground">Used as the event date on the public pages and in the emails.</p>
               </div>
             </div>
-            <div class="col-xl-6 col-lg-6">
-              <div class="mb-3">
-                <label for="gevPICEmail" class="form-label">'Reply To' Email</label>
-                <input type="text" class="form-control border border-1 rounded px-2 py-2" id="gevPICEmail"
-                       placeholder="pic1@mail.com,pic2@mail.com" required>
+          </section>
+
+          <section class="flex flex-col gap-3 border-t pt-5">
+            <h6 class="pk-micro"><b>[03]</b> Team and replies</h6>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div class="field gap-2">
+                <label for="gevPICEmail" class="label">Reply-to email</label>
+                <input type="text" class="input" id="gevPICEmail" placeholder="pic1@mail.com,pic2@mail.com" required>
                 <div class="invalid-feedback">Please enter valid email addresses, separated by commas.</div>
+                <p class="text-xs text-muted-foreground">Separate several addresses with commas, no spaces.</p>
               </div>
-            </div>
-            <div class="col-xl-6 col-lg-6">
-              <div class="mb-3">
-                <label for="gevTeam" class="form-label">Event Team</label>
-                <select id="gevTeam" class="form-select" multiple>
+              <div class="field gap-2">
+                <label for="gevTeam" class="label">Event team</label>
+                <select id="gevTeam" class="select" multiple>
                   <option value=""></option>
                   {% for u in users %}
                     <option value="{{ u.id }}">{{ u.name }}</option>
                   {% endfor %}
                 </select>
-                <small class="text-muted">These users can manage this event and its forms.</small>
+                <p class="text-xs text-muted-foreground">These users can manage this event and its forms.</p>
               </div>
             </div>
-            <div class="col-xl-6 col-lg-6">
-              <div class="mb-3">
-                <label for="gevThemeColor" class="form-label">Event Theme Colour</label>
-                <div class="d-flex align-items-center gap-2 flex-wrap">
-                  <input type="color" id="gevThemeColor" value="#198754" aria-label="Accent colour" tabindex="-1"
-                         style="position:absolute; width:1px; height:1px; opacity:0; pointer-events:none;">
-                  <button type="button" id="gevThemeColorPick" class="btn btn-sm btn-outline-primary mb-0">
-                    <i class="material-symbols-rounded align-middle" style="font-size:18px;">palette</i>
-                    Choose colour
-                  </button>
-                  <span class="text-muted small">Selected:</span>
-                  <span class="badge text-bg-light border d-inline-flex align-items-center gap-1"
-                        style="font-family:monospace; font-size:.85rem; letter-spacing:.5px;">
-                    <span id="gevThemeSwatch" style="display:inline-block; width:14px; height:14px; border-radius:3px;
-                          border:1px solid rgba(0,0,0,.25); background:#198754;"></span>
-                    <span id="gevThemeHex">#198754</span>
-                  </span>
-                </div>
-                <small class="text-muted">Accent colour used on the public pages and in the confirmation emails.</small>
-              </div>
+          </section>
+
+          <section class="flex flex-col gap-3 border-t pt-5">
+            <h6 class="pk-micro"><b>[04]</b> Appearance and status</h6>
+            <div class="flex flex-wrap items-center gap-2">
+              <input type="color" id="gevThemeColor" value="#198754" aria-label="Accent colour" tabindex="-1"
+                     style="position:absolute; width:1px; height:1px; opacity:0; pointer-events:none;">
+              <span class="inline-flex h-9 items-center gap-2 rounded-md border px-2.5 font-mono text-sm">
+                <span id="gevThemeSwatch" class="size-5 cursor-pointer rounded ring-1 ring-black/15" style="background:#198754;"></span>
+                <span id="gevThemeHex">#198754</span>
+              </span>
+              <button type="button" id="gevThemeColorPick" class="btn" data-variant="outline"><i data-lucide="palette"></i> Choose colour</button>
+              <span class="text-xs text-muted-foreground">Accent for the public pages and confirmation emails.</span>
             </div>
-            <div class="col-12">
-              <div class="d-flex justify-content-between align-items-center mb-3">
-                <label class="form-check-label" for="gevActive">Active or Inactive the Golf Event</label>
-                <div class="form-check form-switch">
-                  <input class="form-check-input" type="checkbox" role="switch" id="gevActive" checked>
-                </div>
-              </div>
-              <small class="text-muted d-block">
-                Turning an event off closes every one of its public pages, whatever the individual forms say.
-              </small>
-            </div>
-          </div>
+            <label class="flex items-start justify-between gap-4 rounded-lg border p-4 cursor-pointer" for="gevActive">
+              <span>
+                <span class="block text-sm font-medium">Event is active</span>
+                <span class="block text-xs text-muted-foreground mt-0.5">Turning an event off closes every one of its public pages, whatever the individual forms say.</span>
+              </span>
+              <input class="input" type="checkbox" role="switch" id="gevActive" checked>
+            </label>
+          </section>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          <button type="submit" class="btn btn-primary">Save</button>
+          <button type="button" class="btn" data-variant="outline" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn">Save event</button>
         </div>
       </form>
     </div>
@@ -291,7 +358,7 @@
       syncThemeSwatch();
       $('#gevTeam').val(null).trigger('change');
       document.getElementById('golfEventForm').classList.remove('was-validated');
-      document.getElementById('addNewGolfEventLabel').textContent = 'Add New Golf Event';
+      document.getElementById('addNewGolfEventLabel').textContent = 'New golf event';
     }
     window.golfResetEventForm = resetForm;
 
@@ -318,7 +385,7 @@
             });
             $team.val(data.selected_users).trigger('change');
 
-            document.getElementById('addNewGolfEventLabel').textContent = 'Edit Golf Event';
+            document.getElementById('addNewGolfEventLabel').textContent = 'Edit golf event';
             new bootstrap.Modal(document.getElementById('addNewGolfEvent')).show();
           })
           .catch(() => Swal.fire({ icon: 'error', title: 'Failed to load event data.' }));
@@ -334,8 +401,8 @@
           title: 'Delete this golf event?',
           html: `<strong>${title}</strong><br>Its forms, sponsor items and all submitted entries will be deleted too. This cannot be undone.`,
           showCancelButton: true,
-          confirmButtonText: 'Delete',
-          confirmButtonColor: '#d9534f',
+          confirmButtonText: 'Delete event',
+          confirmButtonColor: '#C9304A',
         }).then(res => {
           if (!res.isConfirmed) return;
           fetch(`/delete_golf_event/${id}/`, {
@@ -382,7 +449,7 @@
       fd.append('is_active', document.getElementById('gevActive').checked ? 'true' : 'false');
       fd.append('pic_email', emailInput.value);
       fd.append('theme_color', document.getElementById('gevThemeColor').value);
-      ($('#gevTeam').val() || []).forEach(uid => fd.append('users[]', uid));
+      ($('#gevTeam').val() || []).filter(Boolean).forEach(uid => fd.append('users[]', uid));
 
       fetch('/save_golf_event', { method: 'POST', headers: { 'X-CSRFToken': golfCSRF() }, body: fd })
         .then(r => r.json())
@@ -397,17 +464,11 @@
   $(document).ready(function () {
     $('.timepicker').flatpickr({ enableTime: true, dateFormat: 'Y-m-d H:i' });
 
-    const buttonsConfig = [];
-    if (document.getElementById('perm').value === 'True') {
-      buttonsConfig.push({
-        text: '<i class="material-symbols-rounded align-middle">add</i> Add New',
-        className: 'btn btn-primary',
-        action: function () {
-          if (window.golfResetEventForm) window.golfResetEventForm();
-          new bootstrap.Modal(document.getElementById('addNewGolfEvent')).show();
-        },
-      });
-    }
+    const addBtn = document.getElementById('addGolfEventBtn');
+    if (addBtn) addBtn.addEventListener('click', function () {
+      if (window.golfResetEventForm) window.golfResetEventForm();
+      new bootstrap.Modal(document.getElementById('addNewGolfEvent')).show();
+    });
 
     new DataTable('#golfEvents', Object.assign({
       responsive: false,
@@ -421,22 +482,23 @@
       columnDefs: [{ orderable: false, targets: [3, 5] }],
       layout: {
         topStart: [
-          { search: { className: 'form-control form-control-sm', placeholder: 'Search...', ariaLabel: 'Search' } },
+          { search: { className: 'input', placeholder: 'Search golf events', ariaLabel: 'Search golf events' } },
           'pageLength',
         ],
-        topEnd: 'buttons',
+        topEnd: null,
       },
-      buttons: buttonsConfig,
       autoWidth: true,
       scrollCollapse: true,
       language: {
+        search: '',
+        lengthMenu: 'Show _MENU_ per page',
         paginate: {
-          previous: '<i class="material-symbols-rounded">chevron_left</i>',
-          next: '<i class="material-symbols-rounded">chevron_right</i>',
+          previous: '<i data-lucide=\"chevron-left\"></i>',
+          next: '<i data-lucide=\"chevron-right\"></i>',
         },
-        emptyTable: "<p class='fs-6 fw-500 text-secondary py-4'>No golf event yet. Click <strong>Add New</strong> to create one.</p>",
-        infoEmpty: '0 Record',
-        zeroRecords: "<p class='fs-6 fw-500 text-secondary py-4'>No golf event matches your search.</p>",
+        emptyTable: "<div class='empty py-12 gap-2'><span class='icon-chip bg-golf-soft text-golf'><i data-lucide='flag'></i></span><h3 class='font-medium text-foreground'>No golf events yet</h3><p class='text-sm text-muted-foreground'>Create a golf event, then add its player-registration and sponsorship forms.</p></div>",
+        infoEmpty: 'No golf events',
+        zeroRecords: "<div class='empty py-10 gap-1'><h3 class='font-medium text-foreground'>No matching golf events</h3><p class='text-sm text-muted-foreground'>Try a different search or clear the column filters.</p></div>",
       },
       pagingTag: 'button',
       initComplete: function () {

@@ -1,0 +1,471 @@
+/* PIKOM console: shadcn/ui design system (Basecoat = shadcn for server-rendered HTML) + Tailwind v4.
+   Build: cd theme && npm run build   ->  register/static/register/css/app.css */
+@import "tailwindcss";
+@import "basecoat-css/nova";
+
+@font-face { font-family: 'Satoshi'; src: url('../fonts/satoshi-400.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Satoshi'; src: url('../fonts/satoshi-500.woff2') format('woff2'); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Satoshi'; src: url('../fonts/satoshi-700.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Satoshi'; src: url('../fonts/satoshi-900.woff2') format('woff2'); font-weight: 900; font-style: normal; font-display: swap; }
+
+@source "../../register/templates";
+@source "../../user/templates";
+@source "../../validate/templates";
+@source "../../register/static/register/js";
+
+/* ---------- PIKOM theme (shadcn tokens) ---------- */
+:root {
+  --radius: 0.7rem;
+  --background: #F6F8FC;
+  --foreground: #0F1B33;
+  --card: #FFFFFF;
+  --card-foreground: #0F1B33;
+  --popover: #FFFFFF;
+  --popover-foreground: #0F1B33;
+  --primary: #1F5FE0;
+  --primary-foreground: #FFFFFF;
+  --secondary: #EEF3FB;
+  --secondary-foreground: #13306A;
+  --muted: #EFF3F9;
+  --muted-foreground: #5D6E87;
+  --accent: #E8F0FE;
+  --accent-foreground: #13306A;
+  --destructive: #D23452;
+  --border: #E2E8F1;
+  --input: #D5DDEA;
+  --ring: #3B78F0;
+  --chart-1: #1F5FE0;
+  --chart-2: #3AA0D8;
+  --chart-3: #7C6AE8;
+  --chart-4: #14A38B;
+  --chart-5: #7FB8FF;
+  --sidebar: #0B2149;
+  --sidebar-foreground: #C9D5EC;
+  --sidebar-primary: #3AA0D8;
+  --sidebar-primary-foreground: #071739;
+  --sidebar-accent: rgba(255, 255, 255, 0.07);
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: #3AA0D8;
+
+  /* PIKOM extensions (beyond shadcn's set) */
+  --brand-navy: #0A2154;
+  --brand-royal: #1B3AAE;
+  --brand-orange: #F0801F;
+  --brand-orange-deep: #C25F0C;
+  --font-label: "Barlow Condensed", "Arial Narrow", ui-sans-serif, system-ui, sans-serif;
+  --brand-sky: #3AA0D8;
+  --brand-violet: #6D5DD3;
+  --success: #0D8A5F;   --success-soft: #E4F5EE;
+  --warning: #B25E00;   --warning-soft: #FFF2DE;
+  --danger: #C9304A;    --danger-soft: #FDEBEF;
+  --info: #1F5FE0;      --info-soft: #E8F0FE;
+  --violet: #5B47C2;    --violet-soft: #EFECFC;
+  --teal: #0B7F8C;      --teal-soft: #E0F4F6;
+  --golf: #1F7A4D;      --golf-soft: #E3F3EA;
+}
+
+.dark {
+  --background: #070F22;
+  --foreground: #E8EEF9;
+  --card: #0D1830;
+  --card-foreground: #E8EEF9;
+  --popover: #0F1C38;
+  --popover-foreground: #E8EEF9;
+  --primary: #4C86F5;
+  --primary-foreground: #FFFFFF;
+  --secondary: #16254A;
+  --secondary-foreground: #DCE6F7;
+  --muted: #13213F;
+  --muted-foreground: #93A4C3;
+  --accent: #172A52;
+  --accent-foreground: #E8EEF9;
+  --destructive: #F0627C;
+  --border: rgba(255, 255, 255, 0.09);
+  --input: rgba(255, 255, 255, 0.14);
+  --ring: #4C86F5;
+  --sidebar: #050C1D;
+  --sidebar-border: rgba(255, 255, 255, 0.06);
+  --success: #3FCB97;   --success-soft: rgba(63, 203, 151, .14);
+  --warning: #F5B65A;   --warning-soft: rgba(245, 182, 90, .14);
+  --danger: #F0627C;    --danger-soft: rgba(240, 98, 124, .14);
+  --info: #6E9DF7;      --info-soft: rgba(110, 157, 247, .14);
+  --violet: #A497F2;    --violet-soft: rgba(164, 151, 242, .14);
+  --teal: #4CC7D3;      --teal-soft: rgba(76, 199, 211, .14);
+  --golf: #4CC08A;      --golf-soft: rgba(76, 192, 138, .14);
+}
+
+@theme inline {
+  --font-sans: "Archivo", "Satoshi", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --color-brand-navy: var(--brand-navy);
+  --color-brand-royal: var(--brand-royal);
+  --color-brand-orange: var(--brand-orange);
+  --font-label: "Barlow Condensed", "Arial Narrow", ui-sans-serif, system-ui, sans-serif;
+  --color-brand-sky: var(--brand-sky);
+  --color-brand-violet: var(--brand-violet);
+  --color-success: var(--success);   --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);   --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);     --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);         --color-info-soft: var(--info-soft);
+  --color-violet: var(--violet);     --color-violet-soft: var(--violet-soft);
+  --color-teal: var(--teal);         --color-teal-soft: var(--teal-soft);
+  --color-golf: var(--golf);         --color-golf-soft: var(--golf-soft);
+}
+
+@layer base {
+  html { -webkit-font-smoothing: antialiased; }
+  body { font-family: var(--font-sans); letter-spacing: -0.006em; }
+  h1, h2, h3, .page-title { letter-spacing: -0.02em; }
+  .tabular-nums, .kpi-value, td { font-variant-numeric: tabular-nums; }
+  ::selection { background: color-mix(in srgb, var(--primary) 18%, transparent); }
+}
+
+/* ---------- PIKOM components (on top of shadcn) ---------- */
+@layer components {
+  /* Status badges: use as class="badge badge-success" */
+  .badge.badge-success, .badge-success { background: var(--success-soft); color: var(--success); border-color: transparent; }
+  .badge.badge-warning, .badge-warning { background: var(--warning-soft); color: var(--warning); border-color: transparent; }
+  .badge.badge-danger, .badge-danger  { background: var(--danger-soft);  color: var(--danger);  border-color: transparent; }
+  .badge.badge-info, .badge-info    { background: var(--info-soft);    color: var(--info);    border-color: transparent; }
+  .badge.badge-violet, .badge-violet  { background: var(--violet-soft);  color: var(--violet);  border-color: transparent; }
+  .badge.badge-teal, .badge-teal    { background: var(--teal-soft);    color: var(--teal);    border-color: transparent; }
+  .badge.badge-golf, .badge-golf    { background: var(--golf-soft);    color: var(--golf);    border-color: transparent; }
+  .badge.badge-muted, .badge-muted   { background: var(--muted);        color: var(--muted-foreground); border-color: transparent; }
+  .badge-dot::before { content: ""; width: .375rem; height: .375rem; border-radius: 999px; background: currentColor; }
+
+  /* KPI tile */
+  .kpi { display: flex; flex-direction: column; gap: .25rem; padding: 1rem 1.25rem; }
+  .kpi-label { @apply flex items-center gap-2 text-sm font-medium text-muted-foreground; }
+  .kpi-value { @apply text-2xl font-semibold tracking-tight tabular-nums; }
+  .kpi-foot { @apply text-xs text-muted-foreground; }
+
+  /* Icon chip */
+  .icon-chip { @apply inline-grid size-9 shrink-0 place-items-center rounded-lg; background: var(--accent); color: var(--primary); }
+  .icon-chip svg { width: 1.1rem; height: 1.1rem; }
+
+  /* Page header */
+  .page-header { @apply flex flex-wrap items-end justify-between gap-4; }
+  .page-title { @apply text-2xl font-semibold tracking-tight sm:text-[1.7rem]; }
+  .page-description { @apply mt-1 text-sm text-muted-foreground; }
+}
+
+/* ---------- Motion (Framer-style, respectful) ---------- */
+@keyframes pk-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.animate-rise { animation: pk-rise .45s cubic-bezier(.2,.7,.2,1) both; }
+.animate-rise-1 { animation-delay: .04s; } .animate-rise-2 { animation-delay: .08s; } .animate-rise-3 { animation-delay: .12s; } .animate-rise-4 { animation-delay: .16s; }
+@media (prefers-reduced-motion: reduce) { .animate-rise { animation: none; } }
+
+/* ==========================================================================
+   Compatibility layer: existing pages still drive Bootstrap's JS (Modal,
+   Dropdown, Collapse, Offcanvas) and DataTables. These rules give that
+   behaviour the shadcn look without loading Bootstrap's CSS.
+   ========================================================================== */
+.fade { transition: opacity .15s linear; } .fade:not(.show) { opacity: 0; }
+.collapse { visibility: visible; } .collapse:not(.show) { display: none; }
+.collapsing { height: 0; overflow: hidden; transition: height .25s ease; }
+.visually-hidden, .sr-only { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0,0,0,0) !important; white-space: nowrap !important; border: 0 !important; }
+.d-none { display: none !important; }
+
+/* Modal -> shadcn Dialog */
+.modal-open { overflow: hidden; }
+.modal { position: fixed; inset: 0; z-index: 1055; display: none; overflow-x: hidden; overflow-y: auto; outline: 0; }
+.modal-dialog { position: relative; width: auto; margin: 1rem; pointer-events: none; transition: transform .2s cubic-bezier(.2,.7,.2,1); }
+.modal.fade .modal-dialog { transform: translateY(8px) scale(.98); }
+.modal.show .modal-dialog { transform: none; }
+.modal-dialog-centered { display: flex; align-items: center; min-height: calc(100% - 2rem); }
+.modal-dialog-scrollable { height: calc(100% - 2rem); }
+.modal-dialog-scrollable .modal-content { max-height: 100%; overflow: hidden; }
+.modal-dialog-scrollable .modal-body { overflow-y: auto; }
+.modal-content { position: relative; display: flex; flex-direction: column; width: 100%; pointer-events: auto; background: var(--popover); color: var(--popover-foreground); border: 1px solid var(--border); border-radius: calc(var(--radius) + 4px); box-shadow: 0 24px 64px -16px rgba(7,23,57,.35); outline: 0; }
+.modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1.25rem 1.5rem .75rem; }
+.modal-title { font-size: 1.0625rem; font-weight: 600; line-height: 1.35; margin: 0; }
+.modal-body { position: relative; flex: 1 1 auto; padding: .75rem 1.5rem 1.25rem; }
+.modal-footer { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: .5rem; padding: 1rem 1.5rem 1.25rem; border-top: 1px solid var(--border); }
+.modal-backdrop { position: fixed; inset: 0; z-index: 1050; background: rgba(7, 15, 34, .55); backdrop-filter: blur(2px); }
+.modal-backdrop.fade { opacity: 0; } .modal-backdrop.show { opacity: 1; }
+@media (min-width: 576px) { .modal-dialog { max-width: 32rem; margin: 1.75rem auto; } .modal-dialog-centered { min-height: calc(100% - 3.5rem); } .modal-dialog-scrollable { height: calc(100% - 3.5rem); } }
+@media (min-width: 992px) { .modal-lg, .modal-xl { max-width: 52rem; } }
+@media (min-width: 1200px) { .modal-xl { max-width: 72rem; } }
+.modal-fullscreen-sm-down { }
+@media (max-width: 575.98px) { .modal-fullscreen-sm-down { width: 100vw; max-width: none; height: 100%; margin: 0; } .modal-fullscreen-sm-down .modal-content { height: 100%; border: 0; border-radius: 0; } }
+.btn-close { box-sizing: content-box; width: 1rem; height: 1rem; padding: .375rem; border: 0; border-radius: .5rem; opacity: .6; cursor: pointer; background: transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235D6E87' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M18 6 6 18M6 6l12 12'/%3E%3C/svg%3E") center/1rem no-repeat; }
+.btn-close:hover { opacity: 1; background-color: var(--accent); }
+
+/* Dropdown (Bootstrap JS) -> shadcn DropdownMenu look */
+.dropdown, .dropup, .dropstart, .dropend, .btn-group { position: relative; }
+.dropdown-menu { position: absolute; z-index: 1000; display: none; min-width: 12rem; padding: .25rem; margin: 0; font-size: .875rem; color: var(--popover-foreground); background: var(--popover); border: 1px solid var(--border); border-radius: calc(var(--radius) - 2px); box-shadow: 0 10px 30px -10px rgba(7,23,57,.25); list-style: none; }
+.dropdown-menu.show { display: block; animation: pk-rise .14s ease-out both; }
+.dropdown-item { display: flex; align-items: center; gap: .5rem; width: 100%; padding: .4rem .6rem; border: 0; border-radius: calc(var(--radius) - 4px); background: transparent; color: inherit; text-align: left; white-space: nowrap; cursor: pointer; text-decoration: none; font-size: .875rem; }
+.dropdown-item:hover, .dropdown-item:focus { background: var(--accent); color: var(--accent-foreground); outline: none; }
+.dropdown-item.text-danger, .dropdown-item[data-variant="destructive"] { color: var(--destructive); }
+.dropdown-item.text-danger:hover { background: var(--danger-soft); }
+.dropdown-item.disabled, .dropdown-item:disabled { opacity: .5; pointer-events: none; }
+.dropdown-divider { height: 0; margin: .25rem -.25rem; border-top: 1px solid var(--border); }
+.dropdown-header { padding: .4rem .6rem; font-size: .75rem; font-weight: 600; color: var(--muted-foreground); }
+.dropdown-item svg { width: 1rem; height: 1rem; color: var(--muted-foreground); }
+
+/* Offcanvas -> shadcn Sheet */
+.offcanvas { position: fixed; bottom: 0; z-index: 1045; display: flex; flex-direction: column; max-width: 100%; visibility: hidden; background: var(--background); border-left: 1px solid var(--border); box-shadow: -24px 0 60px -20px rgba(7,23,57,.35); transition: transform .3s cubic-bezier(.2,.7,.2,1); }
+.offcanvas.offcanvas-end { top: 0; right: 0; width: min(40rem, 100vw); transform: translateX(100%); }
+.offcanvas.offcanvas-start { top: 0; left: 0; width: min(24rem, 100vw); transform: translateX(-100%); }
+.offcanvas.showing, .offcanvas.show:not(.hiding) { transform: none; }
+.offcanvas.showing, .offcanvas.hiding, .offcanvas.show { visibility: visible; }
+.offcanvas-backdrop { position: fixed; inset: 0; z-index: 1040; background: rgba(7, 15, 34, .5); }
+.offcanvas-backdrop.fade { opacity: 0; } .offcanvas-backdrop.show { opacity: 1; }
+.offcanvas-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); }
+.offcanvas-title { font-size: 1.0625rem; font-weight: 600; margin: 0; }
+.offcanvas-body { flex-grow: 1; padding: 1.5rem; overflow-y: auto; }
+
+/* Tooltips (Bootstrap JS) */
+.tooltip { position: absolute; z-index: 1080; font-size: .75rem; }
+.tooltip .tooltip-inner { background: var(--foreground); color: var(--background); padding: .3rem .55rem; border-radius: .4rem; max-width: 16rem; }
+.tooltip .tooltip-arrow { display: none; }
+
+/* DataTables 2 -> shadcn Table + Pagination */
+.dt-container { font-size: .875rem; }
+.dt-container .dt-layout-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; padding: .75rem 1rem; }
+.dt-container .dt-layout-row.dt-layout-table { padding: 0; display: block; }
+.dt-container .dt-search input, .dt-container .dt-length select { height: 2.25rem; border: 1px solid var(--input); border-radius: calc(var(--radius) - 2px); background: var(--background); padding: 0 .75rem; font-size: .875rem; color: var(--foreground); }
+.dt-container .dt-search input:focus, .dt-container .dt-length select:focus { outline: none; border-color: var(--ring); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 25%, transparent); }
+.dt-container .dt-search label, .dt-container .dt-length label, .dt-container .dt-info { color: var(--muted-foreground); font-size: .8125rem; }
+table.dataTable { width: 100% !important; border-collapse: collapse !important; }
+table.dataTable thead th { height: 2.5rem; padding: 0 .75rem; text-align: left; font-weight: 500; font-size: .8125rem; color: var(--muted-foreground); background: color-mix(in srgb, var(--muted) 60%, transparent); border-bottom: 1px solid var(--border); white-space: nowrap; }
+table.dataTable tbody td { padding: .7rem .75rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+table.dataTable tbody tr { transition: background-color .12s; }
+table.dataTable tbody tr:hover > td { background: color-mix(in srgb, var(--muted) 55%, transparent); }
+table.dataTable tbody tr.selected > td, table.dataTable tbody tr.selected > * { background: color-mix(in srgb, var(--primary) 7%, transparent) !important; box-shadow: none !important; color: inherit !important; }
+.dt-scroll-body table.dataTable thead th { padding-top: 0 !important; padding-bottom: 0 !important; height: 0 !important; border: 0 !important; }
+.dt-paging nav { display: flex; align-items: center; }
+.dt-paging .pagination { display: flex; gap: .25rem; margin: 0; padding: 0; list-style: none; }
+.dt-paging .page-item .page-link, .dt-paging .dt-paging-button { display: inline-flex; align-items: center; justify-content: center; min-width: 2.25rem; height: 2.25rem; padding: 0 .6rem; border-radius: calc(var(--radius) - 2px); border: 1px solid transparent; background: transparent; color: var(--foreground); font-size: .875rem; font-weight: 500; cursor: pointer; }
+.dt-paging .page-item:not(.disabled) .page-link:hover { background: var(--accent); }
+.dt-paging .page-item.active .page-link, .dt-paging .dt-paging-button.current { border-color: var(--border); background: var(--background); box-shadow: 0 1px 2px rgba(7,23,57,.06); }
+.dt-paging .page-item.disabled .page-link, .dt-paging .dt-paging-button.disabled { opacity: .4; pointer-events: none; }
+table.dataTable thead > tr > th.dt-orderable-asc:hover, table.dataTable thead > tr > th.dt-orderable-desc:hover { color: var(--foreground); }
+
+/* select2 / flatpickr / Quill / SweetAlert2 in shadcn style */
+.select2-container--default .select2-selection--multiple, .select2-container--default .select2-selection--single { min-height: 2.25rem; border: 1px solid var(--input) !important; border-radius: calc(var(--radius) - 2px) !important; background: var(--background) !important; }
+.select2-container--default .select2-selection--multiple .select2-selection__choice { background: var(--secondary) !important; border: 0 !important; border-radius: .4rem !important; color: var(--secondary-foreground); font-size: .8125rem; }
+.select2-dropdown { border: 1px solid var(--border) !important; border-radius: calc(var(--radius) - 2px) !important; background: var(--popover) !important; box-shadow: 0 10px 30px -10px rgba(7,23,57,.25); overflow: hidden; }
+.select2-container--default .select2-results__option--highlighted.select2-results__option--selectable { background: var(--primary) !important; }
+.flatpickr-calendar { font-family: var(--font-sans) !important; border-radius: var(--radius) !important; border: 1px solid var(--border) !important; box-shadow: 0 10px 30px -10px rgba(7,23,57,.25) !important; }
+.flatpickr-day.selected, .flatpickr-day.selected:hover { background: var(--primary) !important; border-color: var(--primary) !important; }
+.ql-toolbar.ql-snow { border-color: var(--input) !important; border-radius: calc(var(--radius) - 2px) calc(var(--radius) - 2px) 0 0; background: var(--muted); }
+.ql-container.ql-snow { border-color: var(--input) !important; border-radius: 0 0 calc(var(--radius) - 2px) calc(var(--radius) - 2px); font-family: var(--font-sans); font-size: .875rem; }
+.swal2-popup { font-family: var(--font-sans) !important; border-radius: calc(var(--radius) + 6px) !important; background: var(--popover) !important; color: var(--popover-foreground) !important; }
+.swal2-title { color: var(--foreground) !important; font-size: 1.2rem !important; }
+.swal2-html-container { color: var(--muted-foreground) !important; }
+.swal2-styled { border-radius: calc(var(--radius) - 2px) !important; font-weight: 500 !important; box-shadow: none !important; }
+.swal2-styled.swal2-confirm { background-color: var(--primary); }
+.swal2-styled.swal2-cancel { background: var(--background) !important; color: var(--foreground) !important; border: 1px solid var(--border) !important; }
+
+/* DataTables Bootstrap-5 renderer wraps controls in .row/.col-*: lay them out shadcn-style */
+.dt-container > .row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; padding: .75rem 1rem; margin: 0; }
+.dt-container > .row > [class*="col"] { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: .75rem; }
+.dt-container > .row > [class*="col"]:last-child { justify-content: flex-end; }
+.dt-container > .row.dt-layout-table, .dt-container > .row:has(> .col-12 > table), .dt-container > .row:has(.dt-scroll) { display: block; padding: 0; }
+.dt-container > .row > .col-12 { display: block; }
+
+/* DataTables bottom rule + legacy form classes still emitted by table-filters.js popovers */
+table.dataTable.no-footer, .dt-scroll-body { border-bottom: 1px solid var(--border) !important; }
+.form-control, .form-select { display: block; width: 100%; height: 2.25rem; padding: 0 .75rem; font-size: .875rem; color: var(--foreground); background: var(--background); border: 1px solid var(--input); border-radius: calc(var(--radius) - 2px); }
+textarea.form-control { height: auto; padding: .5rem .75rem; }
+.form-control:focus, .form-select:focus { outline: none; border-color: var(--ring); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 25%, transparent); }
+.form-check { display: flex; align-items: center; gap: .5rem; }
+.form-check-input { width: 1rem; height: 1rem; accent-color: var(--primary); }
+.form-label { display: block; font-size: .875rem; font-weight: 500; margin-bottom: .35rem; }
+
+/* ==========================================================================
+   Framer premium layer (references: Framer "Alytics" + "Ballast" SaaS templates).
+   Sits on top of the shadcn/Basecoat components; no markup changes needed.
+   ========================================================================== */
+:root {
+  --pk-shadow-card: 0 1px 2px rgba(15, 27, 51, .05);
+  --pk-shadow-card-hover: 0 1px 2px rgba(15, 27, 51, .05), 0 8px 24px -12px rgba(15, 27, 51, .16);
+  --pk-glow: radial-gradient(60rem 22rem at 30% -6rem, rgba(58, 160, 216, .16), transparent 70%), radial-gradient(40rem 18rem at 85% -8rem, rgba(109, 93, 211, .10), transparent 70%);
+}
+.dark {
+  --pk-shadow-card: 0 1px 0 rgba(255,255,255,.04) inset, 0 16px 40px -20px rgba(0, 0, 0, .7);
+  --pk-shadow-card-hover: 0 1px 0 rgba(255,255,255,.06) inset, 0 24px 50px -20px rgba(31, 95, 224, .35);
+  --pk-glow: radial-gradient(60rem 22rem at 30% -6rem, rgba(58, 160, 216, .20), transparent 70%), radial-gradient(40rem 18rem at 85% -8rem, rgba(124, 106, 232, .16), transparent 70%);
+}
+
+/* Canvas: soft blue light falling from the top of every page */
+.pk-main { background: var(--background); }
+
+@layer components {
+  /* Cards: larger radius, hairline border, soft blue-tinted elevation */
+  .card { border-radius: 1.1rem; border-color: color-mix(in srgb, var(--border) 85%, transparent); box-shadow: var(--pk-shadow-card); transition: box-shadow .25s ease, transform .25s ease, border-color .25s ease; }
+  a.card:hover, .card.kpi:hover, .card[data-hover]:hover { box-shadow: var(--pk-shadow-card-hover); transform: translateY(-2px); border-color: color-mix(in srgb, var(--primary) 22%, var(--border)); }
+  .modal-content { border-radius: 1.25rem; }
+
+  /* Bezel: Framer's framed showcase container (outer soft frame + inner card) */
+  .bezel { padding: .375rem; border-radius: 1.5rem; background: var(--muted); border: 1px solid var(--border); }
+  .bezel > .card { box-shadow: none; }
+
+  /* KPI tiles: solid brand icon tiles, big tight numerals */
+  .kpi { padding: 1.1rem 1.25rem 1rem; gap: .35rem; }
+  .kpi-value { font-size: 1.85rem; letter-spacing: -.03em; font-weight: 650; line-height: 1.1; }
+  .kpi-label { font-size: .8125rem; }
+  /* Solid tile in the chip's own tone (its text colour), white glyph */
+  .kpi .icon-chip { background: color-mix(in srgb, currentColor 10%, transparent) !important; box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 16%, transparent); }
+
+  /* Page header: display type + pill eyebrow */
+  .page-title { font-size: clamp(1.6rem, 1.2rem + 1vw, 2.1rem); letter-spacing: -.035em; font-weight: 700; line-height: 1.08; }
+  .page-description { font-size: .9375rem; }
+  .pk-eyebrow, .page-eyebrow { display: inline-flex; align-items: center; gap: .4rem; padding: .2rem .65rem; border-radius: 999px; font-size: .75rem; font-weight: 600; color: var(--primary); background: color-mix(in srgb, var(--primary) 8%, var(--card)); border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent); }
+
+  /* Buttons: primary with depth (gradient + highlight + glow), outline with lift */
+  .btn:not([data-variant]), .btn[data-variant='primary'] { background: var(--primary); box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 1px 2px rgba(15,27,51,.14); }
+  .btn:not([data-variant]):hover, .btn[data-variant='primary']:hover { background: color-mix(in srgb, var(--primary) 90%, #000); }
+  .btn[data-variant='outline'] { background: var(--card); box-shadow: 0 1px 2px rgba(15, 27, 51, .06); }
+  .btn[data-variant='outline']:hover { box-shadow: 0 4px 10px -4px rgba(15, 27, 51, .15); }
+  .btn:active { transform: translateY(1px); }
+
+  /* Badges: pill shape everywhere */
+  .badge { border-radius: 999px; }
+
+  /* Inputs: softer, with a blue focus halo */
+  .input, .select, .textarea, .form-control, .form-select { border-radius: .7rem; }
+  .input:focus-visible, .textarea:focus-visible, .select:focus-visible { box-shadow: 0 0 0 4px color-mix(in srgb, var(--ring) 18%, transparent); }
+
+  /* Tables inside cards: airy rows, blue-tinted hover */
+  table.dataTable tbody tr:hover > td, .table tbody tr:hover > td { background: color-mix(in srgb, var(--primary) 4%, transparent) !important; }
+  table.dataTable thead th { background: color-mix(in srgb, var(--primary) 3%, var(--card)) !important; }
+}
+
+/* Sidebar: deep navy with a sky glow at the top; active item as a lit pill */
+.pk-sidebar > nav { background: #0A1D40 !important; }
+.dark .pk-sidebar > nav { background: #060E20 !important; }
+.pk-sidebar a[aria-current="page"] { background: rgba(255,255,255,.08) !important; box-shadow: none; }
+
+/* One orchestrated entrance per page: header, then KPI row, then the rest */
+@media (prefers-reduced-motion: no-preference) {
+  .pk-content > * { animation: pk-rise .5s cubic-bezier(.16, 1, .3, 1) both; }
+  .pk-content > *:nth-child(2) { animation-delay: .05s; }
+  .pk-content > *:nth-child(3) { animation-delay: .1s; }
+  .pk-content > *:nth-child(4) { animation-delay: .15s; }
+  .pk-content > *:nth-child(n+5) { animation-delay: .2s; }
+}
+
+
+/* ==========================================================================
+   CBE layer (reference: cbe.mcbea.org.my, liked by the CEO).
+   Archivo extra-bold display set tight, Barlow Condensed uppercase labels,
+   royal blue + navy with one orange accent, "— Label" eyebrows, stat cards
+   with an orange top edge. Built on the same shadcn components.
+   ========================================================================== */
+:root { --primary: #1B3AAE; --ring: #2F55D4; --sidebar: #0A2154; }
+.dark { --primary: #5B7CF0; --ring: #5B7CF0; }
+
+/* Display type */
+.page-title, .pk-display { font-family: "Archivo", var(--font-sans); font-weight: 800 !important; letter-spacing: -0.035em !important; line-height: 1.02; color: var(--brand-navy); }
+.dark .page-title, .dark .pk-display { color: var(--foreground); }
+.kpi-value { font-family: "Archivo", var(--font-sans); font-weight: 800 !important; letter-spacing: -0.04em !important; }
+.card header h2, .card > header h3, .modal-title, .offcanvas-title { font-weight: 700; letter-spacing: -0.02em; }
+
+/* Condensed uppercase labels: eyebrows, sidebar groups, table heads, KPI labels */
+.pk-eyebrow, .page-eyebrow { font-family: var(--font-label) !important; font-size: .78rem !important; font-weight: 600 !important; letter-spacing: .14em; text-transform: uppercase; color: var(--brand-royal); display: inline-flex; align-items: center; gap: .6rem; background: none !important; border: 0 !important; padding: 0 !important; }
+.pk-eyebrow::before, .page-eyebrow::before { content: ""; width: 1.4rem; height: 2px; background: var(--brand-orange); border-radius: 2px; }
+.dark .pk-eyebrow, .dark .page-eyebrow { color: #93B8FF; }
+.pk-sidebar h3 { font-family: var(--font-label) !important; font-size: .74rem !important; font-weight: 600 !important; letter-spacing: .16em !important; text-transform: uppercase; color: #7F95C4 !important; }
+table.dataTable thead th, .table thead th { font-family: var(--font-label) !important; font-size: .78rem !important; font-weight: 600 !important; letter-spacing: .1em !important; text-transform: uppercase; }
+.kpi-label { font-family: var(--font-label); font-size: .8rem !important; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; }
+.kpi-foot { letter-spacing: 0; }
+
+/* Stat cards: orange top edge, like the CBE figures row */
+.kpi { position: relative; overflow: hidden; }
+.kpi::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 3px; background: linear-gradient(90deg, var(--brand-orange), color-mix(in srgb, var(--brand-orange) 30%, transparent)); }
+
+/* Orange call-to-action variant (use for the one action that matters most) */
+.btn[data-variant='cta'] { background: var(--brand-orange); color: #22190A; border: 1px solid color-mix(in srgb, var(--brand-orange) 80%, #000); font-family: var(--font-label); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 1px 2px rgba(15,27,51,.15); }
+.btn[data-variant='cta']:hover { background: #F48D33; }
+.pk-accent { color: var(--brand-orange); }
+
+/* Navy countdown tiles (public event pages) */
+.pk-countdown { display: inline-flex; gap: .5rem; }
+.pk-countdown > div { min-width: 4rem; padding: .6rem .5rem .5rem; border-radius: .7rem; background: var(--brand-navy); color: #fff; text-align: center; box-shadow: 0 10px 24px -14px rgba(10, 33, 84, .8); }
+.pk-countdown b { display: block; font-family: "Archivo", var(--font-sans); font-weight: 800; font-size: 1.6rem; line-height: 1; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.pk-countdown span { display: block; margin-top: .3rem; font-family: var(--font-label); font-size: .66rem; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: #9FB0D6; }
+
+/* Sidebar active indicator picks up the orange accent */
+.pk-sidebar a[aria-current="page"]::before { background: var(--brand-orange) !important; }
+
+/* ==========================================================================
+   v3 "Command & Corridor" layer (references: framer.com, Framer templates
+   Conduit, Platform, Metrivo, Velorn). Inset app shell, bracketed micro
+   labels, editorial page heads, crisp brand edges (no blurred glows).
+   ========================================================================== */
+:root { --canvas-shell: #EEF2F8; }
+.dark { --canvas-shell: #02060F; }
+
+/* Inset shell: the page lives in a rounded panel floating beside the navy rail */
+body.pk-inset { background: var(--sidebar); }
+body.pk-inset .pk-main { margin-top: .5rem; margin-right: .5rem; margin-bottom: .5rem; min-height: calc(100svh - 1rem); border-radius: 1.1rem; background: var(--background) !important; border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); overflow: clip; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+body.pk-inset .pk-topbar { border-radius: 1.1rem 1.1rem 0 0; }
+@media (max-width: 767px) { body.pk-inset .pk-main { margin: 0; border-radius: 0; border: 0; } body.pk-inset .pk-topbar { border-radius: 0; } }
+body.pk-inset .pk-sidebar > nav { border-right: 0 !important; }
+
+/* Bracketed micro label: [01] Section */
+.pk-micro { font-family: var(--font-label); font-size: .74rem; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--muted-foreground); display: inline-flex; align-items: center; gap: .5rem; }
+.pk-micro b { color: var(--brand-orange); font-weight: 700; }
+
+/* Editorial page head: title, purpose, actions, then a hairline */
+.page-header { padding-bottom: 1.25rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+.page-title { font-size: clamp(1.9rem, 1.3rem + 1.4vw, 2.6rem) !important; }
+
+/* Crisp brand edge for showcase panels (instead of a glow) */
+.pk-edge { position: relative; }
+.pk-edge::after { content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1px; background: linear-gradient(135deg, var(--brand-royal), transparent 35%, transparent 65%, var(--brand-orange)); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; }
+
+
+/* Critic fixes (global) */
+:root { --brand-orange-text: #B35A10; }           /* orange as TEXT on light surfaces: >= 4.5:1 */
+.dark { --brand-orange-text: #F5A35C; }
+.pk-micro b, .page-eyebrow::before, .pk-eyebrow b { color: var(--brand-orange-text); }
+.pk-sidebar h3 { color: #94A6C9 !important; }       /* sidebar section labels: >= 4.5:1 on navy */
+.kpi::before { display: none; }                     /* drop decorative orange top rule */
+table.dataTable thead th.dt-orderable-asc, table.dataTable thead th.dt-orderable-desc { cursor: pointer; min-height: 2.5rem; }
+.pk-countdown > div { box-shadow: none; border: 1px solid rgba(255,255,255,.12); }
+
+/* Column-filter popovers (table-filters.js) for every table */
+/* Column filter popover (Bootstrap Popover; its CSS is no longer loaded). ponytail: page-local until moved to input.css */
+.popover.filter-pop { position: absolute; top: 0; left: 0; z-index: 1070; display: block; background: var(--popover); color: var(--popover-foreground); border: 1px solid var(--border); border-radius: calc(var(--radius) + 2px); box-shadow: 0 16px 40px -12px rgba(7,23,57,.3); font-size: .875rem; }
+.popover.filter-pop .popover-arrow { display: none; }
+.popover.filter-pop .popover-header { margin: 0; padding: .7rem .9rem .5rem; font-family: var(--font-label); font-size: .72rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--muted-foreground); border-bottom: 1px solid var(--border); }
+.popover.filter-pop .popover-body { padding: .7rem .9rem .8rem; color: var(--popover-foreground); }
+.popover.filter-pop label { display: flex; align-items: center; gap: .5rem; padding: .2rem 0; cursor: pointer; }
+.popover.filter-pop input[type=checkbox] { accent-color: var(--primary); width: 1rem; height: 1rem; }
+
+/* Page entrance: opacity only (a transform here would break position:fixed bars inside pages) */
+@keyframes pk-fade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: no-preference) { .pk-content > * { animation: pk-fade .45s ease-out both !important; } }
+
+
+/* ==========================================================================
+   Blue-and-white palette (owner request): the single accent is now blue.
+   All former orange accents resolve to PIKOM sky/blue.
+   ========================================================================== */
+:root { --brand-orange: #2F7CF6; --brand-orange-deep: #1F5FE0; --brand-orange-text: #1F5FE0; }
+.dark { --brand-orange: #6FA8FF; --brand-orange-text: #8CB8FF; }
+.btn[data-variant='cta'] { background: var(--brand-royal); color: #fff; border-color: #142C8A; }
+.btn[data-variant='cta']:hover { background: #2347C2; }
+.pk-sidebar a[aria-current="page"]::before { background: #7FB8FF !important; }
+
+/* ==========================================================================
+   Corporate type (client request, shadcn preset b5J4uFMn2: Nova + DM Sans,
+   headings inherit). DM Sans everywhere; no condensed uppercase labels.
+   ========================================================================== */
+@theme inline { --font-sans: "DM Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+:root { --font-label: "DM Sans", ui-sans-serif, system-ui, sans-serif; }
+body, .pk-sidebar, .modal, .dropdown-menu, .offcanvas, .swal2-popup, .flatpickr-calendar, .select2-container, .ql-container { font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif !important; }
+.page-title, .pk-display, .kpi-value, .card header h2, .card > header h3, .modal-title, .offcanvas-title,
+h1, h2, h3 { font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif !important; font-weight: 700 !important; letter-spacing: -0.02em !important; }
+.kpi-value { font-weight: 700 !important; letter-spacing: -0.02em !important; }
+/* Labels: sentence case, normal tracking (no condensed caps) */
+.kpi-label, table.dataTable thead th, .table thead th, .pk-micro, .pk-eyebrow, .page-eyebrow, .lbl {
+  font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif !important; text-transform: none !important; letter-spacing: 0 !important; font-weight: 500 !important; }
+.kpi-label { font-size: .8125rem !important; }
+table.dataTable thead th, .table thead th { font-size: .8125rem !important; }
+.pk-micro { font-size: .8125rem !important; }
+.pk-sidebar h3 { font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif !important; text-transform: none !important; letter-spacing: 0 !important; font-size: .78rem !important; font-weight: 600 !important; }

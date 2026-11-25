@@ -1,0 +1,83 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#03081A">
+  <link rel="apple-touch-icon" sizes="76x76" href="{% static 'user/img/apple-icon.png' %}">
+  <link rel="icon" type="image/png" href="{% static 'user/img/favicon.png' %}">
+  <title>{% block title %}Sign in{% endblock %} | PIKOM Events</title>
+  <script>(function(){try{var t=localStorage.getItem('pk-theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}})();</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap">
+    <link rel="stylesheet" href="{% static 'register/css/app.css' %}">
+</head>
+<body class="min-h-svh bg-background text-foreground">
+  {# Sign-in family: one centred column on a plain surface. No illustration, no gradients. #}
+  <div class="pk-auth relative isolate flex min-h-svh flex-col">
+
+    <header class="flex items-center justify-between px-5 py-5 sm:px-8">
+      <span class="pk-micro"><b>[PIKOM]</b> Events console</span>
+      <button type="button" class="btn !text-[#C9D5EC] hover:!bg-white/10" data-variant="ghost" data-size="icon-sm" data-pk-theme-toggle aria-label="Toggle dark mode"><i data-lucide="sun-moon"></i></button>
+    </header>
+
+    <main class="flex flex-1 items-center justify-center px-5 pb-16">
+      <div class="w-full max-w-[400px]">
+        <a href="{% url 'login' %}" class="mx-auto mb-8 flex w-fit items-center justify-center rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring">
+          <img src="{% static 'user/img/PIKOM.png' %}" alt="PIKOM" class="h-16 w-auto brightness-0 invert">
+        </a>
+        {% block panel %}{% endblock %}
+      </div>
+    </main>
+
+    <footer class="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 px-5 py-5 text-xs text-[#8B9BBE] sm:px-8">
+      <span>&copy; {% now "Y" %} PIKOM &middot; Events console</span>
+      <a href="https://talbotiq.com" target="_blank" rel="noopener" class="hover:text-white">Built by Talbotiq Technologies</a>
+    </footer>
+  </div>
+
+  <style>
+    /* Same backdrop as the landing hero: flat ink navy, no grid lines, no glows. Text outside the card is light; the card follows light/dark. */
+    .pk-auth { background: #03081A; color: #fff; }
+    .pk-auth > header .pk-micro { color: #8B9BBE; }
+    .pk-auth > header .pk-micro b, .pk-auth main > div > .text-center .pk-micro b { color: #8CB8FF; }
+    .pk-auth main > div > .text-center .pk-micro { color: #8B9BBE; }
+    .pk-auth main > div > .text-center h1 { color: #fff; }
+    .pk-auth main > div > .text-center p, .pk-auth main > div > p.text-muted-foreground { color: #A9B6D3; }
+    .pk-auth main > div > p a.text-foreground { color: #fff; }
+    .pk-auth-card { position: relative; background: var(--card); border: 1px solid var(--border); border-radius: 1rem; box-shadow: 0 1px 2px rgba(0,0,0,.2), 0 24px 48px -24px rgba(0,0,0,.5); }
+    .pk-auth-card::before { content: ""; position: absolute; left: 1.5rem; right: 1.5rem; top: -1px; height: 2px; border-radius: 2px; background: var(--brand-royal); }
+    .pk-auth main .text-center > .pk-micro { justify-content: center; }
+    .dark .pk-auth-card { box-shadow: 0 1px 0 rgba(255,255,255,.03) inset; }
+    .pk-auth input.input:not([type=checkbox]):not([type=radio]) { height: 2.75rem; border-radius: .65rem; font-size: .9375rem; }
+    .pk-auth .btn[data-size="lg"] { height: 2.75rem; border-radius: .65rem; font-size: .9375rem; font-weight: 500; }
+    @media (prefers-reduced-motion: no-preference) { .pk-auth main > div { animation: pk-rise .5s cubic-bezier(.16,1,.3,1) both; } }
+  </style>
+
+  <script src="{% static 'register/js/lucide.min.js' %}"></script>
+  <script>
+    if (window.lucide) lucide.createIcons({ attrs: { 'stroke-width': 1.75 } });
+    document.querySelectorAll('[data-pk-theme-toggle]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var d = document.documentElement.classList.toggle('dark');
+        try { localStorage.setItem('pk-theme', d ? 'dark' : 'light'); } catch (_) {}
+      });
+    });
+    // Show / hide password
+    document.querySelectorAll('[data-reveal]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var input = document.getElementById(btn.getAttribute('aria-controls'));
+        var show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        btn.setAttribute('aria-pressed', show);
+        btn.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+        btn.querySelector('[data-on]').classList.toggle('hidden', show);
+        btn.querySelector('[data-off]').classList.toggle('hidden', !show);
+      });
+    });
+    // Busy state on submit
+    document.querySelectorAll('form[data-busy]').forEach(function (f) {
+      f.addEventListener('submit', function () { var b = f.querySelector('[type=submit]'); if (b) { b.disabled = true; b.setAttribute('aria-busy', 'true'); } });
+    });
+  </script>
+</body>
+</html>

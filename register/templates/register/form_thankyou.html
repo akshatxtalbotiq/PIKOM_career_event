@@ -5,63 +5,75 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Thank you - {{ survey.title }}</title>
-  <link rel="stylesheet" href="{% static 'register/assets/css/bootstrap.css' %}">
-  <link rel="stylesheet" href="{% static 'register/assets/css/style.css' %}">
   <style>
     :root {
-      --theme: {% if survey.fkcampaign %}{{ survey.fkcampaign.theme }}{% else %}#198754{% endif %};
-      --theme-soft: {% if survey.fkcampaign %}{{ survey.fkcampaign.theme_soft }}{% else %}#e7f4ec{% endif %};
-    }
-    body { background: #f5f7fb; }
-    .thanks-card { max-width: 620px; padding: 2.5rem; }
-    .review-steps { text-align: left; }
-    .review-steps li { padding: .35rem 0; }
-    .ref-pill {
-      display: inline-block; padding: .25rem .75rem; border-radius: 999px;
-      background: var(--theme-soft); color: var(--theme); font-weight: 600; font-size: .9rem;
-    }
-    @media (max-width: 575.98px) {
-      .thanks-card { padding: 1.5rem; }
-      h2 { font-size: 1.5rem; }
+      --theme: {% if survey.fkcampaign %}{{ survey.fkcampaign.theme }}{% else %}#1F5FE0{% endif %};
+      --theme-soft: {% if survey.fkcampaign %}{{ survey.fkcampaign.theme_soft }}{% else %}#E3ECFE{% endif %};
     }
   </style>
+{% include "register/includes/thanks_css.html" %}
 </head>
 <body>
-  <section class="container-xl">
-    <div class="d-flex flex-column justify-content-center align-items-center text-center py-5" style="min-height:100dvh;">
-      <div class="bg-white rounded shadow thanks-card">
-        <div class="mb-3" style="font-size:64px; color:var(--theme);">&#10003;</div>
+  <header class="ty-top"><div><img src="{% static 'user/img/PIKOM.png' %}" alt="PIKOM">PIKOM Events</div></header>
+  <main>
+    <section class="ty-panel">
+      <div class="ty-head">
+        <span class="ty-badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+        {% if survey.fkcampaign and survey.fkcampaign.title %}<p class="ty-event">{{ survey.fkcampaign.title }}</p>{% endif %}
 
         {% if is_registration %}
-          <h2 class="fw-bold mb-2">Thank you for your submission.</h2>
-          <p class="text-muted mb-3">
-            {% if survey_user.name %}Hi <strong>{{ survey_user.name }}</strong>,<br> Thank you for registering for{% else %}Your registration for{% endif %}
-            <strong>{{ survey.title }}</strong>.
+          <h1>Registration received</h1>
+          <p class="ty-sub">Thank you — your form has been submitted.</p>
+          <p class="ty-lead">
+            {% if survey_user.name %}Thank you, <strong>{{ survey_user.name }}</strong>. Your registration for{% else %}Your registration for{% endif %}
+            <strong>{{ survey.title }}</strong> is with our team.
           </p>
-
-          {% if survey_user.reg_no %}
-            <div class="mb-4">
-              Your reference number: <span class="ref-pill">{{ survey_user.reg_no }}</span>
-            </div>
-          {% endif %}
-
-          <ol class="review-steps mb-4">
-            <li>We have successfully received your registration and it is currently under review.</li>
-            <li>Please keep an eye out for your registration confirmation with the QR code.</li>
-            <li>For any additional requirements, our team will reach out to you.</li>
-          </ol>
         {% else %}
-          <h2 class="fw-bold mb-2">Thank you!</h2>
-          <p class="text-muted mb-4">
+          <h1>Thank you for your feedback</h1>
+          <p class="ty-lead">
             Your response to <strong>{{ survey.title }}</strong> has been recorded{% if survey_user.name %}, <strong>{{ survey_user.name }}</strong>{% endif %}.
           </p>
         {% endif %}
       </div>
 
-      <div class="text-center mt-3" style="font-size:.78rem; color:#9aa3ad; letter-spacing:.02em;">
-        Powered by <span style="font-weight:600; color:#8a93a0;">Talbotiq Technologies</span>
-      </div>
-    </div>
-  </section>
+      {% if is_registration and survey_user.reg_no %}
+        <div class="ty-ref">
+          <div><small>Reference number</small><b id="refNo">{{ survey_user.reg_no }}</b></div>
+          <button type="button" class="ty-copy" id="copyRef" aria-label="Copy reference number">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg><span>Copy</span>
+          </button>
+        </div>
+      {% endif %}
+
+      {% with c=survey.fkcampaign %}
+      {% if is_registration and c %}
+        <div class="ty-card">
+          <h2>Event details</h2>
+          <dl class="ty-details">
+            <div><dt>Event</dt><dd>{{ c.title|default:survey.title }}</dd></div>
+            {% if c.end_date %}<div><dt>Date</dt><dd>{{ c.end_date|date:"l, j F Y" }}</dd></div>{% endif %}
+            {% if c.event_time %}<div><dt>Time</dt><dd>{{ c.event_time }}</dd></div>{% endif %}
+            {% if c.venue %}<div><dt>Venue</dt><dd>{{ c.venue|linebreaksbr }}</dd></div>{% endif %}
+          </dl>
+        </div>
+      {% endif %}
+      {% endwith %}
+
+      {% if is_registration %}
+        <div class="ty-card">
+          <h2>What happens next</h2>
+          <ol class="ty-steps">
+            <li><p><b>We review your registration</b>Our team checks every entry before confirming it.</p></li>
+            <li><p><b>You receive your QR code</b>Watch your inbox for a confirmation with the QR code you'll use to check in.</p></li>
+            <li><p><b>We'll be in touch if needed</b>If anything else is required, our team will contact you.</p></li>
+          </ol>
+        </div>
+      {% else %}
+        <p class="ty-close">You can close this page now.</p>
+      {% endif %}
+    </section>
+    <p class="ty-foot">Powered by Talbotiq Technologies</p>
+  </main>
+{% include "register/includes/thanks_copy_js.html" %}
 </body>
 </html>

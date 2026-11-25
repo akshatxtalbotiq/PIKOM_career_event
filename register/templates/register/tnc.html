@@ -1,79 +1,50 @@
-{% load static %}
-
-<!DOCTYPE html>
+{% load static %}<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Terms & Conditions | PIKOM</title>
-  <meta name="description" content="PIKOM Golf 2025 - Tems & Conditions" />
+  <title>Terms &amp; Conditions | PIKOM</title>
+  <meta name="description" content="PIKOM Golf 2025 - Terms & Conditions" />
   <meta name="keywords" content="PIKOM, Golf, Sponsorship, Program" />
   <meta name="author" content="PIKOM" />
   <link rel="icon" href="{% static 'register/images/favicon.png' %}" type="image/png" />
   <link rel="apple-touch-icon" href="{% static 'register/images/favicon.png' %}" type="image/png" />
-
-
-  <link rel="stylesheet" href="{% static 'register/css/bootstrap.min.css' %}">
-  <link rel="stylesheet" href="{% static 'register/css/style.css' %}">
-  <style>
-    .terms-conditions-list{
-      li{
-        line-height: 1.5;
-        margin-bottom: 1rem;
-      }
-    }
-  </style>
+  <script>(function(){try{var t=localStorage.getItem('pk-theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}})();</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap">
+  <link rel="stylesheet" href="{% static 'register/css/app.css' %}">
 </head>
-<body>
-  
-<section class="container-xl vh-100 my-5">
-  <div class="row">
-    <div class="col-12">
-      <img src="{% static 'register/images/PIKOM.png' %}" class="img-fluid" width="250px" alt="">
-      <h1 class="golf-time fw-bold my-4">Terms & Conditions</h1>
-      <ul  class="terms-conditions-list">
+<body class="min-h-svh bg-background text-foreground">
+  <main class="mx-auto max-w-3xl px-4 py-10 sm:py-16">
+    <img src="{% static 'register/images/PIKOM.png' %}" class="h-20 w-auto" alt="PIKOM">
+    <h1 class="mt-8 text-3xl font-semibold tracking-tight sm:text-4xl">Terms &amp; Conditions</h1>
+    <p class="mt-2 text-muted-foreground">Please read these terms before confirming a sponsorship or registration.</p>
 
-      <li>Sponsorship is confirmed only upon receipt of confirmation notification from the organizer.</li>
+    <article class="card mt-8 p-0">
+      <ol class="divide-y text-[15px] leading-relaxed">
+        <li class="flex gap-4 px-5 py-4 sm:px-6"><span class="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-accent text-xs font-semibold tabular-nums text-primary">1</span><p>Sponsorship is confirmed only upon receipt of confirmation notification from the organizer.</p></li>
+        <li class="flex gap-4 px-5 py-4 sm:px-6"><span class="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-accent text-xs font-semibold tabular-nums text-primary">2</span><p>All payment must be made 14 days from booking date for confirmation. Failure to do so may result in being turned away from the event.</p></li>
+        <li class="flex gap-4 px-5 py-4 sm:px-6"><span class="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-accent text-xs font-semibold tabular-nums text-primary">3</span>
+          <div>
+            <p>Payment method: Bank Transfer (TT/Giro/Direct Bank-In)</p>
+            <dl class="mt-3 grid grid-cols-[auto_1fr] gap-x-6 gap-y-1.5 rounded-lg border bg-muted/40 px-4 py-3 text-sm">
+              <dt class="text-muted-foreground">Bank</dt><dd class="font-medium">Malayan Banking Berhad</dd>
+              <dt class="text-muted-foreground">Account No.</dt><dd class="font-medium tabular-nums">514150-327167</dd>
+              <dt class="text-muted-foreground">Swift Code</dt><dd class="font-medium">MBBEMYKL</dd>
+            </dl>
+          </div>
+        </li>
+        <li class="flex gap-4 px-5 py-4 sm:px-6"><span class="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-accent text-xs font-semibold tabular-nums text-primary">4</span><p>PIKOM reserves the right to reject any registration it deems inappropriate or unsuitable.</p></li>
+        <li class="flex gap-4 px-5 py-4 sm:px-6"><span class="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-accent text-xs font-semibold tabular-nums text-primary">5</span><p>PIKOM and event organizers are not liable for legal or reputational issues from exhibited products, services, or promotional materials. Each company is responsible for ensuring compliance with applicable laws, regulations, and intellectual property rights.</p></li>
+        <li class="flex gap-4 px-5 py-4 sm:px-6"><span class="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-accent text-xs font-semibold tabular-nums text-primary">6</span><p>Participation as a sponsor, exhibitor, or contributor signifies acceptance of these terms. PIKOM reserves the right to remove or reject any material or activity deemed inappropriate or non-compliant with event standards.</p></li>
+        <li class="flex gap-4 px-5 py-4 sm:px-6"><span class="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-accent text-xs font-semibold tabular-nums text-primary">7</span><p>Views or data presented by speakers at the event are based on their own experience or public sources. PIKOM does not verify the accuracy or completeness of such content and will not be held liable for any claims resulting from its use.</p></li>
+        <li class="flex gap-4 px-5 py-4 sm:px-6"><span class="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-accent text-xs font-semibold tabular-nums text-primary">8</span><p>Personal Data: By submitting this Confirmation Form, you consent to the collection, use, and storage of your personal data (name, contact details, and other information provided) for communications about this event and future events organised by PIKOM.</p></li>
+        <li class="flex gap-4 px-5 py-4 sm:px-6"><span class="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-accent text-xs font-semibold tabular-nums text-primary">9</span><p>When sharing is necessary, it will be limited to the event partners named in the Confirmation page, solely for event-related communication.</p></li>
+        <li class="flex gap-4 px-5 py-4 sm:px-6"><span class="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-accent text-xs font-semibold tabular-nums text-primary">10</span><p>You may access, correct, or withdraw your consent at any time by contacting Grace Lee, PIKOM Secretariat, at <a href="mailto:grace@pikom.org.my" class="font-medium text-primary underline-offset-4 hover:underline">grace@pikom.org.my</a>.</p></li>
+        <li class="flex gap-4 px-5 py-4 sm:px-6"><span class="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-accent text-xs font-semibold tabular-nums text-primary">11</span><p>We will keep your data only as long as needed for the stated purposes and then delete it securely.</p></li>
+      </ol>
+    </article>
 
-      <li>All payment must be made 14 days from booking date for confirmation. Failure to do so may result in being turned away from the event.</li>
-
-      <li>Payment method: 
-          Bank Transfer (TT/Giro/Direct Bank-In):
-          Bank: Malayan Banking Berhad
-          Account No.: 514150-327167
-          Swift Code: MBBEMYKL
-      </li>
-
-      <li>PIKOM reserves the right to reject any registration it deems inappropriate or unsuitable.</li>
-
-      <li>PIKOM and event organizers are not liable for legal or reputational issues from exhibited products, services, or promotional materials. Each company is responsible for ensuring compliance with applicable laws, regulations, and intellectual property rights.</li>
-
-      <li>Participation as a sponsor, exhibitor, or contributor signifies acceptance of these terms. PIKOM reserves the right to remove or reject any material or activity deemed inappropriate or non-compliant with event standards</li>
-
-      <li>Views or data presented by speakers at the event are based on their own experience or public sources. PIKOM does not verify the accuracy or completeness of such content and will not be held liable for any claims resulting from its use.</li>
-
-      <li>Personal Data: By submitting this Confirmation Form, you consent to the collection, use, and storage of your personal data (name, contact details, and other information provided) for communications about this event and future events organised by PIKOM.</li>
-
-
-      <li>When sharing is necessary, it will be limited to the event partners named in the Confirmation page, solely for event-related communication.</li>
-
-      <li>You may access, correct, or withdraw your consent at any time by contacting Grace Lee, PIKOM Secretariat, at
-        <a href="email">grace@pikom.org.my</a>.
-      </li>
-
-      <li>We will keep your data only as long as needed for the stated purposes and then delete it securely.</li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="text-center mt-4 pb-4" style="font-size:.78rem; color:#9aa3ad; letter-spacing:.02em;">
-    Powered by <span style="font-weight:600; color:#8a93a0;">Talbotiq Technologies</span>
-  </div>
-</section>
-
-    <script src="{% static 'register/js/jquery-3.7.1.min.js' %}"></script>
-    <script src="{% static 'register/js/bootstrap.bundle.min.js' %}"></script>
-
-
+    <p class="mt-10 text-center text-xs text-muted-foreground">Powered by <span class="font-semibold">Talbotiq Technologies</span></p>
+  </main>
 </body>
 </html>

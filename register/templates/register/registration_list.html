@@ -1,52 +1,63 @@
 {% extends 'register/base.html' %}
 {% load static %}
 
+{% block crumbs %}<ol><li><a href="{% url 'campaign_list' %}">Campaigns</a></li><li><i data-lucide="chevron-right"></i></li><li aria-current="page">Golf registrations</li></ol>{% endblock %}
+
+{% block extracss %}
+<style>
+  .legacy-card { padding: 0 !important; gap: 0 !important; overflow: visible; }
+  .legacy-card .legacy-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; padding: .875rem 1rem; border-bottom: 1px solid var(--border); }
+  .legacy-card .dt-search input { min-width: 16rem; background: var(--card); }
+  .legacy-card .dt-search label { margin-right: .4rem; }
+  .legacy-card .dt-buttons { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .legacy-card .dt-buttons .btn > span { display: inline-flex; align-items: center; gap: .4rem; }
+  .legacy-card .dt-buttons svg, .legacy-card .dt-paging svg { width: 1rem; height: 1rem; }
+  .legacy-card .legacy-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; padding: .75rem 1rem; border-top: 1px solid var(--border); }
+  .legacy-card .legacy-table { overflow-x: auto; }
+  .legacy-card td.dt-empty { padding: 3rem 1rem !important; white-space: normal; }
+  .legacy-card .empty h3 { font-size: 1rem; font-weight: 600; margin: .75rem 0 .25rem; }
+  .legacy-card .empty p { font-size: .875rem; color: var(--muted-foreground); margin: 0; }
+  .note-btn { display: inline-flex; align-items: center; gap: .35rem; color: var(--primary); font-size: .8125rem; font-weight: 500; }
+  .note-btn svg { width: .95rem; height: .95rem; }
+  @media (max-width: 767px) { .legacy-card .dt-search input { min-width: 0; width: 100%; } .legacy-card .dt-search { width: 100%; } }
+  .legacy-card td.dt-empty .empty { position: sticky; left: 0; width: min(40rem, calc(100vw - 4rem)); }
+  .legacy-card table.dataTable, .legacy-card table.dataTable.no-footer, .legacy-card .dt-scroll-body { border-bottom: 0 !important; }
+</style>
+{% endblock %}
+
 {% block content %}
- <main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg ">
-   
-    <div class="container-fluid py-2">
-      <div class="row">
-        <div class="col-12">
-          <div class="ms-3">
-            <h3 class="mb-0 h4 font-weight-bolder opacity-7"><i class="ti ti-list"></i>
-            PIKOM Golf Invitational & Charity Drive 2025 - Registration</h3>
-        
-            <nav aria-label="breadcrumb m-0">
-              <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
-                <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;">Campaigns</a></li>
-                <li class="breadcrumb-item text-sm text-dark active" aria-current="page">PIKOM Golf Invitational & Charity Drive 2025 - Registration</li>
-              </ol>
-            </nav>
-          </div>
-        </div>
-
-        <div class="col-12">
-          <div class="card my-4">
-
-            <div class="card-body px-0 pb-2">
-              <div class="table-responsive p-0">
-                <table id="entries" class="table table-hover align-items-center mb-0" style="font-size: 12px;">
+<div class="flex flex-col gap-6">
+  <header class="page-header animate-rise !mb-0">
+    <div class="min-w-0">
+      <p class="pk-micro mb-3"><span><b>[L]</b> Legacy golf list</span><span aria-hidden="true" class="text-border">/</span><span class="normal-case tracking-normal font-sans font-medium text-[.8rem]">{{ campaign.title }}</span></p>
+      <h1 class="page-title">Golf registrations</h1>
+      <p class="page-description">Player registrations for this campaign. Export them or email QR codes.</p>
+    </div>
+  </header>
+  <div class="flex items-baseline justify-between gap-4 flex-wrap -mb-3"><h2 class="pk-micro m-0"><b>[01]</b> Registrations</h2><span class="text-[.8125rem] text-muted-foreground max-sm:hidden">Search, filter by column or export</span></div>
+  <div class="card legacy-card animate-rise animate-rise-1">
+                <table id="entries" class="table">
                   <thead>
                     <tr>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder" data-col-key="regno" data-filter="text">Reg. No.</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder" data-col-key="salutation" data-filter="choice">Salutation</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder" data-col-key="name" data-filter="text">Name</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder" data-col-key="email" data-filter="text">Email</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder" data-col-key="phone" data-filter="text">Phone</th>
-                        <!-- <th class="text-uppercase text-secondary text-sm font-weight-bolder">Designation</th> -->
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder " data-col-key="org" data-filter="text">Organization</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder" data-col-key="handicap" data-filter="number">HandiCap</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder" data-col-key="shirt" data-filter="choice">Shirt Size</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder" data-col-key="regdate" data-filter="date">Registration Date</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder" data-col-key="remarks" data-filter="text">Remarks</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder"></th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder" data-col-key="bill_name" data-filter="text">Company Full Name</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder" data-col-key="bill_regno" data-filter="text">Business Reg. No</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder" data-col-key="bill_addr" data-filter="text">Company Full Address</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder" data-col-key="bill_email" data-filter="text">Email (e-Invoice)</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder" data-col-key="sb" data-filter="text">Submitted By</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder" data-col-key="sb_email" data-filter="text">SB Email</th>
-                        <th class="text-uppercase text-secondary text-sm font-weight-bolder" data-col-key="sb_phone" data-filter="text">SB Contact Number</th>
+                        <th  data-col-key="regno" data-filter="text">Reg. No.</th>
+                        <th  data-col-key="salutation" data-filter="choice">Salutation</th>
+                        <th  data-col-key="name" data-filter="text">Name</th>
+                        <th  data-col-key="email" data-filter="text">Email</th>
+                        <th  data-col-key="phone" data-filter="text">Phone</th>
+                        <!-- <th >Designation</th> -->
+                        <th  data-col-key="org" data-filter="text">Organization</th>
+                        <th  data-col-key="handicap" data-filter="number">HandiCap</th>
+                        <th  data-col-key="shirt" data-filter="choice">Shirt Size</th>
+                        <th  data-col-key="regdate" data-filter="date">Registration Date</th>
+                        <th  data-col-key="remarks" data-filter="text">Remarks</th>
+                        <th ></th>
+                        <th  data-col-key="bill_name" data-filter="text">Company Full Name</th>
+                        <th  data-col-key="bill_regno" data-filter="text">Business Reg. No</th>
+                        <th  data-col-key="bill_addr" data-filter="text">Company Full Address</th>
+                        <th  data-col-key="bill_email" data-filter="text">Email (e-Invoice)</th>
+                        <th  data-col-key="sb" data-filter="text">Submitted By</th>
+                        <th  data-col-key="sb_email" data-filter="text">SB Email</th>
+                        <th  data-col-key="sb_phone" data-filter="text">SB Contact Number</th>
                         
                     </tr>
                   </thead>
@@ -54,39 +65,29 @@
                     <!-- Filled via JavaScript -->
                 </tbody>
                 </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </main>
+  </div>
+</div>
 
   <!-- modal for remarks -->
   <div class="modal fade" id="noteModal" tabindex="-1" aria-labelledby="noteModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
   <div class="modal-dialog modal-sm" style="max-width: 500px;">
-    <div class="modal-content border shadow-sm rounded-3">
+    <div class="modal-content">
 
-      <div class="modal-header bg-light border-bottom rounded-top">
+      <div class="modal-header">
         <h5 class="modal-title" id="noteModalLabel">Edit Remarks</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
 
       <div class="modal-body">
-        <label for="modal-remarks" class="form-label fw-semibold">Remarks</label>
-        <textarea id="modal-remarks" class="form-control border rounded-2 shadow-sm p-2" rows="4" placeholder="Enter remarks..."></textarea>
+        <label for="modal-remarks" class="label mb-2">Remarks</label>
+        <textarea id="modal-remarks" class="textarea" rows="4" placeholder="Enter remarks..."></textarea>
 
         <input type="hidden" id="modal-regno">
       </div>
 
-      <div class="modal-footer rounded-bottom">
-        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
-          <i class="material-symbols-rounded align-middle">close</i> Close
-        </button>
-        <button type="button" class="btn btn-primary btn-sm" id="save-remarks-btn">
-          <i class="material-symbols-rounded align-middle">save</i> Save
-        </button>
+      <div class="modal-footer">
+        <button type="button" class="btn" data-variant="outline" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn" data-variant="primary" id="save-remarks-btn"><i data-lucide="save"></i>Save remarks</button>
       </div>
 
     </div>
@@ -189,7 +190,7 @@
                         style="font-size: 12px; color: #0d6efd;"
                         data-regno="${row.registration_code}" 
                         data-remarks="${row.remarks || ''}">
-                  <i class="material-symbols-rounded">note</i>Add Remarks
+                  <i data-lucide="sticky-note"></i>Add Remarks
                 </button>`;
             },
             orderable: false,
@@ -205,20 +206,18 @@
           
         ],
         dom:
-          "<'row mb-3'<'col-sm-6 text-start px-2'f><'col-sm-6 text-end px-2'B>>" +
-          "<'row'<'col-12'tr>>" +
-          "<'row'<'col-sm-6'i><'col-sm-6'p>>",
+          "<'legacy-bar'fB><'legacy-table'tr><'legacy-foot'ip>",
         buttons: [
           {
             extend: 'excel',
-            className: 'btn btn-outline-success btn-sm export-btn-fixed', 
-            text: '<i class="material-symbols-rounded">download</i> Export to Excel',           
+            className: 'export-btn-fixed', attr: { 'data-variant': 'outline', 'data-size': 'sm' },
+            text: '<i data-lucide="file-spreadsheet"></i>Export to Excel',           
             filename: 'registration_list',
             title: 'Registration List', 
           },
           {
-            text: 'Send QR',
-            className: 'btn btn-outline-success btn-sm', 
+            text: '<i data-lucide="send"></i>Send QR codes',
+            className: '', attr: { 'data-variant': 'primary', 'data-size': 'sm' }, 
             action: function (e, dt, node, config) {
                 $.ajax({
                     url: "/send_qr/0",
@@ -232,14 +231,14 @@
         fixedHeader: {
           header: true,
           footer: true,
-          headerOffset: 50
+          headerOffset: 56
         },
         autoWidth: true,
         scrollCollapse: true,
         language: {
           paginate: {
-            previous: '<i class="material-symbols-rounded">chevron_left</i>',
-            next: '<i class="material-symbols-rounded">chevron_right</i>'
+            previous: '<i data-lucide="chevron-left"></i>',
+            next: '<i data-lucide="chevron-right"></i>'
           },
           searchBuilder: {
             button: 'Add filters',
@@ -253,11 +252,9 @@
             left: '<i class="material-symbols-rounded">chevron_left</i>',
             clearAll: '<i class="material-symbols-rounded">x</i>Clear All'
           },
-          emptyTable:
-            "<img src='{% static 'user/img/illustrations/notfoundImg3.png' %}' width='180px' alt='No data' /><p class='fs-5 fw-500'>No Record available in table</p>",
+          emptyTable: "<div class='empty'><header><span class='icon-chip'><i data-lucide='inbox'></i></span><h3>No entries yet</h3><p>Entries appear here as people submit the form.</p></header></div>",
           infoEmpty: "0 Record",
-          zeroRecords:
-            "<img src='{% static 'user/img/illustrations/notfoundImg3.png' %}' width='180px' alt='No data' /><p class='fs-5 fw-500'>No Record to display</p>"
+          zeroRecords: "<div class='empty'><header><span class='icon-chip'><i data-lucide='search-x'></i></span><h3>No matching entries</h3><p>Try another search, or clear the column filters.</p></header></div>"
         },
         order: [[0, 'desc']],
         initComplete: function () {

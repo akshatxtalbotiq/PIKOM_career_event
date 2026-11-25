@@ -1,126 +1,167 @@
 {% load humanize %}
 {% comment %}
 HTML fragment loaded into the entries-list drawer. No {% extends %} — it is
-injected with innerHTML, so it must stay self-contained markup only.
+injected with innerHTML, so it must stay self-contained markup only. Its styles
+(.gd-*) live in golf_submission_list.html.
 {% endcomment %}
 
-<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
-  <div>
-    <div class="h5 mb-0">{{ registration.reg_no|default:registration.id }}</div>
-    <div class="text-xs text-secondary">
-      Submitted {{ registration.submitted_at|date:"l, j F Y" }} at {{ registration.submitted_at|date:"h:i A" }}
+{% with who=registration.contact_person|default:registration.billing_company %}
+<div class="gd-summary">
+  <div class="gd-avatar" aria-hidden="true">{% if who %}{{ who|slice:":1"|upper }}{% else %}#{% endif %}</div>
+  <div class="gd-summary-main">
+    <span class="pk-micro gd-ref-line">Ref <b class="gd-ref">{{ registration.reg_no|default:registration.id }}</b></span>
+    <div class="gd-name">{{ who|default:"Unnamed entry" }}</div>
+    {% if registration.contact_person and registration.billing_company %}<div class="gd-org">{{ registration.billing_company }}</div>{% endif %}
+    <div class="gd-meta">
+      Submitted {{ registration.submitted_at|date:"l, j F Y" }} at {{ registration.submitted_at|date:"g:i A" }}
     </div>
+    {% if registration.approved_at %}
+      <div class="gd-meta">
+        {{ registration.get_approval_status_display }} on {{ registration.approved_at|date:"j M Y, g:i A" }}
+        {% if registration.approved_by %}by {{ registration.approved_by.get_full_name|default:registration.approved_by.username }}{% endif %}
+      </div>
+    {% endif %}
   </div>
-  <span class="status-pill status-{{ registration.approval_status }}">{{ registration.get_approval_status_display }}</span>
+  <div class="gd-summary-side">
+    <span class="badge {% if registration.approval_status == 'approved' %}badge-success{% elif registration.approval_status == 'rejected' %}badge-danger{% else %}badge-warning{% endif %} badge-dot" data-variant="soft">{{ registration.get_approval_status_display }}</span>
+    <div class="gd-total-label">Total</div>
+    <div class="gd-total"><span class="gd-unit">{{ currency }}</span>{{ registration.total_amount|floatformat:2|intcomma }}</div>
+  </div>
 </div>
+{% endwith %}
 
-{% if registration.approved_at %}
-  <div class="text-xs text-secondary mb-2">
-    {{ registration.get_approval_status_display }} on {{ registration.approved_at|date:"j M Y, h:i A" }}
-    {% if registration.approved_by %}by {{ registration.approved_by.get_full_name|default:registration.approved_by.username }}{% endif %}
-  </div>
-{% endif %}
+<div class="gd-grid">
+  <section class="gd-block">
+    <h3 class="gd-h pk-micro"><b></b> Contact</h3>
+    <dl class="gd-dl">
+      {% for key, label, kind, required in contact_spec %}
+        <dt>{{ label }}</dt>
+        <dd>
+          {% if key == 'contact_person' %}{{ registration.contact_person|default:"—" }}
+          {% elif key == 'contact_designation' %}{{ registration.contact_designation|default:"—" }}
+          {% elif key == 'contact_number' %}{{ registration.contact_number|default:"—" }}
+          {% elif key == 'contact_email' %}{% if registration.contact_email %}<a href="mailto:{{ registration.contact_email }}">{{ registration.contact_email }}</a>{% else %}—{% endif %}
+          {% endif %}
+        </dd>
+      {% endfor %}
+    </dl>
+  </section>
+
+  <section class="gd-block">
+    <h3 class="gd-h pk-micro"><b></b> Billing</h3>
+    <dl class="gd-dl">
+      {% for key, label, kind, required in billing_spec %}
+        <dt>{{ label }}</dt>
+        <dd>
+          {% if key == 'billing_company' %}{{ registration.billing_company|default:"—" }}
+          {% elif key == 'billing_reg_no' %}{{ registration.billing_reg_no|default:"—" }}
+          {% elif key == 'billing_address' %}{{ registration.billing_address|default:"—"|linebreaksbr }}
+          {% elif key == 'billing_email' %}{{ registration.billing_email|default:"—" }}
+          {% elif key == 'billing_contact_person' %}{{ registration.billing_contact_person|default:"—" }}
+          {% elif key == 'billing_designation' %}{{ registration.billing_designation|default:"—" }}
+          {% elif key == 'billing_contact_number' %}{{ registration.billing_contact_number|default:"—" }}
+          {% endif %}
+        </dd>
+      {% endfor %}
+    </dl>
+  </section>
+</div>
 
 {% if players %}
-  <div class="detail-section">Players</div>
-  {% for p in players %}
-    <div class="border rounded p-2 mb-2">
-      <div class="fw-bold mb-1">
-        Player {{ p.slot }} — {{ p.display_name|default:"(blank)" }}
-      </div>
-      <div class="row g-1 text-xs">
-        {% if p.handicap %}<div class="col-6">Handicap (USGA): <strong>{{ p.handicap }}</strong></div>{% endif %}
-        {% if p.tshirt_size %}<div class="col-6">T-Shirt: <strong>{{ p.tshirt_size }}</strong></div>{% endif %}
-        <div class="col-6">
-          TGCC member:
-          <strong>{% if p.is_tgcc_member %}Yes{% if p.tgcc_membership_no %} ({{ p.tgcc_membership_no }}){% endif %}{% else %}No{% endif %}</strong>
-        </div>
-        {% if p.organisation %}<div class="col-6">Organisation: <strong>{{ p.organisation }}</strong></div>{% endif %}
-        {% if p.designation %}<div class="col-6">Designation: <strong>{{ p.designation }}</strong></div>{% endif %}
-        {% if p.mobile %}<div class="col-6">Mobile: <strong>{{ p.mobile }}</strong></div>{% endif %}
-        {% if p.email %}<div class="col-12">Email: <strong>{{ p.email }}</strong></div>{% endif %}
-      </div>
+  <section class="gd-section">
+    <h3 class="gd-h pk-micro"><b></b> Players <span class="gd-count">{{ players|length }}</span></h3>
+    <div class="gd-table-wrap">
+      <table class="gd-table">
+        <thead>
+          <tr><th>#</th><th>Player</th><th>Handicap</th><th>T-shirt</th><th>TGCC member</th><th>Contact</th></tr>
+        </thead>
+        <tbody>
+          {% for p in players %}
+            <tr>
+              <td class="gd-num">{{ p.slot }}</td>
+              <td>
+                <div class="gd-strong">{{ p.display_name|default:"(blank)" }}</div>
+                {% if p.designation or p.organisation %}
+                  <div class="gd-sub">{{ p.designation }}{% if p.designation and p.organisation %}, {% endif %}{{ p.organisation }}</div>
+                {% endif %}
+              </td>
+              <td class="gd-num">{{ p.handicap|default:"—" }}</td>
+              <td>{{ p.tshirt_size|default:"—" }}</td>
+              <td>{% if p.is_tgcc_member %}Yes{% if p.tgcc_membership_no %} <span class="gd-sub">({{ p.tgcc_membership_no }})</span>{% endif %}{% else %}No{% endif %}</td>
+              <td>
+                {% if p.mobile %}<div>{{ p.mobile }}</div>{% endif %}
+                {% if p.email %}<div class="gd-sub">{{ p.email }}</div>{% endif %}
+                {% if not p.mobile and not p.email %}—{% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
-  {% endfor %}
+  </section>
 {% endif %}
 
-{% if selections %}
-  <div class="detail-section">{% if form.is_sponsor %}Sponsorship items{% else %}Add-ons{% endif %}</div>
-  {% for s in selections %}
-    <div class="detail-row">
-      <span class="k flex-grow-1">
-        {{ s.item_name }}
-        {% if not s.item %}<span class="badge bg-light text-dark text-xxs">item since removed</span>{% endif %}
-      </span>
-      <span class="v">{{ currency }} {{ s.unit_price|floatformat:2|intcomma }}</span>
-    </div>
-  {% endfor %}
-{% endif %}
-
-<div class="detail-section">Amount</div>
-{% if registration.base_price %}
-  <div class="detail-row">
-    <span class="k flex-grow-1">{{ form.package_label|default:"Participation Package" }}</span>
-    <span class="v">{{ currency }} {{ registration.base_price|floatformat:2|intcomma }}</span>
-  </div>
-{% endif %}
-{% if registration.items_total %}
-  <div class="detail-row">
-    <span class="k flex-grow-1">{% if form.is_sponsor %}Items{% else %}Add-ons{% endif %} subtotal</span>
-    <span class="v">{{ currency }} {{ registration.items_total|floatformat:2|intcomma }}</span>
-  </div>
-{% endif %}
-<div class="detail-row" style="border-bottom:none;">
-  <span class="k flex-grow-1 fw-bold">Total</span>
-  <span class="v" style="font-size:1.05rem;">{{ currency }} {{ registration.total_amount|floatformat:2|intcomma }}</span>
-</div>
-
-<div class="detail-section">Contact details</div>
-{% for key, label, kind, required in contact_spec %}
-  <div class="detail-row">
-    <span class="k">{{ label }}</span>
-    <span class="v">
-      {% if key == 'contact_person' %}{{ registration.contact_person|default:"—" }}
-      {% elif key == 'contact_designation' %}{{ registration.contact_designation|default:"—" }}
-      {% elif key == 'contact_number' %}{{ registration.contact_number|default:"—" }}
-      {% elif key == 'contact_email' %}{{ registration.contact_email|default:"—" }}
+<section class="gd-section">
+  <h3 class="gd-h pk-micro"><b></b> {% if form.is_sponsor %}Sponsorship items{% else %}Package &amp; add-ons{% endif %}</h3>
+  <table class="gd-table gd-money">
+    <tbody>
+      {% if registration.base_price %}
+        <tr>
+          <td>{{ form.package_label|default:"Participation package" }}</td>
+          <td class="gd-amt">{{ currency }} {{ registration.base_price|floatformat:2|intcomma }}</td>
+        </tr>
       {% endif %}
-    </span>
-  </div>
-{% endfor %}
-
-<div class="detail-section">Billing details</div>
-{% for key, label, kind, required in billing_spec %}
-  <div class="detail-row">
-    <span class="k">{{ label }}</span>
-    <span class="v">
-      {% if key == 'billing_company' %}{{ registration.billing_company|default:"—" }}
-      {% elif key == 'billing_reg_no' %}{{ registration.billing_reg_no|default:"—" }}
-      {% elif key == 'billing_address' %}{{ registration.billing_address|default:"—"|linebreaksbr }}
-      {% elif key == 'billing_email' %}{{ registration.billing_email|default:"—" }}
-      {% elif key == 'billing_contact_person' %}{{ registration.billing_contact_person|default:"—" }}
-      {% elif key == 'billing_designation' %}{{ registration.billing_designation|default:"—" }}
-      {% elif key == 'billing_contact_number' %}{{ registration.billing_contact_number|default:"—" }}
+      {% for s in selections %}
+        <tr>
+          <td>
+            {{ s.item_name }}
+            {% if not s.item %}<span class="badge badge-muted ml-1" data-variant="soft">Item since removed</span>{% endif %}
+          </td>
+          <td class="gd-amt">{{ currency }} {{ s.unit_price|floatformat:2|intcomma }}</td>
+        </tr>
+      {% empty %}
+        {% if not registration.base_price %}
+          <tr><td colspan="2" class="gd-sub">No {% if form.is_sponsor %}items{% else %}add-ons{% endif %} selected.</td></tr>
+        {% endif %}
+      {% endfor %}
+      {% if registration.items_total and registration.base_price %}
+        <tr class="gd-subtotal">
+          <td>{% if form.is_sponsor %}Items{% else %}Add-ons{% endif %} subtotal</td>
+          <td class="gd-amt">{{ currency }} {{ registration.items_total|floatformat:2|intcomma }}</td>
+        </tr>
       {% endif %}
-    </span>
-  </div>
-{% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td>Total</td>
+        <td class="gd-amt">{{ currency }} {{ registration.total_amount|floatformat:2|intcomma }}</td>
+      </tr>
+    </tfoot>
+  </table>
+</section>
 
 {% if answers %}
-  <div class="detail-section">Additional information</div>
-  {% for a in answers %}
-    <div class="detail-row">
-      <span class="k">{{ a.label|truncatechars:60 }}</span>
-      <span class="v">{{ a.value|default:"—" }}</span>
-    </div>
-  {% endfor %}
+  <section class="gd-section">
+    <h3 class="gd-h pk-micro"><b></b> Additional information</h3>
+    <dl class="gd-dl gd-dl-wide">
+      {% for a in answers %}
+        <dt>{{ a.label|truncatechars:80 }}</dt>
+        <dd>{{ a.value|default:"—" }}</dd>
+      {% endfor %}
+    </dl>
+  </section>
 {% endif %}
 
-{% if registration.remarks %}
-  <div class="detail-section">Remarks</div>
-  <div class="alert alert-light border mb-0">{{ registration.remarks|linebreaksbr }}</div>
-{% endif %}
+<section class="gd-section">
+  <h3 class="gd-h pk-micro"><b></b> Remarks</h3>
+  {% if registration.remarks %}
+    <div class="gd-remarks">{{ registration.remarks|linebreaksbr }}</div>
+  {% else %}
+    <p class="gd-sub">No remarks. Add one in the Remarks column of the entries table.</p>
+  {% endif %}
+</section>
 
-<div class="text-xxs text-secondary mt-3">
-  Confirmation email: {% if registration.confirmation_sent %}sent{% else %}not sent{% endif %}
+<div class="gd-foot">
+  <i data-lucide="{% if registration.confirmation_sent %}mail-check{% else %}mail-x{% endif %}" aria-hidden="true"></i>
+  Confirmation email {% if registration.confirmation_sent %}sent{% else %}not sent{% endif %}
 </div>

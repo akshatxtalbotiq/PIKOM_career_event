@@ -1,0 +1,12 @@
+  <script>
+    (function () {
+      var btn = document.getElementById('copyRef');
+      if (!btn || !navigator.clipboard) { if (btn) btn.hidden = true; return; }
+      btn.addEventListener('click', function () {
+        navigator.clipboard.writeText(document.getElementById('refNo').textContent.trim()).then(function () {
+          btn.lastElementChild.textContent = 'Copied';
+          setTimeout(function () { btn.lastElementChild.textContent = 'Copy'; }, 1800);
+        });
+      });
+    })();
+  </script>

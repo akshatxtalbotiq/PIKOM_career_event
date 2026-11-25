@@ -1,156 +1,88 @@
 {% extends 'register/base.html' %}
 {% load static %}
 
+{% block crumbs %}<ol><li><a href="{% url 'campaign_list' %}">Campaigns</a></li><li><i data-lucide="chevron-right"></i></li><li aria-current="page">{{ campaign.title }}</li></ol>{% endblock %}
+
 {% block extracss %}
 <style>
-  .dataTables_wrapper .dataTables_filter,
-  .dataTables_wrapper .dataTables_length {
-    display: inline-block;
-    vertical-align: middle;
-    margin-right: 1rem; /* space between search and select */
-  }
-
-  /* Style the file input to look cleaner */
-#sendQRModal input[type="file"] {
-  padding: 0.6rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background-color: #fff;
-  font-size: 0.95rem;
-  cursor: pointer;
-}
-
-/* Ensure the file input text doesnâ€™t overflow */
-#sendQRModal input[type="file"]::-webkit-file-upload-button {
-  padding: 0.4rem 0.75rem;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  background: #f8f9fa;
-  cursor: pointer;
-  margin-right: 0.75rem;
-  transition: background 0.2s ease;
-}
-#sendQRModal input[type="file"]::-webkit-file-upload-button:hover {
-  background: #e9ecef;
-}
-
-/* File list container */
-#filePreview .list-group-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center; /* Align name + button vertically */
-  padding: 0.6rem 0.75rem;
-  font-size: 0.9rem;
-  border: none;
-  border-bottom: 1px solid #e9ecef;
-}
-
-/* File name styling */
-#filePreview span {
-  flex-grow: 1;
-  font-weight: 500;
-  color: #333;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Remove button */
-#filePreview .remove-file {
-  flex-shrink: 0;
-  font-size: 0.85rem;
-  padding: 0.3rem 0.75rem;
-  border-radius: 6px;
-}
-
-
+  .legacy-card { padding: 0 !important; gap: 0 !important; overflow: visible; }
+  .legacy-card .legacy-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; padding: .875rem 1rem; border-bottom: 1px solid var(--border); }
+  .legacy-card .legacy-bar-left { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+  .legacy-card .dt-search input { min-width: 16rem; background: var(--card); }
+  .legacy-card .dt-search label, .legacy-card .dt-length label { margin: 0 .4rem; color: var(--muted-foreground); }
+  .legacy-card .dt-buttons { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .legacy-card .dt-buttons .btn > span { display: inline-flex; align-items: center; gap: .4rem; }
+  .legacy-card .dt-buttons svg, .legacy-card .dt-paging svg { width: 1rem; height: 1rem; }
+  .legacy-card .legacy-table { overflow-x: auto; }
+  .legacy-card .legacy-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; padding: .75rem 1rem; border-top: 1px solid var(--border); }
+  .legacy-card td.dt-empty { padding: 3rem 1rem !important; white-space: normal; }
+  .legacy-card td.dt-empty .empty { position: sticky; left: 0; width: min(40rem, calc(100vw - 4rem)); }
+  .legacy-card .empty h3 { font-size: 1rem; font-weight: 600; margin: .75rem 0 .25rem; }
+  .legacy-card .empty p { font-size: .875rem; color: var(--muted-foreground); margin: 0; }
+  #entries input[type=checkbox], #select-all { width: 1rem; height: 1rem; accent-color: var(--primary); }
+  .note-btn { display: inline-flex; align-items: center; gap: .35rem; color: var(--primary); font-size: .8125rem; font-weight: 500; background: transparent; border: 0; padding: 0; }
+  .note-btn svg { width: .95rem; height: .95rem; }
+  #filePreview { list-style: none; margin: .65rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .4rem; }
+  #filePreview .list-group-item { display: flex; justify-content: space-between; align-items: center; gap: .6rem; padding: .35rem .35rem .35rem .65rem; font-size: .8125rem; border: 1px solid var(--border); border-radius: calc(var(--radius) - 2px); }
+  #filePreview span { flex-grow: 1; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #excludeColumnsSelect { min-height: 12rem; }
+  @media (max-width: 767px) { .legacy-card .dt-search input { min-width: 0; width: 100%; } }
+  .legacy-card table.dataTable, .legacy-card table.dataTable.no-footer, .legacy-card .dt-scroll-body { border-bottom: 0 !important; }
+  .pk-selbar { position: fixed; left: 50%; bottom: 1.25rem; transform: translateX(-50%); z-index: 60; display: flex; align-items: center; gap: .9rem; padding: .45rem .45rem .45rem 1rem; background: var(--brand-navy); color: #fff; border-radius: .9rem; font-size: .8125rem; box-shadow: 0 12px 32px -8px rgba(7,23,57,.45); max-width: calc(100vw - 2rem); }
+  .pk-selbar[hidden] { display: none; }
+  .pk-selbar b { font-size: .9rem; }
+  .pk-selbar-hint { color: rgba(255,255,255,.65); }
+  @media (max-width: 639.98px) { .pk-selbar-hint { display: none; } }
+  .pk-selbar-x { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border: 0; border-radius: .6rem; background: transparent; color: #fff; cursor: pointer; }
+  .pk-selbar-x:hover { background: rgba(255,255,255,.1); } .pk-selbar-x svg { width: 1rem; height: 1rem; }
 </style>
 {% endblock %}
 
 {% block content %}
- <main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg ">
-   
-    <div class="container-fluid py-2">
-      <div class="row">
-        <!-- <div class="col-12">
-          <div class="ms-3">
-            <h3 class="mb-0 h4 font-weight-bolder opacity-7"><i class="ti ti-list"></i>
-            {{campaign.title}}</h3>
-        
-            <nav aria-label="breadcrumb m-0">
-              <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
-                <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;">Campaigns</a></li>
-                <li class="breadcrumb-item text-sm text-dark active" aria-current="page">{{campaign.title}}</li>
-              </ol>
-            </nav>
-          </div>
-        </div> -->
-        <div class="col-8 d-flex justify-content-start align-items-center gap-2">                
-            <div class="ms-3">
-              <h3 class="mb-0 h4 font-weight-bolder opacity-7"><i class="ti ti-list"></i>
-              {{campaign.title}}</h3>
-          
-              <nav aria-label="breadcrumb m-0">
-                <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
-                  <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;">Campaigns</a></li>
-                  <li class="breadcrumb-item text-sm text-dark active" aria-current="page">{{campaign.title}}</li>
-                </ol>
-              </nav>
-            </div>
-        </div>  
-        <div class="col-4 d-flex justify-content-end align-items-center gap-2">
-          <div>
-            <div class="d-flex justify-content-end align-items-center gap-2 mt-2">
-              <button type="button"  data-bs-toggle="modal" data-bs-target="#new-form" class="btn btn-sm btn-primary waves-effect"><i class="icon-base ti ti-plus"></i> <span class="d-none d-xl-inline-block">Add New Participant</span></button>
-            </div>
-            <div class="badge bg-white border border-success d-flex align-items-center gap-2 ">
-              <i class="ti ti-user text-success"></i>
-              <span class="fw-semibold small text-success">Participants Checked In:</span>
-              <span class="small text-success">
-                <span id="checkedIn" class="fw-bold">0</span>
-                <span class="text-muted mx-1">/</span>
-                <span id="totalParticipants">0</span>
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-        
-      <div class="col-12">
-        <div class="card my-2">
-
-          <div class="card-body px-0 pb-2">
-            <div class="table-responsive p-3">
-              <table id="entries" class="table table-hover align-items-center mb-0" style="font-size: 12px;">
+<div class="flex flex-col gap-6">
+  <header class="page-header animate-rise !mb-0">
+    <div class="min-w-0">
+      <p class="pk-micro mb-3"><span><b>[L]</b> Legacy submissions</span></p>
+      <h1 class="page-title">{{ campaign.title }}</h1>
+      <p class="page-description">Legacy submissions list: export, remind, send QR codes and check people in.</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="badge badge-success badge-dot h-9 px-3 text-sm tabular-nums">Checked in <b id="checkedIn" class="font-semibold">0</b> / <span id="totalParticipants">0</span></span>
+      <button type="button" data-bs-toggle="modal" data-bs-target="#new-form" class="btn waves-effect" data-variant="primary"><i data-lucide="user-plus"></i>Add participant</button>
+    </div>
+  </header>
+  <div class="flex items-baseline justify-between gap-4 flex-wrap -mb-3"><h2 class="pk-micro m-0"><b>[01]</b> Submissions</h2><span class="text-[.8125rem] text-muted-foreground max-sm:hidden">Tick rows to remind, email QR codes or remove</span></div>
+  <div class="card legacy-card animate-rise animate-rise-1">
+              <table id="entries" class="table">
                 <thead>
                   <tr>
                       <th><input type="checkbox" id="select-all"></th>
-                      <!-- <th class="text-uppercase text-secondary text-sm font-weight-bolder">Reg. No.</th>
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Name</th>
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Email</th>
+                      <!-- <th >Reg. No.</th>
+                      <th >Name</th>
+                      <th >Email</th>
                       
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Designation</th>
+                      <th >Designation</th>
                       <th class="text-uppercase text-secondary text-sm font-weight-bolder ">Organization</th>                        
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Registartion Date</th>
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Checked-In</th>
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Sent QR</th>
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Remarks</th>
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder"></th> -->
+                      <th >Registartion Date</th>
+                      <th >Checked-In</th>
+                      <th >Sent QR</th>
+                      <th >Remarks</th>
+                      <th ></th> -->
 
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">ID</th>
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Reg. No.</th>
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Name</th>
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Email</th>
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Mobile</th>
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Organization</th>
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Job Title</th>                      
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Checked In</th>
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">QR Sent</th>                     
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Is Member</th>
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Category</th>
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Promo Code</th>
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder">Remarks</th>
-                      <th class="text-uppercase text-secondary text-sm font-weight-bolder"></th>
+                      <th >ID</th>
+                      <th >Reg. No.</th>
+                      <th >Name</th>
+                      <th >Email</th>
+                      <th >Mobile</th>
+                      <th >Organization</th>
+                      <th >Job Title</th>                      
+                      <th >Checked In</th>
+                      <th >QR Sent</th>                     
+                      <th >Is Member</th>
+                      <th >Category</th>
+                      <th >Promo Code</th>
+                      <th >Remarks</th>
+                      <th ></th>
 
 
                   </tr>
@@ -159,39 +91,31 @@
                   <!-- Filled via JavaScript -->
               </tbody>
               </table>
-            </div>
-          </div>
-        </div>
-      </div>
-      
+  </div>
 
-    </div>
-  </main>
+</div>
+
 
   <!-- modal for remarks -->
   <div class="modal fade" id="noteModal" tabindex="-1" aria-labelledby="noteModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
   <div class="modal-dialog modal-sm modal-dialog-centered" style="max-width: 500px;">
-    <div class="modal-content border shadow-sm rounded-3">
+    <div class="modal-content">
 
-      <div class="modal-header bg-light border-bottom rounded-top">
+      <div class="modal-header">
         <h5 class="modal-title" id="noteModalLabel">Edit Remarks</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
 
       <div class="modal-body">
-        <label for="modal-remarks" class="form-label fw-semibold">Remarks</label>
-        <textarea id="modal-remarks" class="form-control border rounded-2 shadow-sm p-2" rows="4" placeholder="Enter remarks..."></textarea>
+        <label for="modal-remarks" class="label mb-2">Remarks</label>
+        <textarea id="modal-remarks" class="textarea" rows="4" placeholder="Enter remarks..."></textarea>
 
         <input type="hidden" id="modal-regno">
       </div>
 
-      <div class="modal-footer rounded-bottom">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          <i class="material-symbols-rounded align-middle">close</i> Close
-        </button>
-        <button type="button" class="btn btn-primary" id="save-remarks-btn">
-          <i class="material-symbols-rounded align-middle">save</i> Save
-        </button>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-variant="outline" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn" data-variant="primary" id="save-remarks-btn"><i data-lucide="save"></i>Save remarks</button>
       </div>
 
     </div>
@@ -201,9 +125,9 @@
 <!-- Send QR Modal -->
 <div class="modal fade" id="sendQRModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
   <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content shadow-lg rounded-3">
+    <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="material-symbols-rounded me-2">qr_code</i> Send QR</h5>
+        <div class="flex items-center gap-3"><span class="icon-chip bg-violet-soft text-violet"><i data-lucide="qr-code"></i></span><h5 class="modal-title">Send QR codes</h5></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         <!-- <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button> -->
       </div>
       
@@ -213,24 +137,20 @@
           <input type="hidden" name="ids" id="selectedIdsInput">
 
           <!-- File Upload -->
-          <div class="mb-3">
-            <label for="qrFiles" class="form-label fw-bold">Attach Files</label>
-            <input type="file" name="files" id="qrFiles" class="form-control" multiple>
-            <small class="text-muted">You can attach multiple files. Preview below:</small>
+          <div class="grid gap-2">
+            <label for="qrFiles" class="label">Attachments (optional)</label>
+            <input type="file" name="files" id="qrFiles" class="input" multiple>
+            <small class="text-xs text-muted-foreground">Attached to every QR email in this send. You can add several.</small>
           </div>
 
           <!-- Preview Area -->
-          <ul class="list-group" id="filePreview" style="max-height: 200px; overflow-y: auto;"></ul>
+          <ul class="list-group max-h-52 overflow-y-auto" id="filePreview"></ul>
         </form>
       </div>
 
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary border" data-bs-dismiss="modal">
-          <i class="material-symbols-rounded align-middle">close</i> Cancel
-        </button>
-        <button type="button" class="btn btn-primary" id="sendQRSubmitBtn">
-          <i class="material-symbols-rounded align-middle">send</i> Send
-        </button>
+        <button type="button" class="btn btn-secondary" data-variant="outline" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn" data-variant="primary" id="sendQRSubmitBtn"><i data-lucide="send"></i>Send QR codes</button>
       </div>
     </div>
   </div>
@@ -243,15 +163,15 @@
             
             <!-- Modal Header -->
             <div class="modal-header">
-                <h5 class="modal-title" id="newLabel">New Submission</h5>
-                <button type="button" class="btn-close" style="background-color: #f74150;" data-bs-dismiss="modal" aria-label="Close" onclick="resetForm();"></button>
+                <h5 class="modal-title" id="newLabel">Add participant</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="resetForm();"></button>
             </div>
 
            <div class="modal-body">
                 {% if campaign.entry_keyword %}
                     {% include 'register/admission/'|add:campaign.entry_keyword|add:'_entryform.html' %}
                 {% else %}
-                    <p class="text-muted">No entry form configured for this campaign.
+                    <p class="text-sm text-muted-foreground">No entry form configured for this campaign.
                         <a href="{% url 'registration_form_list' %}?for_campaign={{ campaign.id }}">Create a registration form</a> to enable submissions.</p>
                 {% endif %}
             </div>
@@ -267,17 +187,17 @@
             
             <!-- Modal Header -->
             <div class="modal-header">
-                <h5 class="modal-title" id="excludeColumnsLabel">Exclude Columns</h5>
-                <button type="button" class="btn-close" style="background-color: #f74150;" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title" id="excludeColumnsLabel">Hide columns</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
             <!-- Modal Body -->
             <div class="modal-body">
                 <form id="excludeColumnsForm">
-                    <div class="form-group">
-                        <label for="excludeColumnsSelect">Select Columns to Exclude</label>
+                    <div class="grid gap-2">
+                        <label for="excludeColumnsSelect" class="label">Columns to hide from this list</label>
                         <!-- <select id="excludeColumnsSelect" name="exclude_columns[]" class="form-control select2" multiple="multiple" style="width: 100%;"></select> -->
-                        <select id="excludeColumnsSelect" name="exclude_columns[]" class="form-select" multiple>                          
+                        <select id="excludeColumnsSelect" name="exclude_columns[]" class="select w-full" multiple>                          
                           {% for col in column_list %}
                             <option value="{{ col.data }}">
                               {{ col.name }}
@@ -288,8 +208,8 @@
 
                     <input type="hidden" id="campaignId" value="{{ campaign.id }}">
 
-                    <div class="mt-3 text-end">
-                        <button type="button" id="saveExcludeColumnsBtn" class="btn btn-primary">
+                    <div class="mt-4 flex justify-end">
+                        <button type="button" id="saveExcludeColumnsBtn" class="btn" data-variant="primary">
                             Save Changes
                         </button>
                     </div>
@@ -446,18 +366,18 @@
           {
             data: 'is_checked_in',
             render: function (data, type, row) {
-              return `<a href="#" class="checkin-toggle" data-regno="${row.id}" onclick="toggleCheckin(this)"><span class="material-symbols-rounded ${data === true ? 'text-success' : 'text-danger'}">${data === true ? 'check_circle' : 'cancel'}</span></a>`;
+              return `<a href="#" class="checkin-toggle" data-regno="${row.id}" onclick="toggleCheckin(this)"><span class="material-symbols-rounded ${data === true ? 'text-success' : 'text-muted-foreground'}">${data === true ? 'check_circle' : 'cancel'}</span></a>`;
             }
           },
           {
             data: 'is_qr_sent',
             render: function (data, type, row) {
-              return `<span class="material-symbols-rounded ${data === true ? 'text-success' : 'text-danger'}">${data === true ? 'check_circle' : 'cancel'}</span>`;
+              return `<span class="material-symbols-rounded ${data === true ? 'text-success' : 'text-muted-foreground'}">${data === true ? 'check_circle' : 'cancel'}</span>`;
             }
           },
           { data: 'is_member',
               render: function (data, type, row) {
-              return `<span class="material-symbols-rounded ${data === true ? 'text-success' : 'text-danger'}">${data === true ? 'check_circle' : 'cancel'}</span>`;
+              return `<span class="material-symbols-rounded ${data === true ? 'text-success' : 'text-muted-foreground'}">${data === true ? 'check_circle' : 'cancel'}</span>`;
             }
           },
           { data: 'category' },
@@ -471,7 +391,7 @@
                         style="font-size: 24px; color: #0d6efd;"
                         data-regno="${row.reg_no}" 
                         data-remarks="${row.remarks || ''}">
-                  <i class="material-symbols-rounded">note</i>
+                  <i data-lucide="sticky-note"></i>
                 </button>`;
             },
             orderable: false,
@@ -479,14 +399,12 @@
           }
         ],
         dom:
-          "<'row mb-3'<'col-sm-6 d-flex align-items-center gap-2 px-2'f l><'col-sm-6 text-end px-2'B>>" +
-          "<'row'<'col-12'tr>>" +
-          "<'row'<'col-sm-6'i><'col-sm-6'p>>",
+          "<'legacy-bar'<'legacy-bar-left'fl>B><'legacy-table'tr><'legacy-foot'ip>",
         buttons: [
           {
             extend: 'excel',
-            className: 'btn btn-outline-success btn-sm',
-            text: '<i class="material-symbols-rounded">download</i> Export to Excel',
+            className: '', attr: { 'data-variant': 'outline', 'data-size': 'sm' },
+            text: '<i data-lucide="file-spreadsheet"></i>Export to Excel',
             filename: 'submission_list',
             title: 'Submission List',
             exportOptions: {
@@ -517,8 +435,8 @@
             }
           },
           {
-            text: '<i class="material-symbols-rounded">timer</i> Send Event Reminder',
-            className: 'btn btn-outline-success btn-sm',    
+            text: '<i data-lucide="bell-ring"></i>Send Event Reminder',
+            className: '', attr: { 'data-variant': 'outline', 'data-size': 'sm' },    
             action: function (e, dt, node, config) {
               let selectedIds = [];
 
@@ -584,8 +502,8 @@
             }
           },
           {
-            text: '<i class="material-symbols-rounded">mail</i>  Send Survey Reminder',
-            className: 'btn btn-outline-success btn-sm',    
+            text: '<i data-lucide="mail"></i>Send Survey Reminder',
+            className: '', attr: { 'data-variant': 'outline', 'data-size': 'sm' },    
             action: function (e, dt, node, config) {
               let selectedIds = [];
 
@@ -651,8 +569,8 @@
             }
           },
           {
-            text: '<i class="material-symbols-rounded">barcode</i> Send QR',
-            className: 'btn btn-outline-success btn-sm',
+            text: '<i data-lucide="qr-code"></i>Send QR',
+            className: '', attr: { 'data-variant': 'outline', 'data-size': 'sm' },
             action: function (e, dt, node, config) {
               let selectedIds = [];
               
@@ -678,8 +596,8 @@
             }
           },
           {
-            text: '<i class="material-symbols-rounded">close</i> Remove Entry',
-            className: 'btn btn-outline-success btn-sm',
+            text: '<i data-lucide="trash-2"></i>Remove Entry',
+            className: '', attr: { 'data-variant': 'outline', 'data-size': 'sm' },
             action: function (e, dt, node, config) {
               let selectedIds = [];
               
@@ -704,8 +622,8 @@
             }
           },          
           {
-            text: '<i class="material-symbols-rounded">settings</i>',
-            className: 'btn btn-outline-secondary btn-sm',
+            text: '<i data-lucide="settings-2"></i>',
+            className: '', attr: { 'data-variant': 'outline', 'data-size': 'icon-sm', 'aria-label': 'Hide columns' },
             action: function (e, dt, node, config) {
               let excludeColumnsModal = new bootstrap.Modal(document.getElementById('exclude-columns-modal'));
               excludeColumnsModal.show();
@@ -716,14 +634,14 @@
         fixedHeader: {
           header: true,
           footer: true,
-          headerOffset: 50
+          headerOffset: 56
         },
         autoWidth: true,
         scrollCollapse: true,
         language: {
           paginate: {
-            previous: '<i class="material-symbols-rounded">chevron_left</i>',
-            next: '<i class="material-symbols-rounded">chevron_right</i>'
+            previous: '<i data-lucide="chevron-left"></i>',
+            next: '<i data-lucide="chevron-right"></i>'
           },
           searchBuilder: {
             button: 'Add filters',
@@ -737,11 +655,9 @@
             left: '<i class="material-symbols-rounded">chevron_left</i>',
             clearAll: '<i class="material-symbols-rounded">x</i>Clear All'
           },
-          emptyTable:
-            "<img src='{% static 'user/img/illustrations/notfoundImg3.png' %}' width='180px' alt='No data' /><p class='fs-5 fw-500'>No Record available in table</p>",
+          emptyTable: "<div class='empty'><header><span class='icon-chip'><i data-lucide='inbox'></i></span><h3>No submissions yet</h3><p>Entries appear here as people register.</p></header></div>",
           infoEmpty: "0 Record",
-          zeroRecords:
-            "<img src='{% static 'user/img/illustrations/notfoundImg3.png' %}' width='180px' alt='No data' /><p class='fs-5 fw-500'>No Record to display</p>"
+          zeroRecords: "<div class='empty'><header><span class='icon-chip'><i data-lucide='search-x'></i></span><h3>No matching submissions</h3><p>Try another search.</p></header></div>"
         },
         order: [[1, 'desc']], // Changed from [[0, 'desc']] since first column is checkbox
         
@@ -860,15 +776,15 @@ table.on('draw.dt', function () {
       selectedFiles.forEach((file, index) => {
         let isImage = file.type.startsWith("image/");
         let listItem = $(`
-          <li class="list-group-item d-flex justify-content-between align-items-center">
+          <li class="list-group-item">
             <span>
               ${isImage 
-                ? `<img src="${URL.createObjectURL(file)}" alt="${file.name}" class="me-2" style="width:32px;height:32px;object-fit:cover;border-radius:4px;">` 
-                : `<i class="material-symbols-rounded me-2 text-primary">description</i>`}
+                ? `<img src="${URL.createObjectURL(file)}" alt="${file.name}" style="width:28px;height:28px;object-fit:cover;border-radius:6px;margin-right:.5rem">` 
+                : `<span class="material-symbols-rounded text-primary" style="font-size:18px;margin-right:.4rem">description</span>`}
               ${file.name}
             </span>
-            <button type="button" class="btn btn-sm btn-outline-danger remove-file" data-index="${index}">
-              <i class="material-symbols-rounded align-middle">delete</i>
+            <button type="button" class="btn remove-file" data-variant="ghost" data-size="icon-sm" aria-label="Remove file" data-index="${index}">
+              <span class="material-symbols-rounded" style="font-size:18px">close</span>
             </button>
           </li>
         `);

@@ -1,73 +1,54 @@
-<!DOCTYPE html>
+{% load static %}<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>You've been invited to PIKOM</title>
-  <style>
-    @media only screen and (max-width: 600px) {
-      .container {
-        width: 100% !important;
-        padding: 20px !important;
-      }
-      .invite-button {
-        display: block !important;
-        width: 100% !important;
-        box-sizing: border-box;
-      }
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>You've been invited to the PIKOM events console</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f4f6f9; font-family: Arial, sans-serif;">
-
+<body style="margin:0; padding:0; background-color:#F3F6FB; font-family:-apple-system, 'Segoe UI', Arial, Helvetica, sans-serif; color:#14213D;">
+  
   <table cellpadding="0" cellspacing="0" border="0" width="100%">
     <tr>
-      <td align="center">
-        <table class="container" width="600" cellpadding="0" cellspacing="0" border="0" style="width: 600px; background-color: #ffffff; margin-top: 20px; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
-
-          <!-- Header -->
+      <td align="center" style="padding:0 12px;">
+        <table width="600" cellpadding="0" cellspacing="0" border="0"
+               style="width:100%; max-width:600px; background-color:#ffffff; margin:24px 0; border-radius:12px; overflow:hidden; border:1px solid #DDE4EF;">
           <tr>
-            <td style="padding: 30px 30px 0 30px; color: #333333;">
-              <h2 style="margin: 0; font-size: 20px;">You've been invited to the PIKOM dashboard</h2>
+            <td style="background-color:#0B2149; padding:24px 32px; border-bottom:4px solid #3AA0D8;">
+              <img src="{{ protocol }}://{{ domain }}{% static 'user/img/PIKOM.png' %}" width="200" alt="PIKOM" style="display:block; width:200px; height:auto; border:0;">
+              <div style="margin-top:16px; font-size:22px; line-height:1.25; font-weight:700; color:#ffffff;">You're invited to the PIKOM events console</div>
             </td>
           </tr>
-
-          <!-- Content -->
           <tr>
-            <td style="padding: 20px 30px 30px 30px; color: #333333; font-size: 16px; line-height: 1.6;">
-              <p>Hello <strong>{{ user.get_full_name|default:user.get_username }}</strong>,</p>
-
-              <p>An account has been created for you on the PIKOM dashboard. To activate it, set your password using the button below:</p>
-
-              <p style="text-align: center; margin: 30px 0;">
-                <a class="invite-button" href="{{ protocol }}://{{ domain }}{% url 'password_reset_confirm' uidb64=uid token=token %}"
-                   style="background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 6px; font-size: 16px; display: inline-block;">
-                  Set your password
-                </a>
-              </p>
-
-              <p style="font-size: 14px; color: #555;">
-                If the button doesn't work, copy and paste this link into your browser:<br>
-                <a href="{{ protocol }}://{{ domain }}{% url 'password_reset_confirm' uidb64=uid token=token %}" style="color: #2563eb; word-break: break-all;">{{ protocol }}://{{ domain }}{% url 'password_reset_confirm' uidb64=uid token=token %}</a>
-              </p>
-
-              <p>Your username is: <strong>{{ user.get_username }}</strong></p>
-
-              <p style="font-size: 14px; color: #555;">
-                For security, this link can only be used once and will expire after a short period.
-                If it expires, request a fresh link via "Forgot password?" on the login page.
-              </p>
-
-              <p>Thanks,<br><strong>The PIKOM team</strong></p>
+            <td style="padding:28px 32px 8px 32px; font-size:15px; line-height:1.6; color:#14213D;">
+              <p style="margin:0 0 14px 0;">Hello <strong>{{ user.get_full_name|default:user.get_username }}</strong>,</p>
+              <p style="margin:0 0 14px 0;">An account has been created for you. Set your password to activate it.</p>
+              <table cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 18px 0; background:#F8FAFD; border:1px solid #DDE4EF; border-radius:8px;">
+                <tr><td style="padding:12px 16px; font-size:14px; color:#42526B;">Your username: <strong style="color:#14213D;">{{ user.get_username }}</strong></td></tr>
+              </table>
             </td>
           </tr>
-
-          <!-- Footer -->
           <tr>
-            <td align="center" style="padding: 15px; background-color: #f0f4f8; color: #777; font-size: 12px;">
-              This is an automated message — please do not reply.
+            <td align="center" style="padding:4px 32px 24px 32px;">
+              <table cellpadding="0" cellspacing="0" border="0"><tr>
+                <td align="center" bgcolor="#1F5FE0" style="border-radius:8px;">
+                  <a href="{{ protocol }}://{{ domain }}{% url 'password_reset_confirm' uidb64=uid token=token %}" style="display:inline-block; padding:14px 30px; font-size:16px; font-weight:700; color:#ffffff; text-decoration:none; border-radius:8px;">Set your password</a>
+                </td>
+              </tr></table>
             </td>
           </tr>
-
+          <tr>
+            <td style="padding:0 32px 28px 32px; font-size:13px; line-height:1.6; color:#42526B;">
+              <p style="margin:0 0 12px 0;">If the button doesn't work, paste this link into your browser:<br>
+                <a href="{{ protocol }}://{{ domain }}{% url 'password_reset_confirm' uidb64=uid token=token %}" style="color:#1F5FE0; word-break:break-all;">{{ protocol }}://{{ domain }}{% url 'password_reset_confirm' uidb64=uid token=token %}</a></p>
+              <p style="margin:0 0 16px 0;">For security, the link works once and expires after a short time. If it expires, use "Forgot password?" on the sign-in page to get a new one.</p>
+              <p style="margin:0; font-size:15px; color:#14213D;">Thanks,<br><strong>The PIKOM team</strong></p>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" style="padding:14px; background-color:#F8FAFD; border-top:1px solid #DDE4EF; color:#5D6E87; font-size:12px;">
+              This is an automated message &mdash; please do not reply.
+            </td>
+          </tr>
         </table>
       </td>
     </tr>

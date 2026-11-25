@@ -1,147 +1,177 @@
 {% extends 'register/base.html' %}
 {% load static %}
 
+{% block title %}{{ campaign.title }} · Dashboard{% endblock %}
+
+{% block crumbs %}<ol><li><a href="{% url 'campaign_list' %}">Campaigns</a></li><li><i data-lucide="chevron-right"></i></li><li><span class="max-w-[14rem] truncate inline-block align-bottom">{{ campaign.title }}</span></li><li><i data-lucide="chevron-right"></i></li><li aria-current="page">Dashboard</li></ol>{% endblock %}
+
 {% block extracss %}
 <style>
-  .kpi-card { border: none; }
-  .kpi-card .kpi-value { font-size: 1.9rem; font-weight: 700; line-height: 1.1; }
-  .kpi-card .kpi-label { font-size: .8rem; text-transform: uppercase; letter-spacing: .03em; }
-  .kpi-card .kpi-sub { font-size: .78rem; }
-  .dash-chart-card { border: none; }
-  .dash-chart-card .card-header { background: transparent; border-bottom: 1px solid #f0f0f0; }
-  .funnel-row { display: flex; align-items: center; gap: .75rem; margin-bottom: .6rem; }
-  .funnel-row .funnel-label { width: 120px; font-size: .82rem; font-weight: 600; color: #344767; }
-  .funnel-row .funnel-bar-wrap { flex: 1; background: #f0f2f5; border-radius: 6px; overflow: hidden; height: 26px; }
-  .funnel-row .funnel-bar { height: 100%; display: flex; align-items: center; justify-content: flex-end;
-                            padding-right: 8px; color: #fff; font-size: .78rem; font-weight: 600; border-radius: 6px;
-                            min-width: 32px; transition: width .4s ease; }
-  .empty-state { padding: 4rem 1rem; text-align: center; color: #8392ab; }
+  .card > header h2 { font-weight: 600; }
+  /* ponytail: local fix until input.css raises .badge-* specificity (Basecoat's .badge:not([data-variant]) wins) */
+  .badge.badge-success { background: var(--success-soft); color: var(--success); border-color: transparent; }
+  .badge.badge-muted { background: var(--muted); color: var(--muted-foreground); border-color: transparent; }
+  .badge.badge-info { background: var(--info-soft); color: var(--info); border-color: transparent; }
+  .badge.badge-warning { background: var(--warning-soft); color: var(--warning); border-color: transparent; }
+  .badge.badge-danger { background: var(--danger-soft); color: var(--danger); border-color: transparent; }
+  .badge.badge-teal { background: var(--teal-soft); color: var(--teal); border-color: transparent; }
+  .dash-hero { position: relative; overflow: hidden; }
+  .dash-hero::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--c, var(--primary)); }
+  .dash-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; margin-top: .5rem; font-size: .875rem; color: var(--muted-foreground); }
+  .dash-meta > span { display: inline-flex; align-items: center; gap: .375rem; }
+  .dash-meta svg { width: 1rem; height: 1rem; }
+  .dash-chart { position: relative; height: 280px; min-width: 0; }
+  .dash-chart--donut { height: 220px; }
+  .dash-title { white-space: normal; overflow: visible; text-overflow: clip; text-wrap: balance; overflow-wrap: anywhere; }
+  .tl-summary { display: grid; place-content: center; gap: .5rem; height: 100%; text-align: center; padding: 1rem; }
+  .tl-summary b { font-family: "DM Sans", var(--font-sans); font-weight: 800; font-size: clamp(2.4rem, 1.8rem + 2vw, 3.5rem); line-height: .95; letter-spacing: -.045em; font-variant-numeric: tabular-nums; color: var(--brand-navy); }
+  .dark .tl-summary b { color: var(--foreground); }
+  .tl-summary .pk-micro { justify-self: center; }
+  .tl-summary p { font-size: .9rem; color: var(--muted-foreground); max-width: 22rem; margin: 0 auto; text-wrap: balance; }
+  .comms { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); display: grid; grid-template-columns: 1fr 1fr; gap: .75rem 1.5rem; }
+  .comms > div { display: grid; gap: .15rem; }
+  .comms > div > b { font-family: "DM Sans", var(--font-sans); font-weight: 800; font-size: 1.6rem; line-height: 1; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+  .comms p { grid-column: 1 / -1; font-size: .75rem; color: var(--muted-foreground); }
+  .card-hint { font-size: .75rem; color: var(--muted-foreground); }
+  /* v3 editorial report */
+  .rp-sec { margin-top: 2.5rem; }
+  .rp-sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding-bottom: .75rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); }
+  .rp-sec-head p { font-size: .8125rem; color: var(--muted-foreground); }
+  .rp-figs { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); }
+  @media (min-width: 1024px) { .rp-figs { grid-template-columns: repeat(4, minmax(0,1fr)); } }
+  .rp-fig { padding: .25rem 1.5rem 0 0; display: grid; gap: .35rem; align-content: start; }
+  .rp-fig + .rp-fig { padding-left: 1.5rem; border-left: 1px solid var(--border); }
+  @media (max-width: 1023px) { .rp-fig:nth-child(3) { padding-left: 0; border-left: 0; } .rp-fig:nth-child(n+3) { margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--border); } }
+  .rp-fig b { font-family: "DM Sans", var(--font-sans); font-weight: 800; font-size: clamp(2.2rem, 1.6rem + 1.6vw, 3.2rem); line-height: .95; letter-spacing: -.045em; font-variant-numeric: tabular-nums; color: var(--brand-navy); }
+  .dark .rp-fig b { color: var(--foreground); }
+  .rp-fig b sup { font-size: .38em; font-weight: 600; letter-spacing: 0; color: var(--muted-foreground); vertical-align: super; margin-left: .15em; }
+  .rp-fig.is-key b { color: var(--brand-orange); }
+  .rp-fig small { font-size: .78rem; color: var(--muted-foreground); }
+  .rp-bar { height: 3px; border-radius: 3px; background: var(--muted); overflow: hidden; margin-top: .25rem; }
+  .rp-bar i { display: block; height: 100%; background: var(--c, var(--brand-royal)); }
+  .card > header h2 { font-family: "DM Sans", var(--font-sans); font-weight: 700; letter-spacing: -.015em; }
+  .dash-donut-center { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; pointer-events: none; }
+  .dash-donut-center b { font-family: "DM Sans", var(--font-sans); font-weight: 800; font-size: 2rem; line-height: 1; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+  .status-legend span { font-size: .72rem; color: var(--muted-foreground); width: 2.5rem; text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* Funnel: stage, bar, count, % of registered */
+  .funnel-row { display: grid; grid-template-columns: 7rem 1fr 2.75rem 3rem; align-items: center; gap: .75rem; padding: .625rem 0; }
+  .funnel-row + .funnel-row { border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
+  .funnel-label { font-size: .875rem; font-weight: 500; }
+  .funnel-bar-wrap { background: var(--muted); border-radius: 2px; overflow: hidden; height: .5rem; }
+  .funnel-bar { height: 100%; border-radius: 2px; transition: width .6s cubic-bezier(.2,.7,.2,1); }
+  .funnel-value { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .funnel-pct { text-align: right; font-size: .75rem; color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+  .status-legend { display: grid; gap: .5rem; }
+  .status-legend div { display: grid; grid-template-columns: .625rem minmax(0,1fr) auto 2.5rem; align-items: center; gap: .5rem; font-size: .875rem; }
+  .lg-navy { background: var(--brand-navy); } .dark .lg-navy { background: #5B7BD6; }
+  .status-legend i { width: .625rem; height: .625rem; border-radius: .2rem; flex: none; }
+  .status-legend b { margin-left: auto; font-weight: 600; font-variant-numeric: tabular-nums; }
+  @media (max-width: 639px) { .funnel-row { grid-template-columns: 5.5rem 1fr 2.25rem 2.75rem; gap: .5rem; } .dash-chart { height: 240px; } }
+  @media print {
+    #sidenav-main, .pk-topbar, .dash-actions { display: none !important; }
+    .pk-main { margin: 0 !important; padding: 0 !important; }
+    .card { break-inside: avoid; box-shadow: none !important; }
+  }
+  /* v4: stat tiles as separate cards, like Campaigns */
+  .rp-sec-head { border-bottom: 0; padding-bottom: 0; margin-bottom: .85rem; }
+  .rp-figs { gap: 1rem; }
+  .rp-fig, .rp-fig + .rp-fig { padding: 1.2rem 1.3rem; border: 1px solid #E6ECF8; border-radius: 1.1rem; background: rgba(255,255,255,.85); box-shadow: 0 10px 24px -18px rgba(30,60,140,.35); }
+  .rp-fig b { font-size: 2.2rem !important; font-weight: 700 !important; color: #0B1739; }
+  .rp-fig .pk-micro { font-family: inherit !important; font-size: .875rem !important; font-weight: 500 !important; letter-spacing: 0 !important; text-transform: none !important; color: #1E2A47; }
+  .rp-fig.is-key { border-color: #BFD0F5; box-shadow: 0 12px 26px -16px rgba(29,79,214,.45); }
+  .dark .rp-fig { background: var(--card); border-color: var(--border); }
 </style>
 {% endblock %}
 
 {% block content %}
-<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
-  <div class="container-fluid py-3">
-
-    <!-- Header -->
-    <div class="row align-items-center mb-2">
-      <div class="col-lg-8">
-        <div class="ms-1">
-          <h3 class="mb-0 h4 font-weight-bolder opacity-7">
-            <i class="material-symbols-rounded align-middle">monitoring</i>
-            {{ campaign.title }} — Dashboard
-          </h3>
-          <nav aria-label="breadcrumb">
-            <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0">
-              <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="{% url 'campaign_list' %}">Campaigns</a></li>
-              <li class="breadcrumb-item text-sm text-dark active" aria-current="page">Dashboard</li>
-            </ol>
-          </nav>
-        </div>
-      </div>
-      <div class="col-lg-4 text-lg-end mt-2 mt-lg-0">
-        <span class="text-xs text-secondary">
-          {{ campaign.start_date|date:"d M Y" }} &ndash; {{ campaign.end_date|date:"d M Y" }}
-          {% if campaign.is_active %}
-            <span class="badge badge-sm bg-gradient-success ms-1">Active</span>
-          {% else %}
-            <span class="badge badge-sm bg-gradient-secondary ms-1">Completed</span>
-          {% endif %}
-        </span>
+  <header class="page-header animate-rise">
+    <div class="min-w-0">
+      <span class="pk-pill">Campaign report</span>
+      <h1 class="page-title dash-title">{{ campaign.title }}</h1>
+      <div class="dash-meta">
+        <span class="inline-block size-2.5 rounded-full" style="background: {{ campaign.theme|default:'var(--brand-royal)' }}" aria-hidden="true"></span>
+        <span class="tabular-nums"><i data-lucide="calendar-days"></i>{{ campaign.start_date|date:"d M Y" }} &ndash; {{ campaign.end_date|date:"d M Y" }}</span>
+        {% if campaign.is_active %}<span class="badge badge-success badge-dot">Active</span>{% else %}<span class="badge badge-muted badge-dot">Completed</span>{% endif %}
       </div>
     </div>
-
-    {% if not has_data %}
-      <div class="card mt-3">
-        <div class="card-body empty-state">
-          <i class="material-symbols-rounded" style="font-size:48px;">inbox</i>
-          <p class="mt-2 mb-0">No registrations captured for this campaign yet.</p>
-        </div>
-      </div>
-    {% else %}
-
-    <!-- KPI cards -->
-    <div class="row g-3 mb-1">
-      <div class="col-6 col-md-3">
-        <div class="card kpi-card shadow-sm h-100">
-          <div class="card-body py-3">
-            <div class="kpi-label text-secondary">Registrations</div>
-            <div class="kpi-value text-dark">{{ kpis.total }}</div>
-            <div class="kpi-sub text-secondary">{{ kpis.pending }} pending · {{ kpis.rejected }} rejected</div>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card kpi-card shadow-sm h-100">
-          <div class="card-body py-3">
-            <div class="kpi-label text-secondary">Approved</div>
-            <div class="kpi-value text-success">{{ kpis.approved }}</div>
-            <div class="kpi-sub text-secondary">{{ kpis.approval_rate }}% of registrations</div>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card kpi-card shadow-sm h-100">
-          <div class="card-body py-3">
-            <div class="kpi-label text-secondary">Checked in</div>
-            <div class="kpi-value text-info">{{ kpis.checked_in }}</div>
-            <div class="kpi-sub text-secondary">{{ kpis.turnout_rate }}% turnout of approved</div>
-          </div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="card kpi-card shadow-sm h-100">
-          <div class="card-body py-3">
-            <div class="kpi-label text-secondary">No-shows</div>
-            <div class="kpi-value text-danger">{{ kpis.no_show }}</div>
-            <div class="kpi-sub text-secondary">approved but not checked in</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="row g-3 mt-0">
-      <!-- Funnel -->
-      <div class="col-lg-5">
-        <div class="card dash-chart-card shadow-sm h-100">
-          <div class="card-header py-3"><h6 class="mb-0">Registration funnel</h6></div>
-          <div class="card-body" id="funnelContainer"></div>
-        </div>
-      </div>
-      <!-- Timeline -->
-      <div class="col-lg-7">
-        <div class="card dash-chart-card shadow-sm h-100">
-          <div class="card-header py-3"><h6 class="mb-0">Registrations over time</h6></div>
-          <div class="card-body"><canvas id="timelineChart" height="120"></canvas></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="row g-3 mt-0">
-      {% if show_orgs %}
-      <!-- Top organizations -->
-      <div class="col-lg-6">
-        <div class="card dash-chart-card shadow-sm h-100">
-          <div class="card-header py-3"><h6 class="mb-0">Top organizations</h6></div>
-          <div class="card-body"><canvas id="orgsChart" height="220"></canvas></div>
-        </div>
-      </div>
+    <div class="dash-actions flex w-full flex-wrap gap-2 sm:w-auto">
+      <a href="{% url 'campaign_list' %}" class="btn flex-1 sm:flex-none" data-variant="outline"><i data-lucide="arrow-left"></i>All campaigns</a>
+      {% if has_data %}
+      <button type="button" class="btn flex-1 sm:flex-none" data-variant="primary" onclick="window.print()"><i data-lucide="printer"></i>Print report</button>
       {% endif %}
-      <!-- Status split -->
-      <div class="{% if show_orgs %}col-lg-6{% else %}col-lg-12{% endif %}">
-        <div class="card dash-chart-card shadow-sm h-100">
-          <div class="card-header py-3"><h6 class="mb-0">Approval status</h6></div>
-          <div class="card-body d-flex justify-content-center"><canvas id="statusChart" height="220"></canvas></div>
-        </div>
+    </div>
+  </header>
+
+  {% if not has_data %}
+    <div class="card mt-6">
+      <div class="empty">
+        <header>
+          <figure><i data-lucide="chart-no-axes-combined"></i></figure>
+          <h3>No registrations yet</h3>
+          <p>This report fills in as people register through the campaign's registration form. Share the form link to get started.</p>
+        </header>
+        <section><a href="{% url 'campaign_list' %}" class="btn" data-variant="primary">Back to campaigns</a></section>
       </div>
     </div>
+  {% else %}
 
-    <!-- Per-question audience breakdown -->
-    <div class="row g-3 mt-0" id="questionChartsRow"></div>
+  <section class="animate-rise animate-rise-1" aria-labelledby="secOverview">
+    <div class="rp-sec-head"><span class="pk-sec" id="secOverview">Overview</span><p>Registration to turnout, at a glance.</p></div>
+    <div class="rp-figs">
+      <div class="rp-fig"><span class="pk-micro">Registrations</span><b>{{ kpis.total }}</b><small>{{ kpis.pending }} pending · {{ kpis.rejected }} rejected</small></div>
+      <div class="rp-fig"><span class="pk-micro">Approved</span><b>{{ kpis.approved }}</b><div class="rp-bar" style="--c: var(--brand-royal)"><i style="width: {{ kpis.approval_rate }}%"></i></div><small>{{ kpis.approval_rate }}% of registrations</small></div>
+      <div class="rp-fig is-key"><span class="pk-micro">Checked in</span><b>{{ kpis.checked_in }}</b><div class="rp-bar" style="--c: var(--brand-orange)"><i style="width: {{ kpis.turnout_rate }}%"></i></div><small>{{ kpis.turnout_rate }}% of approved</small></div>
+      <div class="rp-fig"><span class="pk-micro">No-shows</span><b>{{ kpis.no_show }}</b><small>Approved, not checked in</small></div>
+    </div>
+  </section>
 
-    {% endif %}
+  <div class="rp-sec animate-rise animate-rise-2">
+  <div class="rp-sec-head"><span class="pk-sec">Funnel &amp; momentum</span><p>How people move from sign-up to the door.</p></div>
+  <div class="grid gap-4 lg:grid-cols-12">
+    <section class="card min-w-0 lg:col-span-5" aria-labelledby="funnelTitle">
+      <header><h2 id="funnelTitle">Approval funnel</h2><p>Each stage as a share of everyone who registered.</p></header>
+      <section><div id="funnelContainer"></div>
+        <div class="comms" id="commsFigs" aria-label="Communications"><span class="pk-micro" style="grid-column:1/-1"><b>[Comms]</b> Emails sent</span></div>
+      </section>
+    </section>
+    <section class="card min-w-0 lg:col-span-7" aria-labelledby="timelineTitle">
+      <header><h2 id="timelineTitle">Registrations over time</h2><p>Daily sign-ups and the running total.</p></header>
+      <section><div class="dash-chart" id="timelineWrap"><canvas id="timelineChart" role="img" aria-label="Registrations per day and cumulative total"></canvas></div></section>
+    </section>
   </div>
-</main>
+  </div>
+
+  <div class="rp-sec">
+  <div class="rp-sec-head"><span class="pk-sec">Audience</span><p>Who registered and where they stand.</p></div>
+  <div class="grid gap-4 lg:grid-cols-12">
+    {% if show_orgs %}
+    <section class="card min-w-0 lg:col-span-7" aria-labelledby="orgsTitle">
+      <header><h2 id="orgsTitle">Top organisations</h2><p>Organisations with the most registrants.</p></header>
+      <section><div class="dash-chart"><canvas id="orgsChart" role="img" aria-label="Top organisations by registrants"></canvas></div></section>
+    </section>
+    {% endif %}
+    <section class="card min-w-0 {% if show_orgs %}lg:col-span-5{% else %}lg:col-span-12{% endif %}" aria-labelledby="statusTitle">
+      <header><h2 id="statusTitle">Approval status</h2><p>{{ kpis.total }} registrations reviewed so far.</p></header>
+      <section class="grid items-center gap-6 sm:grid-cols-[1fr_auto] lg:grid-cols-1 xl:grid-cols-[1fr_12.5rem]">
+        <div class="dash-chart dash-chart--donut"><canvas id="statusChart" role="img" aria-label="Approved, pending and rejected split"></canvas><div class="dash-donut-center"><b>{{ kpis.total }}</b><span class="pk-micro">Total</span></div></div>
+        <div class="status-legend">
+          <div><i style="background:var(--brand-royal)"></i>Approved<b>{{ kpis.approved }}</b><span class="lg-pct" data-n="{{ kpis.approved }}"></span></div>
+          <div><i style="background:var(--brand-sky)"></i>Pending<b>{{ kpis.pending }}</b><span class="lg-pct" data-n="{{ kpis.pending }}"></span></div>
+          <div><i class="lg-navy"></i>Rejected<b>{{ kpis.rejected }}</b><span class="lg-pct" data-n="{{ kpis.rejected }}"></span></div>
+        </div>
+      </section>
+    </section>
+  </div>
+  </div>
+
+  <!-- Per-question audience breakdown -->
+  <div class="rp-sec" id="questionSec" hidden>
+    <div class="rp-sec-head"><span class="pk-sec">Responses</span><p>Answers to the form's choice questions.</p></div>
+    <div class="grid gap-4 lg:grid-cols-2" id="questionChartsRow"></div>
+  </div>
+
+  {% endif %}
 {% endblock %}
 
 {% block extrajs %}
@@ -149,67 +179,119 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
 (function () {
-  const THEME = "{{ theme_color|escapejs }}" || "#198754";
   const funnel = {{ funnel_json|safe }};
   const timeline = {{ timeline_json|safe }};
   const orgs = {{ orgs_json|safe }};
   const questionCharts = {{ question_charts_json|safe }};
   const KPI = { approved: {{ kpis.approved }}, pending: {{ kpis.pending }}, rejected: {{ kpis.rejected }} };
 
-  // A repeatable palette derived around the theme + supporting hues.
-  const PALETTE = [THEME, "#5e72e4", "#11cdef", "#fb6340", "#f5365c", "#2dce89",
-                   "#ffd600", "#8965e0", "#8392ab", "#344767", "#e14eca", "#00bcd4"];
+  // shadcn chart look: colours come from the theme tokens, so dark mode follows.
+  const css = getComputedStyle(document.documentElement);
+  const v = n => css.getPropertyValue(n).trim();
+  const C = { c1: v("--chart-1"), c2: v("--chart-2"), c3: v("--chart-3"), c4: v("--chart-4"), c5: v("--chart-5"),
+              success: v("--success"), danger: v("--danger"), border: v("--border"), muted: v("--muted-foreground"),
+              fg: v("--foreground"), popover: v("--popover"), card: v("--card"),
+              royal: v("--brand-royal"), sky: v("--brand-sky"), navy: v("--brand-navy"), orange: v("--brand-orange") };
+  const dark = document.documentElement.classList.contains("dark");
+  // Editorial palette: royal leads, sky/navy support, orange marks the outcome.
+  const NAVY = dark ? "#5B7BD6" : C.navy;
+  const PALETTE = [C.royal, C.sky, NAVY, "#7E95D8"];
+  const GRID = (dark ? "rgba(255,255,255," : "rgba(10,33,84,") + ".07)";
+  document.querySelectorAll(".lg-pct").forEach(el => { const t = {{ kpis.total }} || 1; el.textContent = Math.round(el.dataset.n / t * 100) + "%"; });
 
-  // ---- Funnel (horizontal bars, relative widths) ----
+  Chart.defaults.font.family = ""DM Sans", ui-sans-serif, system-ui, sans-serif";
+  Chart.defaults.font.size = 12;
+  Chart.defaults.color = C.muted;
+  Chart.defaults.borderColor = C.border;
+  Chart.defaults.maintainAspectRatio = false;
+  // ponytail: no draw animation, so print and resized captures never catch bars mid-grow.
+  Chart.defaults.animation = false;
+  Chart.defaults.plugins.legend.labels.usePointStyle = true;
+  Chart.defaults.plugins.legend.labels.pointStyle = "rectRounded";
+  Chart.defaults.plugins.legend.labels.boxWidth = 8;
+  Chart.defaults.plugins.legend.labels.boxHeight = 8;
+  Chart.defaults.plugins.legend.labels.padding = 16;
+  // Tooltip like shadcn's ChartTooltip: popover surface, border, small swatches.
+  Object.assign(Chart.defaults.plugins.tooltip, {
+    backgroundColor: C.popover, titleColor: C.fg, bodyColor: C.muted, borderColor: C.border, borderWidth: 1,
+    padding: 10, cornerRadius: 8, boxPadding: 4, boxWidth: 8, boxHeight: 8, usePointStyle: true,
+    titleFont: { weight: "600", size: 12 }, bodyFont: { size: 12 }, displayColors: true, caretSize: 0
+  });
+  const axisX = { grid: { display: false }, border: { display: false }, ticks: { padding: 6 } };
+  const axisY = { beginAtZero: true, border: { display: false }, grid: { color: GRID, lineWidth: 1, drawTicks: false }, ticks: { precision: 0, padding: 8, maxTicksLimit: 5 } };
+  const bar = { borderRadius: 3, borderSkipped: false, maxBarThickness: 22 };
+
+  // ---- Funnel (horizontal bars, relative to "Registered") ----
   (function () {
     const wrap = document.getElementById("funnelContainer");
-    const max = Math.max.apply(null, funnel.map(s => s.value).concat([1]));
-    funnel.forEach((s, i) => {
-      const w = max ? Math.max((s.value / max) * 100, 2) : 2;
+    // Funnel = approval path only; email counts sit beside it (QR sends can predate approval changes, so they are not a stage).
+    const STAGES = ["Registered", "Approved", "Checked in"];
+    const stages = funnel.filter(s => STAGES.indexOf(s.label) > -1);
+    const comms = document.getElementById("commsFigs");
+    funnel.filter(s => STAGES.indexOf(s.label) < 0).forEach(s => {
+      const d = document.createElement("div");
+      d.innerHTML = '<span class="pk-micro">' + s.label + '</span><b>' + s.value + '</b>';
+      comms.appendChild(d);
+    });
+    const note = document.createElement("p");
+    note.textContent = "Email counts, not funnel stages: QR emails can include earlier or repeat sends.";
+    comms.appendChild(note);
+    const FUNNEL_COLORS = [C.royal, C.sky, C.orange];
+    const max = Math.max.apply(null, stages.map(s => s.value).concat([1]));
+    stages.forEach((s, i) => {
+      const w = Math.max((s.value / max) * 100, s.value ? 2 : 0);
+      const pct = Math.round((s.value / max) * 100);
       const row = document.createElement("div");
       row.className = "funnel-row";
       row.innerHTML =
         '<div class="funnel-label">' + s.label + '</div>' +
-        '<div class="funnel-bar-wrap"><div class="funnel-bar" style="width:' + w +
-        '%;background:' + PALETTE[i % PALETTE.length] + ';">' + s.value + '</div></div>';
+        '<div class="funnel-bar-wrap" role="presentation"><div class="funnel-bar" style="width:' + w +
+        '%;background:' + FUNNEL_COLORS[i % FUNNEL_COLORS.length] + ';"></div></div>' +
+        '<div class="funnel-value">' + s.value + '</div>' +
+        '<div class="funnel-pct">' + pct + '%</div>';
       wrap.appendChild(row);
     });
   })();
 
-  // ---- Timeline (daily bars + cumulative line) ----
+  // ---- Timeline: summary when < 3 days of data, else one axis (thin daily bars + cumulative area) ----
+  if (timeline.labels.length < 3) {
+    const total = timeline.daily.reduce((a, b) => a + b, 0);
+    const days = timeline.labels;
+    const msg = days.length === 1
+      ? "All " + total + " registration" + (total === 1 ? "" : "s") + " arrived on " + days[0] + "."
+      : days.map((d, i) => timeline.daily[i] + " on " + d).join(" and ") + ".";
+    document.getElementById("timelineWrap").innerHTML =
+      '<div class="tl-summary" role="img" aria-label="' + msg + '"><span class="pk-micro">' + (days.length === 1 ? "Single day" : "Two days") +
+      '</span><b>' + total + '</b><p>' + msg + ' A trend chart appears once sign-ups span 3 or more days.</p></div>';
+  } else {
   new Chart(document.getElementById("timelineChart"), {
     data: {
       labels: timeline.labels,
       datasets: [
-        { type: "bar", label: "Per day", data: timeline.daily,
-          backgroundColor: THEME + "cc", borderRadius: 4, order: 2 },
-        { type: "line", label: "Cumulative", data: timeline.cumulative,
-          borderColor: "#5e72e4", backgroundColor: "#5e72e4", tension: .3,
-          pointRadius: 2, yAxisID: "y1", order: 1 }
+        Object.assign({ type: "bar", label: "Per day", data: timeline.daily, backgroundColor: C.royal, order: 1 }, bar, { maxBarThickness: 8 }),
+        { type: "line", label: "Cumulative", data: timeline.cumulative, fill: true,
+          borderColor: C.orange, backgroundColor: C.orange + "22", borderWidth: 2, tension: .35,
+          pointRadius: 0, pointHoverRadius: 4, order: 2 }
       ]
     },
     options: {
-      responsive: true, maintainAspectRatio: true,
+      responsive: true,
       interaction: { mode: "index", intersect: false },
-      scales: {
-        y: { beginAtZero: true, title: { display: true, text: "Per day" } },
-        y1: { beginAtZero: true, position: "right", grid: { drawOnChartArea: false },
-              title: { display: true, text: "Cumulative" } }
-      },
-      plugins: { legend: { position: "bottom" } }
+      scales: { x: axisX, y: axisY },
+      plugins: { legend: { position: "top", align: "end" } }
     }
   });
+  }
 
   // ---- Top organizations (horizontal bar) ----
   if (orgs.labels.length) {
     new Chart(document.getElementById("orgsChart"), {
       type: "bar",
       data: { labels: orgs.labels,
-              datasets: [{ label: "Registrants", data: orgs.values,
-                           backgroundColor: THEME, borderRadius: 4 }] },
+              datasets: [Object.assign({ label: "Registrants", data: orgs.values, backgroundColor: C.royal }, bar, { maxBarThickness: 14 })] },
       options: { indexAxis: "y", responsive: true,
                  plugins: { legend: { display: false } },
-                 scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
+                 scales: { x: Object.assign({}, axisY), y: axisX } }
     });
   }
 
@@ -219,31 +301,30 @@
     data: {
       labels: ["Approved", "Pending", "Rejected"],
       datasets: [{ data: [KPI.approved, KPI.pending, KPI.rejected],
-                   backgroundColor: ["#2dce89", "#ffd600", "#f5365c"] }]
+                   backgroundColor: [C.royal, C.sky, NAVY],
+                   borderColor: C.card, borderWidth: 2, borderRadius: 2, spacing: 1, hoverOffset: 3 }]
     },
-    options: { responsive: true, maintainAspectRatio: true,
-               plugins: { legend: { position: "bottom" } } }
+    options: { responsive: true, cutout: "78%", plugins: { legend: { display: false } } }
   });
 
   // ---- Per-question breakdowns ----
   const row = document.getElementById("questionChartsRow");
+  if (questionCharts.length) document.getElementById("questionSec").hidden = false;
   questionCharts.forEach((qc, idx) => {
-    const col = document.createElement("div");
-    col.className = "col-lg-6";
+    const col = document.createElement("section");
+    col.className = "card min-w-0";
     col.innerHTML =
-      '<div class="card dash-chart-card shadow-sm h-100">' +
-      '<div class="card-header py-3"><h6 class="mb-0">' + qc.title.replace(/</g, "&lt;") + '</h6></div>' +
-      '<div class="card-body"><canvas id="qChart' + idx + '" height="200"></canvas></div></div>';
+      '<header><span class="pk-micro"><b>Q' + String(idx + 1).padStart(2, "0") + '</b> Question</span><h2>' + qc.title.replace(/</g, "&lt;") + '</h2><p>Responses by answer.</p></header>' +
+      '<section><div class="dash-chart"><canvas id="qChart' + idx + '"></canvas></div></section>';
     row.appendChild(col);
     new Chart(col.querySelector("canvas"), {
       type: "bar",
       data: { labels: qc.labels,
-              datasets: [{ label: "Responses", data: qc.values,
-                           backgroundColor: qc.labels.map((_, i) => PALETTE[i % PALETTE.length]),
-                           borderRadius: 4 }] },
+              datasets: [Object.assign({ label: "Responses", data: qc.values,
+                           backgroundColor: qc.labels.map((_, i) => i === 0 ? C.royal : (dark ? "#3B5BC4" : "#9DB0E6")) }, bar, { maxBarThickness: 14 })] },
       options: { indexAxis: "y", responsive: true,
                  plugins: { legend: { display: false } },
-                 scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
+                 scales: { x: axisY, y: axisX } }
     });
   });
 })();

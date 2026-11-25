@@ -9,15 +9,15 @@
     }
   </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f4f6f9; font-family: Arial, sans-serif;">
+<body style="margin: 0; padding: 0; background-color: #F3F6FB; font-family: -apple-system, 'Segoe UI', Arial, Helvetica, sans-serif;">
 
   <table cellpadding="0" cellspacing="0" border="0" width="100%">
     <tr>
       <td align="center">
         <table class="container" width="600" cellpadding="0" cellspacing="0" border="0"
-               style="width: 600px; background-color: #ffffff; margin-top: 20px;
-                      border-radius: 8px; overflow: hidden;
-                      box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+               style="width: 600px; background-color: #ffffff; margin: 24px 0;
+                      border-radius: 12px; overflow: hidden; border: 1px solid #DDE4EF;
+                      ">
 
           {% firstof campaign.theme "#198754" as theme %}{% firstof campaign.theme_soft "#e7f4ec" as theme_soft %}
           <!-- Banner (same image as the registration form) -->
@@ -33,14 +33,14 @@
           <!-- Header -->
           <tr>
             <td style="background-color: {{ theme }}; padding: 22px 30px; color: #ffffff;">
-              <h2 style="margin: 0; font-size: 20px; font-weight: 700;">Thank you for your submission.</h2>
+              <h2 style="margin: 0; font-size: 20px; font-weight: 700;">Thanks, we've received your submission</h2>
               <div style="margin-top: 6px; font-size: 14px; opacity: .9;">{{ title }}</div>
             </td>
           </tr>
 
           <!-- Content -->
           <tr>
-            <td style="padding: 28px 30px; color: #333333; font-size: 15px; line-height: 1.6;">
+            <td style="padding: 28px 30px; color: #14213D333; font-size: 15px; line-height: 1.6;">
               {% if intro_html %}
                 {{ intro_html|safe }}
               {% else %}
@@ -53,7 +53,7 @@
                   Your registration has been received and is currently being reviewed.
                 </p>
 
-                <ol style="margin: 0 0 18px 18px; padding: 0; color: #333;">
+                <ol style="margin: 0 0 18px 18px; padding: 0; color: #14213D;">
                   <li style="margin-bottom: 8px;">
                     We have successfully received your registration and it is currently under review.
                   </li>
@@ -96,8 +96,8 @@
 
           <!-- Footer -->
           <tr>
-            <td align="center" style="padding: 14px; background-color: #f0f4f8;
-                                       color: #777; font-size: 12px;">
+            <td align="center" style="padding: 14px; background-color: #F8FAFD; border-top: 1px solid #DDE4EF;
+                                       color: #5D6E87; font-size: 12px;">
               This is an automated email — please do not reply directly to this message.
               <div style="margin-top:6px; font-size:11px; color:#9aa3ad; letter-spacing:.2px;">
                 Powered by <span style="font-weight:600; color:#8a93a0;">Talbotiq Technologies</span>

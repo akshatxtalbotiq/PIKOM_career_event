@@ -5,64 +5,70 @@
 <head>
   <meta charset="utf-8" />
   <style>
-    @page { size: A4; margin: 14mm; }
+    @page { size: A4; margin: 16mm 14mm; @bottom-right { content: "Page " counter(page) " of " counter(pages); font: 9px Helvetica, Arial, sans-serif; color: #5D6E87; } }
 
-    body { font-family: Arial, sans-serif; font-size: 12px; color: #111; }
-    h1, h2, h3, h4, h5 { margin: 0 0 8px 0; }
-    .muted { color: #666; }
+    body { font-family: Helvetica, Arial, sans-serif; font-size: 11px; line-height: 1.45; color: #14213D; }
+    h1, h2, h3, h4, h5 { margin: 0 0 6px 0; color: #14213D; }
+    .muted { color: #5D6E87; }
+    .doc-head { border-bottom: 2px solid #1F5FE0; padding-bottom: 10px; margin-bottom: 6px; }
+    .doc-head h2 { font-size: 20px; }
+    .doc-head .meta { font-size: 10px; margin-top: 4px; }
 
     .submission { page-break-after: always; }
     .submission:last-child { page-break-after: auto; }
 
-    .card { border: 1px solid #ddd; border-radius: 6px; margin: 10px 0; }
-    .card-header { padding: 10px; background: #f5f5f5; border-bottom: 1px solid #ddd; }
-    .card-body { padding: 10px; }
+    .card { border: 1px solid #DDE4EF; border-radius: 6px; margin: 10px 0; }
+    .card-header { padding: 8px 12px; background: #F3F6FB; border-bottom: 1px solid #DDE4EF; }
+    .card-header h4 { font-size: 13px; }
+    .card-body { padding: 10px 12px; }
+    .card .card { border-color: #EBF0F6; page-break-inside: avoid; }
 
     .question-number {
-      width: 26px; height: 26px; border-radius: 50%;
-      display: inline-flex; align-items: center; justify-content: center;
-      font-weight: bold; background: #2c6bed; color: #fff; margin-right: 8px;
-      font-size: 12px;
+      display: inline-block; width: 20px; height: 20px; line-height: 20px; text-align: center; border-radius: 4px;
+      font-weight: bold; background: #E3ECFE; color: #1747B8; margin-right: 6px; font-size: 10px;
     }
     .selected-option {
-      padding: 4px 8px; border-radius: 6px; border: 1px solid #ddd;
-      display: inline-block; margin: 2px 6px 2px 0;
+      padding: 2px 8px; border-radius: 10px; border: 1px solid #C9D9FB; background: #F1F5FF; color: #1747B8;
+      display: inline-block; margin: 2px 4px 2px 0;
     }
-    .answer-box { background: #f7f7f7; border: 1px solid #e5e5e5; padding: 8px; border-radius: 6px; }
+    .answer-box { background: #F8FAFD; border: 1px solid #DDE4EF; padding: 6px 8px; border-radius: 4px; }
 
     table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-    th, td { border-bottom: 1px solid #ddd; padding: 6px; text-align: left; vertical-align: top; }
+    th, td { border-bottom: 1px solid #DDE4EF; padding: 5px 6px; text-align: left; vertical-align: top; }
+    th { background: #F3F6FB; color: #5D6E87; font-size: 10px; }
 
-    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; }
-    .info-item { border-bottom: 1px solid #eee; padding: 4px 0; }
+    .info-grid { width: 100%; }
+    .info-item { display: inline-block; width: 48%; vertical-align: top; border-bottom: 1px solid #EBF0F6; padding: 4px 0; margin-right: 1%; }
+    .info-item b { display: block; font-weight: normal; color: #5D6E87; font-size: 9px; }
   </style>
 </head>
 
 <body>
-  <h2>{{ survey.title }}</h2>
+  <div class="doc-head">
+    <h2>{{ survey.title }}</h2>
+    {% if survey.fkcampaign %}<div class="muted">{{ survey.fkcampaign.title }}</div>{% endif %}
+    <div class="muted meta">Consolidated responses: {{ submissions|length }} &middot; Generated {% now "j M Y, H:i" %}</div>
+  </div>
   {% if survey.description %}
     <div class="muted">{{ survey.description | safe }}</div>
   {% endif %}
-  <div class="muted" style="margin-top:6px;">
-    Consolidated Responses: {{ submissions|length }}
-  </div>
 
   {% for sub in submissions %}
     <div class="submission" style="margin-top:14px;">
       <div class="card">
         <div class="card-header">
-          <h4 style="margin:0;">Respondent {{ forloop.counter }}</h4>
+          <h4 style="margin:0;">{{ forloop.counter }}. {{ sub.survey_user.name|default:"Respondent" }}</h4>
           <div class="muted">Submitted: {{ sub.survey_user.created_at|date:"M d, Y H:i" }}</div>
         </div>
 
         <div class="card-body">
           {% if sub.survey_user %}
             <div class="info-grid">
-              {% if sub.survey_user.name %}<div class="info-item"><b>Name:</b> {{ sub.survey_user.name }}</div>{% endif %}
-              {% if sub.survey_user.participant_type %}<div class="info-item"><b>Participant Type:</b> {{ sub.survey_user.participant_type }}</div>{% endif %}
-              {% if sub.survey_user.email %}<div class="info-item"><b>Email:</b> {{ sub.survey_user.email }}</div>{% endif %}
-              {% if sub.survey_user.phone %}<div class="info-item"><b>Phone:</b> {{ sub.survey_user.phone }}</div>{% endif %}
-              {% if sub.survey_user.organization %}<div class="info-item"><b>Organization:</b> {{ sub.survey_user.organization }}</div>{% endif %}
+              {% if sub.survey_user.name %}<div class="info-item"><b>Name</b> {{ sub.survey_user.name }}</div>{% endif %}
+              {% if sub.survey_user.participant_type %}<div class="info-item"><b>Participant type</b> {{ sub.survey_user.participant_type }}</div>{% endif %}
+              {% if sub.survey_user.email %}<div class="info-item"><b>Email</b> {{ sub.survey_user.email }}</div>{% endif %}
+              {% if sub.survey_user.phone %}<div class="info-item"><b>Phone</b> {{ sub.survey_user.phone }}</div>{% endif %}
+              {% if sub.survey_user.organization %}<div class="info-item"><b>Organization</b> {{ sub.survey_user.organization }}</div>{% endif %}
             </div>
           {% endif %}
         </div>
@@ -70,7 +76,7 @@
 
       <div class="card">
         <div class="card-header">
-          <h4 style="margin:0;">Survey Responses</h4>
+          <h4 style="margin:0;">Responses</h4>
         </div>
         <div class="card-body">
           {% for question in survey.questions.all %}
@@ -129,7 +135,7 @@
                               <table>
                                 <thead>
                                   <tr>
-                                    <th>Category</th><th>Role Example</th><th>Openings</th><th>Urgency</th><th>Difficulty</th>
+                                    <th>Category</th><th>Role example</th><th>Openings</th><th>Urgency</th><th>Difficulty</th>
                                   </tr>
                                 </thead>
                                 <tbody>

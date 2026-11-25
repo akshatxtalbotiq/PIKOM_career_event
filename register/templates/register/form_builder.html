@@ -1,583 +1,512 @@
 {% extends 'register/base.html' %}
 {% load static %}
 
+{% block title %}{{ survey.title }} · Form builder{% endblock %}
+
+{% block crumbs %}<ol><li><a href="{% if survey.purpose == 'registration' %}{% url 'registration_form_list' %}{% else %}{% url 'survey_list' %}{% endif %}">{% if survey.purpose == 'registration' %}Registration forms{% else %}Post-event surveys{% endif %}</a></li><li><i data-lucide="chevron-right"></i></li><li><span class="inline-block max-w-[14rem] truncate align-bottom">{{ survey.title }}</span></li><li><i data-lucide="chevron-right"></i></li><li aria-current="page">Builder</li></ol>{% endblock %}
+
 {% block extracss %}
 <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
 <style>
-  /* Force normal page scroll. Material Dashboard's .main-content + the
-     g-sidenav-show body class set overflow:hidden / fixed heights, which clips
-     long builder pages. */
-  html, body { height: auto !important; overflow-y: auto !important; }
-  body.g-sidenav-show { overflow: auto !important; }
-  .main-content {
-    overflow: visible !important;
-    max-height: none !important;
-    height: auto !important;
-    min-height: 100vh;
+  .card > header h2 { font-weight: 600; }
+  /* ponytail: local fix until input.css raises .badge-* specificity (Basecoat's .badge:not([data-variant]) wins) */
+  .badge.badge-success { background: var(--success-soft); color: var(--success); border-color: transparent; }
+  .badge.badge-muted { background: var(--muted); color: var(--muted-foreground); border-color: transparent; }
+  .badge.badge-info { background: var(--info-soft); color: var(--info); border-color: transparent; }
+  .badge.badge-warning { background: var(--warning-soft); color: var(--warning); border-color: transparent; }
+  .badge.badge-danger { background: var(--danger-soft); color: var(--danger); border-color: transparent; }
+  .badge.badge-teal { background: var(--teal-soft); color: var(--teal); border-color: transparent; }
+  .card > header > div > h2 { font-size: 1rem; font-weight: 600; line-height: 1.3; }
+  .card > header > div > p { margin-top: .25rem; font-size: .875rem; color: var(--muted-foreground); }
+  /* Share bar */
+  .fb-url { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .8125rem !important; background: var(--muted) !important; }
+  /* Builder tabs (Basecoat tabs) */
+  #fbTabs > [role=tablist] { overflow-x: auto; scrollbar-width: none; max-width: 100%; justify-content: flex-start; }
+  @media (max-width: 639px) {
+    #fbTabs > [role=tablist], .email-tabs { -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 85%, transparent); }
+    .email-tabs { display: flex; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; max-width: 100%; }
+    .email-tabs > li { flex: none; }
   }
+  .fb-title { text-wrap: balance; overflow-wrap: anywhere; }
+  #fbTabs > [role=tablist] > [role=tab] { flex: none; }
+  .fb-count { display: inline-grid; place-items: center; min-width: 1.25rem; height: 1.25rem; padding: 0 .35rem; border-radius: 999px; background: var(--accent); color: var(--primary); font-size: .6875rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+  #fbTabs > [role=tabpanel] > .card + .card { margin-top: 1rem; }
 
-  .question-card { cursor: default; }
-  .question-card .drag-handle { cursor: grab; color: #999; }
-  .question-card.sortable-ghost { opacity: 0.4; }
-  .question-card.sortable-chosen { background: #f6faff; }
-  .choice-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
-  .choice-drag-handle { cursor: grab; color: #999; font-size: 20px; }
-  .choice-move-btns .btn { line-height: 1; }
-  .public-url-box { background: #f6f9fc; border: 1px dashed #c8d3e1; }
-  .type-pill {
-    display: inline-block; font-size: 0.72rem; padding: 2px 8px;
-    border-radius: 999px; background: #eef2ff; color: #3949ab; font-weight: 600;
-  }
-  .required-pill {
-    display: inline-block; font-size: 0.72rem; padding: 2px 8px;
-    border-radius: 999px; background: #ffe5e5; color: #b71c1c; font-weight: 600; margin-left: 6px;
-  }
-  /* Email content tabs */
-  .email-tabs {
-    display: flex; gap: 4px; list-style: none; padding: 0;
-    margin: 0 0 18px 0; border-bottom: 2px solid #e3e8ef; flex-wrap: wrap;
-  }
-  .email-tabs li { margin: 0; }
-  .email-tab {
-    border: 0; background: none; padding: 8px 16px; margin-bottom: -2px;
-    font-size: 0.82rem; font-weight: 700; color: #8392ab; cursor: pointer;
-    border-bottom: 2px solid transparent; border-radius: 6px 6px 0 0;
-  }
-  .email-tab:hover { color: #5e72e4; background: #f6f8fc; }
-  .email-tab.active { color: #5e72e4; border-bottom-color: #5e72e4; }
+  /* Question cards */
+  #questionList { display: flex; flex-direction: column; gap: .5rem; }
+  .question-card { display: flex; align-items: center; gap: .5rem; padding: .625rem .75rem .625rem .375rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); transition: border-color .15s, box-shadow .15s, background-color .15s; }
+  .question-card:hover { border-color: color-mix(in srgb, var(--primary) 30%, var(--border)); box-shadow: 0 1px 3px rgba(7,23,57,.06); }
+  .question-card .drag-handle { cursor: grab; color: var(--muted-foreground); background: none; border: 0; width: 2rem; height: 2.5rem; border-radius: .5rem; display: grid; place-items: center; padding: 0; touch-action: none; flex: none; }
+  .question-card .drag-handle:hover { background: var(--accent); color: var(--primary); }
+  .question-card .drag-handle:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+  .question-card .drag-handle svg { width: 1.1rem; height: 1.1rem; }
+  .question-card.sortable-ghost { opacity: .4; }
+  .question-card.sortable-chosen { background: var(--accent); border-color: var(--primary); }
+  .q-number { min-width: 1.5rem; height: 1.5rem; border-radius: .4rem; background: var(--muted); color: var(--muted-foreground); font-weight: 600; font-size: .75rem; display: grid; place-items: center; font-variant-numeric: tabular-nums; flex: none; }
+  .q-type-icon { width: 2.25rem; height: 2.25rem; border-radius: .6rem; background: var(--accent); color: var(--primary); display: grid; place-items: center; flex: none; }
+  .q-type-icon svg { width: 1.05rem; height: 1.05rem; }
+  .identity-question .q-type-icon { background: var(--warning-soft); color: var(--warning); }
+  .q-main { min-width: 0; flex: 1; margin-left: .25rem; }
+  .q-text { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .q-req { color: var(--danger); margin-left: .2rem; font-weight: 600; }
+  .q-meta { display: flex; flex-wrap: wrap; gap: .375rem; margin-top: .3rem; }
+  .q-meta .badge svg { width: .75rem; height: .75rem; }
+  .icon-btn-spacer { width: 2rem; flex: none; }
+  .delete-q-btn:hover { color: var(--danger) !important; background: var(--danger-soft) !important; }
 
-  /* Rich-text editors (Quill) for email content */
-  .intro-editor .ql-editor { min-height: 110px; font-size: 0.95rem; }
-  .intro-editor .ql-container { border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; }
-  .intro-editor .ql-toolbar { border-top-left-radius: 6px; border-top-right-radius: 6px; }
-  .signoff-editor .ql-editor { min-height: 60px; }
-  /* The Quill size picker uses inline-style px values; its snow CSS labels every
-     unknown value as "Normal", so we supply the labels (and preview each option
-     at its real size). The collapsed label shows "Normal" when nothing's set. */
-  .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="12px"]::before,
-  .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="12px"]::before { content: "12"; }
-  .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="14px"]::before,
-  .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="14px"]::before { content: "14"; }
-  .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="16px"]::before,
-  .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="16px"]::before { content: "16"; }
-  .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="18px"]::before,
-  .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="18px"]::before { content: "18"; }
-  .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="24px"]::before,
-  .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="24px"]::before { content: "24"; }
-  .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="32px"]::before,
-  .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="32px"]::before { content: "32"; }
+  /* Question modal: choices */
+  #questionModal .modal-dialog { max-width: 44rem; }
+  #questionModal .modal-body { max-height: calc(100vh - 13rem); overflow-y: auto; }
+  #choicesBlock { background: color-mix(in srgb, var(--muted) 55%, transparent); border: 1px solid var(--border); border-radius: var(--radius); padding: .875rem; }
+  .choice-row-wrap { background: var(--background); border: 1px solid var(--border); border-radius: calc(var(--radius) - 2px); padding: .375rem; margin-bottom: .375rem; }
+  .choice-row { display: flex; gap: .375rem; align-items: center; }
+  .choice-drag-handle { cursor: grab; color: var(--muted-foreground); display: grid; place-items: center; width: 1.5rem; flex: none; }
+  .choice-drag-handle svg { width: 1rem; height: 1rem; }
+  .choice-row .choice-input { flex: 1; min-width: 0; height: 2rem; }
+  .choice-move-btns { display: flex; flex-direction: column; }
+  .choice-move-btns .btn { height: 1rem !important; width: 1.5rem !important; min-height: 0 !important; padding: 0 !important; }
+  .choice-move-btns svg { width: .85rem !important; height: .85rem !important; }
+  .choice-row .toggle-followup { white-space: nowrap; flex: none; }
+  .followup-row { margin: .5rem 0 .125rem 1.875rem; }
+
+  /* Email tabs: shadcn segmented look; JS still toggles .active and .d-none */
+  .email-tabs { display: inline-flex; flex-wrap: wrap; gap: .125rem; list-style: none; padding: .2rem; margin: 0 0 1.25rem; background: var(--muted); border-radius: var(--radius); }
+  .email-tab { border: 0; background: none; padding: .375rem .75rem; font-size: .8125rem; font-weight: 500; color: var(--muted-foreground); cursor: pointer; border-radius: calc(var(--radius) - 3px); min-height: 2rem; }
+  .email-tab:hover { color: var(--foreground); }
+  .email-tab.active { background: var(--background); color: var(--foreground); box-shadow: 0 1px 2px rgba(7,23,57,.08); }
+  .email-tab:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+  .tag-row { display: flex; flex-wrap: wrap; align-items: center; gap: .375rem; margin-top: .5rem; font-size: .75rem; color: var(--muted-foreground); }
+  .tag-row .btn { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .75rem; }
+  .sw-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .625rem 0; font-size: .875rem; }
+  .sw-row + .sw-row { border-top: 1px solid var(--border); }
+  .sw-row label { cursor: pointer; }
+
+  /* Rich-text editors (Quill 2) */
+  .intro-editor .ql-editor { min-height: 120px; font-size: .9375rem; }
+  .signoff-editor .ql-editor { min-height: 64px; }
+  .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="12px"]::before, .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="12px"]::before { content: "12"; }
+  .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="14px"]::before, .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="14px"]::before { content: "14"; }
+  .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="16px"]::before, .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="16px"]::before { content: "16"; }
+  .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="18px"]::before, .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="18px"]::before { content: "18"; }
+  .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="24px"]::before, .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="24px"]::before { content: "24"; }
+  .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="32px"]::before, .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="32px"]::before { content: "32"; }
   .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="12px"]::before { font-size: 12px; }
   .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="14px"]::before { font-size: 14px; }
   .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="16px"]::before { font-size: 16px; }
   .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="18px"]::before { font-size: 18px; }
   .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="24px"]::before { font-size: 24px; }
   .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="32px"]::before { font-size: 32px; }
-  /* Auto-added event-details block shown under the editor when the toggle is on.
-     Reads as a continuation of the email body, but is not editable here. */
-  .ev-details-preview {
-    border: 1px dashed #c8d0da; border-top: 0;
-    border-radius: 0 0 6px 6px; background: #f8fafc;
-    padding: 12px 14px; font-size: 0.9rem; color: #344050;
-  }
-  .ev-details-preview .evp-caption {
-    font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: .04em; color: #8392ab; margin-bottom: 8px;
-  }
-  .ev-details-preview table td { padding: 3px 10px 3px 0; vertical-align: top; }
-  .ev-details-preview .evp-empty { color: #8392ab; font-style: italic; }
-  .merge-tag { font-family: monospace; }
-  .extra-row .ex-icon { text-align: center; }
+  html.dark .ql-snow .ql-stroke { stroke: var(--muted-foreground); }
+  html.dark .ql-snow .ql-fill { fill: var(--muted-foreground); }
+  html.dark .ql-snow .ql-picker { color: var(--muted-foreground); }
+  /* Auto-added event-details block under each editor (read-only preview). */
+  .ev-details-preview { border: 1px dashed var(--border); border-top: 0; border-radius: 0 0 calc(var(--radius) - 2px) calc(var(--radius) - 2px); background: color-mix(in srgb, var(--muted) 50%, transparent); padding: .75rem .875rem; font-size: .875rem; }
+  .ev-details-preview .evp-caption { font-size: .75rem; font-weight: 500; color: var(--muted-foreground); margin-bottom: .5rem; }
+  .ev-details-preview table td { padding: .2rem .625rem .2rem 0; vertical-align: top; }
+  .ev-details-preview .evp-empty { color: var(--muted-foreground); font-style: italic; }
+  .extra-row { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; padding: .5rem; margin-bottom: .5rem; border: 1px solid var(--border); border-radius: calc(var(--radius) - 2px); }
+  .extra-row .input { height: 2.25rem; }
+  .ex-icon-btn { min-width: 2.75rem; font-size: 1.1rem; line-height: 1; }
+  .emoji-palette { position: absolute; z-index: 1090; display: none; padding: .375rem; max-width: 16.5rem; background: var(--popover); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 10px 30px -10px rgba(7,23,57,.25); }
+  .emoji-opt { font-size: 1.1rem; line-height: 1; border: 0; background: none; padding: .3rem .4rem; cursor: pointer; border-radius: .375rem; }
+  .emoji-opt:hover { background: var(--accent); }
+  .help { margin-top: .375rem; font-size: .8125rem; color: var(--muted-foreground); }
+  .fb-saved { display: none; align-items: center; gap: .3rem; color: var(--success); font-size: .8125rem; font-weight: 500; }
+  #bannerPreview img { max-height: 220px; width: 100%; object-fit: cover; border-radius: var(--radius); border: 1px solid var(--border); }
+  .banner-empty { display: grid; place-items: center; gap: .5rem; padding: 2.5rem 1rem; border: 1.5px dashed var(--border); border-radius: var(--radius); color: var(--muted-foreground); text-align: center; font-size: .875rem; background: color-mix(in srgb, var(--muted) 40%, transparent); }
+  .banner-empty svg { width: 2rem; height: 2rem; opacity: .6; }
 
-  /* Config cards: the Material theme's .form-control has no horizontal padding
-     and a transparent background, so standalone fields read like plain label
-     text. Scope clearer styling to these cards only. */
-  .cfg-card .form-label {
-    font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.03em; color: #67748e; margin-bottom: 0.35rem;
-  }
-  .cfg-card .form-control {
-    padding: 0.55rem 0.75rem; background-color: #fff; border: 1px solid #c8d0da;
-    color: #344050;
-  }
-  .cfg-card textarea.form-control { line-height: 1.4; }
-  .cfg-card .form-control::placeholder { color: #aeb6c2; font-weight: 400; }
-  .cfg-card .form-control:focus {
-    border-color: #5e72e4; background-color: #fff;
-    box-shadow: 0 0 0 2px rgba(94,114,228,0.15);
-  }
-  /* Read-only Date field: clearly not editable */
-  .cfg-card .form-control[readonly] {
-    background-color: #f0f2f5; color: #67748e; border-style: dashed;
-  }
-  /* Give each labelled field a touch more breathing room */
-  .cfg-card .form-label { display: block; }
-  .emoji-opt:hover { background: #eef2ff !important; border-radius: 4px; }
-  .ex-icon-btn { text-align: center; }
-
-  /* Mobile: stack the URL bar and allow question rows to wrap cleanly */
-  @media (max-width: 575.98px) {
-    .public-url-box { flex-direction: column; align-items: stretch !important; }
-    .public-url-box .btn, .public-url-box input { width: 100%; }
-    .public-url-box .btn { margin: 0; }
-    .question-card .card-body > .d-flex { flex-wrap: wrap; row-gap: 6px; }
-    .question-card .flex-grow-1 { flex: 1 1 100%; order: 10; }
-    .type-pill, .required-pill { font-size: 0.65rem; }
+  /* v3: calm editor - one panel, hairline rows, quiet chips until hover */
+  #questionList { gap: 0; border: 1px solid var(--border); border-radius: .9rem; overflow: hidden; background: var(--card); }
+  #questionList:not(:has(.question-card)) { display: none; }
+  .question-card { border: 0; border-radius: 0; padding: .8rem 1rem .8rem .5rem; }
+  .question-card + .question-card { border-top: 1px solid var(--border); }
+  .question-card:hover { box-shadow: none; background: color-mix(in srgb, var(--muted) 45%, transparent); }
+  .question-card.sortable-chosen { box-shadow: inset 3px 0 0 var(--brand-royal); }
+  .q-number { background: none; min-width: 2rem; font-family: "DM Sans", var(--font-sans); font-weight: 800; font-size: .95rem; letter-spacing: -.02em; color: color-mix(in srgb, var(--muted-foreground) 70%, transparent); }
+  .q-type-icon { background: none; border: 1px solid var(--border); color: var(--brand-royal); }
+  .dark .q-type-icon { color: #93B8FF; }
+  .identity-question .q-type-icon { background: none; border-color: color-mix(in srgb, var(--brand-orange) 35%, var(--border)); color: var(--brand-orange); }
+  .q-text { font-size: .9375rem; }
+  .q-meta .badge { font-size: .7rem; }
+  .question-card .edit-q-btn, .question-card .delete-q-btn { opacity: .55; transition: opacity .15s; }
+  .question-card:hover .edit-q-btn, .question-card:hover .delete-q-btn, .question-card :focus-visible { opacity: 1; }
+  #fbTabs > [role=tabpanel] > .card > header h2 { font-family: "DM Sans", var(--font-sans); font-weight: 700; font-size: 1.15rem; letter-spacing: -.015em; }
+  .fb-share > .badge { margin-bottom: .5rem; }
+  .fb-share { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .75rem 1.25rem; }
+  @media (max-width: 639px) {
+    .question-card .q-type-icon, .question-card .q-number { display: none; }
+    .q-text { white-space: normal; }
+    .icon-btn-spacer { display: none; }
     .choice-row { flex-wrap: wrap; }
-    .choice-row .choice-input { min-width: 0; flex: 1 1 60%; }
+    .choice-row .choice-input { flex: 1 1 60%; }
+    #questionModal .modal-dialog { margin: .5rem; }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<main class="main-content position-relative border-radius-lg" style="min-height:100vh;">
-  <div class="container-fluid py-2">
+  <header class="page-header animate-rise">
+    <div class="min-w-0">
+      <p class="pk-micro mb-3 flex-wrap">
+        <b>[Events]</b> {% if survey.purpose == 'registration' %}Registration form{% else %}Post-event survey{% endif %} builder
+        {% if survey.fkcampaign %}<span aria-hidden="true">/</span><span class="inline-flex items-center gap-1.5"><span class="inline-block size-2 rounded-full" style="background: {{ survey.fkcampaign.theme|default:'var(--brand-royal)' }}"></span>{{ survey.fkcampaign.title }}</span>{% endif %}
+      </p>
+      <h1 class="page-title fb-title">{{ survey.title }}</h1>
+      <p class="page-description">Add and order the questions, then set the banner, event details and emails.</p>
+    </div>
+    <div class="flex w-full gap-2 sm:w-auto">
+      <a href="{% url 'form_preview' survey.id %}" target="_blank" rel="noopener" class="btn flex-1 sm:flex-none" data-variant="outline"><i data-lucide="eye"></i>Preview</a>
+      <a href="{{ public_url }}" target="_blank" rel="noopener" class="btn flex-1 sm:flex-none" data-variant="primary"><i data-lucide="external-link"></i>Open live form</a>
+    </div>
+  </header>
 
-    <div class="row">
-      <div class="col-12 col-md-8 d-flex align-items-center gap-2">
-        <div class="ms-3">
-          <h3 class="mb-0 h4 font-weight-bolder opacity-7">
-            <i class="ti ti-forms"></i> Form Builder
-          </h3>
-          <nav aria-label="breadcrumb m-0">
-            <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
-              <li class="breadcrumb-item text-sm">
-                <a class="opacity-5 text-dark" href="{% url 'survey_list' %}">Forms</a>
-              </li>
-              <li class="breadcrumb-item text-sm text-dark active" aria-current="page">{{ survey.title }}</li>
-            </ol>
-          </nav>
-        </div>
-      </div>
-      <div class="col-12 col-md-4 d-flex justify-content-end align-items-center gap-2">
-        <a href="{% url 'survey_list' %}" class="btn btn-sm btn-outline-secondary mb-0">
-          <i class="material-symbols-rounded align-middle">arrow_back</i> Back
-        </a>
+  <div class="fb-share animate-rise animate-rise-1">
+    <div class="min-w-[14rem] flex-1">
+      <label for="publicUrl" class="pk-micro mb-2"><b>[01]</b> Shareable link <span class="normal-case tracking-normal font-normal">· send this to participants</span></label>
+      <div class="flex gap-2">
+        <input type="text" id="publicUrl" class="input fb-url" value="{{ public_url }}" readonly>
+        <button type="button" id="copyUrlBtn" class="btn" data-variant="outline"><i data-lucide="copy"></i>Copy</button>
       </div>
     </div>
-
-    <div class="card my-2">
-      <div class="card-body">
-        <div class="text-xs text-uppercase text-secondary font-weight-bolder mb-1">Shareable link</div>
-        <div class="public-url-box p-2 rounded d-flex align-items-center gap-2 flex-wrap">
-          <input type="text" id="publicUrl" class="form-control form-control-sm border-0 bg-transparent" value="{{ public_url }}" readonly>
-          <button type="button" id="copyUrlBtn" class="btn btn-sm btn-primary mb-0">
-            <i class="material-symbols-rounded align-middle">content_copy</i> Copy
-          </button>
-          <a href="{% url 'form_preview' survey.id %}" target="_blank" class="btn btn-sm btn-warning mb-0">
-            <i class="material-symbols-rounded align-middle">visibility</i> Preview
-          </a>
-          <a href="{{ public_url }}" target="_blank" class="btn btn-sm btn-outline-success mb-0">
-            <i class="material-symbols-rounded align-middle">open_in_new</i> Open live
-          </a>
-        </div>
-        <small class="text-muted">
-          Send this link to participants.
-          {% if not survey.is_active %}
-            <span class="text-danger fw-bold">This form is currently INACTIVE — toggle it on from the Forms list to accept submissions.</span>
-          {% endif %}
-        </small>
-      </div>
-    </div>
-
-    <!-- Banner -->
-    <div class="card my-2">
-      <div class="card-header pb-0 d-flex justify-content-between align-items-center">
-        <h6 class="mb-0">Banner image</h6>
-        <div>
-          <label for="bannerInput" class="btn btn-sm btn-outline-primary mb-0">
-            <i class="material-symbols-rounded align-middle">upload</i>
-            <span id="bannerLabel">{% if survey.banner %}Replace banner{% else %}Upload banner{% endif %}</span>
-          </label>
-          <input type="file" id="bannerInput" accept="image/*" hidden>
-          <button type="button" id="removeBannerBtn" class="btn btn-sm btn-outline-danger mb-0" {% if not survey.banner %}style="display:none;"{% endif %}>
-            <i class="material-symbols-rounded align-middle">delete</i> Remove
-          </button>
-        </div>
-      </div>
-      <div class="card-body">
-        <div id="bannerPreview" class="text-center">
-          {% if survey.banner %}
-            <img id="bannerImg" src="{{ survey.banner.url }}" alt="Banner preview" class="img-fluid rounded" style="max-height:180px;">
-          {% else %}
-            <div id="bannerEmpty" class="text-muted py-3">
-              <i class="material-symbols-rounded" style="font-size:48px;opacity:0.5;">image</i>
-              <div>No banner uploaded. The public form will display without one.</div>
-            </div>
-          {% endif %}
-        </div>
-        <small class="text-muted">PNG / JPG / WebP up to 5 MB. Shown at the top of the public registration form.</small>
-      </div>
-    </div>
-
-    {% if survey.fkcampaign %}
-    <!-- Event details (campaign-level) -->
-    <div class="card my-2 cfg-card">
-      <div class="card-header pb-0">
-        <h6 class="mb-0">Event details</h6>
-        <small class="text-muted">
-          Shown in the QR confirmation and reminder emails. Applies to the whole event
-          (all forms for this campaign).
-        </small>
-      </div>
-      <div class="card-body">
-        <div class="row">
-          <div class="col-md-6 mb-3">
-            <label class="form-label">Date</label>
-            <input type="text" class="form-control"
-                   value="{{ survey.fkcampaign.end_date|date:'l, j F Y' }}" readonly>
-            <small class="text-muted">Taken from the campaign end date.</small>
-            <span id="evDateStr" style="display:none;">{{ survey.fkcampaign.end_date|date:'l, j F Y' }}</span>
-          </div>
-          <div class="col-md-6 mb-3">
-            <label class="form-label">Time</label>
-            <input type="text" id="evTime" class="form-control" placeholder="8:30am – 5:30pm"
-                   value="{{ survey.fkcampaign.event_time }}">
-          </div>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Venue</label>
-          <textarea id="evVenue" class="form-control" rows="2"
-                    placeholder="Ballroom 1, Level 1, ...">{{ survey.fkcampaign.venue }}</textarea>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Dress code</label>
-          <input type="text" id="evDress" class="form-control" placeholder="Smart Casual or Business Attire"
-                 value="{{ survey.fkcampaign.dress_code }}">
-        </div>
-
-        <hr class="my-2">
-        <label class="form-label d-flex justify-content-between align-items-center">
-          <span>Additional info rows</span>
-          <button type="button" id="addExtraRow" class="btn btn-sm btn-outline-primary mb-0">
-            <i class="material-symbols-rounded align-middle">add</i> Add row
-          </button>
-        </label>
-        <small class="text-muted d-block mb-2">
-          Add any extra lines shown in the emails — parking, agenda link, lucky draw, etc.
-          Pick an emoji, an optional bold label, the text, and an optional link
-          (e.g. an agenda PDF — the text becomes a clickable link).
-        </small>
-        <div id="extraInfoList"></div>
-        {{ survey.fkcampaign.extra_info|json_script:"extraInfoInit" }}
-
-        {% if survey.purpose == 'registration' %}
-        <hr class="my-2">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <label class="form-check-label" for="evShowOnForm">Show event details on this registration form</label>
-            <small class="text-muted d-block">Displays the date, time, venue and the rows above at the top of the public form. This setting is per form.</small>
-          </div>
-          <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" role="switch" id="evShowOnForm"
-                   {% if survey.show_event_details %}checked{% endif %}>
-          </div>
-        </div>
-        {% endif %}
-
-        <div class="text-end mt-3">
-          <span id="evSavedMsg" class="text-success me-2 fw-bold" style="display:none;">Saved ✓</span>
-          <button type="button" id="saveEventDetails" class="btn btn-sm btn-primary mb-0">Save event details</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Email content (campaign-level) -->
-    <div class="card my-2 cfg-card">
-      <div class="card-header pb-0">
-        <h6 class="mb-0">Email content</h6>
-        <small class="text-muted">
-          Write the message shown at the top of each email. Tap a button to drop in a detail like
-          <strong>[Name]</strong> or <strong>[Event]</strong> — each one is filled in automatically for every recipient.
-        </small>
-      </div>
-      <div class="card-body">
-        <ul class="email-tabs" role="tablist">
-          <li><button type="button" class="email-tab active" data-tab="ty">Thank-you</button></li>
-          <li><button type="button" class="email-tab" data-tab="qr">QR confirmation</button></li>
-          <li><button type="button" class="email-tab" data-tab="rem">Attendance reminder</button></li>
-          <li><button type="button" class="email-tab" data-tab="closed">Registration closed</button></li>
-        </ul>
-
-        <div class="email-pane d-none" data-pane="qr">
-        <div class="mb-4">
-          <label class="form-label d-flex justify-content-between align-items-center">
-            <span>QR confirmation email</span>
-            <a href="{% url 'preview_email' survey.id 'qr' %}" target="_blank"
-               class="btn btn-sm btn-outline-warning mb-0 py-1">
-              <i class="material-symbols-rounded align-middle" style="font-size:16px;">visibility</i> Preview
-            </a>
-          </label>
-          <div class="mb-3">
-            <label class="form-label small mb-1" for="qrSubject">Subject line</label>
-            <input type="text" id="qrSubject" class="form-control" maxlength="200"
-                   placeholder="You're registered for [Event] — your check-in QR code"
-                   value="{{ survey.fkcampaign.qr_email_subject }}">
-            <div class="mt-1">
-              <small class="text-muted me-1">Insert into subject:</small>
-              <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 subject-tag" data-input="qrSubject" data-tag="[Event]">Event</button>
-              <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 subject-tag" data-input="qrSubject" data-tag="[Date]">Date</button>
-              <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 subject-tag" data-input="qrSubject" data-tag="[Name]">Name</button>
-              <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 subject-tag" data-input="qrSubject" data-tag="[Reg no]">Reg no</button>
-              <small class="text-muted ms-1">Leave blank to use the default subject.</small>
-            </div>
-          </div>
-          <div class="mb-1">
-            <small class="text-muted me-1">Insert:</small>
-            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 merge-tag" data-target="qr" data-tag="[Name]">Name</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 merge-tag" data-target="qr" data-tag="[Reg no]">Reg no</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 merge-tag" data-target="qr" data-tag="[Date]">Date</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 merge-tag" data-target="qr" data-tag="[Event]">Event</button>
-          </div>
-          <div class="intro-editor"><div id="qrIntroEditor"></div></div>
-          <div id="qrIntroInit" style="display:none;">{{ survey.fkcampaign.qr_email_intro|safe }}</div>
-          <div class="ev-details-preview" data-for="qr" style="display:none;"></div>
-          <div class="form-check form-switch mt-2">
-            <input class="form-check-input" type="checkbox" id="qrShowBanner" {% if survey.fkcampaign.show_banner_qr %}checked{% endif %}>
-            <label class="form-check-label" for="qrShowBanner">Show the banner image at the top of this email</label>
-          </div>
-          <div class="form-check form-switch mt-2">
-            <input class="form-check-input" type="checkbox" id="qrShowDetails" {% if survey.fkcampaign.show_details_qr %}checked{% endif %}>
-            <label class="form-check-label" for="qrShowDetails">Include the event details block (date, venue, etc.) in this email</label>
-          </div>
-        </div>
-        </div><!-- /qr pane -->
-
-        <div class="email-pane d-none" data-pane="rem">
-        <div class="mb-4">
-          <label class="form-label d-flex justify-content-between align-items-center">
-            <span>Attendance reminder email</span>
-            <a href="{% url 'preview_email' survey.id 'reminder' %}" target="_blank"
-               class="btn btn-sm btn-outline-warning mb-0 py-1">
-              <i class="material-symbols-rounded align-middle" style="font-size:16px;">visibility</i> Preview
-            </a>
-          </label>
-          <div class="mb-3">
-            <label class="form-label small mb-1" for="remSubject">Subject line</label>
-            <input type="text" id="remSubject" class="form-control" maxlength="200"
-                   placeholder="Reminder to Attend: [Event]"
-                   value="{{ survey.fkcampaign.reminder_subject }}">
-            <div class="mt-1">
-              <small class="text-muted me-1">Insert into subject:</small>
-              <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 subject-tag" data-input="remSubject" data-tag="[Event]">Event</button>
-              <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 subject-tag" data-input="remSubject" data-tag="[Date]">Date</button>
-              <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 subject-tag" data-input="remSubject" data-tag="[Name]">Name</button>
-              <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 subject-tag" data-input="remSubject" data-tag="[Reg no]">Reg no</button>
-              <small class="text-muted ms-1">Leave blank to use the default subject.</small>
-            </div>
-          </div>
-          <div class="mb-1">
-            <small class="text-muted me-1">Insert:</small>
-            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 merge-tag" data-target="rem" data-tag="[Name]">Name</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 merge-tag" data-target="rem" data-tag="[Reg no]">Reg no</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 merge-tag" data-target="rem" data-tag="[Date]">Date</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 merge-tag" data-target="rem" data-tag="[Event]">Event</button>
-          </div>
-          <div class="intro-editor"><div id="remIntroEditor"></div></div>
-          <div id="remIntroInit" style="display:none;">{{ survey.fkcampaign.reminder_intro|safe }}</div>
-          <div class="ev-details-preview" data-for="rem" style="display:none;"></div>
-          <div class="form-check form-switch mt-2">
-            <input class="form-check-input" type="checkbox" id="remShowBanner" {% if survey.fkcampaign.show_banner_reminder %}checked{% endif %}>
-            <label class="form-check-label" for="remShowBanner">Show the banner image at the top of this email</label>
-          </div>
-          <div class="form-check form-switch mt-2">
-            <input class="form-check-input" type="checkbox" id="remShowDetails" {% if survey.fkcampaign.show_details_reminder %}checked{% endif %}>
-            <label class="form-check-label" for="remShowDetails">Include the event details block (date, venue, etc.) in this email</label>
-          </div>
-        </div>
-        </div><!-- /rem pane -->
-
-        <div class="email-pane" data-pane="ty">
-        <div class="mb-4">
-          <label class="form-label d-flex justify-content-between align-items-center">
-            <span>Thank-you (submission received) email</span>
-            <a href="{% url 'preview_email' survey.id 'thankyou' %}" target="_blank"
-               class="btn btn-sm btn-outline-warning mb-0 py-1">
-              <i class="material-symbols-rounded align-middle" style="font-size:16px;">visibility</i> Preview
-            </a>
-          </label>
-          <div class="mb-3">
-            <label class="form-label small mb-1" for="tySubject">Subject line</label>
-            <input type="text" id="tySubject" class="form-control" maxlength="200"
-                   placeholder="Thank you for your registration — [Event]"
-                   value="{{ survey.fkcampaign.thankyou_subject }}">
-            <div class="mt-1">
-              <small class="text-muted me-1">Insert into subject:</small>
-              <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 subject-tag" data-input="tySubject" data-tag="[Event]">Event</button>
-              <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 subject-tag" data-input="tySubject" data-tag="[Date]">Date</button>
-              <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 subject-tag" data-input="tySubject" data-tag="[Name]">Name</button>
-              <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 subject-tag" data-input="tySubject" data-tag="[Reg no]">Reg no</button>
-              <small class="text-muted ms-1">Leave blank to use the default subject.</small>
-            </div>
-          </div>
-          <div class="mb-1">
-            <small class="text-muted me-1">Insert:</small>
-            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 merge-tag" data-target="ty" data-tag="[Name]">Name</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 merge-tag" data-target="ty" data-tag="[Reg no]">Reg no</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 merge-tag" data-target="ty" data-tag="[Date]">Date</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 merge-tag" data-target="ty" data-tag="[Event]">Event</button>
-          </div>
-          <div class="intro-editor"><div id="tyIntroEditor"></div></div>
-          <div id="tyIntroInit" style="display:none;">{{ survey.fkcampaign.thankyou_intro|safe }}</div>
-          <div class="ev-details-preview" data-for="ty" style="display:none;"></div>
-          <div class="form-check form-switch mt-2">
-            <input class="form-check-input" type="checkbox" id="tyShowBanner" {% if survey.fkcampaign.show_banner_thankyou %}checked{% endif %}>
-            <label class="form-check-label" for="tyShowBanner">Show the banner image at the top of this email</label>
-          </div>
-          <div class="form-check form-switch mt-2">
-            <input class="form-check-input" type="checkbox" id="tyShowDetails" {% if survey.fkcampaign.show_details_thankyou %}checked{% endif %}>
-            <label class="form-check-label" for="tyShowDetails">Include the event details block (date, venue, etc.) in this email</label>
-          </div>
-        </div>
-        </div><!-- /ty pane -->
-
-        <div class="email-pane d-none" data-pane="closed">
-        <div class="mb-4">
-          <label class="form-label d-flex justify-content-between align-items-center">
-            <span>Registration closed page</span>
-            <a href="{% url 'form_public' survey.slug|default:survey.survey_code %}" target="_blank"
-               class="btn btn-sm btn-outline-warning mb-0 py-1">
-              <i class="material-symbols-rounded align-middle" style="font-size:16px;">visibility</i> Open form
-            </a>
-          </label>
-          <small class="text-muted d-block mb-2">
-            Shown on the public form when it's switched to <strong>Inactive</strong>. The page already
-            shows a "Registration Closed" heading and the PIC contact email — this is the message in between.
-            Leave blank to use the default wording.
-          </small>
-          <div class="mb-1">
-            <small class="text-muted me-1">Insert:</small>
-            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 merge-tag" data-target="closed" data-tag="[Event]">Event</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 merge-tag" data-target="closed" data-tag="[Date]">Date</button>
-          </div>
-          <div class="intro-editor"><div id="closedIntroEditor"></div></div>
-          <div id="closedIntroInit" style="display:none;">{{ survey.fkcampaign.registration_closed_intro|safe }}</div>
-        </div>
-        </div><!-- /closed pane -->
-
-        <!-- Default body copy, loaded into an editor when its saved value is blank -->
-        <div id="emailDefaults" style="display:none;">
-          <div id="qrIntroDefault"><p>Thanks for registering for <strong>[Event]</strong>, [Name].</p></div>
-          <div id="remIntroDefault"><p>Hi [Name],</p><p>This is a friendly reminder that <strong>[Event]</strong> is coming up on [Date]. We look forward to seeing you there!</p></div>
-          <div id="tyIntroDefault"><p>Dear [Name],</p><p>Thank you for registering for <strong>[Event]</strong>. Your registration has been received and is currently being reviewed.</p><ol><li>We have successfully received your registration and it is currently under review.</li><li>Please keep an eye out for your registration confirmation email with the QR code.</li><li>For any additional requirements, our team will reach out to you.</li></ol><p>Confirmation emails with the QR code are sent only after our team has vetted the registrations. This usually takes about one week.</p></div>
-          <div id="closedIntroDefault"><p>Registration for <strong>[Event]</strong> is now closed and we are no longer accepting new submissions.</p></div>
-        </div>
-
-        <hr class="my-3">
-
-        <div class="mb-3">
-          <label class="form-label">Sign-off</label>
-          <div class="intro-editor signoff-editor"><div id="signoffEditor"></div></div>
-          <div id="signoffInit" style="display:none;">{{ survey.fkcampaign.email_signoff|safe }}</div>
-          <small class="text-muted">
-            Can be multiple lines — e.g. <strong>The PIKOM Team</strong> in bold on the first line,
-            "Frontier of Super Intelligence 2026" on the second. Use the toolbar for bold and font colour.
-          </small>
-        </div>
-
-        <div class="text-end">
-          <span id="emSavedMsg" class="text-success me-2 fw-bold" style="display:none;">Saved ✓</span>
-          <button type="button" id="saveEmailContent" class="btn btn-sm btn-primary mb-0">Save email content</button>
-        </div>
-      </div>
-    </div>
+    {% if survey.is_active %}
+      <span class="badge badge-success badge-dot">Accepting responses</span>
     {% else %}
-    <div class="card my-2">
-      <div class="card-body text-muted">
-        <h6 class="mb-1">Event details &amp; email content</h6>
-        Attach this form to a campaign to configure event details and email wording.
-      </div>
-    </div>
+      <span class="badge badge-muted badge-dot" data-tooltip="Turn it on from the forms list to accept submissions">Inactive: not accepting responses</span>
     {% endif %}
+  </div>
 
-    <div class="card my-2">
-      <div class="card-header pb-0 d-flex justify-content-between align-items-center">
-        <h6 class="mb-0">Form Fields</h6>
-        <button type="button" id="addQuestionBtn" class="btn btn-sm btn-primary mb-0">
-          <i class="material-symbols-rounded align-middle">add</i> Add Question
-        </button>
-      </div>
-      <div class="card-body">
-        <small class="text-muted d-block mb-2">
-          Drag to reorder. Identity fields capture core registrant details and cannot be deleted (mark them optional instead).
-        </small>
-        <div id="questionList">
-          {% for q in questions %}
-            {% with is_identity=q.question_type|slice:":9" %}
-            <div class="card mb-2 question-card{% if is_identity == 'identity_' %} identity-question{% endif %}" data-id="{{ q.id }}" data-type="{{ q.question_type }}">
-              <div class="card-body py-2 px-3">
-                <div class="d-flex align-items-center gap-2">
-                  <span class="drag-handle material-symbols-rounded">drag_indicator</span>
-                  <span class="badge bg-secondary q-number">{{ q.number }}</span>
-                  {% if is_identity == 'identity_' %}
-                    <span class="type-pill" style="background:#fff3cd;color:#7c5e00;">
-                      <i class="material-symbols-rounded align-middle" style="font-size:14px;">lock</i>
-                      Identity · {{ q.question_type|slice:"9:"|title }}
-                    </span>
-                  {% else %}
-                    <span class="type-pill">{{ q.get_question_type_display }}</span>
-                  {% endif %}
-                  {% if q.is_required %}<span class="required-pill">Required</span>{% endif %}
-                  {% if q.show_in_list %}
-                    <span class="type-pill" style="background:#e7f4ec; color:#198754;"
-                          title="This answer appears as a column in the registrations list">
-                      <i class="material-symbols-rounded align-middle" style="font-size:14px;">view_column</i>
-                      List col:
-                      <strong>{{ q.list_column_label|default:q.text|striptags|truncatechars:30 }}</strong>
-                    </span>
-                  {% endif %}
-                  <div class="flex-grow-1 ms-2 text-truncate">{{ q.text|striptags }}</div>
-                  <button type="button" class="btn btn-sm btn-link text-body p-1 edit-q-btn" data-id="{{ q.id }}" title="Edit">
-                    <i class="material-symbols-rounded">edit</i>
-                  </button>
-                  {% if is_identity != 'identity_' %}
-                    <button type="button" class="btn btn-sm btn-link text-danger p-1 delete-q-btn" data-id="{{ q.id }}" title="Delete">
-                      <i class="material-symbols-rounded">delete</i>
-                    </button>
-                  {% endif %}
+  <span class="pk-micro mt-8 mb-3"><b>[02]</b> Form content</span>
+  <div class="tabs w-full" id="fbTabs">
+    <nav role="tablist" aria-orientation="horizontal" class="w-full sm:w-fit">
+      <button type="button" role="tab" id="tab-questions" aria-controls="pane-questions" aria-selected="true" tabindex="0"><i data-lucide="list-checks"></i>Questions <span class="fb-count">{{ questions|length }}</span></button>
+      <button type="button" role="tab" id="tab-banner" aria-controls="pane-banner" aria-selected="false" tabindex="-1"><i data-lucide="image"></i>Banner</button>
+      <button type="button" role="tab" id="tab-event" aria-controls="pane-event" aria-selected="false" tabindex="-1"><i data-lucide="calendar-days"></i>Event details</button>
+      <button type="button" role="tab" id="tab-emails" aria-controls="pane-emails" aria-selected="false" tabindex="-1"><i data-lucide="mail"></i>Emails</button>
+    </nav>
+
+    <div role="tabpanel" id="pane-questions" aria-labelledby="tab-questions" tabindex="-1">
+      <section class="card">
+        <header class="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2>Questions</h2>
+            <p>Drag the handle to reorder. Identity fields hold core registrant details and can't be deleted; mark them optional instead.</p>
+          </div>
+          <button type="button" id="addQuestionBtn" class="btn w-full sm:w-auto" data-variant="primary"><i data-lucide="plus"></i>Add question</button>
+        </header>
+        <section>
+          <div id="questionList">
+            {% for q in questions %}
+              {% with is_identity=q.question_type|slice:":9" %}
+              <div class="question-card{% if is_identity == 'identity_' %} identity-question{% endif %}" data-id="{{ q.id }}" data-type="{{ q.question_type }}">
+                <button type="button" class="drag-handle" aria-label="Drag to reorder" data-tooltip="Drag to reorder"><i data-lucide="grip-vertical"></i></button>
+                <span class="q-number">{{ q.number }}</span>
+                <span class="q-type-icon" aria-hidden="true"><i data-lucide="{% if is_identity == 'identity_' %}id-card{% elif q.question_type == 'textarea' %}align-left{% elif q.question_type == 'select' %}circle-chevron-down{% elif q.question_type == 'radio' %}circle-dot{% elif q.question_type == 'checkbox' %}square-check{% else %}text-cursor-input{% endif %}"></i></span>
+                <div class="q-main">
+                  <div class="q-text">{{ q.text|striptags }}{% if q.is_required %}<span class="q-req" title="Required" aria-label="Required">*</span>{% endif %}</div>
+                  <div class="q-meta">
+                    {% if is_identity == 'identity_' %}
+                      <span class="badge badge-warning"><i data-lucide="lock"></i>Identity · {{ q.question_type|slice:"9:"|title }}</span>
+                    {% else %}
+                      <span class="badge badge-info">{{ q.get_question_type_display }}</span>
+                    {% endif %}
+                    {% if q.is_required %}<span class="badge badge-danger">Required</span>{% else %}<span class="badge badge-muted">Optional</span>{% endif %}
+                    {% if q.show_in_list %}
+                      <span class="badge badge-teal" title="This answer appears as a column in the registrations list"><i data-lucide="columns-3"></i>List column: {{ q.list_column_label|default:q.text|striptags|truncatechars:30 }}</span>
+                    {% endif %}
+                  </div>
                 </div>
+                <button type="button" class="btn edit-q-btn" data-variant="ghost" data-size="icon-sm" data-id="{{ q.id }}" data-tooltip="Edit" aria-label="Edit question {{ q.number }}"><i data-lucide="pencil"></i></button>
+                {% if is_identity != 'identity_' %}
+                  <button type="button" class="btn delete-q-btn" data-variant="ghost" data-size="icon-sm" data-id="{{ q.id }}" data-tooltip="Delete" aria-label="Delete question {{ q.number }}"><i data-lucide="trash-2"></i></button>
+                {% else %}
+                  <span class="icon-btn-spacer" aria-hidden="true"></span>
+                {% endif %}
+              </div>
+              {% endwith %}
+            {% endfor %}
+          </div>
+          <div id="emptyState" class="empty" {% if questions %}style="display:none"{% endif %}>
+            <header>
+              <figure><i data-lucide="list-plus"></i></figure>
+              <h3>No questions yet</h3>
+              <p>Select <strong>Add question</strong> to start building your form.</p>
+            </header>
+          </div>
+        </section>
+      </section>
+    </div>
+
+    <div role="tabpanel" id="pane-banner" aria-labelledby="tab-banner" tabindex="-1" hidden>
+      <section class="card">
+        <header class="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2>Banner image</h2>
+            <p>Shown at the top of the public form and, if you choose, the emails. PNG, JPG or WebP up to 5 MB.</p>
+          </div>
+          <div class="flex gap-2">
+            <label for="bannerInput" class="btn" data-variant="outline"><i data-lucide="upload"></i><span id="bannerLabel">{% if survey.banner %}Replace banner{% else %}Upload banner{% endif %}</span></label>
+            <input type="file" id="bannerInput" accept="image/*" hidden>
+            <button type="button" id="removeBannerBtn" class="btn" data-variant="ghost" style="color:var(--danger);{% if not survey.banner %}display:none;{% endif %}"><i data-lucide="trash-2"></i>Remove</button>
+          </div>
+        </header>
+        <section>
+          <div id="bannerPreview">
+            {% if survey.banner %}
+              <img id="bannerImg" src="{{ survey.banner.url }}" alt="Banner preview">
+            {% else %}
+              <label for="bannerInput" id="bannerEmpty" class="banner-empty cursor-pointer">
+                <i data-lucide="image-plus"></i>
+                <span>No banner yet. The public form shows without one.<br><span class="font-medium text-primary">Choose an image</span></span>
+              </label>
+            {% endif %}
+          </div>
+        </section>
+      </section>
+    </div>
+
+    <div role="tabpanel" id="pane-event" aria-labelledby="tab-event" tabindex="-1" hidden>
+      {% if survey.fkcampaign %}
+      <!-- Event details (campaign-level) -->
+      <section class="card cfg-card">
+        <header>
+          <h2>Event details</h2>
+          <p>Shown in the QR confirmation and reminder emails. Applies to the whole event (all forms for this campaign).</p>
+        </header>
+        <section class="grid gap-5">
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div class="grid gap-2">
+              <label class="label" for="evDateRO">Date</label>
+              <input type="text" id="evDateRO" class="input" value="{{ survey.fkcampaign.end_date|date:'l, j F Y' }}" readonly style="background:var(--muted); color:var(--muted-foreground)">
+              <p class="help !mt-0">Taken from the campaign end date.</p>
+              <span id="evDateStr" style="display:none;">{{ survey.fkcampaign.end_date|date:'l, j F Y' }}</span>
+            </div>
+            <div class="grid content-start gap-2">
+              <label class="label" for="evTime">Time</label>
+              <input type="text" id="evTime" class="input" placeholder="8:30am – 5:30pm" value="{{ survey.fkcampaign.event_time }}">
+            </div>
+          </div>
+          <div class="grid gap-2">
+            <label class="label" for="evVenue">Venue</label>
+            <textarea id="evVenue" class="textarea" rows="2" placeholder="Ballroom 1, Level 1, ...">{{ survey.fkcampaign.venue }}</textarea>
+          </div>
+          <div class="grid gap-2">
+            <label class="label" for="evDress">Dress code</label>
+            <input type="text" id="evDress" class="input" placeholder="Smart casual or business attire" value="{{ survey.fkcampaign.dress_code }}">
+          </div>
+
+          <div class="border-t pt-5">
+            <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 class="text-sm font-semibold">Additional info rows</h3>
+                <p class="help !mt-0.5">Parking, agenda link, lucky draw and so on. Pick an emoji, an optional bold label, the text and an optional link.</p>
+              </div>
+              <button type="button" id="addExtraRow" class="btn" data-variant="outline" data-size="sm"><i data-lucide="plus"></i>Add row</button>
+            </div>
+            <div id="extraInfoList"></div>
+            {{ survey.fkcampaign.extra_info|json_script:"extraInfoInit" }}
+          </div>
+
+          {% if survey.purpose == 'registration' %}
+          <div class="flex items-center justify-between gap-4 rounded-lg border bg-muted/40 px-4 py-3">
+            <label for="evShowOnForm" class="cursor-pointer text-sm font-medium">Show event details on this registration form
+              <span class="mt-0.5 block text-xs font-normal text-muted-foreground">Shows the date, time, venue and the rows above at the top of the public form. This setting is per form.</span>
+            </label>
+            <input class="input" type="checkbox" role="switch" id="evShowOnForm" {% if survey.show_event_details %}checked{% endif %}>
+          </div>
+          {% endif %}
+        </section>
+        <footer class="flex items-center justify-end gap-3 border-t pt-4">
+          <span id="evSavedMsg" class="fb-saved"><i data-lucide="check"></i>Saved</span>
+          <button type="button" id="saveEventDetails" class="btn" data-variant="primary">Save event details</button>
+        </footer>
+      </section>
+      {% else %}
+      <div class="card"><div class="empty"><header><figure><i data-lucide="link-2-off"></i></figure><h3>Not linked to a campaign</h3><p>Attach this form to a campaign to set event details and email wording.</p></header></div></div>
+      {% endif %}
+    </div>
+
+    <div role="tabpanel" id="pane-emails" aria-labelledby="tab-emails" tabindex="-1" hidden>
+      {% if survey.fkcampaign %}
+      <!-- Email content (campaign-level) -->
+      <section class="card cfg-card">
+        <header>
+          <h2>Email content</h2>
+          <p>Write the message at the top of each email. Insert a tag like <code class="kbd">[Name]</code> or <code class="kbd">[Event]</code> and it is filled in for every recipient.</p>
+        </header>
+        <section>
+          <ul class="email-tabs" role="tablist">
+            <li><button type="button" class="email-tab active" data-tab="ty">Thank-you</button></li>
+            <li><button type="button" class="email-tab" data-tab="qr">QR confirmation</button></li>
+            <li><button type="button" class="email-tab" data-tab="rem">Attendance reminder</button></li>
+            <li><button type="button" class="email-tab" data-tab="closed">Registration closed</button></li>
+          </ul>
+
+
+          <div class="email-pane d-none" data-pane="qr">
+            <div class="mb-3 flex items-center justify-between gap-3">
+              <h3 class="text-sm font-semibold">QR confirmation email</h3>
+              <a href="{% url 'preview_email' survey.id 'qr' %}" target="_blank" class="btn" data-variant="outline" data-size="sm"><i data-lucide="eye"></i>Preview</a>
+            </div>
+            <div class="mb-4 grid gap-2">
+              <label class="label" for="qrSubject">Subject line</label>
+              <input type="text" id="qrSubject" class="input" maxlength="200" placeholder="You're registered for [Event] — your check-in QR code" value="{{ survey.fkcampaign.qr_email_subject }}">
+              <div class="tag-row !mt-0">Insert:
+                <button type="button" class="btn subject-tag" data-variant="outline" data-size="xs" data-input="qrSubject" data-tag="[Event]">[Event]</button>
+                <button type="button" class="btn subject-tag" data-variant="outline" data-size="xs" data-input="qrSubject" data-tag="[Date]">[Date]</button>
+                <button type="button" class="btn subject-tag" data-variant="outline" data-size="xs" data-input="qrSubject" data-tag="[Name]">[Name]</button>
+                <button type="button" class="btn subject-tag" data-variant="outline" data-size="xs" data-input="qrSubject" data-tag="[Reg no]">[Reg no]</button>
+                <span>Leave blank for the default subject.</span>
               </div>
             </div>
-            {% endwith %}
-          {% endfor %}
-        </div>
-        <div id="emptyState" class="text-center text-muted py-4" {% if questions %}style="display:none"{% endif %}>
-          <i class="material-symbols-rounded" style="font-size:48px;opacity:0.5;">quiz</i>
-          <p class="mb-0">No fields yet. Click <strong>Add Question</strong> to start building your form.</p>
-        </div>
-      </div>
-    </div>
+            <div class="tag-row mb-2">Message · insert:
+              <button type="button" class="btn merge-tag" data-variant="outline" data-size="xs" data-target="qr" data-tag="[Name]">[Name]</button>
+              <button type="button" class="btn merge-tag" data-variant="outline" data-size="xs" data-target="qr" data-tag="[Reg no]">[Reg no]</button>
+              <button type="button" class="btn merge-tag" data-variant="outline" data-size="xs" data-target="qr" data-tag="[Date]">[Date]</button>
+              <button type="button" class="btn merge-tag" data-variant="outline" data-size="xs" data-target="qr" data-tag="[Event]">[Event]</button>
+            </div>
+            <div class="intro-editor"><div id="qrIntroEditor"></div></div>
+            <div id="qrIntroInit" style="display:none;">{{ survey.fkcampaign.qr_email_intro|safe }}</div>
+            <div class="ev-details-preview" data-for="qr" style="display:none;"></div>
+            <div class="mt-3">
+              <div class="sw-row"><label for="qrShowBanner">Show the banner image at the top of this email</label><input class="input" type="checkbox" role="switch" id="qrShowBanner" {% if survey.fkcampaign.show_banner_qr %}checked{% endif %}></div>
+              <div class="sw-row"><label for="qrShowDetails">Include the event details block (date, venue and so on)</label><input class="input" type="checkbox" role="switch" id="qrShowDetails" {% if survey.fkcampaign.show_details_qr %}checked{% endif %}></div>
+            </div>
+          </div><!-- /qr pane -->
 
+          <div class="email-pane d-none" data-pane="rem">
+            <div class="mb-3 flex items-center justify-between gap-3">
+              <h3 class="text-sm font-semibold">Attendance reminder email</h3>
+              <a href="{% url 'preview_email' survey.id 'reminder' %}" target="_blank" class="btn" data-variant="outline" data-size="sm"><i data-lucide="eye"></i>Preview</a>
+            </div>
+            <div class="mb-4 grid gap-2">
+              <label class="label" for="remSubject">Subject line</label>
+              <input type="text" id="remSubject" class="input" maxlength="200" placeholder="Reminder to attend: [Event]" value="{{ survey.fkcampaign.reminder_subject }}">
+              <div class="tag-row !mt-0">Insert:
+                <button type="button" class="btn subject-tag" data-variant="outline" data-size="xs" data-input="remSubject" data-tag="[Event]">[Event]</button>
+                <button type="button" class="btn subject-tag" data-variant="outline" data-size="xs" data-input="remSubject" data-tag="[Date]">[Date]</button>
+                <button type="button" class="btn subject-tag" data-variant="outline" data-size="xs" data-input="remSubject" data-tag="[Name]">[Name]</button>
+                <button type="button" class="btn subject-tag" data-variant="outline" data-size="xs" data-input="remSubject" data-tag="[Reg no]">[Reg no]</button>
+                <span>Leave blank for the default subject.</span>
+              </div>
+            </div>
+            <div class="tag-row mb-2">Message · insert:
+              <button type="button" class="btn merge-tag" data-variant="outline" data-size="xs" data-target="rem" data-tag="[Name]">[Name]</button>
+              <button type="button" class="btn merge-tag" data-variant="outline" data-size="xs" data-target="rem" data-tag="[Reg no]">[Reg no]</button>
+              <button type="button" class="btn merge-tag" data-variant="outline" data-size="xs" data-target="rem" data-tag="[Date]">[Date]</button>
+              <button type="button" class="btn merge-tag" data-variant="outline" data-size="xs" data-target="rem" data-tag="[Event]">[Event]</button>
+            </div>
+            <div class="intro-editor"><div id="remIntroEditor"></div></div>
+            <div id="remIntroInit" style="display:none;">{{ survey.fkcampaign.reminder_intro|safe }}</div>
+            <div class="ev-details-preview" data-for="rem" style="display:none;"></div>
+            <div class="mt-3">
+              <div class="sw-row"><label for="remShowBanner">Show the banner image at the top of this email</label><input class="input" type="checkbox" role="switch" id="remShowBanner" {% if survey.fkcampaign.show_banner_reminder %}checked{% endif %}></div>
+              <div class="sw-row"><label for="remShowDetails">Include the event details block (date, venue and so on)</label><input class="input" type="checkbox" role="switch" id="remShowDetails" {% if survey.fkcampaign.show_details_reminder %}checked{% endif %}></div>
+            </div>
+          </div><!-- /rem pane -->
+
+          <div class="email-pane" data-pane="ty">
+            <div class="mb-3 flex items-center justify-between gap-3">
+              <h3 class="text-sm font-semibold">Thank-you (submission received) email</h3>
+              <a href="{% url 'preview_email' survey.id 'thankyou' %}" target="_blank" class="btn" data-variant="outline" data-size="sm"><i data-lucide="eye"></i>Preview</a>
+            </div>
+            <div class="mb-4 grid gap-2">
+              <label class="label" for="tySubject">Subject line</label>
+              <input type="text" id="tySubject" class="input" maxlength="200" placeholder="Thank you for your registration — [Event]" value="{{ survey.fkcampaign.thankyou_subject }}">
+              <div class="tag-row !mt-0">Insert:
+                <button type="button" class="btn subject-tag" data-variant="outline" data-size="xs" data-input="tySubject" data-tag="[Event]">[Event]</button>
+                <button type="button" class="btn subject-tag" data-variant="outline" data-size="xs" data-input="tySubject" data-tag="[Date]">[Date]</button>
+                <button type="button" class="btn subject-tag" data-variant="outline" data-size="xs" data-input="tySubject" data-tag="[Name]">[Name]</button>
+                <button type="button" class="btn subject-tag" data-variant="outline" data-size="xs" data-input="tySubject" data-tag="[Reg no]">[Reg no]</button>
+                <span>Leave blank for the default subject.</span>
+              </div>
+            </div>
+            <div class="tag-row mb-2">Message · insert:
+              <button type="button" class="btn merge-tag" data-variant="outline" data-size="xs" data-target="ty" data-tag="[Name]">[Name]</button>
+              <button type="button" class="btn merge-tag" data-variant="outline" data-size="xs" data-target="ty" data-tag="[Reg no]">[Reg no]</button>
+              <button type="button" class="btn merge-tag" data-variant="outline" data-size="xs" data-target="ty" data-tag="[Date]">[Date]</button>
+              <button type="button" class="btn merge-tag" data-variant="outline" data-size="xs" data-target="ty" data-tag="[Event]">[Event]</button>
+            </div>
+            <div class="intro-editor"><div id="tyIntroEditor"></div></div>
+            <div id="tyIntroInit" style="display:none;">{{ survey.fkcampaign.thankyou_intro|safe }}</div>
+            <div class="ev-details-preview" data-for="ty" style="display:none;"></div>
+            <div class="mt-3">
+              <div class="sw-row"><label for="tyShowBanner">Show the banner image at the top of this email</label><input class="input" type="checkbox" role="switch" id="tyShowBanner" {% if survey.fkcampaign.show_banner_thankyou %}checked{% endif %}></div>
+              <div class="sw-row"><label for="tyShowDetails">Include the event details block (date, venue and so on)</label><input class="input" type="checkbox" role="switch" id="tyShowDetails" {% if survey.fkcampaign.show_details_thankyou %}checked{% endif %}></div>
+            </div>
+          </div><!-- /ty pane -->
+
+          <div class="email-pane d-none" data-pane="closed">
+            <div class="mb-2 flex items-center justify-between gap-3">
+              <h3 class="text-sm font-semibold">Registration closed page</h3>
+              <a href="{% url 'form_public' survey.slug|default:survey.survey_code %}" target="_blank" class="btn" data-variant="outline" data-size="sm"><i data-lucide="external-link"></i>Open form</a>
+            </div>
+            <p class="help !mt-0 mb-3">Shown on the public form when it is switched to inactive, between the "Registration closed" heading and the PIC contact email. Leave blank for the default wording.</p>
+            <div class="tag-row mb-2">Message · insert:
+              <button type="button" class="btn merge-tag" data-variant="outline" data-size="xs" data-target="closed" data-tag="[Event]">[Event]</button>
+              <button type="button" class="btn merge-tag" data-variant="outline" data-size="xs" data-target="closed" data-tag="[Date]">[Date]</button>
+            </div>
+            <div class="intro-editor"><div id="closedIntroEditor"></div></div>
+            <div id="closedIntroInit" style="display:none;">{{ survey.fkcampaign.registration_closed_intro|safe }}</div>
+          </div><!-- /closed pane -->
+
+          <!-- Default body copy, loaded into an editor when its saved value is blank -->
+          <div id="emailDefaults" style="display:none;">
+            <div id="qrIntroDefault"><p>Thanks for registering for <strong>[Event]</strong>, [Name].</p></div>
+            <div id="remIntroDefault"><p>Hi [Name],</p><p>This is a friendly reminder that <strong>[Event]</strong> is coming up on [Date]. We look forward to seeing you there!</p></div>
+            <div id="tyIntroDefault"><p>Dear [Name],</p><p>Thank you for registering for <strong>[Event]</strong>. Your registration has been received and is currently being reviewed.</p><ol><li>We have successfully received your registration and it is currently under review.</li><li>Please keep an eye out for your registration confirmation email with the QR code.</li><li>For any additional requirements, our team will reach out to you.</li></ol><p>Confirmation emails with the QR code are sent only after our team has vetted the registrations. This usually takes about one week.</p></div>
+            <div id="closedIntroDefault"><p>Registration for <strong>[Event]</strong> is now closed and we are no longer accepting new submissions.</p></div>
+          </div>
+
+          <div class="mt-6 space-y-2 border-t pt-5">
+            <label class="label">Sign-off</label>
+            <div class="intro-editor signoff-editor"><div id="signoffEditor"></div></div>
+            <div id="signoffInit" style="display:none;">{{ survey.fkcampaign.email_signoff|safe }}</div>
+            <p class="help !mt-0">Shared by every email. Can be several lines, for example <strong>The PIKOM Team</strong> in bold, then the event name.</p>
+          </div>
+        </section>
+        <footer class="flex items-center justify-end gap-3 border-t pt-4">
+          <span id="emSavedMsg" class="fb-saved"><i data-lucide="check"></i>Saved</span>
+          <button type="button" id="saveEmailContent" class="btn" data-variant="primary">Save email content</button>
+        </footer>
+      </section>
+      {% else %}
+      <div class="card"><div class="empty"><header><figure><i data-lucide="link-2-off"></i></figure><h3>Not linked to a campaign</h3><p>Attach this form to a campaign to set event details and email wording.</p></header></div></div>
+      {% endif %}
+    </div>
   </div>
-</main>
 
 <!-- Add / Edit Question Modal -->
-<div class="modal fade" id="questionModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
+<div class="modal fade" id="questionModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="questionModalTitle">
+  <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <form id="questionForm" novalidate>
         <div class="modal-header">
-          <h5 class="modal-title">Question</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          <div>
+            <h2 class="modal-title" id="questionModalTitle">Question</h2>
+            <p class="mt-1 text-sm text-muted-foreground">What you ask and how people answer it.</p>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body grid gap-4">
           <input type="hidden" id="qId">
           <input type="hidden" id="qSurveyId" value="{{ survey.id }}">
 
-          <div class="mb-3">
-            <label class="form-label">Question text <span class="text-danger">*</span></label>
-            <textarea id="qText" class="form-control" rows="2" placeholder="e.g. What is your dietary preference?" required></textarea>
-            <small class="text-muted">HTML allowed.</small>
+          <div class="grid gap-2">
+            <label class="label" for="qText">Question text <span class="text-danger">*</span></label>
+            <textarea id="qText" class="textarea" rows="2" placeholder="e.g. What is your dietary preference?" required></textarea>
+            <p class="help !mt-0">HTML allowed.</p>
           </div>
 
-          <div class="mb-3">
-            <label class="form-label">Help text (optional)</label>
-            <input type="text" id="qHelp" class="form-control" placeholder="Short hint shown under the question">
+          <div class="grid gap-2 q-help-field">
+            <label class="label" for="qHelp">Help text <span class="font-normal text-muted-foreground">(optional)</span></label>
+            <input type="text" id="qHelp" class="input" placeholder="Short hint shown under the question">
           </div>
 
-          <div class="row">
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Type</label>
-              <select id="qType" class="form-select">
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div class="grid content-start gap-2 q-type-field">
+              <label class="label" for="qType">Answer type</label>
+              <select id="qType" class="select w-full">
                 <option value="text">Short text</option>
                 <option value="textarea">Long text (paragraph)</option>
                 <option value="select">Dropdown</option>
@@ -585,56 +514,47 @@
                 <option value="checkbox">Multiple choice (checkbox)</option>
               </select>
             </div>
-            <div class="col-md-6 mb-3 d-flex align-items-center gap-3">
-              <div class="form-check form-switch mt-3">
-                <input class="form-check-input" type="checkbox" id="qRequired" checked>
-                <label class="form-check-label" for="qRequired">Required</label>
+            <div class="grid content-end gap-2">
+              <div class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2">
+                <label for="qRequired" class="cursor-pointer text-sm font-medium">Required</label>
+                <input class="input" type="checkbox" role="switch" id="qRequired" checked>
               </div>
-              <div class="form-check form-switch mt-3" id="qShowInListWrap">
-                <input class="form-check-input" type="checkbox" id="qShowInList">
-                <label class="form-check-label" for="qShowInList" title="Show this answer as a column in the registrations list">Show in list</label>
+              <div class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2" id="qShowInListWrap">
+                <label for="qShowInList" class="cursor-pointer text-sm font-medium" title="Show this answer as a column in the registrations list">Show in registrations list</label>
+                <input class="input" type="checkbox" role="switch" id="qShowInList">
               </div>
             </div>
           </div>
 
-          <div class="mb-3" id="qColumnLabelWrap">
-            <label class="form-label" for="qColumnLabel">
-              Column header for the registrations list
-              <span class="text-muted small">(optional)</span>
-            </label>
-            <input type="text" id="qColumnLabel" class="form-control" maxlength="60"
-                   placeholder="e.g. Member, Dietary, Inviter">
-            <small class="text-muted">
-              Used as the column header on the registrations list page.
-              Leave blank to use the question text (truncated).
-              Only applies when <strong>Show in list</strong> is on.
-            </small>
+          <div class="grid gap-2" id="qColumnLabelWrap">
+            <label class="label" for="qColumnLabel">Column header <span class="font-normal text-muted-foreground">(optional)</span></label>
+            <input type="text" id="qColumnLabel" class="input" maxlength="60" placeholder="e.g. Member, Dietary, Inviter">
+            <p class="help !mt-0">Header for this answer's column in the registrations list. Leave blank to use the question text. Only applies when <strong>Show in registrations list</strong> is on.</p>
           </div>
 
           <div id="choicesBlock" style="display:none;">
-            <label class="form-label">Choices</label>
+            <div class="mb-2 flex items-center justify-between">
+              <span class="label">Choices</span>
+              <span class="text-xs text-muted-foreground">Drag to reorder</span>
+            </div>
             <div id="choicesList"></div>
-            <button type="button" id="addChoiceBtn" class="btn btn-sm btn-outline-primary mb-2">
-              <i class="material-symbols-rounded align-middle">add</i> Add choice
-            </button>
-            <div class="row align-items-center mt-2">
-              <div class="col-md-6">
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" id="qAllowOther">
-                  <label class="form-check-label" for="qAllowOther">Include an "Other" free-text input</label>
-                </div>
-              </div>
-              <div class="col-md-6" id="maxChecksWrap" style="display:none;">
-                <label class="form-label mb-0">Max selections (optional)</label>
-                <input type="number" id="qMaxChecks" class="form-control form-control-sm" min="1" placeholder="No limit">
+            <button type="button" id="addChoiceBtn" class="btn" data-variant="outline" data-size="sm"><i data-lucide="plus"></i>Add choice</button>
+            <div class="mt-4 grid items-center gap-3 border-t pt-3 sm:grid-cols-2">
+              <label class="flex items-center gap-2 text-sm" for="qAllowOther">
+                <input class="input" type="checkbox" id="qAllowOther">
+                Include an "Other" free-text answer
+              </label>
+              <div class="flex items-center gap-2" id="maxChecksWrap" style="display:none;">
+                <label class="label whitespace-nowrap" for="qMaxChecks">Max selections</label>
+                <input type="number" id="qMaxChecks" class="input h-8" min="1" placeholder="No limit">
               </div>
             </div>
           </div>
 
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Question</button>
+          <button type="button" class="btn" data-variant="outline" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn" data-variant="primary"><i data-lucide="check"></i>Save question</button>
         </div>
       </form>
     </div>
@@ -655,6 +575,15 @@
     return m ? decodeURIComponent(m[1]) : '';
   }
 
+  // Destructive confirmations: SweetAlert2 in the shadcn look (falls back to confirm()).
+  function pkConfirm(title, text, confirmText) {
+    if (!window.Swal) return Promise.resolve(window.confirm(title));
+    return Swal.fire({ title, text, icon: 'warning', showCancelButton: true, confirmButtonText: confirmText,
+      cancelButtonText: 'Cancel', reverseButtons: true, focusCancel: true,
+      confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--danger').trim() || '#C9304A' })
+      .then(r => r.isConfirmed);
+  }
+
   function showEmptyStateIfNeeded() {
     const hasAny = document.querySelectorAll('#questionList .question-card').length > 0;
     document.getElementById('emptyState').style.display = hasAny ? 'none' : 'block';
@@ -673,10 +602,7 @@
     input.select();
     input.setSelectionRange(0, 99999);
     navigator.clipboard.writeText(input.value).then(() => {
-      const btn = document.getElementById('copyUrlBtn');
-      const orig = btn.innerHTML;
-      btn.innerHTML = '<i class="material-symbols-rounded align-middle">check</i> Copied';
-      setTimeout(() => btn.innerHTML = orig, 1500);
+      window.pkToast('success', 'Link copied', input.value);
     });
   });
 
@@ -706,7 +632,7 @@
     const file = bannerInput.files[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      alert('Banner must be under 5 MB');
+      window.pkToast('error', 'Image too large', 'Banner must be under 5 MB.');
       bannerInput.value = '';
       return;
     }
@@ -718,31 +644,35 @@
       body: formData,
     }).then(r => r.json()).then(data => {
       if (data.success) {
-        bannerPreview.innerHTML = `<img id="bannerImg" src="${data.url}" alt="Banner preview" class="img-fluid rounded" style="max-height:180px;">`;
-        removeBannerBtn.style.display = 'inline-block';
+        bannerPreview.innerHTML = `<img id="bannerImg" src="${data.url}" alt="Banner preview">`;
+        window.pkToast('success', 'Banner uploaded');
+        removeBannerBtn.style.display = '';
         bannerLabel.textContent = 'Replace banner';
       } else {
-        alert(data.message || 'Upload failed');
+        window.pkToast('error', 'Upload failed', data.message || 'Try a different image.');
       }
       bannerInput.value = '';
     });
   });
 
   removeBannerBtn.addEventListener('click', () => {
-    if (!confirm('Remove the banner?')) return;
+    pkConfirm('Remove the banner?', 'The public form and emails will show without it.', 'Remove banner').then(ok => { if (!ok) return;
     fetch(`/delete_banner/${SURVEY_ID}/`, {
       method: 'POST',
       headers: { 'X-CSRFToken': getCSRFToken() },
     }).then(r => r.json()).then(data => {
       if (data.success) {
         bannerPreview.innerHTML = `
-          <div id="bannerEmpty" class="text-muted py-3">
-            <i class="material-symbols-rounded" style="font-size:48px;opacity:0.5;">image</i>
-            <div>No banner uploaded. The public form will display without one.</div>
-          </div>`;
+          <label for="bannerInput" id="bannerEmpty" class="banner-empty cursor-pointer">
+            <i data-lucide="image-plus"></i>
+            <span>No banner yet. The public form shows without one.<br><span class="font-medium text-primary">Choose an image</span></span>
+          </label>`;
+        window.pkIcons(bannerPreview);
         removeBannerBtn.style.display = 'none';
         bannerLabel.textContent = 'Upload banner';
+        window.pkToast('success', 'Banner removed');
       }
+    });
     });
   });
 
@@ -781,29 +711,29 @@
 
   function addChoiceRow(value = '', followup = '') {
     const row = document.createElement('div');
-    row.className = 'choice-row-wrap mb-2 p-2 rounded border';
+    row.className = 'choice-row-wrap';
     const escVal = String(value).replace(/"/g, '&quot;');
     const escFu  = String(followup).replace(/"/g, '&quot;');
     const hasFu = !!followup;
     row.innerHTML = `
       <div class="choice-row">
-        <span class="choice-drag-handle material-symbols-rounded" title="Drag to reorder">drag_indicator</span>
-        <input type="text" class="form-control form-control-sm choice-input" value="${escVal}" placeholder="Choice label">
-        <div class="btn-group-vertical choice-move-btns">
-          <button type="button" class="btn btn-sm btn-outline-secondary move-choice-up p-0" title="Move up"><i class="material-symbols-rounded" style="font-size:16px;">keyboard_arrow_up</i></button>
-          <button type="button" class="btn btn-sm btn-outline-secondary move-choice-down p-0" title="Move down"><i class="material-symbols-rounded" style="font-size:16px;">keyboard_arrow_down</i></button>
+        <span class="choice-drag-handle" title="Drag to reorder"><i data-lucide="grip-vertical"></i></span>
+        <input type="text" class="input choice-input" value="${escVal}" placeholder="Choice label" aria-label="Choice label">
+        <div class="choice-move-btns">
+          <button type="button" class="btn move-choice-up" data-variant="ghost" data-size="icon-xs" title="Move up" aria-label="Move up"><i data-lucide="chevron-up"></i></button>
+          <button type="button" class="btn move-choice-down" data-variant="ghost" data-size="icon-xs" title="Move down" aria-label="Move down"><i data-lucide="chevron-down"></i></button>
         </div>
         <button type="button"
-                class="btn btn-sm ${hasFu ? 'btn-success' : 'btn-outline-secondary'} toggle-followup"
+                class="btn toggle-followup" data-variant="${hasFu ? 'secondary' : 'ghost'}" data-size="sm"
                 title="When this option is selected, also show a free-text input for the participant to fill in">
-          <i class="material-symbols-rounded align-middle" style="font-size:18px;">add_box</i>
-          <span class="toggle-label">${hasFu ? 'Follow-up: ON' : '+ Add follow-up text'}</span>
+          <i data-lucide="message-square-plus"></i>
+          <span class="toggle-label">${hasFu ? 'Follow-up on' : 'Add follow-up'}</span>
         </button>
-        <button type="button" class="btn btn-sm btn-outline-danger remove-choice" title="Remove choice"><i class="material-symbols-rounded">close</i></button>
+        <button type="button" class="btn remove-choice" data-variant="ghost" data-size="icon-sm" title="Remove choice" aria-label="Remove choice"><i data-lucide="x"></i></button>
       </div>
-      <div class="followup-row mt-2 ms-4" style="${hasFu ? '' : 'display:none;'}">
-        <label class="form-label small text-muted mb-1">Placeholder for the follow-up text input shown when this option is picked:</label>
-        <input type="text" class="form-control form-control-sm followup-input"
+      <div class="followup-row" style="${hasFu ? '' : 'display:none;'}">
+        <label class="mb-1 block text-xs text-muted-foreground">Placeholder for the follow-up text box shown when this option is picked</label>
+        <input type="text" class="input h-8 followup-input"
                value="${escFu}"
                placeholder="e.g. 'Name of the inviter'">
       </div>
@@ -826,27 +756,26 @@
       if (showing) {
         fu.style.display = 'none';
         fuInput.value = '';
-        toggleBtn.classList.remove('btn-success');
-        toggleBtn.classList.add('btn-outline-secondary');
-        toggleLabel.textContent = '+ Add follow-up text';
+        toggleBtn.dataset.variant = 'ghost';
+        toggleLabel.textContent = 'Add follow-up';
       } else {
         fu.style.display = 'block';
         if (!fuInput.value) fuInput.value = 'Please specify';
         fuInput.focus();
         fuInput.select();
-        toggleBtn.classList.remove('btn-outline-secondary');
-        toggleBtn.classList.add('btn-success');
-        toggleLabel.textContent = 'Follow-up: ON';
+        toggleBtn.dataset.variant = 'secondary';
+        toggleLabel.textContent = 'Follow-up on';
       }
     });
     document.getElementById('choicesList').appendChild(row);
+    window.pkIcons(row);
   }
 
   function onTypeChange() {
     const type = document.getElementById('qType').value;
     const needsChoices = ['radio', 'checkbox', 'select'].includes(type);
     document.getElementById('choicesBlock').style.display = needsChoices ? 'block' : 'none';
-    document.getElementById('maxChecksWrap').style.display = type === 'checkbox' ? 'block' : 'none';
+    document.getElementById('maxChecksWrap').style.display = type === 'checkbox' ? 'flex' : 'none';
     if (needsChoices && document.getElementById('choicesList').children.length === 0) {
       addChoiceRow('');
       addChoiceRow('');
@@ -865,7 +794,7 @@
   document.getElementById('addQuestionBtn').addEventListener('click', () => {
     resetForm();
     applyIdentityLock(false);  // brand-new questions are always custom types
-    modalEl.querySelector('.modal-title').textContent = 'Add Question';
+    modalEl.querySelector('.modal-title').textContent = 'Add question';
     modal.show();
   });
 
@@ -874,19 +803,19 @@
   function applyIdentityLock(isIdentity) {
     // Identity questions: only label + required are editable.
     const typeSel = document.getElementById('qType');
-    const helpRow = document.getElementById('qHelp').closest('.mb-3');
+    const helpRow = document.getElementById('qHelp').closest('.q-help-field');
     const choicesBlock = document.getElementById('choicesBlock');
     const showInListWrap = document.getElementById('qShowInListWrap');
     const columnLabelWrap = document.getElementById('qColumnLabelWrap');
     typeSel.disabled = isIdentity;
-    typeSel.closest('.col-md-6').style.display = isIdentity ? 'none' : 'block';
-    helpRow.style.display = isIdentity ? 'none' : 'block';
+    typeSel.closest('.q-type-field').style.display = isIdentity ? 'none' : '';
+    helpRow.style.display = isIdentity ? 'none' : '';
     choicesBlock.style.display = isIdentity ? 'none' : choicesBlock.style.display;
     // Show-in-list (and its column label) only apply to custom questions —
     // identity ones always appear as Name/Email/Phone/Organization columns,
     // whose labels are managed through the form's identity field config.
-    if (showInListWrap) showInListWrap.style.display = isIdentity ? 'none' : 'inline-flex';
-    if (columnLabelWrap) columnLabelWrap.style.display = isIdentity ? 'none' : 'block';
+    if (showInListWrap) showInListWrap.style.display = isIdentity ? 'none' : '';
+    if (columnLabelWrap) columnLabelWrap.style.display = isIdentity ? 'none' : '';
     if (isIdentity) typeSel.value = typeSel.value; // preserve
   }
 
@@ -899,7 +828,7 @@
           .then(data => {
             resetForm();
             const isIdentity = (data.question_type || '').startsWith(IDENTITY_PREFIX);
-            modalEl.querySelector('.modal-title').textContent = isIdentity ? 'Edit Identity Field' : 'Edit Question';
+            modalEl.querySelector('.modal-title').textContent = isIdentity ? 'Edit identity field' : 'Edit question';
             document.getElementById('qId').value = data.id;
             document.getElementById('qText').value = data.text || '';
             document.getElementById('qHelp').value = data.help_text || '';
@@ -926,7 +855,7 @@
   function bindDeleteButtons() {
     document.querySelectorAll('.delete-q-btn').forEach(btn => {
       btn.onclick = () => {
-        if (!confirm('Delete this question? All answers to it will also be removed.')) return;
+        pkConfirm('Delete this question?', 'All answers to it will also be removed. This cannot be undone.', 'Delete question').then(ok => { if (!ok) return;
         const id = btn.dataset.id;
         fetch(`/delete_question/${id}/`, {
           method: 'POST',
@@ -936,9 +865,11 @@
             btn.closest('.question-card').remove();
             updateNumbers();
             showEmptyStateIfNeeded();
+            window.pkToast('success', 'Question deleted');
           } else {
-            alert(data.message || 'Failed to delete.');
+            window.pkToast('error', 'Question not deleted', data.message || 'Try again.');
           }
+        });
         });
       };
     });
@@ -964,7 +895,7 @@
     });
 
     if (['radio', 'checkbox', 'select'].includes(type) && choices.length === 0) {
-      alert('Please add at least one choice.');
+      window.pkToast('warning', 'Add at least one choice', 'Choice questions need something to pick.');
       return;
     }
 
@@ -992,7 +923,7 @@
         modal.hide();
         location.reload();
       } else {
-        alert(data.message || 'Failed to save question.');
+        window.pkToast('error', 'Question not saved', data.message || 'Try again.');
       }
     });
   });
@@ -1005,10 +936,9 @@
     const EMOJIS = ['📅','🗓️','🕒','⏰','📍','🏢','🅿️','🚗','🚌','👕','👔','🎟️','🎫','📝','📋','🔗','🎉','🎁','🏆','🍽️','☕','🎤','🎧','👥','💡','⚠️','✅','ℹ️','📞','✉️','🌐','⭐'];
     let activeIconBtn = null;
     const palette = document.createElement('div');
-    palette.className = 'card shadow-sm';
-    palette.style.cssText = 'position:absolute; z-index:1090; display:none; padding:6px; max-width:260px; background:#fff;';
-    palette.innerHTML = EMOJIS.map(e => `<button type="button" class="emoji-opt" style="font-size:18px; line-height:1; border:0; background:none; padding:4px 6px; cursor:pointer;">${e}</button>`).join('')
-      + `<button type="button" class="emoji-opt" data-clear="1" title="No icon" style="font-size:13px; border:0; background:none; padding:4px 6px; cursor:pointer; color:#b71c1c;">clear ✕</button>`;
+    palette.className = 'emoji-palette';
+    palette.innerHTML = EMOJIS.map(e => `<button type="button" class="emoji-opt">${e}</button>`).join('')
+      + `<button type="button" class="emoji-opt" data-clear="1" title="No icon" style="font-size:.75rem; color:var(--danger);">Clear</button>`;
     document.body.appendChild(palette);
     palette.querySelectorAll('.emoji-opt').forEach(b => b.addEventListener('click', () => {
       if (activeIconBtn) {
@@ -1034,18 +964,18 @@
     const extraList = document.getElementById('extraInfoList');
     function addExtraRow(icon = '', label = '', value = '', link = '') {
       const row = document.createElement('div');
-      row.className = 'extra-row d-flex gap-2 mb-2 align-items-start flex-wrap';
+      row.className = 'extra-row';
       const esc = s => String(s).replace(/"/g, '&quot;');
       row.innerHTML = `
-        <button type="button" class="btn btn-outline-secondary btn-sm mb-0 ex-icon-btn" title="Pick an emoji"
-                style="min-width:46px; font-size:18px; line-height:1.2;" data-emoji="${esc(icon)}">${icon || '＋'}</button>
-        <input type="text" class="form-control form-control-sm ex-label" style="max-width:170px;" placeholder="Label (optional)" value="${esc(label)}">
-        <input type="text" class="form-control form-control-sm ex-value" style="min-width:140px; flex:1 1 160px;" placeholder="Text" value="${esc(value)}">
-        <input type="url" class="form-control form-control-sm ex-link" style="min-width:140px; flex:1 1 160px;" placeholder="Link URL (optional)" value="${esc(link)}">
-        <button type="button" class="btn btn-sm btn-outline-danger mb-0 ex-remove" title="Remove row"><i class="material-symbols-rounded">close</i></button>`;
+        <button type="button" class="btn ex-icon-btn" data-variant="outline" title="Pick an emoji" aria-label="Pick an emoji" data-emoji="${esc(icon)}">${icon || '＋'}</button>
+        <input type="text" class="input ex-label" style="max-width:170px; flex:1 1 120px;" placeholder="Label (optional)" aria-label="Label" value="${esc(label)}">
+        <input type="text" class="input ex-value" style="min-width:140px; flex:1 1 160px;" placeholder="Text" aria-label="Text" value="${esc(value)}">
+        <input type="url" class="input ex-link" style="min-width:140px; flex:1 1 160px;" placeholder="Link URL (optional)" aria-label="Link URL" value="${esc(link)}">
+        <button type="button" class="btn ex-remove" data-variant="ghost" data-size="icon-sm" title="Remove row" aria-label="Remove row"><i data-lucide="x"></i></button>`;
       row.querySelector('.ex-icon-btn').addEventListener('click', (e) => { e.preventDefault(); openPalette(e.currentTarget); });
       row.querySelector('.ex-remove').addEventListener('click', () => row.remove());
       extraList.appendChild(row);
+      window.pkIcons(row);
     }
     let initialExtra = [];
     try { initialExtra = JSON.parse(document.getElementById('extraInfoInit').textContent || '[]'); } catch (e) { initialExtra = []; }
@@ -1076,8 +1006,8 @@
         body: JSON.stringify(payload),
       }).then(r => r.json()).then(d => {
         const m = document.getElementById('evSavedMsg');
-        if (d.success) { m.style.display = 'inline'; setTimeout(() => m.style.display = 'none', 2000); }
-        else { alert(d.message || 'Save failed'); }
+        if (d.success) { m.style.display = 'inline-flex'; setTimeout(() => m.style.display = 'none', 2500); window.pkToast('success', 'Event details saved'); }
+        else { window.pkToast('error', 'Not saved', d.message || 'Try again.'); }
       });
     });
 
@@ -1110,6 +1040,13 @@
       theme: 'snow',
       placeholder: 'The PIKOM Team',
       modules: { toolbar: [['bold', 'italic', 'underline'], [{ color: [] }], ['clean']] },
+    });
+
+    // a11y: Quill pickers render as unlabeled role=button spans; name them after init.
+    document.querySelectorAll('.ql-picker').forEach(function (p) {
+      var kind = (p.className.match(/ql-(size|color|background|align|header|font)/) || [, 'option'])[1];
+      var name = { size: 'Font size', color: 'Text colour', background: 'Highlight colour', align: 'Text alignment', header: 'Heading level', font: 'Font' }[kind] || 'Formatting option';
+      var lbl = p.querySelector('.ql-picker-label'); if (lbl) lbl.setAttribute('aria-label', name);
     });
     // Load the saved body; if blank, fall back to the default copy so authors
     // start from the email we already send and can edit it.
@@ -1234,8 +1171,8 @@
         body: JSON.stringify(payload),
       }).then(r => r.json()).then(d => {
         const m = document.getElementById('emSavedMsg');
-        if (d.success) { m.style.display = 'inline'; setTimeout(() => m.style.display = 'none', 2000); }
-        else { alert(d.message || 'Save failed'); }
+        if (d.success) { m.style.display = 'inline-flex'; setTimeout(() => m.style.display = 'none', 2500); window.pkToast('success', 'Email content saved'); }
+        else { window.pkToast('error', 'Not saved', d.message || 'Try again.'); }
       });
     });
   }

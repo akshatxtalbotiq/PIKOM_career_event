@@ -1,91 +1,75 @@
-{% load static %}
-<!DOCTYPE html>
+{% load static %}<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PIKOM Golf Registration</title>
-  <link rel="stylesheet" href="{% static 'user/css/bootstrap.min.css' %}">
-  <link rel="stylesheet" href="{% static 'user/css/style.css' %}">
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0B2149"/>
+  <title>Golf check-in | PIKOM</title>
+  <link rel="icon" type="image/png" href="{% static 'user/img/favicon.png' %}">
+  <script>(function(){try{var t=localStorage.getItem('pk-theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}})();</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap">
+  <link rel="stylesheet" href="{% static 'register/css/app.css' %}">
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
-    #reader {
-      width: 300px;
-      height: 300px;
-      aspect-ratio: 1/1;
-      margin-inline: auto;
-      margin-bottom: 2rem;
-      border-radius: .75rem;
-      overflow: hidden;
-      box-shadow: 0 4px 10px 0 rgba(0, 0, 0, 0.1);
-      >video{
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-
-      }
-    }
-
+    #reader { width: 100%; aspect-ratio: 1 / 1; border-radius: .9rem; overflow: hidden; background: #050C1D; }
+    #reader > video { width: 100% !important; height: 100% !important; object-fit: cover; }
   </style>
 </head>
-<body class="bg-body-tertiary">
-
-  <div class="container-xl py-5">
-    <div class="row mt-3">
-      <div class="col-xl-6 col-lg-12 mx-auto ">
-        <h1 class="mb-3 text-center">PIKOM Golf Invitational & Charity Drive 2025</h1>
-
-        <div id="reader" class="ratio ratio-1x1" style=" background-color: aquamarine;"></div>
-
-        <div class="card card-body p-4 rounded-4 mb-3" id="result">
-          <h5 id="name"></h5>
-          <p id="message"></p>
-          <!-- <ul>
-            <li><span>also can shw list</span></li>
-            <li><span>also can shw list</span></li>
-            <li><span>also can shw list</span></li>
-            <li><span>also can shw list</span></li>
-            <li><span>also can shw list</span></li>
-            <li><span>also can shw list</span></li>
-          </ul> -->
-        </div>
-        <div class="">
-          <div class="nb-3">
-            <label for="remark" class="form-label">Remark (Optional)</label>
-            <textarea name="remark" id="remark" class="form-control" placeholder="" rows="5"></textarea>
-          </div>
-          <!-- <button class="btn btn-primary btn-lg mt-3" onclick="window.location.reload();">Action text</button> -->
-        </div>
+<body class="min-h-svh bg-background text-foreground">
+  <header class="border-b bg-[var(--sidebar)] text-white">
+    <div class="mx-auto flex h-14 max-w-xl items-center gap-3 px-4">
+      <img src="{% static 'user/img/PIKOM.png' %}" alt="PIKOM" class="h-11 w-auto">
+      <span class="h-6 w-px bg-white/15" aria-hidden="true"></span>
+      <div class="min-w-0">
+        <p class="font-medium text-[11px] font-semibold uppercase leading-tight tracking-[.16em] text-[#8EA3C8]"><b class="text-[#2F7CF6]">[Live]</b> Golf check-in (2025)</p>
+        <h1 class="truncate font-semibold text-[15px] font-bold leading-tight tracking-tight">PIKOM Golf Invitational &amp; Charity Drive 2025</h1>
       </div>
     </div>
-  </div>
+  </header>
 
-    <script src="{% static 'user/js/jquery-3.7.1.min.js' %}"></script>
-    <script src="{% static 'user/js/bootstrap.bundle.min.js' %}"></script>
-    <script>
-        function onScanSuccess(decodedText, decodedResult) {
-            fetch(`/validategolf/${decodedText}`)
-                .then(response => response.json())
-                .then(data => {
+  <main class="mx-auto grid max-w-xl gap-3 px-4 py-4 sm:py-6">
+    <section class="card gap-0 p-3 shadow-none">
+      <span class="pk-micro mb-2.5 px-1 pt-1"><b>[01]</b> Camera</span>
+      <div id="reader"></div>
+      <p class="mt-3 flex items-center justify-center gap-2 text-sm text-muted-foreground"><i data-lucide="scan-line" class="size-4"></i>Point the camera at a player's QR code</p>
+    </section>
 
-                    document.getElementById("message").innerText = data.message;
+    <section class="card gap-1 p-5 shadow-none" id="result" aria-live="polite">
+      <p class="pk-micro"><b>[02]</b> Last scan</p>
+      <h5 id="name" class="font-semibold text-[1.75rem] font-extrabold leading-tight tracking-[-.03em]"></h5>
+      <p id="message" class="text-[15px] text-muted-foreground">Waiting for a scan.</p>
+    </section>
 
-                    if (data.participant && data.participant.name) {
-                        document.getElementById("name").innerText = data.participant.name;
-                    }
+    <section class="card gap-0 p-4 shadow-none">
+      <label for="remark" class="pk-micro mb-2.5"><b>[03]</b> Remark <span class="font-normal normal-case tracking-normal">(optional)</span></label>
+      <textarea name="remark" id="remark" class="textarea" rows="4"></textarea>
+    </section>
+  </main>
 
-                    if (data.remarks) {
-                        document.getElementById("remark").innerText = data.remarks;
-                    }
-                });
-        }
+  <script src="{% static 'register/js/lucide.min.js' %}"></script>
+  <script>
+    if (window.lucide) lucide.createIcons({ attrs: { 'stroke-width': 1.9 } });
+    function onScanSuccess(decodedText, decodedResult) {
+      fetch(`/validategolf/${decodedText}`)
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById("message").innerText = data.message;
+          if (data.participant && data.participant.name) {
+            document.getElementById("name").innerText = data.participant.name;
+          }
+          if (data.remarks) {
+            document.getElementById("remark").innerText = data.remarks;
+          }
+        });
+    }
 
-        const html5QrCode = new Html5Qrcode("reader");
-        html5QrCode.start({ facingMode: "environment" }, {
-            fps: 10,
-            qrbox: 350
-        }, onScanSuccess);
-    </script>
+    const html5QrCode = new Html5Qrcode("reader");
+    html5QrCode.start({ facingMode: "environment" }, {
+      fps: 10,
+      qrbox: 350
+    }, onScanSuccess).catch(() => {
+      document.getElementById("message").innerText = "Camera unavailable. Allow camera access in the browser and reload.";
+    });
+  </script>
 </body>
 </html>

@@ -1,3 +1,7 @@
 **/*.pyc
 **/.idea/**
 **/.DS_Store
+
+# UI build tooling
+theme/node_modules/
+.impeccable/

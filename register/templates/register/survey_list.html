@@ -1,292 +1,299 @@
 {% extends 'register/base.html' %}
 {% load static %}
 
+{% block title %}{% if list_purpose == 'registration' %}Registration forms{% else %}Post-event surveys{% endif %} · PIKOM Events{% endblock %}
+
+{% block crumbs %}<ol><li><a href="{% url 'campaign_list' %}">Events</a></li><li><i data-lucide="chevron-right"></i></li><li aria-current="page">{% if list_purpose == 'registration' %}Registration forms{% else %}Post-event surveys{% endif %}</li></ol>{% endblock %}
+
 {% block extracss %}
 <style>
+  /* ponytail: local fix until input.css raises .badge-* specificity (Basecoat's .badge:not([data-variant]) wins) */
+  .badge.badge-success { background: var(--success-soft); color: var(--success); border-color: transparent; }
+  .badge.badge-muted { background: var(--muted); color: var(--muted-foreground); border-color: transparent; }
+  .badge.badge-info { background: var(--info-soft); color: var(--info); border-color: transparent; }
+  .badge.badge-warning { background: var(--warning-soft); color: var(--warning); border-color: transparent; }
+  .badge.badge-danger { background: var(--danger-soft); color: var(--danger); border-color: transparent; }
+  .badge.badge-teal { background: var(--teal-soft); color: var(--teal); border-color: transparent; }
+  /* DataTables (Bootstrap 5 integration emits .row/.col-*, not .dt-layout-row): shadcn toolbar + footer */
+  .dt-container > .row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; padding: .75rem 1rem; margin: 0; }
+  .dt-container > .row.dt-layout-table { display: block; padding: 0; }
+  .dt-container > .row:first-child { border-bottom: 1px solid var(--border); }
+  .dt-container > .row:not(:first-child):not(.dt-layout-table) { border-top: 1px solid var(--border); }
+  .dt-container .dt-layout-start, .dt-container .dt-layout-end { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+  .dt-container > .row:first-child .dt-layout-start { width: 100%; justify-content: space-between; }
+  .dt-container .dt-search input { width: min(20rem, 100%); height: 2.25rem; padding-left: 2.25rem !important; background: var(--background) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E") .75rem center/1rem no-repeat !important; }
+  .dt-container .dt-search { flex: 1 1 14rem; }
+  .dt-container .dt-length { display: flex; align-items: center; gap: .5rem; }
+  .dt-container .dt-length select { height: 2.25rem; }
+  table.dataTable, table.dataTable.no-footer, .dt-scroll-body { border-bottom: 0 !important; }
+  @media (max-width: 639px) { .dt-container .dt-search input { width: 100%; } }
+  .sl-title { display: flex; align-items: center; gap: .75rem; min-width: 240px; }
+  .sl-icon { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; flex: none; border-radius: .6rem; background: var(--c-soft, var(--accent)); color: var(--c, var(--primary)); }
+  .sl-icon svg { width: 1.05rem; height: 1.05rem; }
+  .sl-name { font-weight: 600; color: var(--foreground); text-decoration: none; line-height: 1.35; }
+  .sl-name:hover { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+  .sl-sub { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .75rem; font-size: .75rem; color: var(--muted-foreground); margin-top: .2rem; }
+  .sl-sub span { display: inline-flex; align-items: center; gap: .3rem; }
+  .sl-sub svg { width: .85rem; height: .85rem; }
+  .sl-id { color: var(--muted-foreground); font-variant-numeric: tabular-nums; }
+  .sl-date { font-weight: 500; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .sl-time { font-size: .75rem; color: var(--muted-foreground); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .sl-actions { display: flex; align-items: center; gap: .125rem; justify-content: flex-end; }
+  #surveys tbody tr:hover { background: color-mix(in srgb, var(--muted) 60%, transparent); }
+  .dt-scroll-body thead th .col-filter-btn { display: none; }
 
+  /* v3: scrollY tables keep their own header; the global sticky thead hid row 1 */
+  #surveys_wrapper .dt-scroll-head { position: relative; top: auto; }
+  #surveys_wrapper .dt-scroll-body table.dataTable > thead { position: static; }
+  .sl-icon { border: 1px solid color-mix(in srgb, var(--c, var(--brand-royal)) 22%, transparent); }
+  .sl-stats { display: flex; flex-wrap: wrap; gap: .5rem 2.5rem; }
+  .sl-stats div { display: grid; gap: .2rem; }
+  .sl-stats b { font-family: "DM Sans", var(--font-sans); font-weight: 800; font-size: 1.9rem; line-height: 1; letter-spacing: -.04em; font-variant-numeric: tabular-nums; color: var(--brand-navy); }
+  .dark .sl-stats b { color: var(--foreground); }
+  .sl-stats div + div { padding-left: 2.5rem; border-left: 1px solid var(--border); }
+  @media (max-width: 639px) { .sl-stats { gap: .5rem 1.25rem; } .sl-stats div + div { padding-left: 1.25rem; } }
+  /* Few rows: the same DataTable rows render as rich cards (no layout change to JS hooks) */
+  .sl-few .dt-scroll-head, .sl-few #surveys thead { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .sl-few #surveys, .sl-few #surveys tbody { display: block; width: 100% !important; }
+  .sl-few #surveys tbody { display: grid; gap: 1rem; padding: 1rem; }
+  @media (min-width: 900px) { .sl-few #surveys tbody { grid-template-columns: repeat(auto-fill, minmax(26rem, 1fr)); } }
+  .sl-few #surveys tbody tr[data-n] { position: relative; display: grid; grid-template-columns: minmax(0,1fr) auto; grid-template-areas: "title title" "big big" "created status" "actions actions"; gap: .75rem 1rem; padding: 1.25rem 1.25rem 1rem 1.5rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); overflow: hidden; }
+  .sl-few #surveys tbody tr[data-n]::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--c, var(--brand-royal)); }
+  .sl-few #surveys tbody tr[data-n]:hover { background: var(--card); border-color: color-mix(in srgb, var(--c, var(--brand-royal)) 45%, var(--border)); }
+  .sl-few #surveys tbody td { display: block; padding: 0; border: 0; }
+  .sl-few #surveys tbody td.sl-id { display: none; }
+  .sl-few #surveys tbody td:nth-child(2) { grid-area: title; }
+  .sl-few #surveys tbody td:nth-child(3) { grid-area: created; align-self: end; }
+  .sl-few #surveys tbody td:nth-child(4) { grid-area: status; align-self: end; text-align: right; }
+  .sl-few #surveys tbody td:nth-child(5) { grid-area: actions; padding-top: .75rem; border-top: 1px solid var(--border); }
+  .sl-few .sl-title { min-width: 0; }
+  .sl-few #surveys tbody td { white-space: normal; min-width: 0; }
+  .sl-few .sl-name { white-space: normal; overflow-wrap: anywhere; }
+  .sl-few .sl-name { font-family: "DM Sans", var(--font-sans); font-size: 1.15rem; font-weight: 700; letter-spacing: -.015em; }
+  .sl-big { display: none; }
+  .sl-few .sl-big { display: flex; align-items: baseline; gap: .5rem; margin-top: 1rem; }
+  .sl-big b { font-family: "DM Sans", var(--font-sans); font-weight: 800; font-size: 2.6rem; line-height: .9; letter-spacing: -.045em; font-variant-numeric: tabular-nums; color: var(--brand-navy); }
+  .dark .sl-big b { color: var(--foreground); }
+  .sl-few .sl-sub span:has([data-lucide="users"]), .sl-few .sl-sub span:has(svg.lucide-users) { display: none; }
+  .sl-few .sl-actions { justify-content: flex-start; }
+  .sl-few #surveys tbody td.dt-empty { grid-column: 1 / -1; }
+  /* Modals */
+  .sm-slug { display: flex; align-items: stretch; }
+  .sm-affix { display: flex; align-items: center; padding: 0 .75rem; background: var(--muted); border: 1px solid var(--input); color: var(--muted-foreground); font-size: .8125rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .sm-affix:first-child { border-radius: calc(var(--radius) - 2px) 0 0 calc(var(--radius) - 2px); border-right: 0; }
+  .sm-affix:last-child { border-radius: 0 calc(var(--radius) - 2px) calc(var(--radius) - 2px) 0; border-left: 0; }
+  .sm-slug .input { border-radius: 0; flex: 1; min-width: 0; }
+  #addNewSurvey .modal-dialog { max-width: 42rem; }
+  #addNewSurvey .flatpickr-input[readonly] { cursor: pointer; background: var(--background); }
+  #surveyDesc { height: 160px; } #surveyDesc .ql-editor { min-height: 0; height: 100%; overflow-y: auto; }
+  .sm-toggle { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .75rem .875rem; border: 1px solid var(--border); border-radius: var(--radius); background: color-mix(in srgb, var(--muted) 45%, transparent); }
+  .sm-toggle label { font-weight: 500; font-size: .875rem; cursor: pointer; }
+  .sm-toggle small { display: block; color: var(--muted-foreground); font-size: .75rem; font-weight: 400; margin-top: 1px; }
+  #addNewSurvey .modal-body { max-height: calc(100vh - 13rem); overflow-y: auto; }
+  #deleteSurveyWarning { background: var(--danger-soft); border-radius: calc(var(--radius) - 2px); padding: .625rem .75rem; font-size: .8125rem; margin-top: .75rem; color: var(--danger); }
+  .invalid-feedback { display: none; margin-top: .375rem; font-size: .8125rem; color: var(--danger); }
+  .is-invalid ~ .invalid-feedback, .was-validated :invalid ~ .invalid-feedback { display: block; }
+  .is-invalid, .was-validated .input:invalid, .was-validated .select:invalid { border-color: var(--danger) !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 18%, transparent) !important; }
+  .help { margin-top: .375rem; font-size: .8125rem; color: var(--muted-foreground); }
+  @media (max-width: 639px) {
+    .modal-dialog { margin: .5rem; }
+    .modal-footer .btn { flex: 1; }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-    <main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg ">
-    
-    <div class="container-fluid py-2">
+  <input type="hidden" id="perm" value="{{ perms.register.add_survey }}">
 
-      <input type="hidden" id="perm" value="{{ perms.register.add_survey }}">
-
-      <div class="row">
-        <div class="col-8 d-flex justify-content-start align-items-center gap-2">                
-            <div class="ms-3">
-              <h3 class="mb-0 h4 font-weight-bolder opacity-7"><i class="ti ti-list"></i>
-              {{ list_title|default:"Surveys" }}</h3>
-
-              <nav aria-label="breadcrumb m-0">
-                <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
-                  <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;">{{ list_subtitle|default:"List of forms" }}</a></li>
-                </ol>
-              </nav>
-            </div>
-        </div>  
-        <div class="col-4 d-flex justify-content-end align-items-center gap-2">
-          <!-- <div>
-            <div class="d-flex justify-content-end align-items-center gap-2 mt-2">
-              <button type="button"  data-bs-toggle="modal" data-bs-target="#new-form" class="btn btn-sm btn-primary waves-effect"><i class="icon-base ti ti-plus"></i> <span class="d-none d-xl-inline-block">Add New Participant</span></button>
-            </div>
-            <div class="badge bg-white border border-success d-flex align-items-center gap-2 ">
-              <i class="ti ti-user text-success"></i>
-              <span class="fw-semibold small text-success">Participants Checked In:</span>
-              <span class="small text-success">
-                <span id="checkedIn" class="fw-bold">0</span>
-                <span class="text-muted mx-1">/</span>
-                <span id="totalParticipants">0</span>
-              </span>
-            </div>
-          </div> -->
-        </div>
-      </div>  
-
-      <div class="col-12">
-        <div class="card my-2">
-          
-          <div class="card-body px-0 pb-2">
-            <div class="table-responsive p-0">
-              <table id="surveys" class="table align-items-center mb-0">
-                <thead>
-                  <tr>
-                    <th data-col-key="id" data-filter="number" class="text-uppercase text-secondary text-sm font-weight-bolder">ID</th>
-                    <th data-col-key="title" data-filter="text" class="text-uppercase text-secondary text-sm font-weight-bolder">{% if list_purpose == 'registration' %}Form Title{% else %}Survey Title{% endif %}</th>
-                    <!-- <th class="text-uppercase text-secondary text-sm font-weight-bolder">Description</th> -->
-                    <th data-col-key="created" data-filter="date" class="text-uppercase text-secondary text-sm font-weight-bolder">Created At</th>
-                    <th data-col-key="status" data-filter="choice" class="text-uppercase text-secondary text-sm font-weight-bolder">Status</th>
-                    <th class="text-uppercase text-secondary text-sm font-weight-bolder"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% if surveys %}
-                    {% for survey in surveys %}
-                      <tr>
-                        <td>
-                          <div class="d-flex align-items-center">
-                            <p class="text-xs font-weight-bold mb-0 me-2">
-                              {{ survey.id }}
-                            </p>                              
-                          </div>
-                        </td>
-
-                        <td>
-                          <div class="d-flex px-2 py-1">
-                            <div class="d-flex flex-column justify-content-center">
-                              <!-- <h6 class="mb-0 text-xs">{{ survey.title }}</h6> -->
-                              <a href="/survey_submission_list/{{ survey.id }}" class="nav-link text-body p-0">
-                                <h6 class="mb-0 text-xs">{{ survey.title }}</h6>
-                              </a>
-                            </div>
-                          </div>
-                        </td>
-                        <!-- <td>
-                          <div class="d-flex px-2 py-1">
-                            <div class="d-flex flex-column justify-content-left">
-                              <div class="text-xs">{{ survey.description|linebreaksbr }}</div>
-                            </div>
-                          </div>
-                        </td> -->
-                        <td>
-                          <p class="text-xs font-weight-bold mb-0">{{ survey.created_at|date:"Y-m-d h:i A"  }}</p>
-                        </td>     
-                        
-                        <td class="align-middle text-center text-sm">
-                          {% if survey.is_active %}
-                            <span class="badge badge-sm bg-gradient-success">Active</span>
-                          {% else %}
-                            <span class="badge badge-sm bg-gradient-danger">Inactive</span>
-                          {% endif %}                            
-                        </td>
-                      
-                        <td class="align-middle">
-                          <div class="d-flex gap-2 align-items-center">
-                            <!-- <a href="{{ campaign.url }}/{{ campaign.campaign_code }}" class="text-body p-0" title="View">
-                              <i class="material-symbols-rounded">visibility</i>
-                            </a>-->
-
-                            <a href="javascript:void(0);" class="text-body p-0 edit-survey-btn"
-                              data-id="{{ survey.id }}" title="Edit">
-                              <i class="material-symbols-rounded">edit</i>
-                            </a>
-                            
-                            <!-- {% if campaign.need_qr and campaign.is_active %}
-                              <a href="{% url 'scan' campaign.campaign_code %}" target="_blank" class="text-body p-0" title="QR Code">
-                                <i class="material-symbols-rounded">qr_code</i>
-                              </a>
-                            {% endif %} -->
-
-                            <a href="{% url 'form_builder' survey.id %}" class="text-body p-0" title="Build form (add/edit questions)">
-                              <i class="material-symbols-rounded">tune</i>
-                            </a>
-                            <a href="{% url 'form_preview' survey.id %}" target="_blank" class="text-body p-0" title="Preview form (no data saved)">
-                              <i class="material-symbols-rounded">visibility</i>
-                            </a>
-                            <a href="{% url 'form_public' survey.slug|default:survey.survey_code %}" target="_blank" class="text-body p-0" title="Open public registration form">
-                                <i class="material-symbols-rounded">public</i>
-                              </a>
-                            <a href="javascript:void(0);" class="text-body p-0 copy-link-btn" data-link="{% url 'form_public' survey.slug|default:survey.survey_code %}" title="Copy public link">
-                              <i class="material-symbols-rounded">link</i>
-                            </a>
-                            {% if list_purpose == 'registration' %}
-                              <a href="{% url 'scanform' survey.survey_code %}" target="_blank" class="text-body p-0" title="Check-in scanner (Sunmi / camera)">
-                                <i class="material-symbols-rounded">qr_code_scanner</i>
-                              </a>
-                            {% endif %}
-                            <a href="{% url 'consolidated_report' survey.survey_code %}" class="text-body p-0" title="Consolidated Report">
-                                <i class="material-symbols-rounded">Report</i>
-                            </a>
-                            <a href="javascript:void(0);" class="text-body p-0 clone-survey-btn"
-                               data-id="{{ survey.id }}" data-title="{{ survey.title }}"
-                               data-campaign="{{ survey.fkcampaign_id|default:'' }}" title="Clone form (copy questions to another campaign)">
-                              <i class="material-symbols-rounded">content_copy</i>
-                            </a>
-                            <a href="javascript:void(0);" class="text-danger p-0 delete-survey-btn"
-                               data-id="{{ survey.id }}" data-title="{{ survey.title }}"
-                               data-count="{{ survey.survey_users.count }}" title="Delete form">
-                              <i class="material-symbols-rounded">delete</i>
-                            </a>
-                          </div>
-                        </td>
-
-                      </tr>
-                    {% endfor %}
-                  
-                  {% endif %}
-                  
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-
-
+  <header class="page-header animate-rise">
+    <div>
+      <span class="pk-pill">{% if list_purpose == 'registration' %}Registration{% else %}Feedback{% endif %}</span>
+      <h1 class="page-title">{% if list_purpose == 'registration' %}Registration Forms{% else %}Post-event Surveys{% endif %}</h1>
+      <p class="page-description">{% if list_purpose == 'registration' %}Forms people fill in to register for an event. Build the questions, then share the public link.{% else %}Feedback surveys sent to attendees after an event.{% endif %}</p>
     </div>
-  </main>
+    {% if perms.register.add_survey %}
+    <button type="button" class="btn w-full sm:w-auto" data-variant="cta" id="newSurveyBtn"><i data-lucide="plus"></i>{% if list_purpose == 'registration' %}New Registration Form{% else %}New Survey{% endif %}</button>
+    {% endif %}
+  </header>
 
-   <!-- Modal -->
-  <div class="modal fade" id="addNewSurvey" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
-      aria-labelledby="addNewSurveyLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+  <section class="mb-8 animate-rise animate-rise-1" aria-label="Quick stats">
+    <div class="pk-kpis">
+      <div class="pk-kpi" style="--k:#2F6BF0;--ks:#E3ECFE"><span class="pk-kpi-ic"><i data-lucide="{% if list_purpose == 'registration' %}file-text{% else %}message-square-text{% endif %}"></i></span><div><span class="pk-kpi-lbl">{% if list_purpose == 'registration' %}Forms{% else %}Surveys{% endif %}</span><b>{{ surveys|length }}</b><small>{% if list_purpose == 'registration' %}Registration forms you manage{% else %}Feedback surveys you manage{% endif %}</small></div></div>
+      <div class="pk-kpi" style="--k:#16A34A;--ks:#DCF5E5"><span class="pk-kpi-ic"><i data-lucide="circle-check"></i></span><div><span class="pk-kpi-lbl">Active</span><b id="slActive">0</b><small>Open to new {% if list_purpose == 'registration' %}registrations{% else %}responses{% endif %}</small></div></div>
+      <div class="pk-kpi" style="--k:#7C3AED;--ks:#EDE5FD"><span class="pk-kpi-ic"><i data-lucide="{% if list_purpose == 'registration' %}users{% else %}inbox{% endif %}"></i></span><div><span class="pk-kpi-lbl">{% if list_purpose == 'registration' %}Registrations{% else %}Responses{% endif %}</span><b id="slResp">0</b><small>Across all {% if list_purpose == 'registration' %}forms{% else %}surveys{% endif %}</small></div></div>
+    </div>
+  </section>
+
+  <span class="pk-sec">{% if list_purpose == 'registration' %}All registration forms{% else %}All surveys{% endif %}</span>
+  <div class="card gap-0 overflow-hidden p-0 animate-rise animate-rise-2{% if surveys|length <= 3 %} sl-few{% endif %}">
+    <table id="surveys" class="table">
+      <thead>
+        <tr>
+          <th data-col-key="id" data-filter="number">ID</th>
+          <th data-col-key="title" data-filter="text">{% if list_purpose == 'registration' %}Form{% else %}Survey{% endif %}</th>
+          <th data-col-key="created" data-filter="date">Created</th>
+          <th data-col-key="status" data-filter="choice">Status</th>
+          <th class="text-right"><span class="sr-only">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if surveys %}
+          {% for survey in surveys %}
+            {% with n=survey.survey_users.count %}
+            <tr data-active="{{ survey.is_active|yesno:'1,0' }}" data-n="{{ n }}"{% if survey.fkcampaign.theme %} style="--c: {{ survey.fkcampaign.theme }}"{% endif %}>
+              <td class="sl-id">{{ survey.id }}</td>
+              <td>
+                <div class="sl-title">
+                  <span class="sl-icon" {% if survey.fkcampaign.theme %}style="--c: {{ survey.fkcampaign.theme }}; --c-soft: color-mix(in srgb, {{ survey.fkcampaign.theme }} 14%, transparent);"{% endif %} aria-hidden="true"><i data-lucide="{% if list_purpose == 'registration' %}clipboard-list{% else %}message-square-text{% endif %}"></i></span>
+                  <div class="min-w-0">
+                    <a href="/survey_submission_list/{{ survey.id }}" class="sl-name" title="View responses">{{ survey.title }}</a>
+                    <div class="sl-sub">
+                      {% if survey.fkcampaign %}<span><i data-lucide="megaphone"></i>{{ survey.fkcampaign.title }}</span>{% endif %}
+                      <span class="tabular-nums"><i data-lucide="users"></i>{{ n }} {% if list_purpose == 'registration' %}registration{{ n|pluralize }}{% else %}response{{ n|pluralize }}{% endif %}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="sl-big" aria-hidden="true"><b>{{ n }}</b><span class="pk-micro">{% if list_purpose == 'registration' %}Registration{{ n|pluralize }}{% else %}Response{{ n|pluralize }}{% endif %}</span></div>
+              </td>
+              <td data-order="{{ survey.created_at|date:'c' }}">
+                <div class="sl-date">{{ survey.created_at|date:"d M Y" }}</div>
+                <div class="sl-time">{{ survey.created_at|date:"h:i A" }}</div>
+              </td>
+              <td>
+                {% if survey.is_active %}<span class="badge badge-success badge-dot">Active</span>{% else %}<span class="badge badge-muted badge-dot">Inactive</span>{% endif %}
+              </td>
+              <td class="text-right">
+                <div class="sl-actions">
+                  <a href="javascript:void(0);" class="btn edit-survey-btn" data-variant="ghost" data-size="icon-sm" role="button" data-id="{{ survey.id }}" data-tooltip="Edit details" aria-label="Edit details of {{ survey.title }}"><i data-lucide="pencil"></i></a>
+                  <a href="{% url 'form_builder' survey.id %}" class="btn" data-variant="ghost" data-size="icon-sm" data-tooltip="Build questions" aria-label="Build questions for {{ survey.title }}"><i data-lucide="sliders-horizontal"></i></a>
+                  <a href="{% url 'form_preview' survey.id %}" target="_blank" rel="noopener" class="btn" data-variant="ghost" data-size="icon-sm" data-tooltip="Preview (no data saved)" aria-label="Preview {{ survey.title }}"><i data-lucide="eye"></i></a>
+                  <div class="sl-more dropdown">
+                    <button type="button" class="btn" data-variant="ghost" data-size="icon-sm" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" aria-label="More actions for {{ survey.title }}"><i data-lucide="ellipsis"></i></button>
+                    <ul class="dropdown-menu dropdown-menu-end" data-dropdown-menu-initialized>
+                      <li><a class="dropdown-item" href="{% url 'form_public' survey.slug|default:survey.survey_code %}" target="_blank" rel="noopener"><i data-lucide="external-link"></i>Open public form</a></li>
+                      <li><a class="dropdown-item copy-link-btn" href="javascript:void(0);" data-link="{% url 'form_public' survey.slug|default:survey.survey_code %}"><i data-lucide="link"></i><span>Copy public link</span></a></li>
+                      {% if list_purpose == 'registration' %}
+                      <li><a class="dropdown-item" href="{% url 'scanform' survey.survey_code %}" target="_blank" rel="noopener"><i data-lucide="scan-line"></i>Open check-in scanner</a></li>
+                      {% endif %}
+                      <li><a class="dropdown-item" href="{% url 'consolidated_report' survey.survey_code %}"><i data-lucide="file-chart-column"></i>Consolidated report</a></li>
+                      <li><a class="dropdown-item clone-survey-btn" href="javascript:void(0);" data-id="{{ survey.id }}" data-title="{{ survey.title }}" data-campaign="{{ survey.fkcampaign_id|default:'' }}"><i data-lucide="copy"></i>Clone to another campaign</a></li>
+                      <li><hr class="dropdown-divider"></li>
+                      <li><a class="dropdown-item text-danger delete-survey-btn" href="javascript:void(0);" data-id="{{ survey.id }}" data-title="{{ survey.title }}" data-count="{{ n }}"><i data-lucide="trash-2"></i>Delete</a></li>
+                    </ul>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            {% endwith %}
+          {% endfor %}
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal fade" id="addNewSurvey" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="addNewSurveyLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <form id="surveyForm" novalidate>
           <div class="modal-header">
             <input type="hidden" id="surveyID">
             <input type="hidden" id="surveyPurpose" value="{{ list_purpose|default:'registration' }}">
-            <h5 class="modal-title" id="addNewSurveyLabel">{{ modal_title|default:"Add New Form" }}</h5>
+            <div>
+              <h2 class="modal-title" id="addNewSurveyLabel">{% if list_purpose == 'registration' %}New registration form{% else %}New survey{% endif %}</h2>
+              <p class="mt-1 text-sm text-muted-foreground">You can add questions in the builder once it is saved.</p>
+            </div>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <div class="row g-3">
-              <div class="col-xl-12 col-lg-12">
-                <div class="mb-3">
-                  <label for="surveyTitle" class="form-label">{% if list_purpose == 'registration' %}Form{% else %}Survey{% endif %} Title</label>
-                  <input type="text" class="form-control border border-1 rounded px-2 py-2" id="surveyTitle" name="surveyTitle" placeholder="Title" required>
-                  <div class="invalid-feedback">Title is required.</div>
-                </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div class="grid gap-2 sm:col-span-2">
+                <label for="surveyTitle" class="label">{% if list_purpose == 'registration' %}Form{% else %}Survey{% endif %} title</label>
+                <input type="text" class="input" id="surveyTitle" name="surveyTitle" placeholder="{% if list_purpose == 'registration' %}e.g. Summit 2026 registration{% else %}e.g. Summit 2026 feedback{% endif %}" required>
+                <div class="invalid-feedback">Title is required.</div>
               </div>
-              <div class="col-xl-12 col-lg-12">
-                <div class="mb-3">
-                  <label for="surveySlug" class="form-label">Public URL (optional)</label>
-                  <div class="input-group">
-                    <span class="input-group-text">/form/</span>
-                    <input type="text" class="form-control" id="surveySlug" name="surveySlug" placeholder="auto-generated from title" maxlength="80">
-                    <span class="input-group-text">/</span>
-                  </div>
-                  <small class="text-muted">Leave blank to auto-generate from the title. Use only lowercase letters, numbers, and hyphens.</small>
-                </div>
+              <div class="grid gap-2 sm:col-span-2">
+                <label for="campaignSelect" class="label">Campaign</label>
+                <select class="select w-full" id="campaignSelect" name="campaignSelect" required>
+                  <option value="">Choose a campaign…</option>
+                  {% for campaign in campaigns %}
+                    <option value="{{ campaign.id }}">{{ campaign.title }}</option>
+                  {% endfor %}
+                </select>
+                <div class="invalid-feedback">Choose a campaign.</div>
               </div>
-              <div class="col-xl-6 col-lg-12">
-                <div class="mb-3">
-                  <label for="surveyStartDate" class="form-label">Survey Start Date</label>
-                  <input type="date" class="form-control border border-1 rounded px-2 py-2 timepicker" id="surveyStartDate" name="surveyStartDate" required>
-                  <div class="invalid-feedback">Start date is required.</div>
-                </div>
+              <div class="grid gap-2">
+                <label for="surveyStartDate" class="label">Opens</label>
+                <input type="date" class="input timepicker" id="surveyStartDate" name="surveyStartDate" placeholder="Pick date and time" required>
+                <div class="invalid-feedback">Start date is required.</div>
               </div>
-              <div class="col-xl-6 col-lg-12">
-                <div class="mb-3">
-                  <label for="surveyEndDate" class="form-label">Survey End Date</label>
-                  <input type="date" class="form-control border border-1 rounded px-2 py-2 timepicker" id="surveyEndDate" name="surveyEndDate" required>
-                  <div class="invalid-feedback">End date is required.</div>
-                </div>
+              <div class="grid gap-2">
+                <label for="surveyEndDate" class="label">Closes</label>
+                <input type="date" class="input timepicker" id="surveyEndDate" name="surveyEndDate" placeholder="Pick date and time" required>
+                <div class="invalid-feedback">End date is required.</div>
               </div>
-              <div class="col-xl-12 col-lg-12">
-                <div class="mb-3">
-                  <label for="surveyDesc" class="form-label">Survey Description</label>
-                  <!-- <textarea class="form-control border border-1 rounded px-2 py-2" id="surveyDesc" name="surveyDesc" rows="3" placeholder="Survey Description"></textarea>    -->
-                  <div  class="form-control border border-1 rounded px-2 py-2" id="surveyDesc" name="surveyDesc"></div>               
+              <div class="grid gap-2 sm:col-span-2">
+                <label for="surveySlug" class="label">Public URL <span class="font-normal text-muted-foreground">(optional)</span></label>
+                <div class="sm-slug">
+                  <span class="sm-affix">/form/</span>
+                  <input type="text" class="input" id="surveySlug" name="surveySlug" placeholder="auto-generated from title" maxlength="80" aria-describedby="surveySlugHelp">
+                  <span class="sm-affix">/</span>
                 </div>
-              </div>    
-              <!-- populate the campaing  list in select           -->
-              <div class="col-xl-12 col-lg-12">
-                <div class="mb-3">
-                  <label for="campaignSelect" class="form-label">Select Campaign</label>
-                  <select class="form-select border border-1 rounded px-2 py-2" id="campaignSelect" name="campaignSelect" required>
-                    <option value="">Choose a campaign...</option>
-                    {% for campaign in campaigns %}
-                      <option value="{{ campaign.id }}">{{ campaign.title }}</option>
-                    {% endfor %}
-                  </select>
-                  <div class="invalid-feedback">Campaign selection is required.</div>
-                </div>
+                <p class="help" id="surveySlugHelp">Leave blank to generate it from the title. Lowercase letters, numbers and hyphens only.</p>
               </div>
-              <div class="col-xl-12 col-lg-12">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                  <label class="form-check-label" for="enableSurvey">Active or Inactive the Survey</label>
-                  <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" role="switch" id="enableSurvey" name="enableSurvey" checked>
-                  </div>
-                </div>
+              <div class="grid gap-2 sm:col-span-2">
+                <label for="surveyDesc" class="label" id="surveyDescLabel">Description</label>
+                <div id="surveyDesc" name="surveyDesc" aria-labelledby="surveyDescLabel"></div>
+                <p class="help">Shown at the top of the public form.</p>
+              </div>
+              <div class="sm-toggle sm:col-span-2">
+                <label for="enableSurvey">{% if list_purpose == 'registration' %}Form{% else %}Survey{% endif %} is active<small>Inactive forms stop accepting new responses.</small></label>
+                <input class="input" type="checkbox" role="switch" id="enableSurvey" name="enableSurvey" checked>
               </div>
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="closeModalBtn">Close</button>
-            <button type="submit" class="btn btn-primary">Save</button>
+            <button type="button" class="btn" data-variant="outline" data-bs-dismiss="modal" id="closeModalBtn">Cancel</button>
+            <button type="submit" class="btn" data-variant="primary"><i data-lucide="check"></i>Save</button>
           </div>
         </form>
       </div>
     </div>
-</div>
-
-
+  </div>
 
   <!-- Clone Form Modal -->
-  <div class="modal fade" id="cloneSurveyModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+  <div class="modal fade" id="cloneSurveyModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="cloneSurveyLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <form id="cloneSurveyForm" novalidate>
           <div class="modal-header">
             <input type="hidden" id="cloneSourceId">
-            <h5 class="modal-title">Clone Form</h5>
+            <div>
+              <h2 class="modal-title" id="cloneSurveyLabel">Clone form</h2>
+              <p class="mt-1 text-sm text-muted-foreground">All questions and settings are copied. Responses are not.</p>
+            </div>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
-          <div class="modal-body">
-            <p class="text-sm text-muted mb-3">All questions and settings are copied. Submissions are not.</p>
-            <div class="mb-3">
-              <label for="cloneTitle" class="form-label">New Form Title</label>
-              <input type="text" class="form-control border border-1 rounded px-2 py-2" id="cloneTitle" required>
+          <div class="modal-body grid gap-4">
+            <div class="grid gap-2">
+              <label for="cloneTitle" class="label">New form title</label>
+              <input type="text" class="input" id="cloneTitle" required>
               <div class="invalid-feedback">Title is required.</div>
             </div>
-            <div class="mb-3">
-              <label for="cloneCampaignSelect" class="form-label">Assign to Campaign</label>
-              <select class="form-select border border-1 rounded px-2 py-2" id="cloneCampaignSelect" required>
-                <option value="">Choose a campaign...</option>
+            <div class="grid gap-2">
+              <label for="cloneCampaignSelect" class="label">Assign to campaign</label>
+              <select class="select w-full" id="cloneCampaignSelect" required>
+                <option value="">Choose a campaign…</option>
                 {% for campaign in campaigns %}
                   <option value="{{ campaign.id }}">{{ campaign.title }}</option>
                 {% endfor %}
               </select>
-              <div class="invalid-feedback">Campaign selection is required.</div>
+              <div class="invalid-feedback">Choose a campaign.</div>
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-primary">Clone</button>
+            <button type="button" class="btn" data-variant="outline" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn" data-variant="primary"><i data-lucide="copy"></i>Clone form</button>
           </div>
         </form>
       </div>
@@ -294,21 +301,24 @@
   </div>
 
   <!-- Delete Form Modal -->
-  <div class="modal fade" id="deleteSurveyModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+  <div class="modal fade" id="deleteSurveyModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="deleteSurveyLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
           <input type="hidden" id="deleteSurveyId">
-          <h5 class="modal-title text-danger">Delete Form</h5>
+          <div class="flex items-start gap-3">
+            <span class="icon-chip bg-danger-soft text-danger"><i data-lucide="trash-2"></i></span>
+            <div>
+              <h2 class="modal-title" id="deleteSurveyLabel">Delete form</h2>
+              <p class="mt-1 text-sm text-muted-foreground">Delete <strong class="text-foreground" id="deleteSurveyTitle"></strong>? This cannot be undone.</p>
+              <p id="deleteSurveyWarning" class="d-none"></p>
+            </div>
+          </div>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        <div class="modal-body">
-          <p>Are you sure you want to delete <strong id="deleteSurveyTitle"></strong>?</p>
-          <p id="deleteSurveyWarning" class="text-danger d-none mb-0"></p>
-        </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-danger" id="confirmDeleteSurveyBtn">Delete</button>
+          <button type="button" class="btn" data-variant="outline" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn" data-variant="destructive" id="confirmDeleteSurveyBtn">Delete form</button>
         </div>
       </div>
     </div>
@@ -329,12 +339,26 @@
                 ]
             }
         });
+
+    // a11y: Quill pickers render as unlabeled role=button spans; name them after init.
+    document.querySelectorAll('.ql-picker').forEach(function (p) {
+      var kind = (p.className.match(/ql-(size|color|background|align|header|font)/) || [, 'option'])[1];
+      var name = { size: 'Font size', color: 'Text colour', background: 'Highlight colour', align: 'Text alignment', header: 'Heading level', font: 'Font' }[kind] || 'Formatting option';
+      var lbl = p.querySelector('.ql-picker-label'); if (lbl) lbl.setAttribute('aria-label', name);
+    });
   </script> 
 
 
   <script> 
     
     document.addEventListener('DOMContentLoaded', function () {
+      // Quick stats from the rendered rows.
+      (function () {
+        var a = 0, r = 0;
+        document.querySelectorAll('#surveys tbody tr[data-n]').forEach(function (tr) { a += tr.dataset.active === '1' ? 1 : 0; r += parseInt(tr.dataset.n || '0', 10); });
+        document.getElementById('slActive').textContent = a;
+        document.getElementById('slResp').textContent = r.toLocaleString();
+      })();
 
       // Auto-open the create modal when arriving from a Campaign row
       // (URL has ?for_campaign=<id>). Pre-selects that campaign.
@@ -356,10 +380,7 @@
           const path = btn.dataset.link;
           const url = window.location.origin + path;
           navigator.clipboard.writeText(url).then(() => {
-            const icon = btn.querySelector('i');
-            const orig = icon.textContent;
-            icon.textContent = 'check';
-            setTimeout(() => icon.textContent = orig, 1500);
+            window.pkToast('success', 'Public link copied', url);
           });
         });
       });
@@ -395,11 +416,11 @@
             if (response.success) {
               location.reload();
             } else {
-              alert(response.error || 'Failed to clone.');
+              window.pkToast('error', 'Form not cloned', response.error || 'Try again.');
             }
           },
           error: function (xhr) {
-            alert((xhr.responseJSON && xhr.responseJSON.error) || 'Something went wrong!');
+            window.pkToast('error', 'Something went wrong', (xhr.responseJSON && xhr.responseJSON.error) || 'Try again.');
           }
         });
       });
@@ -431,11 +452,11 @@
             if (response.success) {
               location.reload();
             } else {
-              alert(response.error || 'Failed to delete.');
+              window.pkToast('error', 'Form not deleted', response.error || 'Try again.');
             }
           },
           error: function (xhr) {
-            alert((xhr.responseJSON && xhr.responseJSON.error) || 'Something went wrong!');
+            window.pkToast('error', 'Something went wrong', (xhr.responseJSON && xhr.responseJSON.error) || 'Try again.');
           }
         });
       });
@@ -471,6 +492,7 @@
               document.getElementById('surveySlug').value = data.slug || '';
 
               quill.clipboard.dangerouslyPasteHTML(0, data.description || '');
+              document.getElementById('addNewSurveyLabel').textContent = 'Edit details';
 
               // Open the modal
               const modal = new bootstrap.Modal(document.getElementById('addNewSurvey'));
@@ -478,7 +500,7 @@
             })
             .catch(error => {
               console.error("Error fetching survey data:", error);
-              alert("Failed to load survey data.");
+              window.pkToast('error', 'Could not load this form', 'Refresh the page and try again.');
             });
         });
       });
@@ -495,18 +517,18 @@
       let permValue = document.getElementById('perm').value;
       let buttonsConfig = [];
 
-      if (permValue === "True") {
-          buttonsConfig.push({
-              text: '<i class="material-symbols-rounded align-middle">add</i> {{ new_button_label|default:"New" }}',
-              className: 'btn btn-primary',
-              action: function () {
-                  // Reset purpose to the default for this list before opening
-                  document.getElementById('surveyPurpose').value = "{{ list_purpose|default:'registration' }}";
-                  const modal = new bootstrap.Modal(document.getElementById('addNewSurvey'));
-                  modal.show();
-              }
-          });
-      }
+      // The "New …" button lives in the page header (rendered only with add permission).
+      document.getElementById('newSurveyBtn')?.addEventListener('click', function () {
+          const form = document.getElementById('surveyForm');
+          form.reset();
+          form.classList.remove('was-validated');
+          document.getElementById('surveyID').value = '';
+          quill.setText('');
+          // Reset purpose to the default for this list before opening
+          document.getElementById('surveyPurpose').value = "{{ list_purpose|default:'registration' }}";
+          document.getElementById('addNewSurveyLabel').textContent = "{% if list_purpose == 'registration' %}New registration form{% else %}New survey{% endif %}";
+          bootstrap.Modal.getOrCreateInstance(document.getElementById('addNewSurvey')).show();
+      });
      
       const datatable = new DataTable('#surveys', Object.assign({
 
@@ -519,12 +541,12 @@
         layout: {
           topStart: {
             'search': {
-              className: 'form-control form-control-sm',
-              placeholder: 'Search...',
+              className: 'input',
+              placeholder: 'Search forms…',
               ariaLabel: 'Search'
             },
           },
-          topEnd: 'buttons'
+          topEnd: null
         },
         buttons: buttonsConfig,
         fixedHeader: {
@@ -538,31 +560,37 @@
         //scrollY: c - 120,
         language: {
           paginate: {
-            previous: '<i class="material-symbols-rounded">chevron_left</i> ',
-            next: '<i class="material-symbols-rounded">chevron_right</i> ',
+            previous: '<i data-lucide="chevron-left"></i>',
+            next: '<i data-lucide="chevron-right"></i>',
           },
           searchBuilder: {
             button: 'Add filters',
-            add: '<i class="material-symbols-rounded">add</i>Add filters',
+            add: '<i data-lucide="plus"></i>Add filters',
             title: {
               0: 'Filters',
               _: 'Filters (%d)'
             },
-            delete: '<i class="material-symbols-rounded">delete</i>',
-            right: '<i class="material-symbols-rounded">chevron_right</i>',
-            left: '<i class="material-symbols-rounded">chevron_left</i>',
-            clearAll: '<i class="material-symbols-rounded">x</i>Clear All'
+            delete: '<i data-lucide="trash-2"></i>',
+            right: '<i data-lucide="chevron-right"></i>',
+            left: '<i data-lucide="chevron-left"></i>',
+            clearAll: '<i data-lucide="x"></i>Clear all'
 
           },
-         "emptyTable": "<img src='{% static 'user/img/illustrations/notfoundImg3.png' %}' width='180px' alt='No data' /><p class='fs-5 fw-500'>No Record available in table</p>",
-          "infoEmpty": "0 Record",
-          "zeroRecords": "<img src='{% static 'user/img/illustrations/notfoundImg3.png' %}' width='180px' alt='No data' /><p class='fs-5 fw-500'>No Record to display</p>",
+         "emptyTable": "<div class='empty'><header><figure><i data-lucide='{% if list_purpose == 'registration' %}clipboard-list{% else %}message-square-text{% endif %}'></i></figure><h3>{% if list_purpose == 'registration' %}No registration forms yet{% else %}No surveys yet{% endif %}</h3><p>{% if list_purpose == 'registration' %}Create a form for a campaign, then add its questions in the builder.{% else %}Create a survey for a campaign to collect attendee feedback.{% endif %}</p></header></div>",
+          "infoEmpty": "Nothing to show",
+          "info": "Showing _START_ to _END_ of _TOTAL_",
+          "search": "",
+          "zeroRecords": "<div class='empty'><header><figure><i data-lucide='search-x'></i></figure><h3>No matches</h3><p>Try a different search or clear the column filters.</p></header></div>",
         },
         pagingTag: 'button',
 
 
         initComplete: function (settings, json) {
           RegisterTable.enhance(this.api());
+          // Row menus escape the scrolling table body instead of being clipped by it.
+          document.querySelectorAll('#surveys .sl-actions [data-bs-toggle="dropdown"]').forEach(function (el) {
+            bootstrap.Dropdown.getOrCreateInstance(el, { boundary: document.body, popperConfig: { strategy: 'fixed' } });
+          });
         }
 
       }, RegisterTable.options()));
@@ -669,32 +697,33 @@
             if (response.success) {
               location.reload();
             } else {
-              alert(response.error || 'Failed to save.');
+              window.pkToast('error', 'Not saved', response.error || 'Check the details and try again.');
             }
           },
           error: function (xhr) {
             const msg = (xhr.responseJSON && xhr.responseJSON.error) || 'Something went wrong!';
-            alert(msg);
+            window.pkToast('error', 'Not saved', msg);
           }
         });
       
       });
 
     document.getElementById('closeModalBtn').addEventListener('click', function () {
-      const form = document.getElementById('campaignForm');
+      // (Was wired to a non-existent #campaignForm and threw on every close.)
+      const form = document.getElementById('surveyForm');
 
-      $('#campaignID').val('');
+      $('#surveyID').val('');
       
       form.reset();
       form.classList.remove('was-validated');
-      const inputs = form.querySelectorAll('.form-control, .form-check-input');
+      const inputs = form.querySelectorAll('.input');
       inputs.forEach(input => {
         input.classList.remove('is-invalid');
       });
       
       const feedbacks = form.querySelectorAll('.invalid-feedback');
-      feedbacks.forEach(fb => fb.textContent = '');
-    });   
+      quill.setText('');
+    });
 
     
    

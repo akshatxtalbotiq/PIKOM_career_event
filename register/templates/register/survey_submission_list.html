@@ -2,549 +2,584 @@
 {% load static %}
 {% load custom_filters %}
 
+{% block title %}{{ survey.title }} · Registrations{% endblock %}
+
+{% block crumbs %}
+<ol>
+  <li><a href="{% url 'campaign_list' %}">Campaigns</a></li>
+  {% if campaign %}
+  <li><i data-lucide="chevron-right"></i></li>
+  <li class="hidden sm:block"><a href="{% url 'campaign_dashboard' campaign.id %}">{{ campaign.title }}</a></li>
+  <li class="hidden sm:block"><i data-lucide="chevron-right"></i></li>
+  {% else %}
+  <li><i data-lucide="chevron-right"></i></li>
+  {% endif %}
+  <li aria-current="page">{{ survey.title }}</li>
+</ol>
+{% endblock %}
+
 {% block extracss %}
 <style>
-  .dataTables_wrapper .dataTables_filter,
-  .dataTables_wrapper .dataTables_length {
-    display: inline-block;
-    vertical-align: middle;
-    margin-right: 1rem; /* space between search and select */
-  }
+/* ---------- Header: public link ---------- */
+.reg-link { display: flex; align-items: center; gap: .25rem; height: 2.25rem; width: 19rem; max-width: 100%; padding: 0 .2rem 0 .65rem;
+  background: var(--card); border: 1px solid var(--input); border-radius: calc(var(--radius) - 2px); box-shadow: 0 1px 2px rgba(7,23,57,.04); }
+.reg-link:focus-within { border-color: var(--ring); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 22%, transparent); }
+.reg-link > svg { width: .95rem; height: .95rem; color: var(--muted-foreground); flex: none; }
+.reg-link input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; padding: 0 .25rem; font-size: .8125rem; color: var(--muted-foreground); text-overflow: ellipsis; }
+.reg-link .btn { height: 1.75rem; padding: 0 .55rem; font-size: .8125rem; }
+.reg-link .btn.is-done { color: var(--success); }
 
-  /* Style the file input to look cleaner */
-#sendQRModal input[type="file"] {
-  padding: 0.6rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background-color: #fff;
-  font-size: 0.95rem;
-  cursor: pointer;
-}
+.reg-head.page-header { margin-bottom: 0; }
+/* ---------- KPI strip ---------- */
+.reg-mix { display: flex; height: .375rem; border-radius: 999px; overflow: hidden; background: var(--muted); gap: 2px; margin-top: .2rem; }
+.reg-mix > span { display: block; height: 100%; width: 0; }
 
-/* Ensure the file input text doesnâ€™t overflow */
-#sendQRModal input[type="file"]::-webkit-file-upload-button {
-  padding: 0.4rem 0.75rem;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  background: #f8f9fa;
-  cursor: pointer;
-  margin-right: 0.75rem;
-  transition: background 0.2s ease;
-}
-#sendQRModal input[type="file"]::-webkit-file-upload-button:hover {
-  background: #e9ecef;
-}
+/* ---------- Table card + toolbar ---------- */
+.reg-card { overflow: visible; padding: 0 !important; gap: 0 !important; }
+.reg-card .tf-bar { padding: .75rem 1rem 0; }
+.reg-card .tf-bar:not(:has(.fb-chip)):not(:has(.tf-reset:not(.d-none))) { display: none; }
+.reg-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem 1rem; padding: .875rem 1rem; border-bottom: 1px solid var(--border); }
+.reg-search { position: relative; flex: 1 1 16rem; min-width: 14rem; max-width: 22rem; }
+.reg-search > svg { position: absolute; left: .7rem; top: 50%; transform: translateY(-50%); width: 1rem; height: 1rem; color: var(--muted-foreground); pointer-events: none; z-index: 1; }
+.reg-search .dt-search, .reg-search label { margin: 0; width: 100%; }
+.reg-search label:empty { display: none; }
+#entries_wrapper .reg-search .dt-search input { width: 100%; margin: 0 !important; padding-left: 2.1rem; height: 2.25rem; background: var(--card); }
+#entries_wrapper .dt-buttons { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; justify-content: flex-end; }
+#entries_wrapper .dt-buttons > .btn-group { display: inline-flex; }
+#entries_wrapper .dt-buttons .btn > span { display: inline-flex; align-items: center; gap: .4rem; }
+#entries_wrapper .dt-buttons .btn svg { width: 1rem; height: 1rem; }
+#entries_wrapper .dt-buttons .btn .reg-caret { width: .85rem; height: .85rem; margin-right: -.15rem; opacity: .55; }
+#entries_wrapper .dt-buttons .dropdown-toggle::after { display: none; }
+#entries_wrapper .dt-buttons .btn.disabled, #entries_wrapper .dt-buttons .btn:disabled { opacity: .5; cursor: not-allowed; pointer-events: none; }
+.reg-divider { width: 1px; height: 1.25rem; background: var(--border); margin: 0 .25rem; }
+#selectedCountBadge { display: inline-flex; align-items: center; gap: .4rem; height: 2rem; padding: 0 .7rem; border-radius: 999px; font-size: .8125rem; font-weight: 500; white-space: nowrap;
+  color: var(--muted-foreground); background: transparent; border: 1px dashed var(--border); font-variant-numeric: tabular-nums; }
+#selectedCountBadge svg { width: .9rem; height: .9rem; }
+#selectedCountBadge.has-selection { color: var(--primary); background: var(--accent); border: 1px solid color-mix(in srgb, var(--primary) 22%, transparent); }
 
-/* File list container */
-#filePreview .list-group-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center; /* Align name + button vertically */
-  padding: 0.6rem 0.75rem;
-  font-size: 0.9rem;
-  border: none;
-  border-bottom: 1px solid #e9ecef;
-}
+/* Collection menus (Status / Participant type / Send / More): shadcn DropdownMenu */
+div.dt-button-collection { min-width: 14rem; padding: .25rem !important; }
+div.dt-button-collection .dt-button-collection-title:empty { display: none; }
+div.dt-button-collection .dt-menu-item { min-height: 2.25rem; font-weight: 450; }
+div.dt-button-collection .dt-menu-item > span { display: inline-flex; align-items: center; gap: .6rem; }
+div.dt-button-collection .dt-menu-item svg { width: 1rem; height: 1rem; color: var(--muted-foreground); }
+div.dt-button-collection .dt-menu-item svg.mi-green { color: var(--success); }
+div.dt-button-collection .dt-menu-item svg.mi-red { color: var(--danger); }
+div.dt-button-collection .dt-menu-item svg.mi-blue { color: var(--primary); }
+div.dt-button-collection .dt-danger-item { color: var(--destructive) !important; margin-top: .25rem; position: relative; }
+div.dt-button-collection .dt-danger-item::before { content: ""; position: absolute; left: -.25rem; right: -.25rem; top: -.15rem; border-top: 1px solid var(--border); }
+div.dt-button-collection .dt-danger-item:hover { background: var(--danger-soft) !important; }
 
-/* File name styling */
-#filePreview span {
-  flex-grow: 1;
-  font-weight: 500;
-  color: #333;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+/* ---------- Table ---------- */
+#entries_wrapper table.dataTable tbody td { padding: .6rem .75rem !important; white-space: nowrap; }
+#entries_wrapper table.dataTable thead th { background: color-mix(in srgb, var(--muted) 55%, var(--card)); }
+#entries_wrapper td:nth-child(2) { font-variant-numeric: tabular-nums; color: var(--muted-foreground); font-size: .8125rem; font-weight: 500; }
+#entries_wrapper .dt-scroll-head { border-bottom: 0; }
+#entries_wrapper .reg-table { border-bottom: 1px solid var(--border); }
+#entries_wrapper .dt-scroll-body, #entries_wrapper table.dataTable, #entries_wrapper table.dataTable.no-footer { border-bottom: 0 !important; }
+#entries_wrapper tbody tr:last-child > td { border-bottom: 0; }
+#entries_wrapper td.dt-checkbox, #entries_wrapper th.dt-checkbox { text-align: center; }
+#entries_wrapper input.row-checkbox, #entries_wrapper #select-all { width: 1rem; height: 1rem; accent-color: var(--primary); cursor: pointer; vertical-align: middle; }
+#entries_wrapper td.reg-date { color: var(--muted-foreground); font-variant-numeric: tabular-nums; font-size: .8125rem; }
 
-/* Remove button */
-#filePreview .remove-file {
-  flex-shrink: 0;
-  font-size: 0.85rem;
-  padding: 0.3rem 0.75rem;
-  border-radius: 6px;
-}
+/* Person cell: avatar initials + name + email */
+.reg-person { display: flex; align-items: center; gap: .65rem; min-width: 0; text-decoration: none; color: var(--foreground); }
+.reg-person .avatar { width: 2rem; height: 2rem; border-radius: 999px; flex: none; font-weight: 600; font-size: .72rem; letter-spacing: .01em; }
+.reg-person .avatar > span { font-size: .72rem !important; }
+.reg-person .rp-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.reg-person .rp-text b { font-weight: 600; font-size: .875rem; overflow: hidden; text-overflow: ellipsis; }
+.reg-person .rp-text small { color: var(--muted-foreground); font-size: .78rem; overflow: hidden; text-overflow: ellipsis; }
+.reg-person:hover .rp-text b { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, var(--primary) 40%, transparent); }
+.reg-person .rp-muted { color: var(--muted-foreground); font-weight: 500; font-style: italic; }
+.av-0 { background: var(--info-soft); color: var(--info); } .av-1 { background: var(--violet-soft); color: var(--violet); }
+.av-2 { background: var(--teal-soft); color: var(--teal); } .av-3 { background: var(--warning-soft); color: var(--warning); }
+.av-4 { background: var(--golf-soft); color: var(--golf); } .av-5 { background: var(--danger-soft); color: var(--danger); }
 
-/* ---------- Register Walk-in modal ---------- */
-#walkinModal .modal-content { border: none; }
-#walkinModal .modal-header {
-  background: #f8f9fa;
-  border-bottom: 1px solid #e9ecef;
-}
-#walkinModal .modal-body { background: #fff; }
+/* Yes / no indicators */
+.reg-tick { display: inline-grid; place-items: center; width: 1.75rem; height: 1.75rem; border-radius: 999px; border: 0; background: transparent; padding: 0; vertical-align: middle; }
+.reg-tick svg { width: 1.05rem; height: 1.05rem; }
+.reg-tick.is-on { color: var(--success); background: var(--success-soft); }
+.reg-tick.is-off { color: color-mix(in srgb, var(--muted-foreground) 45%, transparent); }
+.checkin-toggle { cursor: pointer; transition: background-color .12s, color .12s, box-shadow .12s; }
+.checkin-toggle.is-off { width: 1.35rem; height: 1.35rem; margin: .2rem; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--muted-foreground) 28%, transparent); }
+.checkin-toggle.is-off svg { opacity: 0; transition: opacity .12s; }
+.checkin-toggle:hover { color: var(--primary); background: var(--accent); box-shadow: none; }
+.checkin-toggle.is-off:hover svg { opacity: 1; }
+.checkin-toggle.is-on:hover { color: var(--success); background: color-mix(in srgb, var(--success) 22%, transparent); }
+.checkin-toggle:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 
-/* Make every input clearly visible — the previous version looked too plain. */
-#walkinForm .form-label {
-  font-weight: 600;
-  color: #344767;
-  margin-bottom: .35rem;
-}
-#walkinForm .form-control,
-#walkinForm .form-select {
-  border: 1px solid #c7ccd1;
-  border-radius: 8px;
-  padding: 0.6rem 0.85rem;
-  font-size: 0.95rem;
-  background-color: #fff;
-  box-shadow: none;
-}
-#walkinForm .form-control:focus,
-#walkinForm .form-select:focus {
-  border-color: #5e72e4;
-  box-shadow: 0 0 0 0.18rem rgba(94, 114, 228, 0.15);
-}
-#walkinForm .form-control::placeholder { color: #9aa3ad; }
+/* Heading resize handles (quiet until hovered) */
+#entries_wrapper .manual-col-resize-handle { position: absolute; top: 0; right: -5px; width: 10px; height: 100%; cursor: col-resize; z-index: 3; user-select: none; touch-action: none; }
+#entries_wrapper thead tr:hover .manual-col-resize-handle::after { content: ""; position: absolute; left: 4px; top: 25%; bottom: 25%; width: 2px; border-radius: 2px; background: var(--border); }
+#entries_wrapper .manual-col-resize-active { background: var(--accent) !important; }
 
-/* Each question sits in its own subtle panel so fields are easy to find. */
-#walkinForm .walkin-question {
-  padding: 0.9rem 1rem;
-  margin-bottom: 0.85rem;
-  border: 1px solid #eceef1;
-  border-radius: 10px;
-  background: #fcfcfd;
-}
-#walkinForm .walkin-question .form-check-label { word-break: break-word; }
-#walkinForm .followup-box .form-control { background: #fff; }
+/* Footer: length + info left, paging right */
+.reg-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem 1rem; padding: .75rem 1rem; }
+.reg-foot-left { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; }
+.reg-foot .dt-length, .reg-foot .dt-info { margin: 0 !important; padding: 0 !important; }
+.reg-foot .dt-length { display: flex; align-items: center; gap: .4rem; }
+.reg-foot .dt-paging .pagination { margin: 0; flex-wrap: nowrap; }
+.reg-foot .dt-paging svg { width: 1rem; height: 1rem; }
+#entries_wrapper td.dt-empty { padding: 3rem 1rem !important; white-space: normal; }
+#entries_wrapper .empty h3 { font-size: 1rem; font-weight: 600; margin: .75rem 0 .25rem; color: var(--foreground); }
+#entries_wrapper .empty p { font-size: .875rem; color: var(--muted-foreground); margin: 0; }
 
-#walkinModal .walkin-options-block {
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
-  border-radius: 10px;
-  padding: 0.85rem 1rem;
-  margin-top: 0.25rem;
-}
+/* ---------- Dialogs ---------- */
+.reg-modal .modal-header { align-items: center; }
+.reg-modal-title { display: flex; align-items: center; gap: .85rem; }
+.reg-modal .modal-sub { margin: .15rem 0 0; color: var(--muted-foreground); font-size: .8125rem; font-weight: 400; }
+.reg-section + .reg-section { margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
+.reg-section-title { font-size: .875rem; font-weight: 600; color: var(--foreground); margin: 0 0 .2rem; }
+.reg-section-help { color: var(--muted-foreground); font-size: .8125rem; margin: 0 0 .75rem; }
+.reg-note { display: flex; gap: .65rem; align-items: flex-start; padding: .75rem .9rem; border-radius: calc(var(--radius) - 2px); background: var(--accent); color: var(--accent-foreground); font-size: .875rem; line-height: 1.45; }
+.reg-note > svg { color: var(--primary); width: 1.1rem; height: 1.1rem; flex: none; margin-top: .1rem; }
+.reg-switch { display: flex; gap: .75rem; align-items: flex-start; padding: .75rem .9rem; border: 1px solid var(--border); border-radius: calc(var(--radius) - 2px); background: var(--card); cursor: pointer; transition: border-color .12s, background-color .12s; }
+.reg-switch:hover { border-color: var(--input); }
+.reg-switch:has(input:checked) { border-color: color-mix(in srgb, var(--primary) 35%, transparent); background: color-mix(in srgb, var(--accent) 55%, var(--card)); }
+.reg-switch input { flex: none; margin-top: .1rem; }
+.reg-switch span { display: flex; flex-direction: column; font-weight: 500; font-size: .875rem; color: var(--foreground); }
+.reg-switch small { font-weight: 400; color: var(--muted-foreground); font-size: .78rem; margin-top: .1rem; }
 
-/* ---------- Toolbar action buttons + grouped dropdown menus ---------- */
-#entries_wrapper .dt-buttons { display: inline-flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-#entries_wrapper .dt-buttons .btn { display: inline-flex; align-items: center; gap: 4px; }
-#selectedCountBadge { font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: 8px; }
+/* Send QR: attachments */
+.reg-drop { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .25rem; text-align: center;
+  min-height: 8rem; padding: 1rem; border: 1.5px dashed var(--input); border-radius: var(--radius); background: color-mix(in srgb, var(--muted) 50%, transparent); cursor: pointer; transition: border-color .15s, background-color .15s; }
+.reg-drop:hover, .reg-drop:focus-within { border-color: var(--primary); background: var(--accent); }
+.reg-drop .icon-chip { margin-bottom: .35rem; }
+.reg-drop strong { font-size: .875rem; font-weight: 600; color: var(--foreground); }
+.reg-drop .reg-drop-help { font-size: .78rem; color: var(--muted-foreground); }
+.reg-drop input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+#filePreview { max-height: 12rem; overflow-y: auto; margin: .65rem 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: .4rem; }
+#filePreview .list-group-item { display: flex; align-items: center; gap: .6rem; padding: .35rem .35rem .35rem .6rem; border: 1px solid var(--border); border-radius: calc(var(--radius) - 2px); font-size: .8125rem; background: var(--card); }
+#filePreview .fp-name { flex: 1; min-width: 0; display: flex; align-items: center; gap: .5rem; font-weight: 500; }
+#filePreview .fp-name b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#filePreview .fp-name small { color: var(--muted-foreground); font-variant-numeric: tabular-nums; white-space: nowrap; }
+#filePreview img { width: 1.75rem; height: 1.75rem; object-fit: cover; border-radius: .4rem; flex: none; }
+#filePreview .fp-name svg { color: var(--primary); width: 1.1rem; height: 1.1rem; flex: none; }
 
-/* Each toolbar group gets its own solid colour for a bit of life. */
-#entries_wrapper .dt-buttons .btn-grp {
-  color: #fff !important;
-  border: none !important;
-  background-image: none !important;
-  border-radius: 8px;
-  padding: 8px 14px;
-  font-weight: 600;
-  box-shadow: 0 2px 5px rgba(20, 30, 50, 0.12);
-  transition: background-color .15s ease, box-shadow .15s ease, transform .05s ease;
-}
-#entries_wrapper .dt-buttons .btn-grp .material-symbols-rounded { color: #fff !important; }
-#entries_wrapper .dt-buttons .btn-grp:hover { box-shadow: 0 4px 10px rgba(20, 30, 50, 0.18); }
-#entries_wrapper .dt-buttons .btn-grp:active { transform: translateY(1px); }
+/* Walk-in / edit form */
+#walkinForm .walkin-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem 1.25rem; }
+#walkinForm .walkin-question { grid-column: 1 / -1; min-width: 0; display: flex; flex-direction: column; gap: .4rem; }
+#walkinForm .walkin-question[data-question-type^="identity_"], #walkinForm .walkin-question.wq-half { grid-column: auto; }
+#walkinForm .walkin-question .req { color: var(--destructive); margin-left: 2px; }
+#walkinForm .wq-help, #walkinForm .form-text, #walkinForm .wq-hint { color: var(--muted-foreground); font-size: .78rem; }
+#walkinForm .wq-choice { display: flex; align-items: center; gap: .55rem; font-size: .875rem; padding: .2rem 0; cursor: pointer; word-break: break-word; }
+#walkinForm .followup-box { padding-left: 1.6rem; margin: .1rem 0 .35rem; }
+#walkinForm .walkin-options-block .reg-switches { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; }
 
-#entries_wrapper .dt-buttons .btn-grp-walkin  { background-color: #5e72e4 !important; }
-#entries_wrapper .dt-buttons .btn-grp-walkin:hover  { background-color: #4a5cd0 !important; }
-#entries_wrapper .dt-buttons .btn-grp-status  { background-color: #7b5be0 !important; }
-#entries_wrapper .dt-buttons .btn-grp-status:hover  { background-color: #6a49d4 !important; }
-#entries_wrapper .dt-buttons .btn-grp-send    { background-color: #1aa179 !important; }
-#entries_wrapper .dt-buttons .btn-grp-send:hover    { background-color: #158463 !important; }
-#entries_wrapper .dt-buttons .btn-grp-more    { background-color: #5a6b8c !important; }
-#entries_wrapper .dt-buttons .btn-grp-more:hover    { background-color: #4a5a78 !important; }
-#entries_wrapper .dt-buttons .btn-grp-edit  { background-color: #E0115F !important; }
-#entries_wrapper .dt-buttons .btn-grp-edit:hover  { background-color: #C7003B !important; }
-#entries_wrapper .dt-buttons .btn-grp-partitype  { background-color: #877f98 !important; }
-#entries_wrapper .dt-buttons .btn-grp-partitype:hover  { background-color: #6e6784 !important; }
+@media (max-width: 767.98px) {
+  .reg-link { width: 100%; }
+  .reg-head-actions > .btn { flex: 1 1 auto; height: 2.5rem; }
+  .reg-search { max-width: none; min-width: 0; flex-basis: 100%; }
+  .reg-toolbar .reg-actions { width: 100%; }
+  #entries_wrapper .dt-buttons { justify-content: flex-start; }
+  #entries_wrapper .dt-buttons .btn { height: 2.5rem; }
+  #selectedCountBadge { flex-basis: 100%; justify-content: center; height: 2.25rem; }
+  .reg-divider { display: none; }
+  #walkinForm .walkin-fields, #walkinForm .walkin-options-block .reg-switches { grid-template-columns: 1fr; }
+  .reg-foot { justify-content: center; }
+  .reg-foot-left { justify-content: center; width: 100%; }
+  .reg-modal .modal-dialog { margin: .5rem; }
+}
+  #entries_wrapper td.dt-empty .empty { position: sticky; left: 0; width: min(40rem, calc(100vw - 4rem)); }
 
-/* Disabled (e.g. Status before any row is selected) reads as greyed-out. */
-#entries_wrapper .dt-buttons .btn-grp.disabled,
-#entries_wrapper .dt-buttons .btn-grp:disabled {
-  background-color: #adb5bd !important;
-  box-shadow: none;
-  opacity: 1;
-  cursor: not-allowed;
-}
+/* ---------- v3: sections, stat strip, selection bar ---------- */
+.reg-sec { display: flex; flex-direction: column; gap: .75rem; }
+.reg-sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.reg-sec-head h2 { margin: 0; }
+.reg-sec-note { font-size: .8125rem; color: var(--muted-foreground); }
+.reg-stats { position: relative; overflow: hidden; display: grid; grid-template-columns: 1.6fr repeat(6, minmax(0, 1fr)); gap: 0 !important; padding: 0 !important; }
+.reg-stats::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 2px; background: linear-gradient(90deg, var(--brand-orange) 0 22%, transparent 22%); }
+.reg-stat { display: flex; flex-direction: column; gap: .3rem; padding: 1.1rem 1.25rem 1rem; min-width: 0; border-left: 1px solid var(--border); }
+.reg-stat:first-child { border-left: 0; }
+.reg-stat-split { border-left-width: 1px; box-shadow: inset 1px 0 0 var(--border); }
+.reg-stat .kpi-label { font-size: .72rem !important; white-space: nowrap; display: flex; align-items: center; gap: .45rem; }
+.reg-stat:not(.reg-stat-total) .kpi-label::before { content: ""; width: .45rem; height: .45rem; border-radius: 2px; background: var(--dot, var(--primary)); flex: none; }
+.reg-stat .kpi-value { font-size: 1.75rem; line-height: 1.05; }
+.reg-stat-total .kpi-value { font-size: 2.6rem; color: var(--brand-navy); }
+.dark .reg-stat-total .kpi-value { color: var(--foreground); }
+.reg-stat .kpi-foot { font-size: .75rem; }
+.reg-stat-total .reg-mix { margin-top: .35rem; }
+.reg-legend { display: flex; flex-wrap: nowrap; gap: .55rem; font-size: .68rem; white-space: nowrap; color: var(--muted-foreground); }
+.reg-legend span { display: inline-flex; align-items: center; gap: .35rem; }
+.reg-legend i { width: .45rem; height: .45rem; border-radius: 2px; display: inline-block; }
+@media (max-width: 1279.98px) { .reg-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .reg-stat-total { grid-column: 1 / -1; border-bottom: 1px solid var(--border); flex-direction: row; flex-wrap: wrap; align-items: center; column-gap: 1.25rem; }
+  .reg-stat-total .kpi-label { width: 100%; } .reg-stat-total .reg-mix { flex: 1 1 10rem; margin: 0; }
+  .reg-stat:nth-child(2) { border-left: 0; }
+  .reg-stat:nth-child(n+6) { border-top: 1px solid var(--border); }
+  .reg-stat:nth-child(6) { border-left: 0; } }
+@media (max-width: 639.98px) { .reg-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .reg-stat { padding: .9rem 1rem; } .reg-stat-total .kpi-value { font-size: 2.1rem; }
+  .reg-stat:nth-child(n+4) { border-top: 1px solid var(--border); }
+  .reg-stat:nth-child(2n) { border-left: 0; } .reg-stat:nth-child(2n+1):not(:first-child) { border-left: 1px solid var(--border); }
+  .reg-sec-note { display: none; } }
 
-/* Dropdown menu container shared by the Status / Send / More groups */
-div.dt-button-collection {
-  padding: 6px;
-  border: 1px solid #e3e6ea;
-  border-radius: 10px;
-  box-shadow: 0 8px 24px rgba(20, 30, 50, 0.12);
-  background: #fff;
-  min-width: 210px;
-}
-div.dt-button-collection .dt-menu-item.dt-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  text-align: left;
-  background: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 9px 12px;
-  margin: 1px 0;
-  font-size: 13px;
-  color: #344767;
-}
-div.dt-button-collection .dt-menu-item.dt-button:hover { background: #f3f5f9; }
-div.dt-button-collection .dt-menu-item.dt-button .material-symbols-rounded { font-size: 19px; }
-/* Destructive item: separated and red */
-div.dt-button-collection .dt-danger-item.dt-button {
-  color: #dc3545;
-  border-top: 1px solid #eceef1;
-  border-radius: 0 0 8px 8px;
-  margin-top: 4px;
-}
-div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; }
+.reg-selbar { position: fixed; left: 50%; bottom: 1.25rem; z-index: 60; display: flex; align-items: center; gap: .25rem; padding: .35rem .4rem .35rem 1rem;
+  background: var(--brand-navy); color: #fff; border-radius: .9rem; box-shadow: 0 12px 32px -8px rgba(7,23,57,.45), 0 0 0 1px rgba(255,255,255,.06) inset;
+  transform: translate(-50%, 1.25rem); opacity: 0; transition: transform .22s cubic-bezier(.2,.8,.2,1), opacity .18s; max-width: calc(100vw - 2rem); }
+.reg-selbar.is-on { transform: translate(-50%, 0); opacity: 1; }
+.dark .reg-selbar { background: #13235a; box-shadow: 0 12px 32px -8px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.12) inset; }
+.reg-selbar-count { font-size: .8125rem; white-space: nowrap; color: rgba(255,255,255,.75); padding-right: .35rem; font-variant-numeric: tabular-nums; }
+.reg-selbar-count b { color: #fff; font-weight: 700; font-size: .9rem; }
+.reg-selbar-sep { width: 1px; height: 1.25rem; background: rgba(255,255,255,.16); margin: 0 .3rem; }
+.reg-selbar-btn { display: inline-flex; align-items: center; gap: .4rem; height: 2.25rem; padding: 0 .7rem; border-radius: .6rem; border: 0; background: transparent; color: #fff; font-size: .8125rem; font-weight: 500; cursor: pointer; white-space: nowrap; transition: background-color .12s; }
+.reg-selbar-btn svg { width: 1rem; height: 1rem; opacity: .85; }
+.reg-selbar-btn:hover { background: rgba(255,255,255,.1); }
+.reg-selbar-btn:focus-visible { outline: 2px solid var(--brand-orange); outline-offset: 1px; }
+.reg-selbar-btn:disabled { opacity: .4; cursor: not-allowed; background: transparent; }
+.reg-selbar-btn[data-sel-act="approve"] svg { color: #6EE7A8; opacity: 1; }
+.reg-selbar-btn[data-sel-act="reject"] svg { color: #FCA5A5; opacity: 1; }
+.reg-selbar-x { width: 2.25rem; padding: 0; justify-content: center; }
+@media (max-width: 639.98px) { .reg-selbar { bottom: .75rem; padding-left: .75rem; } .reg-selbar-btn span { display: none; } .reg-selbar-btn { width: 2.5rem; height: 2.5rem; padding: 0; justify-content: center; } }
+@media (prefers-reduced-motion: reduce) { .reg-selbar { transition: none; } }
 
-/* ---------- Match the campaign list's table ----------
-   That table's cells wrap their content in <p class="text-xs font-weight-bold">;
-   these cells are rendered by DataTables as bare strings, so the same size,
-   weight, colour and row rhythm are applied here instead. Badges, links and
-   the tick icons set their own colour and are unaffected. */
-#entries tbody td {
-  font-size: .75rem;
-  font-weight: 600;
-  color: #262626;
-  line-height: 1.25;          /* .text-xs on the campaign list */
-  /* The campaign list reaches its 43px rows with 8px cell padding plus a py-1
-     wrapper inside each cell. These cells have no wrapper, so the same row
-     height comes from the padding alone. */
-  padding: .75rem .5rem;
-}
-#entries tbody td a { font-weight: 600; }
-/* The tick / check-in glyphs are the only cell content the campaign list has no
-   equivalent of, and at their natural line box they alone make every row 5px
-   taller. Pinning the line height to the text's keeps the row rhythm identical
-   without shrinking the glyph itself. */
-#entries tbody td .material-symbols-rounded {
-  /* 15px is the td's own computed line height (.75rem x 1.25). A relative
-     value would resolve against the glyph's 20px instead and make the row
-     taller than the campaign list's, which is the whole point of this block. */
-  line-height: 15px;
-  vertical-align: middle;
-}
-
-/* The resize plugin marks every resizable heading with a dashed edge, which
-   the campaign list has no equivalent of. Kept, but only while the pointer is
-   on the heading — so the table reads the same at rest and the columns are
-   still obviously draggable when you go looking. */
-#entries_wrapper table.dataTable thead th[data-is-resizable=true] {
-  border-inline-end-color: transparent;
-}
-#entries_wrapper table.dataTable thead tr:hover th[data-is-resizable=true] {
-  border-inline-end-color: #d7dde5;
-}
-
-/* Manual resize handle fallback so column edges stay draggable even when
-   DataTables clone/fixed header wrappers interfere with plugin hit testing. */
-#entries_wrapper .manual-col-resize-handle {
-  position: absolute;
-  top: 0;
-  right: -5px;
-  width: 10px;
-  height: 100%;
-  cursor: col-resize;
-  z-index: 3;
-  user-select: none;
-  touch-action: none;
-}
-#entries_wrapper .manual-col-resize-handle::before {
-  content: '';
-  position: absolute;
-  top: 20%;
-  bottom: 20%;
-  right: 4px;
-  width: 2px;
-  /* background: rgba(120, 130, 150, 0.55); */
-  border-radius: 1px;
-}
-#entries_wrapper .manual-col-resize-active {
-  background: rgba(94, 114, 228, 0.08);
-}
-
+/* Column filter popover (Bootstrap Popover; its CSS is no longer loaded). ponytail: page-local until moved to input.css */
+.popover.filter-pop { position: absolute; top: 0; left: 0; z-index: 1070; display: block; background: var(--popover); color: var(--popover-foreground); border: 1px solid var(--border); border-radius: calc(var(--radius) + 2px); box-shadow: 0 16px 40px -12px rgba(7,23,57,.3); font-size: .875rem; }
+.popover.filter-pop .popover-arrow { display: none; }
+.popover.filter-pop .popover-header { margin: 0; padding: .7rem .9rem .5rem; font-family: var(--font-label); font-size: .72rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--muted-foreground); border-bottom: 1px solid var(--border); }
+.popover.filter-pop .popover-body { padding: .7rem .9rem .8rem; color: var(--popover-foreground); }
+.popover.filter-pop label { display: flex; align-items: center; gap: .5rem; padding: .2rem 0; cursor: pointer; }
+.popover.filter-pop input[type=checkbox] { accent-color: var(--primary); width: 1rem; height: 1rem; }
+/* v4: overview totals as separate cards, like Campaigns */
+.reg-stats { gap: .75rem !important; background: none !important; border: 0 !important; box-shadow: none !important; overflow: visible; }
+.reg-stats::before { display: none; }
+.reg-stat, .reg-stat-split { border: 1px solid #E6ECF8 !important; border-radius: 1.1rem; background: rgba(255,255,255,.85); box-shadow: 0 10px 24px -18px rgba(30,60,140,.35) !important; padding: 1.1rem 1.15rem 1rem; }
+.reg-stat .kpi-label { font-family: inherit !important; font-size: .8125rem !important; font-weight: 500 !important; letter-spacing: 0 !important; text-transform: none !important; color: #1E2A47; }
+.reg-stat .kpi-value { font-size: 1.9rem; font-weight: 700; color: #0B1739; }
+.reg-stat-total { border-color: #BFD0F5 !important; }
+.dark .reg-stat { background: var(--card); border-color: var(--border) !important; } .dark .reg-stat .kpi-value, .dark .reg-stat .kpi-label { color: var(--foreground); }
+@media (max-width: 1279px) { .reg-stats { grid-template-columns: repeat(4, minmax(0,1fr)) !important; } .reg-stat-total { grid-column: span 2; } }
+@media (max-width: 639px) { .reg-stats { grid-template-columns: repeat(2, minmax(0,1fr)) !important; } }
 </style>
 {% endblock %}
 
 {% block content %}
- <main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg ">
-   
-    <div class="container-fluid py-2">
-      <div class="row">
-        <!-- <div class="col-12">
-          <div class="ms-3">
-            <h3 class="mb-0 h4 font-weight-bolder opacity-7"><i class="ti ti-list"></i>
-            {{survey.title}}</h3>
-        
-            <nav aria-label="breadcrumb m-0">
-              <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
-                <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;">Survey</a></li>
-                <li class="breadcrumb-item text-sm text-dark active" aria-current="page">{{survey.title}}</li>
-              </ol>
-            </nav>
-          </div>
-        </div> -->
+<div class="flex flex-col gap-6">
 
-        <div class="col-8 d-flex justify-content-start align-items-center gap-2">                
-            <div class="ms-3">
-              <h3 class="mb-0 h4 font-weight-bolder opacity-7"><i class="ti ti-list"></i>
-              {{survey.title}}</h3>
-          
-              <nav aria-label="breadcrumb m-0">
-                <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
-                  <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;">Survey</a></li>
-                  <li class="breadcrumb-item text-sm text-dark active" aria-current="page">{{survey.title}}</li>
-                </ol>
-              </nav>
-            </div>
-        </div>  
-        <div class="col-4 d-flex flex-column justify-content-end align-items-end gap-1">
-          <div class="d-flex flex-wrap justify-content-end gap-3 small text-secondary">
-            <span><i class="material-symbols-rounded align-middle text-success" style="font-size:18px;">how_to_reg</i>
-              Total <span id="totalParticipants" class="fw-bold">0</span></span>
-            <span><i class="material-symbols-rounded align-middle text-warning" style="font-size:18px;">hourglass_top</i>
-              Pending <span id="pendingCount" class="fw-bold">0</span></span>
-            <span><i class="material-symbols-rounded align-middle text-success" style="font-size:18px;">verified</i>
-              Approved <span id="approvedCount" class="fw-bold">0</span></span>
-            <span><i class="material-symbols-rounded align-middle text-danger" style="font-size:18px;">cancel</i>
-              Rejected <span id="rejectedCount" class="fw-bold">0</span></span>
-            <span><i class="material-symbols-rounded align-middle text-success" style="font-size:18px;">qr_code_2</i>
-              QR sent <span id="qrSentCount" class="fw-bold">0</span></span>
-            <span><i class="material-symbols-rounded align-middle text-primary" style="font-size:18px;">notifications</i>
-              Reminder <span id="reminderSentCount" class="fw-bold">0</span></span>
-            <span><i class="material-symbols-rounded align-middle text-success" style="font-size:18px;">check_circle</i>
-              Checked in <span id="checkedIn" class="fw-bold">0</span></span>
-          </div>
-        </div>
-      </div>
-
-      <input type="hidden" id="partiTypeList" value="{{ participant_type_choices_str }}">
-
-      <div class="col-12">
-        <div class="card my-2">
-
-          <div class="card-body px-0 pb-2">
-            <div class="table-responsive p-0">
-              <table id="entries" class="table align-items-center mb-0">
-                <thead>
-                  <tr id="entriesHeaderRow">
-                      <th><input type="checkbox" id="select-all"></th>
-                      <th data-col-key="regno" data-filter="text"
-                          class="text-uppercase text-secondary text-sm font-weight-bolder">Reg #</th>
-                  </tr>
-                </thead>
-                <tbody id="registration-body"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-
+  <header class="page-header reg-head animate-rise">
+    <div class="min-w-0">
+      <p class="pk-micro mb-3 flex-wrap items-center gap-2">
+        <span class="pk-pill !mb-0">Registration form</span>
+        {% if campaign %}<span aria-hidden="true" class="text-border">/</span><span class="normal-case tracking-normal font-sans font-medium text-[.8rem]">{{ campaign.title }}</span>{% endif %}
+        {% if campaign.start_date %}
+        <span aria-hidden="true" class="text-border">/</span>
+        <span>{{ campaign.start_date|date:"j M Y" }}{% if campaign.end_date and campaign.end_date|date:"Ymd" != campaign.start_date|date:"Ymd" %} – {{ campaign.end_date|date:"j M Y" }}{% endif %}</span>
+        {% endif %}
+      </p>
+      <h1 class="page-title">{{ survey.title }}</h1>
+      <p class="page-description">Review registrants, send QR codes and check people in.</p>
     </div>
-  </main>
-
-  <!-- modal for remarks -->
-  <div class="modal fade" id="noteModal" tabindex="-1" aria-labelledby="noteModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-  <div class="modal-dialog modal-sm" style="max-width: 500px;">
-    <div class="modal-content border shadow-sm rounded-3">
-
-      <div class="modal-header bg-light border-bottom rounded-top">
-        <h5 class="modal-title" id="noteModalLabel">Edit Remarks</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="reg-head-actions flex w-full flex-wrap items-center gap-2 md:w-auto">
+      <div class="reg-link" role="group" aria-label="Public registration link">
+        <i data-lucide="link-2"></i>
+        <input type="text" id="publicLinkInput" readonly aria-label="Public registration link"
+               value="{% url 'form_public' survey.slug|default:survey.survey_code %}"
+               data-path="{% url 'form_public' survey.slug|default:survey.survey_code %}">
+        <button type="button" class="btn" data-variant="ghost" data-size="sm" id="copyPublicLinkBtn"><i data-lucide="copy"></i><span>Copy</span></button>
       </div>
-
-      <div class="modal-body">
-        <label for="modal-remarks" class="form-label fw-semibold">Remarks</label>
-        <textarea id="modal-remarks" class="form-control border rounded-2 shadow-sm p-2" rows="4" placeholder="Enter remarks..."></textarea>
-
-        <input type="hidden" id="modal-regno">
-      </div>
-
-      <div class="modal-footer rounded-bottom">
-        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">
-          <i class="material-symbols-rounded align-middle">close</i> Close
-        </button>
-        <button type="button" class="btn btn-primary btn-sm" id="save-remarks-btn">
-          <i class="material-symbols-rounded align-middle">save</i> Save
-        </button>
-      </div>
-
+      <a class="btn" data-variant="outline" href="{% url 'form_public' survey.slug|default:survey.survey_code %}" target="_blank" rel="noopener">
+        <i data-lucide="external-link"></i>Preview form
+      </a>
+      <button type="button" class="btn" data-variant="primary" id="walkinOpenBtn" onclick="window.openWalkinModal && window.openWalkinModal()">
+        <i data-lucide="user-plus"></i>Register walk-in
+      </button>
     </div>
+  </header>
+
+  <section class="reg-sec animate-rise animate-rise-1" aria-labelledby="regSecOverview">
+    <div class="reg-sec-head">
+      <h2 class="pk-sec" id="regSecOverview">Overview</h2>
+      <span class="reg-sec-note">Live totals for this form</span>
+    </div>
+    <div class="card reg-stats" role="list" aria-label="Registration totals">
+      <div class="reg-stat reg-stat-total" role="listitem">
+        <div class="kpi-label">Total registrants</div>
+        <div class="kpi-value" id="totalParticipants">0</div>
+        <div class="reg-mix" aria-hidden="true" title="Approved, pending and rejected"><span id="mixApproved" class="bg-success"></span><span id="mixPending" class="bg-warning"></span><span id="mixRejected" class="bg-danger"></span></div>
+        <div class="reg-legend" aria-hidden="true"><span><i class="bg-success"></i>Approved</span><span><i class="bg-warning"></i>Pending</span><span><i class="bg-danger"></i>Rejected</span></div>
+      </div>
+      <div class="reg-stat" role="listitem" style="--dot: var(--warning)">
+        <div class="kpi-label">Pending</div>
+        <div class="kpi-value" id="pendingCount">0</div>
+        <div class="kpi-foot" data-kpi-foot="pending">Awaiting review</div>
+      </div>
+      <div class="reg-stat" role="listitem" style="--dot: var(--success)">
+        <div class="kpi-label">Approved</div>
+        <div class="kpi-value" id="approvedCount">0</div>
+        <div class="kpi-foot" data-kpi-foot="approved">Eligible for a QR code</div>
+      </div>
+      <div class="reg-stat" role="listitem" style="--dot: var(--danger)">
+        <div class="kpi-label">Rejected</div>
+        <div class="kpi-value" id="rejectedCount">0</div>
+        <div class="kpi-foot" data-kpi-foot="rejected">Will not get a QR code</div>
+      </div>
+      <div class="reg-stat reg-stat-split" role="listitem" style="--dot: var(--violet)">
+        <div class="kpi-label">QR sent</div>
+        <div class="kpi-value" id="qrSentCount">0</div>
+        <div class="kpi-foot" data-kpi-foot="qr">Check-in codes emailed</div>
+      </div>
+      <div class="reg-stat" role="listitem" style="--dot: var(--teal)">
+        <div class="kpi-label">Reminders</div>
+        <div class="kpi-value" id="reminderSentCount">0</div>
+        <div class="kpi-foot" data-kpi-foot="reminder">Event reminders emailed</div>
+      </div>
+      <div class="reg-stat" role="listitem" style="--dot: var(--golf)">
+        <div class="kpi-label">Checked in</div>
+        <div class="kpi-value" id="checkedIn">0</div>
+        <div class="kpi-foot" data-kpi-foot="checkin">Arrived at the event</div>
+      </div>
+    </div>
+  </section>
+
+  <input type="hidden" id="partiTypeList" value="{{ participant_type_choices_str }}">
+
+  <section class="reg-sec" aria-labelledby="regSecPeople">
+  <div class="reg-sec-head">
+    <h2 class="pk-sec" id="regSecPeople">Registrants</h2>
+    <span class="reg-sec-note">Tick rows to approve, tag or email them in bulk</span>
   </div>
+  <div class="card reg-card">
+    <table id="entries" class="table">
+      <thead>
+        <tr id="entriesHeaderRow">
+            <th class="dt-checkbox"><input type="checkbox" id="select-all" aria-label="Select all rows on this page"></th>
+            <th data-col-key="regno" data-filter="text">Reg #</th>
+        </tr>
+      </thead>
+      <tbody id="registration-body"></tbody>
+    </table>
+  </div>
+  </section>
+
 </div>
 
-<!-- Send QR Modal -->
-<div class="modal fade" id="sendQRModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content shadow-lg rounded-3">
-      <div class="modal-header">
-        <h5 class="modal-title"><i class="material-symbols-rounded me-2">qr_code</i> Send QR</h5>
-        <!-- <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button> -->
-      </div>
-      
-      <div class="modal-body">
-        <form id="sendQRForm" enctype="multipart/form-data">
-          <!-- Hidden field for selected IDs. Empty = "send to every approved
-               delegate". This is the one-week-later bulk send. -->
-          <input type="hidden" name="ids" id="selectedIdsInput">
+  <!-- Selection bar: appears while rows are ticked (driven by updateBulkButtons) -->
+  <div class="reg-selbar" id="regSelBar" role="region" aria-label="Bulk actions for selected rows" hidden>
+    <span class="reg-selbar-count"><b id="regSelBarCount">0</b> selected</span>
+    <span class="reg-selbar-sep" aria-hidden="true"></span>
+    <button type="button" class="reg-selbar-btn" data-sel-act="approve"><i data-lucide="badge-check"></i><span>Approve</span></button>
+    <button type="button" class="reg-selbar-btn" data-sel-act="reject"><i data-lucide="ban"></i><span>Reject</span></button>
+    <button type="button" class="reg-selbar-btn" data-sel-act="qr"><i data-lucide="qr-code"></i><span>Send QR</span></button>
+    <button type="button" class="reg-selbar-btn" data-sel-act="edit" data-sel-one><i data-lucide="pencil"></i><span>Edit</span></button>
+    <span class="reg-selbar-sep" aria-hidden="true"></span>
+    <button type="button" class="reg-selbar-btn reg-selbar-x" data-sel-act="clear" aria-label="Clear selection"><i data-lucide="x"></i></button>
+  </div>
 
-          <div class="alert alert-info py-2 mb-3" style="font-size: .9rem;">
-            <i class="material-symbols-rounded align-middle">info</i>
-            <span id="sendQRModeLabel">Only approved delegates will receive the QR code.</span>
+  <!-- Remarks -->
+  <div class="modal fade reg-modal" id="noteModal" tabindex="-1" aria-labelledby="noteModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 32rem;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="reg-modal-title">
+            <span class="icon-chip" aria-hidden="true"><i data-lucide="sticky-note"></i></span>
+            <div>
+              <h5 class="modal-title" id="noteModalLabel">Edit remarks</h5>
+              <p class="modal-sub">Internal remarks for this registration<span id="noteModalRegno"></span>.</p>
+            </div>
           </div>
-
-          <!-- Resend toggle. By default we skip anyone with qr_sent=True so
-               repeated clicks don't spam delegates. Tick this when a delegate
-               says they didn't receive the email. -->
-          <div class="form-check mb-3">
-            <input class="form-check-input" type="checkbox" id="resendQRCheckbox" name="resend" value="1">
-            <label class="form-check-label" for="resendQRCheckbox">
-              <strong>Resend</strong> to delegates who already received the QR
-              <span class="d-block text-muted small">
-                Off by default — only delegates who haven't received the QR yet will be emailed.
-                Turn this on when a delegate reports they didn't get the email.
-              </span>
-            </label>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="grid gap-2">
+            <label for="modal-remarks" class="label">Remarks</label>
+            <textarea id="modal-remarks" class="textarea" rows="5" placeholder="For example: paid at the door, needs vegetarian lunch"></textarea>
           </div>
-
-          <!-- File Upload -->
-          <div class="mb-3">
-            <label for="qrFiles" class="form-label fw-bold">Attach Files</label>
-            <input type="file" name="files" id="qrFiles" class="form-control" multiple>
-            <small class="text-muted">You can attach multiple files. Preview below:</small>
-          </div>
-
-          <!-- Preview Area -->
-          <ul class="list-group" id="filePreview" style="max-height: 200px; overflow-y: auto;"></ul>
-        </form>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary border" data-bs-dismiss="modal">
-          <i class="material-symbols-rounded align-middle">close</i> Cancel
-        </button>
-        <button type="button" class="btn btn-primary" id="sendQRSubmitBtn">
-          <i class="material-symbols-rounded align-middle">send</i> Send
-        </button>
+          <input type="hidden" id="modal-regno">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-variant="outline" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn" data-variant="primary" id="save-remarks-btn"><i data-lucide="save"></i>Save remarks</button>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<!-- Register Walk-in Modal -->
-<div class="modal fade" id="walkinModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-  <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-    <div class="modal-content shadow-lg rounded-3">
-      <div class="modal-header">
-        <h5 class="modal-title"><i class="material-symbols-rounded me-2">person_add</i> Register Walk-in</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  <!-- Send QR -->
+  <div class="modal fade reg-modal" id="sendQRModal" tabindex="-1" aria-labelledby="sendQRModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="reg-modal-title">
+            <span class="icon-chip bg-violet-soft text-violet" aria-hidden="true"><i data-lucide="qr-code"></i></span>
+            <div>
+              <h5 class="modal-title" id="sendQRModalLabel">Send QR codes</h5>
+              <p class="modal-sub">Emails each approved delegate their personal check-in QR code.</p>
+            </div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+          <form id="sendQRForm" enctype="multipart/form-data">
+            <!-- Empty = "send to every approved delegate". -->
+            <input type="hidden" name="ids" id="selectedIdsInput">
+            <div class="grid gap-6 md:grid-cols-2">
+              <div>
+                <div class="reg-section">
+                  <h6 class="reg-section-title">Recipients</h6>
+                  <p class="reg-section-help">Only approved delegates are emailed.</p>
+                  <div class="reg-note">
+                    <i data-lucide="users"></i>
+                    <span id="sendQRModeLabel">Only approved delegates will receive the QR code.</span>
+                  </div>
+                </div>
+                <div class="reg-section">
+                  <h6 class="reg-section-title">Delivery</h6>
+                  <p class="reg-section-help">By default, people who already received their QR code are skipped.</p>
+                  <label class="reg-switch" for="resendQRCheckbox">
+                    <input class="input" type="checkbox" role="switch" id="resendQRCheckbox" name="resend" value="1">
+                    <span>Resend to people who already have it<small>Use when a delegate says the email never arrived.</small></span>
+                  </label>
+                </div>
+              </div>
+              <div class="reg-section !mt-0 !border-t-0 !pt-0">
+                <h6 class="reg-section-title">Attachments <span class="font-normal text-muted-foreground">(optional)</span></h6>
+                <p class="reg-section-help">Attached to every QR email in this send, for example the agenda or a venue map.</p>
+                <label class="reg-drop" for="qrFiles">
+                  <span class="icon-chip" aria-hidden="true"><i data-lucide="upload"></i></span>
+                  <strong>Choose files</strong>
+                  <span class="reg-drop-help">or drop them here. You can add several.</span>
+                  <input type="file" name="files" id="qrFiles" multiple>
+                </label>
+                <ul class="list-group" id="filePreview" aria-label="Attached files"></ul>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-variant="outline" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn" data-variant="primary" id="sendQRSubmitBtn"><i data-lucide="send"></i>Send QR codes</button>
+        </div>
       </div>
+    </div>
+  </div>
 
-      <div class="modal-body">
-        <p class="text-muted small mb-3">
-          Enter the participant's details below. These are the same fields the public registration form collects.
-        </p>
-        <form id="walkinForm" novalidate>
-          <input type="hidden" id="walkinEditId" value="">
+  <!-- Register walk-in / edit participant -->
+  <div class="modal fade reg-modal" id="walkinModal" tabindex="-1" aria-labelledby="walkinModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="reg-modal-title">
+            <span class="icon-chip" aria-hidden="true" id="walkinModalIcon"><i data-lucide="user-plus"></i></span>
+            <div>
+              <h5 class="modal-title" id="walkinModalLabel">Register walk-in</h5>
+              <p class="modal-sub" id="walkinModalSub">Same fields as the public registration form.</p>
+            </div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
 
+        <div class="modal-body">
+          <form id="walkinForm" novalidate>
+            <input type="hidden" id="walkinEditId" value="">
+
+            <div class="reg-section">
+              <h6 class="reg-section-title">Participant details</h6>
+              <p class="reg-section-help">Fields marked <span class="text-destructive">*</span> are required.</p>
+              <div class="walkin-fields">
           {% if survey.questions.all %}
             {# Render the exact same fields (identity + custom) as the public form. #}
             {% for q in survey.questions.all %}
               <div class="walkin-question" data-question-type="{{ q.question_type }}" data-question-id="{{ q.id }}">
-                <label class="form-label">
-                  {% if q.is_required %}<span class="text-danger">*</span> {% endif %}
-                  {{ q.text|safe }}
-                </label>
+                {% if q.question_type == 'radio' or q.question_type == 'checkbox' %}
+                <span class="label" id="wq{{ q.id }}_label">{{ q.text|safe }}{% if q.is_required %}<span class="req" aria-hidden="true">*</span>{% endif %}</span>
+                {% else %}
+                <label class="label" for="wq{{ q.id }}">{{ q.text|safe }}{% if q.is_required %}<span class="req" aria-hidden="true">*</span>{% endif %}</label>
+                {% endif %}
                 {% if q.help_text %}
-                  <div class="text-muted small mb-2">{{ q.help_text|safe }}</div>
+                  <div class="wq-help">{{ q.help_text|safe }}</div>
                 {% endif %}
 
                 {# ---------- Identity types ---------- #}
                 {% if q.question_type == 'identity_name' %}
-                  <input type="text" class="form-control" id="wq{{ q.id }}" name="q_{{ q.id }}" {% if q.is_required %}required{% endif %}>
+                  <input type="text" class="input" id="wq{{ q.id }}" name="q_{{ q.id }}" autocomplete="name" {% if q.is_required %}required{% endif %}>
                 {% elif q.question_type == 'identity_participant_type' %}
-                  <select class="form-select" id="wq{{ q.id }}" name="q_{{ q.id }}" {% if q.is_required %}required{% endif %}>
-                    <option value="" disabled selected>Choose participant type...</option>
+                  <select class="select w-full" id="wq{{ q.id }}" name="q_{{ q.id }}" {% if q.is_required %}required{% endif %}>
+                    <option value="" disabled selected>Choose participant type</option>
                     {% for opt in q.choices %}
                       <option value="{{ opt }}">{{ opt }}</option>
                     {% endfor %}
                   </select>
                 {% elif q.question_type == 'identity_email' %}
-                  <input type="email" class="form-control" id="wq{{ q.id }}" name="q_{{ q.id }}" {% if q.is_required %}required{% endif %}>
-                  <small class="text-muted">Required to email the QR code.</small>
+                  <input type="email" class="input" id="wq{{ q.id }}" name="q_{{ q.id }}" autocomplete="email" {% if q.is_required %}required{% endif %}>
+                  <small class="wq-hint">Needed to email the QR code.</small>
                 {% elif q.question_type == 'identity_phone' %}
-                  <input type="tel" class="form-control" id="wq{{ q.id }}" name="q_{{ q.id }}" placeholder="+60 12 345 6789" {% if q.is_required %}required{% endif %}>
+                  <input type="tel" class="input" id="wq{{ q.id }}" name="q_{{ q.id }}" placeholder="+60 12 345 6789" autocomplete="tel" {% if q.is_required %}required{% endif %}>
                 {% elif q.question_type == 'identity_organization' %}
-                  <input type="text" class="form-control" id="wq{{ q.id }}" name="q_{{ q.id }}" {% if q.is_required %}required{% endif %}>
+                  <input type="text" class="input" id="wq{{ q.id }}" name="q_{{ q.id }}" autocomplete="organization" {% if q.is_required %}required{% endif %}>
 
                 {# ---------- Standard custom types ---------- #}
                 {% elif q.question_type == 'text' %}
-                  <input type="text" class="form-control" id="wq{{ q.id }}" name="q_{{ q.id }}" {% if q.is_required %}required{% endif %}>
+                  <input type="text" class="input" id="wq{{ q.id }}" name="q_{{ q.id }}" {% if q.is_required %}required{% endif %}>
 
                 {% elif q.question_type == 'textarea' %}
-                  <textarea class="form-control" id="wq{{ q.id }}" name="q_{{ q.id }}" rows="3" {% if q.is_required %}required{% endif %}></textarea>
+                  <textarea class="textarea" id="wq{{ q.id }}" name="q_{{ q.id }}" rows="3" {% if q.is_required %}required{% endif %}></textarea>
 
                 {% elif q.question_type == 'select' %}
-                  <select class="form-select walkin-select" name="q_{{ q.id }}" id="wq{{ q.id }}"
+                  <select class="select w-full walkin-select" name="q_{{ q.id }}" id="wq{{ q.id }}"
                           data-followup-target="wq{{ q.id }}_followups"
                           {% if q.is_required %}required{% endif %}>
-                    <option value="" disabled selected>Choose...</option>
+                    <option value="" disabled selected>Choose an option</option>
                     {% for opt in q.choices %}
                       <option value="{{ opt }}">{{ opt }}</option>
                     {% endfor %}
                     {% if q.allow_other %}<option value="Other">Other</option>{% endif %}
                   </select>
                   {% if q.allow_other %}
-                    <div id="wq{{ q.id }}_other_box" class="mt-2" style="display:none;">
-                      <input type="text" class="form-control" name="q_{{ q.id }}_other" placeholder="Please specify">
+                    <div id="wq{{ q.id }}_other_box" style="display:none;">
+                      <input type="text" class="input" name="q_{{ q.id }}_other" placeholder="Please specify" aria-label="Other, please specify">
                     </div>
                   {% endif %}
                   <div id="wq{{ q.id }}_followups">
                     {% for opt, placeholder in q.choice_followups.items %}
-                      <div class="followup-box mt-2 ms-3" data-for-value="{{ opt }}" style="display:none;">
-                        <input type="text" class="form-control" name="q_{{ q.id }}_followup_{{ opt }}" placeholder="{{ placeholder }}">
+                      <div class="followup-box !pl-0" data-for-value="{{ opt }}" style="display:none;">
+                        <input type="text" class="input" name="q_{{ q.id }}_followup_{{ opt }}" placeholder="{{ placeholder }}" aria-label="{{ placeholder|default:opt }}">
                       </div>
                     {% endfor %}
                   </div>
 
                 {% elif q.question_type == 'radio' %}
+                  <div role="radiogroup" aria-labelledby="wq{{ q.id }}_label">
                   {% for opt in q.choices %}
-                    <div class="form-check">
-                      <input class="form-check-input walkin-radio-with-followup" type="radio"
+                    <label class="wq-choice" for="wq{{ q.id }}_{{ forloop.counter }}">
+                      <input class="input walkin-radio-with-followup" type="radio"
                              name="q_{{ q.id }}" id="wq{{ q.id }}_{{ forloop.counter }}" value="{{ opt }}"
                              data-group="wq{{ q.id }}"
-                             {% if q.is_required %}required{% endif %}>
-                      <label class="form-check-label" for="wq{{ q.id }}_{{ forloop.counter }}">{{ opt }}</label>
-                    </div>
+                             {% if q.is_required %}required{% endif %}>{{ opt }}</label>
                     {% if q.choice_followups and opt in q.choice_followups %}
-                      <div class="followup-box ms-4 mt-1 mb-2" data-group="wq{{ q.id }}" data-for-value="{{ opt }}" style="display:none;">
-                        <input type="text" class="form-control form-control-sm" name="q_{{ q.id }}_followup_{{ opt }}" placeholder="{{ q.choice_followups|get_item:opt }}">
+                      <div class="followup-box" data-group="wq{{ q.id }}" data-for-value="{{ opt }}" style="display:none;">
+                        <input type="text" class="input" name="q_{{ q.id }}_followup_{{ opt }}" placeholder="{{ q.choice_followups|get_item:opt }}" aria-label="{{ opt }}: details">
                       </div>
                     {% endif %}
                   {% endfor %}
                   {% if q.allow_other %}
-                    <div class="d-flex align-items-center mt-2">
-                      <div class="form-check me-2">
-                        <input class="form-check-input" type="radio" name="q_{{ q.id }}" id="wq{{ q.id }}_other" value="Other">
-                        <label class="form-check-label" for="wq{{ q.id }}_other">Other:</label>
-                      </div>
-                      <input type="text" class="form-control form-control-sm" style="max-width:280px;" name="q_{{ q.id }}_other">
+                    <div class="flex items-center gap-2">
+                      <label class="wq-choice shrink-0" for="wq{{ q.id }}_other">
+                        <input class="input" type="radio" name="q_{{ q.id }}" id="wq{{ q.id }}_other" value="Other">Other:</label>
+                      <input type="text" class="input max-w-72" name="q_{{ q.id }}_other" aria-label="Other, please specify">
                     </div>
                   {% endif %}
+                  </div>
 
                 {% elif q.question_type == 'checkbox' %}
-                  <div data-checkbox-group="q_{{ q.id }}" data-required="{% if q.is_required %}1{% else %}0{% endif %}">
+                  <div data-checkbox-group="q_{{ q.id }}" data-required="{% if q.is_required %}1{% else %}0{% endif %}" role="group" aria-labelledby="wq{{ q.id }}_label">
                     {% for opt in q.choices %}
-                      <div class="form-check">
-                        <input class="form-check-input walkin-checkbox-with-followup" type="checkbox"
+                      <label class="wq-choice" for="wq{{ q.id }}_{{ forloop.counter }}">
+                        <input class="input walkin-checkbox-with-followup" type="checkbox"
                                name="q_{{ q.id }}" id="wq{{ q.id }}_{{ forloop.counter }}" value="{{ opt }}"
-                               data-group="wq{{ q.id }}">
-                        <label class="form-check-label" for="wq{{ q.id }}_{{ forloop.counter }}">{{ opt }}</label>
-                      </div>
+                               data-group="wq{{ q.id }}">{{ opt }}</label>
                       {% if q.choice_followups and opt in q.choice_followups %}
-                        <div class="followup-box ms-4 mt-1 mb-2" data-group="wq{{ q.id }}" data-for-value="{{ opt }}" style="display:none;">
-                          <input type="text" class="form-control form-control-sm" name="q_{{ q.id }}_followup_{{ opt }}" placeholder="{{ q.choice_followups|get_item:opt }}">
+                        <div class="followup-box" data-group="wq{{ q.id }}" data-for-value="{{ opt }}" style="display:none;">
+                          <input type="text" class="input" name="q_{{ q.id }}_followup_{{ opt }}" placeholder="{{ q.choice_followups|get_item:opt }}" aria-label="{{ opt }}: details">
                         </div>
                       {% endif %}
                     {% endfor %}
                     {% if q.allow_other %}
-                      <div class="form-check d-flex align-items-center mt-2">
-                        <input class="form-check-input me-2" type="checkbox" name="q_{{ q.id }}" id="wq{{ q.id }}_other_chk" value="Other">
-                        <label class="form-check-label me-2" for="wq{{ q.id }}_other_chk">Other:</label>
-                        <input type="text" class="form-control form-control-sm" style="max-width:280px;" name="q_{{ q.id }}_other">
+                      <div class="flex items-center gap-2">
+                        <label class="wq-choice shrink-0" for="wq{{ q.id }}_other_chk">
+                          <input class="input" type="checkbox" name="q_{{ q.id }}" id="wq{{ q.id }}_other_chk" value="Other">Other:</label>
+                        <input type="text" class="input max-w-72" name="q_{{ q.id }}_other" aria-label="Other, please specify">
                       </div>
                     {% endif %}
                     {% if q.max_checks %}
@@ -557,66 +592,73 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
 
           {% else %}
             {# Fallback: forms with no configured questions still get the basics. #}
-            <div class="walkin-question">
-              <label for="walkinName" class="form-label">Name <span class="text-danger">*</span></label>
-              <input type="text" class="form-control" id="walkinName" name="name" required>
+            <div class="walkin-question wq-half">
+              <label for="walkinName" class="label">Name<span class="req" aria-hidden="true">*</span></label>
+              <input type="text" class="input" id="walkinName" name="name" autocomplete="name" required>
             </div>
-            <div class="row">
-              <div class="col-md-6">
-                <div class="walkin-question">
-                  <label for="walkinEmail" class="form-label">Email</label>
-                  <input type="email" class="form-control" id="walkinEmail" name="email">
-                  <small class="text-muted">Required to email the QR code.</small>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="walkin-question">
-                  <label for="walkinPhone" class="form-label">Phone</label>
-                  <input type="text" class="form-control" id="walkinPhone" name="phone">
-                </div>
-              </div>
+            <div class="walkin-question wq-half">
+              <label for="walkinOrg" class="label">Organization</label>
+              <input type="text" class="input" id="walkinOrg" name="organization" autocomplete="organization">
             </div>
-            <div class="walkin-question">
-              <label for="walkinOrg" class="form-label">Organization</label>
-              <input type="text" class="form-control" id="walkinOrg" name="organization">
+            <div class="walkin-question wq-half">
+              <label for="walkinEmail" class="label">Email</label>
+              <input type="email" class="input" id="walkinEmail" name="email" autocomplete="email">
+              <small class="wq-hint">Needed to email the QR code.</small>
+            </div>
+            <div class="walkin-question wq-half">
+              <label for="walkinPhone" class="label">Phone</label>
+              <input type="text" class="input" id="walkinPhone" name="phone" autocomplete="tel">
             </div>
           {% endif %}
+              </div>
+            </div>
 
-          <div class="walkin-options-block">
-            <p class="fw-bold mb-2">On registration:</p>
-            <div class="form-check form-switch mb-2">
-              <input class="form-check-input" type="checkbox" id="walkinSendQR" checked>
-              <label class="form-check-label" for="walkinSendQR">Send QR code by email</label>
+            <div class="reg-section walkin-options-block">
+              <h6 class="reg-section-title">After registering</h6>
+              <p class="reg-section-help">These run straight away when you press Register.</p>
+              <div class="reg-switches">
+                <label class="reg-switch" for="walkinSendQR">
+                  <input class="input" type="checkbox" role="switch" id="walkinSendQR" checked>
+                  <span>Email QR code<small>Sent to the email above.</small></span>
+                </label>
+                <label class="reg-switch" for="walkinCheckIn">
+                  <input class="input" type="checkbox" role="switch" id="walkinCheckIn" checked>
+                  <span>Check in now<small>Marks them as arrived.</small></span>
+                </label>
+                <label class="reg-switch" for="walkinPrintLabel">
+                  <input class="input" type="checkbox" role="switch" id="walkinPrintLabel" checked>
+                  <span>Print name label<small>Prints on the label printer.</small></span>
+                </label>
+              </div>
             </div>
-            <div class="form-check form-switch mb-2">
-              <input class="form-check-input" type="checkbox" id="walkinCheckIn" checked>
-              <label class="form-check-label" for="walkinCheckIn">Check in now</label>
-            </div>
-            <div class="form-check form-switch mb-1">
-              <input class="form-check-input" type="checkbox" id="walkinPrintLabel" checked>
-              <label class="form-check-label" for="walkinPrintLabel">Print label</label>
-            </div>
-          </div>
-        </form>
-      </div>
+          </form>
+        </div>
 
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary border" data-bs-dismiss="modal">
-          <i class="material-symbols-rounded align-middle">close</i> Cancel
-        </button>
-        <button type="button" class="btn btn-primary" id="walkinSubmitBtn">
-          <i class="material-symbols-rounded align-middle">how_to_reg</i> Register
-        </button>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-variant="outline" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn" data-variant="primary" id="walkinSubmitBtn"><i data-lucide="user-check"></i>Register</button>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-
-
-
-  
   <script>
+    // Lucide icon as an SVG string, for HTML that JS swaps in after page load.
+    function ico(name, cls) {
+      const w = document.createElement('span');
+      w.innerHTML = '<i data-lucide="' + name + '"' + (cls ? ' class="' + cls + '"' : '') + '></i>';
+      document.body.appendChild(w);   // lucide only renders attached nodes
+      if (window.pkIcons) window.pkIcons(w);
+      w.remove();
+      return w.innerHTML;
+    }
+    // Lucide loads at the end of <body>, so build icon labels once the DOM is ready.
+    let SEND_QR_LABEL = 'Send QR codes', WALKIN_LABEL = 'Register', EDIT_LABEL = 'Save changes';
+    document.addEventListener('DOMContentLoaded', function () {
+      SEND_QR_LABEL = ico('send') + 'Send QR codes';
+      WALKIN_LABEL = ico('user-check') + 'Register';
+      EDIT_LABEL = ico('save') + 'Save changes';
+    });
     function getCSRFToken() {
           let name = 'csrftoken';
           let cookieValue = null;
@@ -638,6 +680,7 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
       const remarks = $(this).data('remarks');
       $('#modal-regno').val(regno);
       $('#modal-remarks').val(remarks);
+      $('#noteModalRegno').text(regno ? ' ' + regno : '');
       $('#noteModal').modal('show');
     });
 
@@ -681,9 +724,11 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
       }
 
       const FEEDBACK_SURVEY_EXISTS = "{{ feedback_survey|yesno:'true,false' }}" === 'true';
-      const tickHtml = (on) => on
-        ? '<i class="material-symbols-rounded text-success" title="Yes">check_circle</i>'
-        : '<i class="material-symbols-rounded text-muted" title="No" style="opacity:0.3;">radio_button_unchecked</i>';
+      // One yes/no glyph everywhere (QR sent, reminder, check-in): a filled
+      // green check when done, a faint empty circle when not.
+      const tickHtml = (on, what) => on
+        ? `<span class="reg-tick is-on" title="${what} sent" aria-label="${what} sent"><i data-lucide="check"></i></span>`
+        : `<span class="reg-tick is-off" title="${what} not sent" aria-label="${what} not sent"><i data-lucide="minus"></i></span>`;
 
       // Fetch payload once so we can build dynamic columns from the columns_meta
       $.ajax({
@@ -709,6 +754,27 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
         $('#approvedCount').text(totals.approved || 0);
         $('#pendingCount').text(totals.pending || 0);
         $('#rejectedCount').text(totals.rejected || 0);
+        // KPI foot lines + the status mix bar under Total.
+        (function () {
+          const all = totals.all || 0, ap = totals.approved || 0;
+          const pct = (n, d) => d ? Math.round(n * 100 / d) + '%' : '0%';
+          const foot = (k, t) => $('[data-kpi-foot="' + k + '"]').text(t);
+          if (all) {
+            foot('pending', pct(totals.pending || 0, all) + ' awaiting review');
+            foot('approved', pct(ap, all) + ' of total');
+            foot('rejected', pct(totals.rejected || 0, all) + ' of total');
+            foot('qr', pct(totals.qr_sent || 0, all) + ' of total');
+            foot('reminder', pct(totals.reminder_sent || 0, all) + ' of total');
+          }
+          if (ap) {
+            foot('checkin', pct(totals.checked_in || 0, ap) + ' of approved');
+          }
+          if (all) {
+            $('#mixApproved').css('width', pct(ap, all));
+            $('#mixPending').css('width', pct(totals.pending || 0, all));
+            $('#mixRejected').css('width', pct(totals.rejected || 0, all));
+          }
+        })();
 
         // Status pretty-name (used for the badge AND for Excel export).
         const statusText = (s) => {
@@ -721,12 +787,30 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
         const statusBadge = (status) => {
           const s = (status || 'pending').toLowerCase();
           if (s === 'approved') {
-            return '<span class="badge bg-success" title="Approved for QR">Approved</span>';
+            return '<span class="badge badge-success badge-dot" title="Approved for QR">Approved</span>';
           }
           if (s === 'rejected') {
-            return '<span class="badge bg-danger" title="Rejected">Rejected</span>';
+            return '<span class="badge badge-danger badge-dot" title="Rejected">Rejected</span>';
           }
-          return '<span class="badge bg-warning text-dark" title="Awaiting review">Pending</span>';
+          return '<span class="badge badge-warning badge-dot" title="Awaiting review">Pending</span>';
+        };
+        // Person cell: initials avatar (colour stable per name) + name + email.
+        const initials = (n) => {
+          const p = String(n || '').trim().split(/\s+/).filter(Boolean);
+          if (!p.length) return '?';
+          return ((p[0][0] || '') + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase();
+        };
+        const toneOf = (n) => {
+          let h = 0; String(n || '').split('').forEach(c => { h = (h * 31 + c.charCodeAt(0)) >>> 0; });
+          return h % 6;
+        };
+        const personHtml = (row) => {
+          const name = (row.name || '').trim();
+          const sub = row.email || row.organization || '';
+          return `<a class="reg-person" href="/survey_answer_view/${row.survey_id}/${row.id}/">`
+            + `<span class="avatar"><span class="av-${toneOf(name || row.email)}">${escapeHtml(initials(name || row.email))}</span></span>`
+            + `<span class="rp-text">${name ? `<b>${escapeHtml(name)}</b>` : '<b class="rp-muted">No name given</b>'}`
+            + (sub ? `<small>${escapeHtml(sub)}</small>` : '') + `</span></a>`;
         };
 
         // Build the header dynamically so the visible columns match the
@@ -738,9 +822,7 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
         // module (register/js/table-filters.js); a heading with no filter — the
         // select-all checkbox — simply gets no funnel.
         const appendTh = (label, opts = {}) => {
-          const cls = opts.center
-            ? 'text-uppercase text-secondary text-sm font-weight-bolder text-center'
-            : 'text-uppercase text-secondary text-sm font-weight-bolder';
+          const cls = opts.center ? 'text-center' : '';
           const $th = $('<th></th>').addClass(cls).text(label);
           if (opts.key) {
             $th.attr('data-col-key', opts.key);
@@ -754,31 +836,45 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
         // state at a glance, then identity / custom answers, then submitted.
         // The three tick columns render as icons but filter as Yes / No, so
         // their choices are stated rather than derived from the cells.
+        // The person (avatar + name + email) leads, right after Reg #. The
+        // separate Email column stays in the data (export, global search) but
+        // is hidden, since the person cell already shows it.
+        const nameCol = identityCols.find(c => c.key === 'name');
+        const restIdentity = identityCols.filter(c => c.key !== 'name');
+        if (nameCol) appendTh(nameCol.title, { key: 'id_name', filter: 'text' });
         appendTh('Status',   { center: true, key: 'status',   filter: 'choice',
                                choices: 'Pending,Approved,Rejected' });
         appendTh('Check-in', { center: true, key: 'checkin',  filter: 'choice', choices: 'Yes,No' });
-        appendTh('QR Sent',  { center: true, key: 'qrsent',   filter: 'choice', choices: 'Yes,No' });
+        appendTh('QR sent',   { center: true, key: 'qrsent',   filter: 'choice', choices: 'Yes,No' });
         appendTh('Reminder', { center: true, key: 'reminder', filter: 'choice', choices: 'Yes,No' });
-        identityCols.forEach(col => appendTh(col.title, { key: 'id_' + col.key, filter: 'text' }));
+        restIdentity.forEach(col => appendTh(col.title, { key: 'id_' + col.key, filter: 'text' }));
         customCols.forEach(col => appendTh(col.title, { key: 'q_' + col.key, filter: 'text' }));
         appendTh('Submitted', { key: 'submitted', filter: 'date' });
 
         // Render Yes / No for booleans when exporting (Excel grabs the icon's
         // text content otherwise → "radio_button_unchecked"). Display gets
         // the coloured icon, export/filter/sort get plain text.
-        const boolRender = (v, type) => {
-          if (type === 'display') return tickHtml(!!v);
-          return v ? 'Yes' : 'No';
-        };
 
-        // Columns: checkbox, Reg #, Status, Check-in, QR Sent, Reminder,
-        // identity..., custom..., Submitted.
+        // Columns: checkbox, Reg #, Person, Status, Check-in, QR sent,
+        // Reminder, other identity..., custom..., Submitted.
         const cols = [
           { data: null, orderable: false, searchable: false, className: 'dt-checkbox',
-            render: (d, t, row) => `<input type="checkbox" class="row-checkbox" value="${row.id}">` },
+            render: (d, t, row) => `<input type="checkbox" class="row-checkbox" value="${row.id}" aria-label="Select ${escapeHtml(row.reg_no || '')}">` },
           { data: 'reg_no' },
         ];
-        // --- Progress indicators (up front) ---
+        if (nameCol) {
+          // The person cell links into the detail/answer view. Exports get the
+          // plain name; filtering also matches the email shown under it.
+          cols.push({
+            data: 'name',
+            render: (v, type, row) => {
+              if (type === 'display') return personHtml(row);
+              if (type === 'filter') return (row.name || '') + ' ' + (row.email || '');
+              return row.name || '';
+            },
+          });
+        }
+        // --- Progress indicators ---
         cols.push({
           data: 'approval_status',
           className: 'text-center',
@@ -791,51 +887,35 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
             return tip ? html.replace('title="', `title="${tip.trim()} — `) : html;
           },
         });
-        // Check-in is an interactive toggle, but styled like the QR Sent tick
-        // (green check when in, faint circle when not) instead of a raw
-        // checkbox. Operators click it to check people in straight from the
-        // list (for those without their QR / who won't dig through email).
-        // Export/sort still get plain Yes/No.
-        const checkinIcon = (on) => {
-          const icon = on ? 'check_circle' : 'radio_button_unchecked';
-          const cls = on ? 'text-success' : 'text-muted';
-          const style = 'cursor:pointer;' + (on ? '' : 'opacity:0.3;');
-          return `<i class="material-symbols-rounded checkin-toggle ${cls}" role="button" tabindex="0" `
-            + `data-checked="${on ? 1 : 0}" title="Click to check ${on ? 'out' : 'in'}" `
-            + `style="${style}">${icon}</i>`;
+        // Check-in is an interactive toggle: operators click it to check people
+        // in straight from the list. Export/sort/filter still get Yes/No.
+        window.checkinIcon = (on, id) => {
+          const label = on ? 'Checked in. Click to undo check-in' : 'Not checked in. Click to check in';
+          return `<button type="button" class="reg-tick checkin-toggle ${on ? 'is-on' : 'is-off'}" data-id="${id}" `
+            + `data-checked="${on ? 1 : 0}" title="${label}" aria-label="${label}"><i data-lucide="check"></i></button>`;
         };
         cols.push({
           data: 'is_checked_in',
           className: 'text-center',
           render: (v, type, row) => {
             if (type !== 'display') return v ? 'Yes' : 'No';
-            return checkinIcon(!!v).replace('class="', `data-id="${row.id}" class="`);
+            return window.checkinIcon(!!v, row.id);
           },
         });
-        cols.push({ data: 'qr_sent',        className: 'text-center', render: boolRender });
-        cols.push({ data: 'reminder_sent',  className: 'text-center', render: boolRender });
-        // --- Identity + custom answers ---
-        identityCols.forEach(col => {
-          if (col.key === 'name') {
-            // Name is the link into the detail/answer view, but only when
-            // displayed — exports get the plain string.
-            cols.push({
-              data: 'name',
-              render: (v, type, row) => {
-                if (type !== 'display') return row.name || '';
-                return `<a href="/survey_answer_view/${row.survey_id}/${row.id}/" class="text-decoration-none">${row.name || ''}</a>`;
-              },
-            });
-          } else {
-            cols.push({ data: col.key });
-          }
+        const tickRender = (what) => (v, type) => type === 'display' ? tickHtml(!!v, what) : (v ? 'Yes' : 'No');
+        cols.push({ data: 'qr_sent',        className: 'text-center', render: tickRender('QR code') });
+        cols.push({ data: 'reminder_sent',  className: 'text-center', render: tickRender('Reminder') });
+        // --- Other identity + custom answers ---
+        restIdentity.forEach(col => {
+          // Email already shows under the name; keep it for export + search.
+          cols.push(col.key === 'email' && nameCol ? { data: col.key, visible: false } : { data: col.key });
         });
         // defaultContent guards against rare rows that legitimately lack a
         // custom/follow-up key (e.g. older data created before a column was
         // added). With it, DataTables shows an empty cell instead of
         // throwing the "Requested unknown parameter" warning.
         customCols.forEach(col => cols.push({ data: col.key, defaultContent: '' }));
-        cols.push({ data: 'submitted_date' });
+        cols.push({ data: 'submitted_date', className: 'reg-date' });
 
         // ColResize's preInit hook can run before DataTables finishes building
         // scroll/fixed headers, which leaves drag handlers bound to the wrong
@@ -910,19 +990,23 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
             // text (the body is icon-only), so they don't waste horizontal
             // space in the table.
             if (headerKey === 'check-in' || headerKey === 'qr sent' || headerKey === 'reminder') {
-              const compact = calcTextWidth(headerText, this) + 18;
-              widthByCol[idx] = Math.max(68, Math.min(104, compact));
+              // + room for the sort arrow and the filter funnel.
+              const compact = calcTextWidth(headerText, this) + 62;
+              widthByCol[idx] = Math.max(96, Math.min(150, compact));
               return;
             }
-            let maxPx = calcTextWidth(headerText, this) + 34;
+            let maxPx = calcTextWidth(headerText, this) + 62;
 
-            const cells = dtApi.cells(null, idx, { page: 'current' }).nodes().toArray();
+            const cells = dtApi.cells(null, dtApi.column.index('fromVisible', idx), { page: 'current' }).nodes().toArray();
             const sampleLimit = Math.min(cells.length, 40);
             for (let i = 0; i < sampleLimit; i++) {
               const cell = cells[i];
-              const text = (cell && cell.textContent ? cell.textContent : '').replace(/\s+/g, ' ').trim();
+              const rp = cell && cell.querySelector('.rp-text');
+              const text = rp
+                ? Array.from(rp.children).map(n => n.textContent.trim()).sort((a, b) => b.length - a.length)[0] || ''
+                : (cell && cell.textContent ? cell.textContent : '').replace(/\s+/g, ' ').trim();
               if (!text) continue;
-              const candidate = calcTextWidth(text, cell) + 26;
+              const candidate = calcTextWidth(text, cell) + (rp ? 72 : 26);
               if (candidate > maxPx) maxPx = candidate;
             }
 
@@ -1131,48 +1215,45 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
         data: data,
         columns: cols,
         dom:
-          "<'row mb-3'<'col-sm-5 d-flex align-items-center gap-2 px-2'f l><'col-sm-7 text-end px-2'B>>" +
-          "<'row'<'col-12'tr>>" +
-          "<'row'<'col-sm-6'i><'col-sm-6'p>>",
+          "<'reg-toolbar'<'reg-search'f><'reg-actions'B>>" +
+          "<'reg-table'tr>" +
+          "<'reg-foot'<'reg-foot-left'li>p>",
         buttons: [
-          // --- Primary action: the main thing operators come here to do. ---
+          // "Register walk-in" is the page's primary action and lives in the
+          // page header (#walkinOpenBtn). The toolbar holds row actions.
           {
-            text: '<i class="material-symbols-rounded align-middle">person_add</i> Register Walk-in',
-            className: 'btn btn-sm btn-grp btn-grp-walkin',
-            action: function () { openWalkinModal(); },
-          },
-          {
-            text: '<i class="material-symbols-rounded align-middle">edit</i> Edit',
+            text: '<i data-lucide="pencil"></i>Edit',
             name: 'editBtn',
-            className: 'btn btn-sm btn-grp btn-grp-edit',
+            titleAttr: 'Edit the selected participant (select exactly one row)',
+            className: 'btn-grp',
+            attr: { 'data-variant': 'outline', 'data-size': 'sm' },
             action: function () { openEditModal(); },
           },
 
-          // --- Status group: the three mutually-related status changes. ---
-          // Every item here acts on the ticked rows, so the whole menu is
-          // disabled until at least one row is selected (see updateBulkButtons).
+          // --- Status group: every item acts on the ticked rows, so the whole
+          // menu is disabled until at least one row is selected. ---
           {
             extend: 'collection',
             name: 'statusBtn',
-            text: '<i class="material-symbols-rounded align-middle">fact_check</i> Status <i class="material-symbols-rounded align-middle" style="font-size:18px;">expand_more</i>',
-            className: 'btn btn-sm btn-grp btn-grp-status',
+            text: '<i data-lucide="list-checks"></i>Status<i data-lucide="chevron-down" class="reg-caret"></i>',
+            titleAttr: 'Approve, reject or reset the selected rows',
+            className: 'btn-grp',
+            attr: { 'data-variant': 'outline', 'data-size': 'sm' },
             autoClose: true,
-            // Right-align the menu so it opens back toward the toolbar instead
-            // of running off the right edge of the screen.
             align: 'button-right',
             buttons: [
               {
-                text: '<i class="material-symbols-rounded align-middle text-success">verified</i> Approve',
+                text: '<i data-lucide="badge-check" class="mi-green"></i>Approve',
                 className: 'dt-menu-item',
                 action: function () { bulkAction('approve'); },
               },
               {
-                text: '<i class="material-symbols-rounded align-middle text-danger">cancel</i> Reject',
+                text: '<i data-lucide="ban" class="mi-red"></i>Reject',
                 className: 'dt-menu-item',
                 action: function () { bulkAction('reject'); },
               },
               {
-                text: '<i class="material-symbols-rounded align-middle text-secondary">undo</i> Reset to Pending',
+                text: '<i data-lucide="undo-2"></i>Reset to pending',
                 className: 'dt-menu-item',
                 action: function () { bulkAction('reset'); },
               },
@@ -1182,19 +1263,19 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
           {
             extend: 'collection',
             name: 'partiTypeBtn',
-            text: '<i class="material-symbols-rounded align-middle">person</i> Participant Type <i class="material-symbols-rounded align-middle" style="font-size:18px;">expand_more</i>',
-            className: 'btn btn-sm btn-grp btn-grp-partitype',
+            text: '<i data-lucide="id-card"></i>Participant type<i data-lucide="chevron-down" class="reg-caret"></i>',
+            titleAttr: 'Set the participant type of the selected rows',
+            className: 'btn-grp',
+            attr: { 'data-variant': 'outline', 'data-size': 'sm' },
             autoClose: true,
-            // Right-align the menu so it opens back toward the toolbar instead
-            // of running off the right edge of the screen.
-            align: 'button-right',          
+            align: 'button-right',
             buttons: (function() {
               let buttons = [];
               let partiTypeList = document.getElementById("partiTypeList").value.split(";");
               partiTypeList.forEach(function (partiType) {
                 if (partiType.trim() !== "") {
                   buttons.push({
-                    text: partiType.trim(),
+                    text: '<i data-lucide="tag"></i>' + escapeHtml(partiType.trim()),
                     className: 'dt-menu-item',
                     action: function () { bulkAction('set_participant_type', partiType.trim()); },
                   });
@@ -1204,62 +1285,62 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
             })(),
           },
 
-          // --- Send group: outbound messages. "Send QR code" works with or
-          // without a selection (falls back to all approved), so this menu
-          // stays enabled; the reminders warn if nothing is selected. ---
+          // --- Send group: "Send QR codes" works with or without a selection
+          // (falls back to all approved), so this menu stays enabled. ---
           {
             extend: 'collection',
-            text: '<i class="material-symbols-rounded align-middle">send</i> Send <i class="material-symbols-rounded align-middle" style="font-size:18px;">expand_more</i>',
-            className: 'btn btn-sm btn-grp btn-grp-send',
+            text: '<i data-lucide="send"></i>Send<i data-lucide="chevron-down" class="reg-caret"></i>',
+            titleAttr: 'Email QR codes or reminders',
+            className: 'btn-grp reg-send-btn',
+            attr: { 'data-variant': 'secondary', 'data-size': 'sm' },
             autoClose: true,
             align: 'button-right',
             buttons: [
               {
-                text: '<i class="material-symbols-rounded align-middle text-success">qr_code_2</i> Send QR code',
+                text: '<i data-lucide="qr-code" class="mi-blue"></i>Send QR codes',
                 className: 'dt-menu-item',
                 action: function () { openSendQRModal(); },
               },
               {
-                text: '<i class="material-symbols-rounded align-middle text-primary">notifications</i> Event reminder',
+                text: '<i data-lucide="bell-ring" class="mi-blue"></i>Send event reminder',
                 className: 'dt-menu-item',
                 action: function () { bulkAction('event_reminder'); },
               },
               ...(FEEDBACK_SURVEY_EXISTS ? [{
-                text: '<i class="material-symbols-rounded align-middle text-primary">poll</i> Survey reminder',
+                text: '<i data-lucide="message-square-text" class="mi-blue"></i>Send feedback survey link',
                 className: 'dt-menu-item',
                 action: function () { bulkAction('feedback_reminder'); },
               }] : []),
             ],
           },
 
-          // --- More group: occasional / utility actions. Remove is destructive
-          // and sits last, separated and in red. ---
+          // --- More group: utility actions. Remove is destructive and last. ---
           {
             extend: 'collection',
-            text: '<i class="material-symbols-rounded align-middle">more_horiz</i> More',
-            className: 'btn btn-sm btn-grp btn-grp-more',
+            text: '<i data-lucide="ellipsis"></i><span class="sr-only">More actions</span>',
+            titleAttr: 'Export, print labels, remove',
+            className: 'btn-grp',
+            attr: { 'data-variant': 'outline', 'data-size': 'icon-sm', 'aria-label': 'More actions' },
             autoClose: true,
             align: 'button-right',
             buttons: [
               {
                 extend: 'excel',
-                text: '<i class="material-symbols-rounded align-middle">download</i> Export to Excel',
+                text: '<i data-lucide="file-spreadsheet"></i>Export to Excel',
                 className: 'dt-menu-item',
                 filename: 'registrations',
                 title: 'Registrations',
                 // orthogonal: 'export' makes DataTables call render(value, 'export', row)
-                // for each cell instead of grabbing the rendered HTML's innerText.
-                // That's how booleans become "Yes"/"No" instead of "radio_button_unchecked"
-                // and the status badge becomes plain "Approved"/"Pending"/"Rejected".
+                // so booleans export as Yes/No and the status badge as plain text.
                 exportOptions: { columns: ':not(.dt-checkbox)', orthogonal: 'export' },
               },
               {
-                text: '<i class="material-symbols-rounded align-middle">print</i> Print label',
+                text: '<i data-lucide="printer"></i>Print labels',
                 className: 'dt-menu-item',
                 action: function () { printSelectedLabels(); },
               },
               {
-                text: '<i class="material-symbols-rounded align-middle text-danger">delete</i> Remove entry',
+                text: '<i data-lucide="trash-2" class="mi-red"></i>Remove entries',
                 className: 'dt-menu-item dt-danger-item',
                 action: function () { bulkAction('remove'); },
               },
@@ -1269,32 +1350,29 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
         fixedHeader: {
           header: true,
           footer: true,
-          headerOffset: 50
+          headerOffset: 56
         },
         autoWidth: true,
         scrollCollapse: true,
         language: {
           paginate: {
-            previous: '<i class="material-symbols-rounded">chevron_left</i>',
-            next: '<i class="material-symbols-rounded">chevron_right</i>'
+            first: '<i data-lucide="chevrons-left"></i>',
+            last: '<i data-lucide="chevrons-right"></i>',
+            previous: '<i data-lucide="chevron-left"></i>',
+            next: '<i data-lucide="chevron-right"></i>'
           },
-          searchBuilder: {
-            button: 'Add filters',
-            add: '<i class="material-symbols-rounded">add</i>Add filters',
-            title: {
-              0: 'Filters',
-              _: 'Filters (%d)'
-            },
-            delete: '<i class="material-symbols-rounded">delete</i>',
-            right: '<i class="material-symbols-rounded">chevron_right</i>',
-            left: '<i class="material-symbols-rounded">chevron_left</i>',
-            clearAll: '<i class="material-symbols-rounded">x</i>Clear All'
-          },
+          search: '',
+          searchPlaceholder: 'Search name, email, reg #',
+          lengthMenu: 'Show _MENU_ per page',
+          info: 'Showing _START_ to _END_ of _TOTAL_ registrations',
+          infoFiltered: '(filtered from _MAX_)',
           emptyTable:
-            "<img src='{% static 'user/img/illustrations/notfoundImg3.png' %}' width='180px' alt='No data' /><p class='fs-5 fw-500'>No Record available in table</p>",
-          infoEmpty: "0 Record",
+            "<div class='empty'><header><span class='icon-chip'><i data-lucide='user-plus'></i></span>"
+            + "<h3>No registrations yet</h3><p>Share the public link above, or use Register walk-in to add someone at the door.</p></header></div>",
+          infoEmpty: "No registrations",
           zeroRecords:
-            "<img src='{% static 'user/img/illustrations/notfoundImg3.png' %}' width='180px' alt='No data' /><p class='fs-5 fw-500'>No Record to display</p>"
+            "<div class='empty'><header><span class='icon-chip'><i data-lucide='search-x'></i></span>"
+            + "<h3>No matching registrations</h3><p>Try another search, or clear the column filters.</p></header></div>"
         },
         order: [[1, 'desc']], // Changed from [[0, 'desc']] since first column is checkbox
         
@@ -1320,7 +1398,12 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
           RegisterTable.enhance(this.api());
           console.log('DataTable initialized and loaded via AJAX');
         }
-      }, RegisterTable.options({ fixedLeft: 1 })));
+      }, RegisterTable.options({ fixedLeft: 1 }), {
+        // v2 put the person column first, so layouts saved by the old column
+        // order are not restored onto it (separate key).
+        stateSaveCallback: function (st, d) { try { localStorage.setItem('pk2_entries_' + location.pathname, JSON.stringify(d)); } catch (e) {} },
+        stateLoadCallback: function () { try { return JSON.parse(localStorage.getItem('pk2_entries_' + location.pathname)); } catch (e) { return null; } },
+      }));
 
       // Keep resize handles healthy after users reorder columns.
       table.on('column-reorder.dt', function () {
@@ -1330,8 +1413,18 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
 
       // Inject a small "N selected" badge into the buttons toolbar so it's
       // always clear how many rows the bulk actions will affect.
-      $('<span id="selectedCountBadge" class="badge bg-info text-white align-self-center me-2" style="display:none;"></span>')
+      $('<span id="selectedCountBadge" role="status" aria-live="polite"></span>')
         .prependTo('#entries_wrapper .dt-buttons');
+      // Row actions (left of the divider) need a selection; Send / More don't.
+      $('<span class="reg-divider" aria-hidden="true"></span>')
+        .insertBefore($('#entries_wrapper .dt-buttons .reg-send-btn').closest('.btn-group'));
+      $('#entries_wrapper .dt-search input').attr('aria-label', 'Search registrations');
+      $('#entries_wrapper .reg-search').prepend(ico('search'));
+      window.pkIcons(document.getElementById('entries_wrapper'));
+      // Collection menus are built detached; render their icons when opened.
+      $(document).on('click', '#entries_wrapper .buttons-collection', function () {
+        setTimeout(function () { document.querySelectorAll('.dt-button-collection').forEach(m => window.pkIcons(m)); }, 0);
+      });
 
       // Keep selection-dependent controls in sync with the current selection.
       // Every item in the Status menu needs a selection, so the whole menu is
@@ -1344,9 +1437,34 @@ div.dt-button-collection .dt-danger-item.dt-button:hover { background: #fdecee; 
         try { table.button('editBtn:name').enable(n === 1); } catch (e) {}
         try { table.button('partiTypeBtn:name').enable(n > 0); } catch (e) {}
         const $badge = $('#selectedCountBadge');
-        if (n > 0) { $badge.text(n + ' selected on this page').show(); }
-        else { $badge.hide(); }
+        if (n > 0) {
+          $badge.addClass('has-selection')
+            .html(ico('square-check') + n + ' selected');
+        } else {
+          $badge.removeClass('has-selection')
+            .html(ico('square-dashed') + 'No rows selected');
+        }
+        // Floating selection bar mirrors the same selection.
+        const bar = document.getElementById('regSelBar');
+        if (bar) {
+          $('#regSelBarCount').text(n);
+          $(bar).find('[data-sel-one]').prop('disabled', n !== 1);
+          if (n > 0) { bar.hidden = false; requestAnimationFrame(() => bar.classList.add('is-on')); }
+          else { bar.classList.remove('is-on'); bar.hidden = true; }
+        }
       };
+      $('#regSelBar').on('click', '[data-sel-act]', function () {
+        const act = this.getAttribute('data-sel-act');
+        if (act === 'approve' || act === 'reject') bulkAction(act);
+        else if (act === 'qr') openSendQRModal();
+        else if (act === 'edit') openEditModal();
+        else if (act === 'clear') {
+          $('#entries tbody input.row-checkbox').prop('checked', false);
+          $('#select-all').prop('checked', false).prop('indeterminate', false);
+          updateBulkButtons();
+        }
+      });
+      window.pkIcons(document.getElementById('regSelBar'));
       updateBulkButtons();
 
       // When page length changes
@@ -1486,8 +1604,10 @@ table.on('draw.dt', function () {
       window.openWalkinModal = function () {
         $('#walkinForm')[0].reset();
         $('#walkinEditId').val('');
-        $('#walkinModal .modal-title').html('<i class="material-symbols-rounded me-2">person_add</i> Register Walk-in');
-        $('#walkinSubmitBtn').html('<i class="material-symbols-rounded align-middle">how_to_reg</i> Register');
+        $('#walkinModalLabel').text('Register walk-in');
+        $('#walkinModalIcon').html(ico('user-plus'));
+        $('#walkinModalSub').text('Same fields as the public registration form.');
+        $('#walkinSubmitBtn').html(WALKIN_LABEL);
         $('#walkinSendQR').prop('checked', true);
         $('#walkinCheckIn').prop('checked', true);
         $('#walkinPrintLabel').prop('checked', true);
@@ -1600,8 +1720,10 @@ table.on('draw.dt', function () {
         }
         const userId = ids[0];
         openWalkinModal();
-        $('#walkinModal .modal-title').html('<i class="material-symbols-rounded me-2">edit</i> Edit Participant');
-        $('#walkinSubmitBtn').html('<i class="material-symbols-rounded align-middle">save</i> Save Changes');
+        $('#walkinModalLabel').text('Edit participant');
+        $('#walkinModalIcon').html(ico('pencil'));
+        $('#walkinModalSub').text('Update this person\'s details. Walk-in actions (QR email, check-in, label) are not re-run.');
+        $('#walkinSubmitBtn').html(EDIT_LABEL);
         // Edit mode doesn't re-run walk-in side effects (send QR/check-in/print).
         $('#walkinModal .walkin-options-block').hide();
         $('#walkinEditId').val(userId);
@@ -1658,42 +1780,66 @@ table.on('draw.dt', function () {
       if (window.updateBulkButtons) window.updateBulkButtons();
     });
 
-    // Manual check-in toggle directly from the list (click the green tick).
+    // Manual check-in toggle directly from the list.
     $('#entries tbody').on('click', '.checkin-toggle', function () {
       const el = this;
-      const id = $(el).data('id');
-      const current = String($(el).data('checked')) === '1';
-      const next = !current;
-      el.style.pointerEvents = 'none';
+      const id = el.getAttribute('data-id');
+      const next = el.getAttribute('data-checked') !== '1';
+      el.disabled = true;
       $.ajax({
         url: '/set_survey_user_checkin/' + '{{ survey.id }}' + '/',
         type: 'POST',
         headers: { 'X-CSRFToken': getCSRFToken() },
         data: { id: id, checked: next ? '1' : '0' },
       }).done(function (r) {
-        el.style.pointerEvents = '';
+        el.disabled = false;
         if (r && r.success) {
           const on = !!r.is_checked_in;
-          el.textContent = on ? 'check_circle' : 'radio_button_unchecked';
-          el.className = 'material-symbols-rounded checkin-toggle ' + (on ? 'text-success' : 'text-muted');
-          el.style.cssText = 'cursor:pointer;' + (on ? '' : 'opacity:0.3;');
-          el.title = 'Click to check ' + (on ? 'out' : 'in');
-          $(el).data('checked', on ? 1 : 0);
+          const label = on ? 'Checked in. Click to undo check-in' : 'Not checked in. Click to check in';
+          el.className = 'reg-tick checkin-toggle ' + (on ? 'is-on' : 'is-off');
+          el.title = label;
+          el.setAttribute('aria-label', label);
+          el.setAttribute('data-checked', on ? '1' : '0');
           // Keep the header counter and the DataTable's cached row data in sync
           // so a later sort/search/redraw shows the correct state.
           if (typeof r.checked_in_total !== 'undefined') $('#checkedIn').text(r.checked_in_total);
           try {
             const d = $('#entries').DataTable().row($(el).closest('tr')).data();
             if (d) d.is_checked_in = on;
-          } catch (e) { /* table not ready — visual state already correct */ }
+          } catch (e) { /* table not ready: visual state already correct */ }
+          if (window.pkToast) pkToast('success', on ? 'Checked in' : 'Check-in undone');
         } else {
           Swal.fire('Error', (r && r.message) || 'Could not update check-in.', 'error');
         }
       }).fail(function (xhr) {
-        el.style.pointerEvents = '';
+        el.disabled = false;
         commonAjaxErrorCallBack(xhr, '', '');
       });
     });
+
+    // Public link: show the full URL and copy it in one click.
+    (function () {
+      const input = document.getElementById('publicLinkInput');
+      const btn = document.getElementById('copyPublicLinkBtn');
+      if (!input || !btn) return;
+      input.value = window.location.origin + input.dataset.path;
+      input.addEventListener('focus', function () { input.select(); });
+      btn.addEventListener('click', function () {
+        const done = function () {
+          btn.classList.add('is-done');
+          btn.innerHTML = ico('check') + '<span>Copied</span>';
+          setTimeout(function () {
+            btn.classList.remove('is-done');
+            btn.innerHTML = ico('copy') + '<span>Copy</span>';
+          }, 1800);
+        };
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(input.value).then(done, function () { input.select(); document.execCommand('copy'); done(); });
+        } else {
+          input.select(); document.execCommand('copy'); done();
+        }
+      });
+    })();
 
   // // Handle select-all click
   //   $('#entries thead').on('click', '#select-all', function () {
@@ -1738,15 +1884,16 @@ table.on('draw.dt', function () {
       selectedFiles.forEach((file, index) => {
         let isImage = file.type.startsWith("image/");
         let listItem = $(`
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            <span>
-              ${isImage 
-                ? `<img src="${URL.createObjectURL(file)}" alt="${file.name}" class="me-2" style="width:32px;height:32px;object-fit:cover;border-radius:4px;">` 
-                : `<i class="material-symbols-rounded me-2 text-primary">description</i>`}
-              ${file.name}
+          <li class="list-group-item">
+            <span class="fp-name">
+              ${isImage
+                ? `<img src="${URL.createObjectURL(file)}" alt="">`
+                : ico('file-text')}
+              <b title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</b>
+              <small>${file.size >= 1048576 ? (file.size / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(file.size / 1024)) + ' KB'}</small>
             </span>
-            <button type="button" class="btn btn-sm btn-outline-danger remove-file" data-index="${index}">
-              <i class="material-symbols-rounded align-middle">delete</i>
+            <button type="button" class="btn remove-file" data-variant="ghost" data-size="icon-sm" data-index="${index}" aria-label="Remove ${escapeHtml(file.name)}">
+              ${ico('x')}
             </button>
           </li>
         `);
@@ -1786,7 +1933,7 @@ table.on('draw.dt', function () {
       });
 
       // Disable buttons during sending
-      $('#sendQRSubmitBtn').prop('disabled', true).text('Sending...');
+      $('#sendQRSubmitBtn').prop('disabled', true).text('Sending…');
       $('#sendQRModal .btn-secondary').prop('disabled', true);
 
       $.ajax({
@@ -1805,7 +1952,7 @@ table.on('draw.dt', function () {
             Swal.fire("Success", response.message, "success").then(() => location.reload());
 
             // Reset UI
-            $('#sendQRSubmitBtn').prop('disabled', false).text('Send');
+            $('#sendQRSubmitBtn').prop('disabled', false).html(SEND_QR_LABEL);
             $('#sendQRModal .btn-secondary').prop('disabled', false);
 
             // Clear file input + preview + global array
@@ -1821,13 +1968,13 @@ table.on('draw.dt', function () {
             $('#sendQRModal').modal('hide');
           } else {
             Swal.fire("Error", response.message || "Failed to send QRs.", "error");
-            $('#sendQRSubmitBtn').prop('disabled', false).text('Send');
+            $('#sendQRSubmitBtn').prop('disabled', false).html(SEND_QR_LABEL);
             $('#sendQRModal .btn-secondary').prop('disabled', false);
           }
         },
         error: function (xhr, status, error) {
           commonAjaxErrorCallBack(xhr, status, error);
-          $('#sendQRSubmitBtn').prop('disabled', false).text('Send');
+          $('#sendQRSubmitBtn').prop('disabled', false).html(SEND_QR_LABEL);
           $('#sendQRModal .btn-secondary').prop('disabled', false);
         }
       });
@@ -1956,7 +2103,7 @@ table.on('draw.dt', function () {
         fd.append('print_label', $('#walkinPrintLabel').is(':checked') ? '1' : '0');
       }
 
-      $('#walkinSubmitBtn').prop('disabled', true).text(isEditMode ? 'Saving...' : 'Registering...');
+      $('#walkinSubmitBtn').prop('disabled', true).text(isEditMode ? 'Saving…' : 'Registering…');
       $('#walkinModal .btn-secondary').prop('disabled', true);
 
       $.ajax({
@@ -1970,9 +2117,7 @@ table.on('draw.dt', function () {
         contentType: false,
         success: function (response) {
           $('#walkinSubmitBtn').prop('disabled', false)
-            .html(isEditMode
-              ? '<i class="material-symbols-rounded align-middle">save</i> Save Changes'
-              : '<i class="material-symbols-rounded align-middle">how_to_reg</i> Register');
+            .html(isEditMode ? EDIT_LABEL : WALKIN_LABEL);
           $('#walkinModal .btn-secondary').prop('disabled', false);
           if (response.success) {
             $('#walkinModal').modal('hide');
@@ -1986,9 +2131,7 @@ table.on('draw.dt', function () {
         },
         error: function (xhr, status, error) {
           $('#walkinSubmitBtn').prop('disabled', false)
-            .html(isEditMode
-              ? '<i class="material-symbols-rounded align-middle">save</i> Save Changes'
-              : '<i class="material-symbols-rounded align-middle">how_to_reg</i> Register');
+            .html(isEditMode ? EDIT_LABEL : WALKIN_LABEL);
           $('#walkinModal .btn-secondary').prop('disabled', false);
           commonAjaxErrorCallBack(xhr, status, error);
         }

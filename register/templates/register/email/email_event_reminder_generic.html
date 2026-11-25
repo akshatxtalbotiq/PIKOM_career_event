@@ -5,16 +5,16 @@
   <meta charset="UTF-8">
   <title>Reminder to Attend — {{ campaign.title|default:survey.title }}</title>
 </head>
-<body style="margin:0; padding:0; background-color:#f4f6f9; font-family:Arial, sans-serif; color:#222; line-height:1.5;">
+<body style="margin:0; padding:0; background-color:#F3F6FB; font-family: -apple-system, 'Segoe UI', Arial, Helvetica, sans-serif; color:#222; line-height:1.5;">
 {% firstof campaign.theme "#198754" as theme %}{% firstof campaign.theme_soft "#e7f4ec" as theme_soft %}
 
   <table cellpadding="0" cellspacing="0" border="0" width="100%">
     <tr>
       <td align="center">
         <table width="600" cellpadding="0" cellspacing="0" border="0"
-               style="width:600px; background-color:#ffffff; margin-top:20px;
-                      border-radius:8px; overflow:hidden;
-                      box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+               style="width:600px; background-color:#ffffff; margin:24px 0;
+                      border-radius:12px; overflow:hidden; border:1px solid #DDE4EF;
+                      ">
 
           <!-- Banner (same image as the registration form) -->
           {% if show_banner and banner_url %}
@@ -28,7 +28,7 @@
 
           <!-- Greeting / message -->
           <tr>
-            <td style="padding:28px 30px 8px 30px; font-size:15px; color:#333;">
+            <td style="padding:28px 30px 8px 30px; font-size:15px; color:#14213D;">
               {% if intro_html %}
                 {{ intro_html|safe }}
               {% else %}
@@ -53,7 +53,7 @@
           {% if show_qr %}
           <tr>
             <td style="padding:0 30px 20px 30px; text-align:center;">
-              <p style="margin:0 0 12px 0; color:#555; font-size:14px;">
+              <p style="margin:0 0 12px 0; color:#42526B; font-size:14px;">
                 Please present this QR code at event check-in:
               </p>
               <div style="display:inline-block; padding:14px; background:#ffffff;
@@ -79,7 +79,7 @@
 
           <!-- Sign-off -->
           <tr>
-            <td style="padding:0 30px 28px 30px; font-size:15px; color:#333;">
+            <td style="padding:0 30px 28px 30px; font-size:15px; color:#14213D;">
               <p style="margin:0 0 14px 0;">We look forward to seeing you there!</p>
               <p style="margin:0 0 2px 0;">Warm regards,</p>
               {{ signoff_html|safe }}
@@ -88,7 +88,7 @@
 
           <!-- Brand footer -->
           <tr>
-            <td align="center" style="padding:14px; background-color:#f0f4f8; color:#777; font-size:12px;">
+            <td align="center" style="padding:14px; background-color:#F8FAFD; border-top:1px solid #DDE4EF; color:#5D6E87; font-size:12px;">
               This is an automated email &mdash; please contact the organiser for assistance.
               <div style="margin-top:6px; font-size:11px; color:#9aa3ad; letter-spacing:.2px;">
                 Powered by <span style="font-weight:600; color:#8a93a0;">Talbotiq Technologies</span>

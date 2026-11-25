@@ -1,716 +1,379 @@
-{% load static %}
-
-
-<!DOCTYPE html>
+{% load static %}<!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <link rel="apple-touch-icon" sizes="76x76" href="{% static 'user/img/apple-icon.png' %}">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}PIKOM Events{% endblock %}</title>
+  <meta name="theme-color" content="#0B2149">
   <link rel="icon" type="image/png" href="{% static 'user/img/favicon.png' %}">
-  <title>
-    PIKOM
-  </title>
-  <!-- Main Jquery -->
+  {% comment %}Theme first, so there is no flash of the wrong colour scheme.{% endcomment %}
+  <script>(function(){try{var t=localStorage.getItem('pk-theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}})();</script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  {% comment %}Legacy icon font kept only for pages/fragments that still emit material-symbols markup.{% endcomment %}
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" media="print" onload="this.media='all'">
+
   <script src="{% static 'user/js/core/jquery-3.7.1.min.js' %}"></script>
-  <!--     Fonts and icons     -->
-  <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700,900" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont/dist/tabler-icons.min.css" />
-  <link href="{% static 'user/css/nucleo-icons.css' %}" rel="stylesheet" />
-  <link href="{% static 'user/css/nucleo-svg.css' %}" rel="stylesheet" />
-  <link rel="stylesheet"
-    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
-
-
-  <!-- CSS Files -->
-  <link id="pagestyle" rel="stylesheet" href="{% static 'user/css/material-dashboard.css' %}" />
-  <link id="datatableStyle" rel="stylesheet" href="{% static 'user/css/datatables.min.css' %}">
-  <link id="datatableStyle" rel="stylesheet" href="{% static 'user/js/plugins/timepicker/flatpickr.min.css' %}">
-
-  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-
-  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
-
-  <link href="{% static 'user/css/jquery.dataTables.colResize.css' %}" rel="stylesheet" />
-  <!-- <link rel="stylesheet" href="{% static 'register/css/bootstrap.min.css' %}">
-  <link rel="stylesheet" href="{% static 'register/css/style.css' %}"> -->
-
-  <style>
-    .icon-btn {
-      background: none;
-      border: none;
-      padding: 0.25rem;
-      cursor: pointer;
-    }
-
-    .icon-btn i {
-      font-size: 1.5rem; /* Adjust size as needed */
-      color: #6c757d; /* Optional: match your theme */
-    }
-
-    .icon-btn:hover i {
-      color: #000; /* Optional: hover effect */
-    }
-
-    /* The theme locks `body` to height:100vh; overflow:hidden, so the page
-       itself never scrolls and expects .main-content to scroll internally.
-       Make it an actual scroll container so content isn't clipped on short /
-       low-resolution screens (e.g. 1024x640). */
-    .main-content {
-      height: 100vh;
-      overflow-x: auto;
-      overflow-y: auto;
-    }
-
-    /* ── Sidebar collapse/expand ── */
-
-    /* ── Main content margin adjustment ── */
-    body.sidenav-collapsed .main-content {
-      margin-left: calc(var(--sidenav-mini-width) + 1rem) !important;
-    }
-
-    body:not(.sidenav-collapsed) .main-content {
-      margin-left: calc(var(--sidenav-full-width) + 1rem) !important;
-    }
-
-    :root {
-      --sidenav-full-width: 250px;
-      --sidenav-mini-width: 68px;
-      --sidenav-transition: 0.25s ease;
-    }
-
-    #sidenav-main {
-      width: var(--sidenav-full-width);
-      transition: width var(--sidenav-transition);
-      overflow: hidden !important; /* kill x-scroll at all times */
-    }
-
-    /* ── Collapsed state ── */
-    #sidenav-main.sidenav-mini {
-      width: var(--sidenav-mini-width) !important;
-    }
-
-    /* Hide text, hr, brand name instantly on collapse */
-    #sidenav-main.sidenav-mini .nav-link-text,
-    #sidenav-main.sidenav-mini .navbar-brand span:not(.visually-hidden),
-    #sidenav-main.sidenav-mini hr.horizontal {
-      display: none !important;
-    }
-
-    /* Center the logo area */
-    #sidenav-main.sidenav-mini .sidenav-header {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 0.5rem 0;
-    }
-
-    #sidenav-main.sidenav-mini .navbar-brand {
-      padding: 0.5rem !important;
-      margin: 0 auto !important;
-      display: flex;
-      justify-content: center;
-    }
-
-    /* Scale down logo image in mini mode */
-    #sidenav-main.sidenav-mini .navbar-brand-img {
-      width: 36px;
-      height: 36px;
-      object-fit: contain;
-    }
-
-    /* Center nav items and remove extra padding */
-    #sidenav-main.sidenav-mini .navbar-nav {
-      align-items: center;
-      width: 100%;
-    }
-
-    #sidenav-main.sidenav-mini .nav-item {
-      width: 100%;
-      display: flex;
-      justify-content: center;
-    }
-
-    #sidenav-main.sidenav-mini .nav-link {
-      display: flex !important;
-      justify-content: center !important;
-      align-items: center !important;
-      padding: 0.75rem 0 !important;
-      width: 44px;
-      border-radius: 8px;
-    }
-
-    /* Make icon fully visible (remove opacity-5 effect) */
-    #sidenav-main.sidenav-mini .nav-link i.material-symbols-rounded {
-      opacity: 1 !important;
-      font-size: 1.4rem;
-      margin: 0 !important;
-    }
-
-    /* Hide the logout section divider text neatly */
-    #sidenav-main.sidenav-mini .mt-4 {
-      margin-top: 0.5rem !important;
-    }
-
-    /* Toggle button: hide in mini, show on hover */
-    #sidenavToggleBtn i {
-      transition: transform var(--sidenav-transition);
-    }
-
-    #sidenav-main.sidenav-mini #sidenavToggleBtn i {
-      transform: rotate(180deg);
-    }
-
-    #sidenav-main.sidenav-mini #sidenavToggleBtn {
-      opacity: 0;
-      transition: opacity var(--sidenav-transition);
-      right: 0.25rem !important;
-    }
-
-    #sidenav-main.sidenav-mini:hover #sidenavToggleBtn {
-      opacity: 1;
-    }
-
-    /* ── Hover expand when collapsed ── */
-    /* ── Hover expand when collapsed ── */
-    #sidenav-main.sidenav-mini:hover {
-      width: var(--sidenav-full-width) !important;
-    }
-
-    #sidenav-main.sidenav-mini:hover .nav-link-text {
-      display: inline !important;
-    }
-
-    #sidenav-main.sidenav-mini:hover hr.horizontal {
-      display: block !important;
-    }
-
-    /* Restore nav items layout */
-    #sidenav-main.sidenav-mini:hover .navbar-nav {
-      align-items: unset;
-    }
-
-    #sidenav-main.sidenav-mini:hover .nav-item {
-      display: block;
-      justify-content: unset;
-    }
-
-    /* Restore nav-link to original */
-    #sidenav-main.sidenav-mini:hover .nav-link {
-      display: flex !important;
-      justify-content: flex-start !important;
-      align-items: center !important;
-      padding: 0.75rem 1rem !important;
-      width: auto !important;
-      border-radius: 8px;
-    }
-
-    /* Restore icon opacity */
-    #sidenav-main.sidenav-mini:hover .nav-link i.material-symbols-rounded {
-      opacity: 0.5 !important;
-    }
-
-    /* Restore logo to full size */
-    #sidenav-main.sidenav-mini:hover .navbar-brand {
-      padding: 0.75rem 1.5rem !important;
-      margin: 0 !important;
-      justify-content: flex-start;
-      display: flex;
-    }
-
-    #sidenav-main.sidenav-mini:hover .navbar-brand-img {
-      width: unset !important;
-      height: unset !important;
-    }
-
-    /* Restore header alignment */
-    #sidenav-main.sidenav-mini:hover .sidenav-header {
-      justify-content: flex-start;
-      padding: unset;
-    }
-
-    /* Restore logout margin */
-    #sidenav-main.sidenav-mini:hover .mt-4 {
-      margin-top: 1.5rem !important;
-    }
-
-    /* Restore text/hr on hover */
-    #sidenav-main.sidenav-mini:hover .nav-link-text,
-    #sidenav-main.sidenav-mini:hover hr.horizontal {
-      display: inline !important;
-    }
-
-    /* Restore nav-link layout on hover */
-    #sidenav-main.sidenav-mini:hover .nav-link {
-      display: flex !important;
-      justify-content: flex-start !important;
-      padding: 0.75rem 1rem !important;
-      width: auto;
-    }
-
-    /* Restore logo on hover */
-    #sidenav-main.sidenav-mini:hover .navbar-brand {
-      padding: 0.75rem 1rem !important;
-      justify-content: flex-start;
-    }
-
-    #sidenav-main.sidenav-mini:hover .navbar-brand-img {
-      width: 32px;
-      height: 32px;
-    }
-
-    #sidenav-main.sidenav-mini:hover .sidenav-header {
-      justify-content: flex-start;
-    }
-
-    /* Smooth content push */
-    .main-content {
-      transition: margin-left var(--sidenav-transition);
-    }
-
-
-    /* ── Active nav-link: light blue gradient ── */
-    #sidenav-main .nav-link.active {
-      background: linear-gradient(195deg, #89d4f5, #3a9fd6) !important;
-      box-shadow: 0 4px 12px rgba(58, 159, 214, 0.35) !important;
-    }
-
-    /* Keep icon and text white when active */
-    #sidenav-main .nav-link.active i.material-symbols-rounded {
-      opacity: 1 !important;
-      color: #fff !important;
-    }
-
-    #sidenav-main .nav-link.active .nav-link-text {
-      color: #fff !important;
-    }
-
-    /* ── Form controls: visible bottom border ──
-       The Material Dashboard theme ships a second `.form-control { border: none }`
-       rule that wins by source order, so inputs, selects and textareas render with
-       no visible edge and read as plain text. Give every control an underline so
-       it's obvious it can be typed into, and let it pick up the accent colour on
-       focus. `!important` is needed to beat that theme rule.
-
-       Opted out: `.border-0` (deliberately borderless, e.g. the read-only
-       shareable-link box) and `.border` (already carries a full box border, as the
-       campaign / form / event modals do). */
-    .form-control:not(.border-0):not(.border),
-    .form-select:not(.border-0):not(.border),
-    textarea.form-control:not(.border-0):not(.border) {
-      border-bottom: 1px solid #d2d6da !important;
-    }
-
-    /* Focus: thicker underline in the system accent blue. */
-    .form-control:not(.border-0):not(.border):focus,
-    .form-select:not(.border-0):not(.border):focus,
-    textarea.form-control:not(.border-0):not(.border):focus {
-      border-bottom: 2px solid #3a9fd6 !important;
-      box-shadow: none;
-    }
-
-    /* Read-only / disabled: dashed and lighter, so it doesn't invite typing. */
-    .form-control:not(.border-0):not(.border)[readonly],
-    .form-control:not(.border-0):not(.border):disabled,
-    .form-select:not(.border-0):not(.border):disabled {
-      border-bottom: 1px dashed #dfe3e8 !important;
-    }
-
-    /* Keep Bootstrap's validation colours on the underline. */
-    .form-control.is-invalid, .form-select.is-invalid,
-    .was-validated .form-control:invalid, .was-validated .form-select:invalid {
-      border-bottom-color: #fd5c70 !important;
-    }
-
-    .form-control.is-valid, .form-select.is-valid,
-    .was-validated .form-control:valid, .was-validated .form-select:valid {
-      border-bottom-color: #66d432 !important;
-    }
-
-    /* ── Scrollable modals ──
-       `modal-dialog-centered` makes the dialog a ROW-direction flex container, so
-       `.modal-content` is a flex item on the horizontal axis and its height never
-       becomes definite. The column flex inside it then has nothing to distribute:
-       `.modal-body` keeps its full content height, the overflow is silently clipped
-       by `overflow:hidden`, and the footer (Save / Cancel) is pushed off-screen.
-
-       Turning the dialog into a COLUMN flex container puts the content on the
-       vertical axis, where it can shrink to the dialog's height — which makes the
-       height definite and lets the body scroll. `align-items: stretch` keeps the
-       modal full width (column direction would otherwise shrink-wrap it). */
-    .modal-dialog-scrollable.modal-dialog-centered {
-      flex-direction: column;
-      align-items: stretch;
-      justify-content: center;
-    }
-
-    .modal-dialog-scrollable .modal-content {
-      max-height: 100%;
-      min-height: 0;
-    }
-
-    /* Second half of the problem: the modals here wrap header/body/footer in a
-       <form>, so the FORM is the flex item, not the body — which breaks the chain
-       Bootstrap's scrollable variant relies on. Make the wrapper a flex column too
-       so the sizing runs unbroken from .modal-content down to .modal-body. */
-    .modal-dialog-scrollable .modal-content > form {
-      display: flex;
-      flex-direction: column;
-      flex: 1 1 auto;
-      min-height: 0;
-      max-height: 100%;
-    }
-
-    .modal-dialog-scrollable .modal-body {
-      flex: 1 1 auto;
-      min-height: 0;
-      overflow-y: auto;
-      overscroll-behavior: contain;
-    }
-
-    /* Header and footer must never give up space to the body. */
-    .modal-dialog-scrollable .modal-header,
-    .modal-dialog-scrollable .modal-footer {
-      flex: 0 0 auto;
-    }
-
-    /* ── Submenu (Golf Event) ── */
-    #sidenav-main .nav-sm .nav-link {
-      padding: 0.5rem 0.75rem !important;
-      font-size: 0.85rem;
-    }
-
-    #sidenav-main .nav-sm .nav-link i.material-symbols-rounded {
-      font-size: 1.1rem;
-    }
-
-    /* Caret flips when the group is open */
-    #sidenav-main .submenu-caret {
-      transition: transform var(--sidenav-transition);
-    }
-
-    #sidenav-main .nav-link[aria-expanded="true"] .submenu-caret {
-      transform: rotate(180deg);
-    }
-
-    /* Parent row of an open group: tinted, not the full active gradient, so the
-       selected child still stands out. */
-    #sidenav-main .nav-link.submenu-open {
-      background: #eaf6fd !important;
-    }
-
-    /* In mini mode the submenu and caret would have nowhere to render. */
-    #sidenav-main.sidenav-mini:not(:hover) .nav-sm,
-    #sidenav-main.sidenav-mini:not(:hover) .submenu-caret,
-    #sidenav-main.sidenav-mini:not(:hover) #golfSubmenu {
-      display: none !important;
-    }
-
-    /* Mini mode, hovered: the rail expands back to full width, and from
-       there the submenu should behave exactly like it does in expanded
-       mode — closed until you click it (or already open if you're on one
-       of its sub-pages), not forced open. No extra rule needed here: once
-       ":not(:hover)" above stops matching, the submenu simply falls back
-       to its normal expanded-mode display state. */
-
-    /* The theme's default caret for a collapse toggle (a Font Awesome glyph)
-       renders as a stray tofu box here because Font Awesome's font isn't
-       loaded on this page. We already show our own chevron via
-       .submenu-caret, so drop the theme's pseudo-element entirely. */
-    #sidenav-main .nav-link[data-bs-toggle="collapse"]:after {
-      content: none !important;
-    }
-
-    /* The theme's own rule for these nested links (.navbar-nav .nav-item
-       .collapse .nav .nav-item .nav-link) sets a pale rgba(206,212,218,.7)
-       grey meant for a dark sidebar. This sidenav is white, so that rule
-       reads as barely-there text — override it here, darker and legible. */
-    #sidenav-main .navbar-nav .nav-item .collapse .nav .nav-item .nav-link,
-    #sidenav-main .navbar-nav .nav-item .collapsing .nav .nav-item .nav-link {
-      color: #495569 !important;
-    }
-
-    #sidenav-main .navbar-nav .nav-item .collapse .nav .nav-item .nav-link i.material-symbols-rounded,
-    #sidenav-main .navbar-nav .nav-item .collapsing .nav .nav-item .nav-link i.material-symbols-rounded {
-      opacity: 1 !important;
-    }
-
-    #sidenav-main .navbar-nav .nav-item .collapse .nav .nav-item .nav-link:hover,
-    #sidenav-main .navbar-nav .nav-item .collapsing .nav .nav-item .nav-link:hover {
-      color: #1f2937 !important;
-      background-color: #f4f6f9;
-      border-radius: 0.375rem;
-    }
-
-    /* Current sub-page: bold dark text on the same tint used for the open
-       parent row, so it's unmistakably the selected one. */
-    #sidenav-main .navbar-nav .nav-item .collapse .nav .nav-item .nav-link.active,
-    #sidenav-main .navbar-nav .nav-item .collapsing .nav .nav-item .nav-link.active,
-    #sidenav-main .navbar-nav .nav-item .collapse .nav .nav-item.active .nav-link,
-    #sidenav-main .navbar-nav .nav-item .collapsing .nav .nav-item.active .nav-link {
-      color: #1f2937 !important;
-      font-weight: 700;
-      background-color: #eaf6fd;
-      border-radius: 0.375rem;
-    }
-
-
-
-  </style>
-
-  {% comment %}Per-column filters + drag-to-reorder, shared by every list table.{% endcomment %}
+  {% comment %}Vendor widgets (behaviour); their look comes from app.css.{% endcomment %}
+  <link rel="stylesheet" href="{% static 'user/css/datatables.min.css' %}">
+  <link rel="stylesheet" href="{% static 'user/js/plugins/timepicker/flatpickr.min.css' %}" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="https://cdn.quilljs.com/1.3.6/quill.snow.css" media="print" onload="this.media='all'">
+  <link rel="stylesheet" href="{% static 'user/css/jquery.dataTables.colResize.css' %}">
   <link rel="stylesheet" href="{% static 'register/css/table-filters.css' %}">
 
-  {% block extra_head %}
-  {% endblock %}
-  {% block extracss %}
-  {% endblock %}
+  {% comment %}shadcn/ui design system (Basecoat + Tailwind v4), built from theme/src/input.css.{% endcomment %}
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap">
+  <link rel="stylesheet" href="{% static 'register/css/app.css' %}">
+
+  {% comment %}Smooth navigation: cross-fade between pages, and fetch read-only pages on hover (allowlist only; never logout/delete/actions).{% endcomment %}
+  <style>
+    @view-transition { navigation: auto; }
+    ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .18s; }
+    .pk-sidebar { view-transition-name: pk-sidebar; }
+    .animate-rise { animation: pk-fade .2s ease-out both !important; animation-delay: 0s !important; }
+    @keyframes pk-fade { from { opacity: .001; } to { opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } .animate-rise { animation: none !important; } }
+  </style>
+  <script type="speculationrules">{"prefetch":[{"where":{"or":[{"href_matches":"/campaign_list/"},{"href_matches":"/registration_forms/"},{"href_matches":"/survey_list/"},{"href_matches":"/golf_events/"},{"href_matches":"/golf_registration_forms/"},{"href_matches":"/golf_sponsor_forms/"},{"href_matches":"/users/"},{"href_matches":"/campaign_dashboard/:id/"},{"href_matches":"/survey_submission_list/:id/"}]},"eagerness":"moderate"}]}</script>
+  {% block extra_head %}{% endblock %}
+  {% block extracss %}{% endblock %}
 </head>
 
-<body class="g-sidenav-show  bg-gray-100">
+<body class="min-h-svh bg-background text-foreground antialiased pk-inset">
+  {% comment %}
+    App shell: shadcn Sidebar (navy, collapsible, drawer on mobile) + sticky top bar
+    with breadcrumbs, command palette (Cmd/Ctrl+K), theme switch and account menu.
+    Sidebar link IDs are kept from the old shell.
+  {% endcomment %}
+  <aside class="sidebar pk-sidebar" id="sidenav-main" data-side="left" aria-hidden="false">
+    <nav aria-label="Main navigation">
+      <header class="pk-sidebar-head">
+        <a href="{% url 'campaign_list' %}" class="pk-brand">
+          <span class="pk-brand-logo"><img src="{% static 'user/img/PIKOM.png' %}" alt="PIKOM Events"></span>
+        </a>
+      </header>
 
+      <section class="scrollbar">
+        <div role="group" aria-labelledby="nav-events">
+          <h3 id="nav-events">Events</h3>
+          <ul>
+            <li><a id="campaign_list" href="{% url 'campaign_list' %}"><i data-lucide="megaphone"></i><span>Campaigns</span></a></li>
+            <li><a id="registration_form_list" href="{% url 'registration_form_list' %}"><i data-lucide="clipboard-list"></i><span>Registration Forms</span></a></li>
+            <li><a id="survey_list" href="{% url 'survey_list' %}"><i data-lucide="chart-column"></i><span>Post-event Surveys</span></a></li>
+          </ul>
+        </div>
+        <div role="group" aria-labelledby="nav-golf">
+          <h3 id="nav-golf">Golf</h3>
+          <ul>
+            <li>
+              <details id="golfSubmenu">
+                <summary id="golf_menu_toggle" aria-controls="golfSubmenu-content"><i data-lucide="flag"></i><span>Golf Events</span></summary>
+                <ul id="golfSubmenu-content">
+                  <li><a id="golf_event_list" href="{% url 'golf_event_list' %}"><span>Events</span></a></li>
+                  <li><a id="golf_participant_form_list" href="{% url 'golf_participant_form_list' %}"><span>Player registration</span></a></li>
+                  <li><a id="golf_sponsor_form_list" href="{% url 'golf_sponsor_form_list' %}"><span>Sponsorship forms</span></a></li>
+                </ul>
+              </details>
+            </li>
+          </ul>
+        </div>
+        <div role="group" aria-labelledby="nav-workspace">
+          <h3 id="nav-workspace">Workspace</h3>
+          <ul>
+            {% if user.is_superuser %}
+            <li><a id="user_list" href="{% url 'user_list' %}"><i data-lucide="users"></i><span>Team &amp; Access</span></a></li>
+            {% endif %}
+            <li><a id="user_manual" href="{% url 'user_manual' %}" target="_blank" rel="noopener"><i data-lucide="book-open"></i><span>User Manual</span></a></li>
+          </ul>
+        </div>
+      </section>
+
+      <footer>
+        <div class="pk-brand-text pk-brand-foot"><b>PIKOM Events</b><small>Operations Console</small></div>
+        <div id="account-menu" class="dropdown-menu-wrap">
+          <button type="button" class="pk-account" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Account menu">
+            <span class="avatar pk-avatar" aria-hidden="true">{{ request.user.get_full_name|default:request.user.username|make_list|first|upper }}</span>
+            <span class="pk-account-meta">
+              <b>{{ request.user.get_full_name|default:request.user.username }}</b>
+              <small>{% if user.is_superuser %}Administrator{% else %}Event team{% endif %}</small>
+            </span>
+            <i data-lucide="chevrons-up-down"></i>
+          </button>
+          <div class="dropdown-menu" style="min-width:15rem">
+            <div class="dropdown-header">{{ request.user.email|default:request.user.username }}</div>
+            <button type="button" class="dropdown-item" data-pk-theme-toggle><i data-lucide="moon"></i><span>Dark mode</span><kbd class="kbd ms-auto">D</kbd></button>
+            <a class="dropdown-item" href="{% url 'user_manual' %}" target="_blank" rel="noopener"><i data-lucide="life-buoy"></i><span>Help &amp; manual</span></a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item text-danger" href="{% url 'logout' %}"><i data-lucide="log-out"></i><span>Log out</span></a>
+          </div>
+        </div>
+      </footer>
+    </nav>
+  </aside>
+
+  <main class="pk-main">
     {% if request.session.impersonator_id %}
-    <div class="alert alert-warning text-dark m-0 rounded-0 d-flex justify-content-center align-items-center gap-3 py-2"
-         style="position:sticky; top:0; z-index:2000;">
-      <span class="text-sm">
-        <i class="material-symbols-rounded align-middle">visibility</i>
-        You are logged in as <strong>{{ request.user.get_full_name|default:request.user.username }}</strong> (impersonating).
-      </span>
-      <a href="{% url 'stop_impersonation' %}" class="btn btn-sm btn-dark mb-0 py-1 px-3">Return to your account</a>
+    <div class="pk-impersonation" role="status">
+      <i data-lucide="eye"></i>
+      <span>Viewing as <strong>{{ request.user.get_full_name|default:request.user.username }}</strong></span>
+      <a href="{% url 'stop_impersonation' %}" class="btn" data-variant="outline" data-size="xs">Return to your account</a>
     </div>
     {% endif %}
 
-    <aside class="sidenav navbar navbar-vertical navbar-expand-xs border-radius-lg fixed-start ms-2  bg-white my-2" id="sidenav-main">         
-    <div class="sidenav-header">         
-        <i class="fas fa-times p-3 cursor-pointer text-dark opacity-5 position-absolute end-0 top-0 d-none d-xl-none"             
-           aria-hidden="true" id="iconSidenav"></i>         
-        <a class="navbar-brand px-4 py-3 m-0" href="">             
-            <img src="{% static 'user/img/PIKOM.png' %}" class="navbar-brand-img" alt="main_logo">             
-            <span class="ms-1 text-sm text-dark visually-hidden">PIKOM</span>         
-        </a>   
-        
-        <button id="sidenavToggleBtn" class="btn btn-link p-0 position-absolute" 
-              style="top: 1rem; right: 0.75rem; z-index: 10; border: none; background: none;">
-          <i class="material-symbols-rounded text-dark" style="font-size: 1.25rem;">menu_open</i>
-      </button>
-    </div>         
-    <hr class="horizontal dark mt-0 mb-2">         
-    
-    <div class="collapse navbar-collapse w-auto" id="sidenav-collapse-main">         
-        <ul class="navbar-nav">             
-            <!-- <li class="nav-item">             
-                <a class="nav-link" href="dashboard.html">                 
-                    <i class="material-symbols-rounded opacity-5">dashboard</i>                 
-                    <span class="nav-link-text ms-1">Dashboard</span>             
-                </a>             
-            </li> -->             
-            <li class="nav-item">             
-                <a id="campaign_list" class="nav-link" href="{% url 'campaign_list' %}">                 
-                    <i class="material-symbols-rounded opacity-5">table_view</i>                 
-                    <span class="nav-link-text ms-1">Campaigns</span>             
-                </a>             
-            </li>   
-            <li class="nav-item">
-                <a id="registration_form_list" class="nav-link" href="{% url 'registration_form_list' %}">
-                    <i class="material-symbols-rounded opacity-5">assignment</i>
-                    <span class="nav-link-text ms-1">Registration Forms</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a id="survey_list" class="nav-link" href="{% url 'survey_list' %}">
-                    <i class="material-symbols-rounded opacity-5">quiz</i>
-                    <span class="nav-link-text ms-1">Post-event Surveys</span>
-                </a>
-            </li>
-            <!-- Golf Event: a collapsible parent with its own sub-pages -->
-            <li class="nav-item has-submenu" id="golf_menu">
-                <a class="nav-link d-flex align-items-center" href="#golfSubmenu" data-bs-toggle="collapse"
-                   role="button" aria-expanded="false" aria-controls="golfSubmenu" id="golf_menu_toggle">
-                    <i class="material-symbols-rounded opacity-5">golf_course</i>
-                    <span class="nav-link-text ms-1">Golf Event</span>
-                    <i class="material-symbols-rounded ms-auto submenu-caret opacity-5" style="font-size:1.1rem;">expand_more</i>
-                </a>
-                <div class="collapse" id="golfSubmenu">
-                    <ul class="nav nav-sm flex-column ps-3">
-                        <li class="nav-item">
-                            <a id="golf_event_list" class="nav-link" href="{% url 'golf_event_list' %}">
-                                <i class="material-symbols-rounded opacity-5">event</i>
-                                <span class="nav-link-text ms-1">Event</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a id="golf_participant_form_list" class="nav-link" href="{% url 'golf_participant_form_list' %}">
-                                <i class="material-symbols-rounded opacity-5">how_to_reg</i>
-                                <span class="nav-link-text ms-1">Registration Form</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a id="golf_sponsor_form_list" class="nav-link" href="{% url 'golf_sponsor_form_list' %}">
-                                <i class="material-symbols-rounded opacity-5">handshake</i>
-                                <span class="nav-link-text ms-1">Sponsor Form</span>
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </li>
-            {% if user.is_superuser %}
-            <li class="nav-item">
-                <a id="user_list" class="nav-link" href="{% url 'user_list' %}">
-                    <i class="material-symbols-rounded opacity-5">person</i>
-                    <span class="nav-link-text ms-1">Users</span>
-                </a>
-            </li>
-            {% endif %}
-            <li class="nav-item">
-                <a id="user_manual" class="nav-link" href="{% url 'user_manual' %}" target="_blank" rel="noopener">
-                    <i class="material-symbols-rounded opacity-5">menu_book</i>
-                    <span class="nav-link-text ms-1">User Manual</span>
-                </a>
-            </li>
-        </ul>
-
-        <!-- Logout Button -->
-        <div class="mt-4">
-            <hr class="horizontal dark mt-0 mb-2">
-            <ul class="navbar-nav">
-                <li class="nav-item">
-                    <a class="nav-link text-danger" href="{% url 'logout' %}">
-                        <i class="material-symbols-rounded opacity-5">logout</i>
-                        <span class="nav-link-text ms-1">Logout</span>
-                    </a>
-                </li>
-            </ul>
+    <header class="pk-topbar">
+      <button type="button" class="btn" data-variant="ghost" data-size="icon-sm" id="sidenavToggleBtn" aria-label="Toggle sidebar" onclick="document.getElementById('sidenav-main').toggle()"><i data-lucide="panel-left"></i></button>
+      <span class="pk-topbar-sep" aria-hidden="true"></span>
+      <nav aria-label="Breadcrumb" class="pk-crumbs">{% block crumbs %}{% endblock %}</nav>
+      <div class="pk-topbar-actions">
+        <button type="button" class="pk-search" onclick="pkOpenCommand()" aria-label="Search and jump to (Ctrl K)">
+          <i data-lucide="search"></i><span>Search or jump to…</span><kbd class="kbd">⌘K</kbd>
+        </button>
+        <button type="button" class="btn" data-variant="ghost" data-size="icon-sm" data-pk-theme-toggle aria-label="Toggle dark mode"><i data-lucide="sun-moon"></i></button>
+        <div class="dropdown">
+          <button type="button" class="pk-top-avatar" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Account menu">{{ request.user.get_full_name|default:request.user.username|make_list|first|upper }}</button>
+          <div class="dropdown-menu dropdown-menu-end" style="min-width:15rem">
+            <div class="dropdown-header">{{ request.user.email|default:request.user.username }}</div>
+            <a class="dropdown-item" href="{% url 'user_manual' %}" target="_blank" rel="noopener"><i data-lucide="life-buoy"></i><span>Help &amp; manual</span></a>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item text-danger" href="{% url 'logout' %}"><i data-lucide="log-out"></i><span>Log out</span></a>
+          </div>
         </div>
-    </div>      
-</aside>
-    {% block content %}
-    {% endblock %}  
-    
+      </div>
+    </header>
 
-  <!--   Core JS Files   -->
+    <div class="pk-content">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  {% comment %}Command palette (shadcn Command in a Dialog). Every item is a real link.{% endcomment %}
+  <dialog id="pk-command" class="command-dialog" aria-label="Command menu" onclick="if (event.target === this) this.close()">
+    <div class="command">
+      <header>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" id="pk-command-input" placeholder="Search pages and actions…" autocomplete="off" spellcheck="false" aria-autocomplete="list" role="combobox" aria-expanded="true" aria-controls="pk-command-menu">
+      </header>
+      <div role="menu" id="pk-command-menu" aria-orientation="vertical" data-empty="No matching pages.">
+        <div role="group" aria-labelledby="cmd-g1">
+          <span role="heading" id="cmd-g1">Events</span>
+          <a role="menuitem" href="{% url 'campaign_list' %}"><i data-lucide="megaphone"></i><span>Campaigns</span></a>
+          <a role="menuitem" href="{% url 'registration_form_list' %}"><i data-lucide="clipboard-list"></i><span>Registration forms</span></a>
+          <a role="menuitem" href="{% url 'survey_list' %}"><i data-lucide="message-square-text"></i><span>Post-event surveys</span></a>
+        </div>
+        <div role="group" aria-labelledby="cmd-g2">
+          <span role="heading" id="cmd-g2">Golf</span>
+          <a role="menuitem" href="{% url 'golf_event_list' %}"><i data-lucide="flag"></i><span>Golf events</span></a>
+          <a role="menuitem" href="{% url 'golf_participant_form_list' %}"><i data-lucide="user-round-plus"></i><span>Player registration forms</span></a>
+          <a role="menuitem" href="{% url 'golf_sponsor_form_list' %}"><i data-lucide="handshake"></i><span>Sponsorship forms</span></a>
+        </div>
+        <div role="group" aria-labelledby="cmd-g3">
+          <span role="heading" id="cmd-g3">Workspace</span>
+          {% if user.is_superuser %}<a role="menuitem" href="{% url 'user_list' %}"><i data-lucide="users"></i><span>Team &amp; access</span></a>{% endif %}
+          <a role="menuitem" href="{% url 'user_manual' %}" target="_blank" rel="noopener"><i data-lucide="book-open"></i><span>User manual</span></a>
+          <a role="menuitem" href="#" data-pk-theme-toggle><i data-lucide="moon"></i><span>Toggle dark mode</span></a>
+          <a role="menuitem" href="{% url 'logout' %}"><i data-lucide="log-out"></i><span>Log out</span></a>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <ol id="toaster" class="toaster" role="list" aria-label="Notifications"></ol>
+
+  <style>
+    /* Shell layout (kept here so the shell is self-contained) */
+    .pk-sidebar { --sidebar-width: 16.5rem; }
+    .pk-sidebar > nav { background: var(--sidebar); color: var(--sidebar-foreground); }
+    .pk-sidebar-head { padding: 1rem .75rem .5rem !important; }
+    .pk-brand { display: flex; align-items: center; gap: .7rem; padding: .35rem .5rem; border-radius: .6rem; text-decoration: none; color: #fff; }
+    .pk-brand-logo { display: grid; place-items: center; width: 6.25rem; height: 3.4rem; border-radius: .6rem; background: #fff; flex: none; }
+    .pk-brand-logo img { width: 5.4rem; height: auto; }
+    .pk-brand-text { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+    .pk-brand-text b { font-weight: 700; font-size: .95rem; }
+    .pk-brand-text small { color: #8EA3C8; font-size: .72rem; font-weight: 500; }
+    .pk-sidebar h3 { color: #6E84AC !important; }
+    .pk-sidebar a, .pk-sidebar summary { color: #C3D0E8 !important; }
+    .pk-sidebar a:hover, .pk-sidebar summary:hover { background: var(--sidebar-accent) !important; color: #fff !important; }
+    .pk-sidebar a[aria-current="page"] { background: rgba(58,160,216,.16) !important; color: #fff !important; font-weight: 600; position: relative; }
+    .pk-sidebar a[aria-current="page"]::before { content: ""; position: absolute; left: -.5rem; top: .45rem; bottom: .45rem; width: 3px; border-radius: 0 3px 3px 0; background: var(--brand-sky); }
+    .pk-sidebar a[aria-current="page"] svg { color: var(--brand-sky); }
+    .pk-sidebar svg { color: #8EA3C8; }
+    .pk-sidebar .pk-ext { margin-left: auto; width: .85rem !important; height: .85rem !important; opacity: .6; }
+    .pk-sidebar footer { padding: .5rem !important; border-top: 1px solid var(--sidebar-border); }
+    .dropdown-menu-wrap { position: relative; }
+    .pk-account { display: flex; align-items: center; gap: .65rem; width: 100%; padding: .5rem; border: 0; border-radius: .6rem; background: transparent; color: #fff; text-align: left; cursor: pointer; }
+    .pk-account:hover, .pk-account[aria-expanded="true"] { background: var(--sidebar-accent); }
+    .pk-account svg { color: #8EA3C8; width: 1rem; height: 1rem; margin-left: auto; flex: none; }
+    .pk-avatar { display: grid !important; place-items: center; width: 2rem; height: 2rem; border-radius: .55rem; background: rgba(255,255,255,.12); color: #fff; font-weight: 700; font-size: .8rem; flex: none; }
+    .pk-account-meta { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+    .pk-account-meta b { font-size: .85rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pk-account-meta small { color: #8EA3C8; font-size: .72rem; }
+    #account-menu .dropdown-menu { bottom: calc(100% + .35rem); top: auto !important; left: 0; transform: none !important; inset: auto auto calc(100% + .35rem) 0 !important; }
+
+    .pk-main { min-width: 0; display: flex; flex-direction: column; min-height: 100svh; }
+    .pk-topbar { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: .5rem; height: 3.5rem; padding: 0 1rem; background: color-mix(in srgb, var(--background) 82%, transparent); backdrop-filter: saturate(1.6) blur(12px); -webkit-backdrop-filter: saturate(1.6) blur(12px); border-bottom: 1px solid var(--border); }
+    .pk-topbar-sep { width: 1px; height: 1.1rem; background: var(--border); margin: 0 .25rem; }
+    .pk-crumbs { min-width: 0; font-size: .875rem; color: var(--muted-foreground); }
+    .pk-crumbs ol { display: flex; align-items: center; gap: .4rem; list-style: none; margin: 0; padding: 0; white-space: nowrap; overflow: hidden; }
+    .pk-crumbs a { color: var(--muted-foreground); text-decoration: none; } .pk-crumbs a:hover { color: var(--foreground); }
+    .pk-crumbs li[aria-current] { color: var(--foreground); font-weight: 500; overflow: hidden; text-overflow: ellipsis; }
+    .pk-crumbs svg { width: .85rem; height: .85rem; opacity: .6; }
+    .pk-topbar-actions { margin-left: auto; display: flex; align-items: center; gap: .35rem; }
+    .pk-search { display: inline-flex; align-items: center; gap: .5rem; height: 2.25rem; width: 17rem; padding: 0 .5rem 0 .75rem; border: 1px solid var(--border); border-radius: calc(var(--radius) - 2px); background: var(--card); color: var(--muted-foreground); font-size: .85rem; cursor: pointer; box-shadow: 0 1px 2px rgba(7,23,57,.04); }
+    .pk-search:hover { border-color: var(--input); color: var(--foreground); }
+    .pk-search svg { width: 1rem; height: 1rem; }
+    .pk-search .kbd { margin-left: auto; }
+    .pk-content { flex: 1; width: 100%; max-width: 1600px; margin: 0 auto; padding: 1.5rem 1.5rem 3rem; }
+    .pk-impersonation { display: flex; align-items: center; justify-content: center; gap: .6rem; padding: .5rem 1rem; background: var(--warning-soft); color: var(--warning); font-size: .875rem; border-bottom: 1px solid color-mix(in srgb, var(--warning) 25%, transparent); }
+    .pk-impersonation svg { width: 1rem; height: 1rem; }
+    .pk-impersonation a { color: inherit; font-weight: 600; text-decoration: underline; }
+    #pk-command .command a svg { width: 1rem; height: 1rem; color: var(--muted-foreground); }
+    @media (max-width: 767px) { .pk-search { width: auto; } .pk-search span, .pk-search .kbd { display: none; } .pk-content { padding: 1rem .875rem 2.5rem; } }
+    [data-lucide] { width: 1.05rem; height: 1.05rem; }
+
+    /* ---- v4 shell (approved Campaigns mockup): blue-gradient sidebar, calm light page, pill buttons ---- */
+    body.pk-inset { background: #F4F7FE; }
+    body.pk-inset .pk-main { margin-top: 0 !important; margin-right: 0 !important; margin-bottom: 0 !important; min-height: 100svh; border: 0 !important; border-radius: 0 !important; box-shadow: none !important;
+      background: linear-gradient(180deg, #EEF3FE 0, #F6F8FE 18rem, #F7F9FE 100%) !important; }
+    .pk-sidebar > nav { background: linear-gradient(180deg, #0C1F5C 0%, #0F2E86 48%, #1A49C9 100%) !important; overflow: hidden; }
+    .pk-sidebar > nav::after { content: ""; position: absolute; left: -30%; right: -30%; bottom: -8rem; height: 16rem; pointer-events: none; background: radial-gradient(closest-side, rgba(120,170,255,.28), transparent); }
+    .pk-sidebar > nav > * { position: relative; z-index: 1; }
+    .pk-sidebar h3 { color: #A9BCE6 !important; }
+    .pk-sidebar a, .pk-sidebar summary { color: #E3EAFB !important; border-radius: .7rem !important; }
+    .pk-sidebar svg { color: #C9D6F5; }
+    .pk-sidebar a:hover, .pk-sidebar summary:hover { background: rgba(255,255,255,.08) !important; }
+    .pk-sidebar a[aria-current="page"] { background: linear-gradient(90deg, #2463EB, #3B7BF6) !important; color: #fff !important; box-shadow: 0 6px 16px -8px rgba(37,99,235,.9), inset 0 1px 0 rgba(255,255,255,.18); }
+    .pk-sidebar a[aria-current="page"]::before { display: none; }
+    .pk-sidebar a[aria-current="page"] svg { color: #fff; }
+    .pk-sidebar footer { border-top: 0 !important; padding: .6rem !important; }
+    .pk-account { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.1); }
+    .pk-avatar { border-radius: 999px !important; background: #3B6FE0 !important; }
+    .pk-brand-text small { color: #B7C7EC; }
+
+    .pk-topbar { background: #EEF3FE !important; border-bottom: 0 !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; height: 4rem; padding: 0 1.75rem; }
+    .pk-search { border-radius: 999px; background: #fff; border-color: #E3E9F6; height: 2.5rem; width: 19rem; padding: 0 .6rem 0 1rem; box-shadow: 0 4px 14px -8px rgba(30,60,140,.25); }
+    .pk-top-avatar { width: 2.25rem; height: 2.25rem; margin-left: .35rem; border-radius: 999px; border: 0; background: #0F2E86; color: #fff; font-weight: 600; font-size: .9rem; cursor: pointer; }
+    .pk-top-avatar:hover { background: #1A49C9; }
+    .pk-content { padding: .75rem 1.75rem 3rem; }
+
+    .btn[data-variant='cta'] { border-radius: 999px !important; font-family: inherit !important; letter-spacing: 0 !important; text-transform: none !important; font-weight: 600 !important;
+      background: linear-gradient(180deg, #2E6BF0, #1D4FD6) !important; color: #fff !important; border: 0 !important; box-shadow: 0 8px 18px -8px rgba(29,79,214,.75), inset 0 1px 0 rgba(255,255,255,.22) !important; padding-inline: 1.15rem; }
+    .btn[data-variant='cta']:hover { filter: brightness(1.07); }
+    .page-header .btn[data-variant='outline'] { border-radius: 999px; background: #fff; border-color: #E3E9F6; box-shadow: 0 4px 14px -8px rgba(30,60,140,.3); padding-inline: 1.1rem; }
+    .pk-pill { width: fit-content; align-self: flex-start; display: inline-flex; align-items: center; gap: .45rem; height: 1.75rem; padding: 0 .75rem; border-radius: 999px; background: #E4ECFD; color: #1D4FD6; font-size: .8125rem; font-weight: 600; margin-bottom: .6rem; }
+    .pk-pill::before { content: ""; width: .4rem; height: .4rem; border-radius: 99px; background: currentColor; }
+    .dark body.pk-inset .pk-main, .dark .pk-main { background: var(--background) !important; }
+    .dark .pk-topbar { background: var(--background) !important; }
+    .dark .pk-search, .dark .page-header .btn[data-variant='outline'] { background: var(--card); border-color: var(--border); }
+    /* v4.1 (Swayam): logo alone and bigger at top left, product name at bottom left, chunkier nav buttons */
+    .pk-sidebar-head { padding: 1.1rem .85rem .75rem !important; }
+    .pk-brand { padding: 0; display: block; }
+    .pk-brand-logo { width: 100%; height: 5rem; border-radius: 1rem; box-shadow: 0 10px 24px -14px rgba(0,0,0,.45); }
+    .pk-brand-logo img { width: 11rem; max-width: 78%; }
+    .pk-brand-foot { padding: .35rem .6rem .7rem; color: #fff; }
+    .pk-brand-foot b { font-size: .95rem; } .pk-brand-foot small { font-size: .75rem; }
+    .pk-sidebar section ul { gap: .3rem !important; }
+    .pk-sidebar section a, .pk-sidebar section summary { min-height: 2.85rem; padding: .6rem .85rem !important; font-size: .95rem !important; gap: .8rem !important; }
+    .pk-sidebar section a svg, .pk-sidebar section summary svg { width: 1.25rem !important; height: 1.25rem !important; }
+    .pk-sidebar section [role="group"] + [role="group"] { margin-top: .6rem; }
+    .pk-sidebar section h3 { font-size: .8rem !important; padding-left: .85rem !important; }
+    .page-header .btn[data-variant='cta'], .page-header .btn[data-variant='outline'] { height: 2.75rem; padding-inline: 1.35rem; font-size: .95rem; gap: .55rem; }
+    .page-header .btn svg { width: 1.15rem; height: 1.15rem; }
+
+    /* ---- v4 shared kit (same look as Campaigns on every page) ---- */
+    .page-title { font-size: clamp(2.2rem, 1.6rem + 1.6vw, 2.9rem) !important; font-weight: 700 !important; letter-spacing: -.03em; color: #0B1739; }
+    .dark .page-title { color: var(--foreground); }
+    /* Icon stat cards: <div class="pk-kpis"><div class="pk-kpi" style="--k:#2F6BF0;--ks:#E3ECFE"><span class="pk-kpi-ic"><i data-lucide=".."></i></span><div><span class="pk-kpi-lbl">..</span><b>..</b><small>..</small></div></div></div> */
+    .pk-kpis { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); }
+    .pk-kpi { position: relative; display: flex; align-items: center; gap: 1rem; padding: 1.25rem 1.3rem; border: 1px solid #E6ECF8; border-radius: 1.1rem; background: rgba(255,255,255,.85); box-shadow: 0 10px 24px -18px rgba(30,60,140,.35); overflow: hidden; }
+    .pk-kpi::after { content: ""; position: absolute; right: -1.5rem; top: 1.1rem; width: 7.5rem; height: 3.2rem; pointer-events: none; opacity: .55; background: linear-gradient(180deg, color-mix(in srgb, var(--k, #2F6BF0) 45%, transparent), transparent);
+      -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 50' preserveAspectRatio='none'%3E%3Cpath d='M0 50V40C20 40 30 30 48 30S75 8 95 6 120 4 120 4V50Z'/%3E%3C/svg%3E") center/100% 100% no-repeat;
+              mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 50' preserveAspectRatio='none'%3E%3Cpath d='M0 50V40C20 40 30 30 48 30S75 8 95 6 120 4 120 4V50Z'/%3E%3C/svg%3E") center/100% 100% no-repeat; }
+    .pk-kpi-ic { flex: none; display: grid; place-items: center; width: 3.1rem; height: 3.1rem; border-radius: 999px; background: var(--ks, #E3ECFE); color: var(--k, #2F6BF0); }
+    .pk-kpi-ic svg { width: 1.4rem !important; height: 1.4rem !important; }
+    .pk-kpi > div { position: relative; z-index: 1; display: grid; gap: .15rem; min-width: 0; }
+    .pk-kpi-lbl { display: inline-flex; align-items: center; gap: .4rem; font-size: .875rem; font-weight: 500; color: #1E2A47; }
+    .pk-kpi b { font-size: 2rem; line-height: 1.05; font-weight: 700; letter-spacing: -.03em; color: #0B1739; font-variant-numeric: tabular-nums; }
+    .pk-kpi small { font-size: .75rem; color: var(--muted-foreground); }
+    .dark .pk-kpi { background: var(--card); border-color: var(--border); } .dark .pk-kpi b, .dark .pk-kpi-lbl { color: var(--foreground); }
+    /* Section heading without the [01] brackets */
+    .pk-sec { display: block; margin: 0 0 .75rem; font-size: 1rem; font-weight: 600; color: #0B1739; }
+    .dark .pk-sec { color: var(--foreground); }
+    /* Tables everywhere: rounded panel, pill search, "Show 10 per page" pill, tinted header, round row actions */
+    .pk-content .card:has(> .dt-container), .pk-content .card:has(table.dataTable) { border: 1px solid #E6ECF8; border-radius: 1.1rem; box-shadow: 0 16px 36px -26px rgba(30,60,140,.35); }
+    .dt-container .dt-search input { border-radius: 999px !important; background-color: #F7F9FE !important; width: 100% !important; }
+    .pk-content .dt-container > .row:first-child .dt-layout-start { justify-content: flex-start !important; gap: .75rem !important; width: 100%; }
+    .pk-content .dt-container > .row:first-child .dt-search { flex: 0 1 26rem !important; max-width: 100%; }
+    .dt-container .dt-length { display: inline-flex; align-items: center; gap: .55rem; height: 2.25rem; padding: 0 .7rem 0 .95rem; border: 1px solid #E3E9F6; border-radius: 999px; background: #fff; color: #4A5570; font-size: .875rem; white-space: nowrap; box-shadow: 0 2px 6px -3px rgba(30,60,140,.2); }
+    .dt-container .dt-length label { display: inline-flex; align-items: center; gap: .55rem; margin: 0; }
+    .dt-container .dt-length select { height: 1.7rem !important; width: 4rem; border: 0 !important; border-radius: 999px !important; background-color: #F3F6FD !important; padding: 0 .4rem 0 .7rem !important; font-weight: 600; color: #0B1739; box-shadow: none !important; }
+    .dark .dt-container .dt-length { background: var(--card); border-color: var(--border); } .dark .dt-container .dt-length select { background-color: var(--muted) !important; color: var(--foreground); }
+    .pk-content table.dataTable thead th { background: #F3F6FD !important; color: #1E2A47 !important; }
+    .dark .pk-content table.dataTable thead th { background: var(--muted) !important; color: var(--foreground) !important; }
+    .pk-content table.dataTable tbody td .btn[data-variant='ghost'][data-size='icon-sm'], .pk-content table.dataTable tbody td .btn[data-variant='ghost'][data-size='icon'] { width: 2.1rem; height: 2.1rem; border-radius: 999px; border: 1px solid #E3E9F6; background: #fff; box-shadow: 0 2px 6px -3px rgba(30,60,140,.25); }
+    .pk-content table.dataTable tbody td .btn[data-variant='ghost'][data-size='icon-sm']:hover, .pk-content table.dataTable tbody td .btn[data-variant='ghost'][data-size='icon']:hover { border-color: #BFD0F5; color: #1D4FD6; background: #F5F8FF; }
+    .dark .pk-content table.dataTable tbody td .btn[data-variant='ghost'] { background: var(--card); border-color: var(--border); }
+    .pk-content .card[data-variant] .btn[data-size='icon-sm'][data-variant='ghost'] { border-radius: 999px; }
+    /* Segmented filters as blue pills */
+    .pk-content [role='group']:not(.cl-tabs) > button[aria-pressed] { border-radius: 999px !important; }
+    .pk-content [role='group']:not(.cl-tabs) > button[aria-pressed='true'] { background: #1D4FD6 !important; color: #fff !important; box-shadow: 0 4px 10px -4px rgba(29,79,214,.6) !important; }
+    .pk-content [role='group']:not(.cl-tabs) > button[aria-pressed='true'] span { color: #DCE7FF !important; }
+    .pk-content [role='group']:not(.cl-tabs):has(> button[aria-pressed]) { background: #fff; border: 1px solid #E6ECF8; border-radius: 999px !important; padding: .15rem; }
+    .dark .pk-content [role='group']:not(.cl-tabs):has(> button[aria-pressed]) { background: var(--card); border-color: var(--border); }
+  </style>
+
+  <!-- Behaviour: Bootstrap JS (modals/dropdowns/collapse used by page scripts), DataTables & friends -->
   <script src="{% static 'user/js/core/popper.min.js' %}"></script>
   <script src="{% static 'user/js/core/bootstrap.min.js' %}"></script>
-  <script src="{% static 'user/js/plugins/perfect-scrollbar.min.js' %}"></script>
-  <script src="{% static 'user/js/plugins/smooth-scrollbar.min.js' %}"></script>
-  <script async defer src="{% static 'user/js/buttons.js' %}"></script>
-  <script src="{% static 'user/js/material-dashboard.js' %}"></script>
-
   <script src="{% static 'user/js/plugins/datatables.min.js' %}"></script>
   <script src="{% static 'user/js/plugins/timepicker/flatpickr.js' %}"></script>
-
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
   <script src="{% static 'register/sweetalert2/sweetalert2.js' %}"></script>
-
   <script src="{% static 'user/js/jquery.dataTables.colResize.js' %}"></script>
   <script src="{% static 'register/js/table-filters.js' %}"></script>
-
-  {% block extrajs_head %}
-  {% endblock %}
-
-  {% block extrajs %}
-  {% endblock %}
-  
+  <!-- shadcn behaviour (Basecoat) + Lucide icons -->
+  <script src="{% static 'register/js/basecoat.min.js' %}" defer></script>
+  <script src="{% static 'register/js/lucide.min.js' %}"></script>
   <script>
-    var win = navigator.platform.indexOf('Win') > -1;
-    if (win && document.querySelector('#sidenav-scrollbar')) {
-      var options = {
-        damping: '0.5'
-      }
-      Scrollbar.init(document.querySelector('#sidenav-scrollbar'), options);
-    }
-  </script>
+    /* Icons: call window.pkIcons() after injecting markup (e.g. DataTables draw). */
+    window.pkIcons = function (root) { if (window.lucide) lucide.createIcons({ attrs: { 'stroke-width': 1.75 }, nameAttr: 'data-lucide', root: root || document }); };
+    window.pkIcons();
+    if (window.jQuery) $(document).on('draw.dt init.dt', function () { window.pkIcons(); });
 
-  <script>
-    //if url last part is 'survey_list', add class active to the survey_list link in sidebar
-    //after page load
-    document.addEventListener("DOMContentLoaded", function() {
-      let currentPath = window.location.pathname;
-      //remove last slash if exists
-      if (currentPath.endsWith('/')) {
-        currentPath = currentPath.slice(0, -1);
-      }     
-      
-      if (currentPath.endsWith('survey_list')) {
-        document.getElementById('survey_list').classList.add('active');
-      } else if (currentPath.endsWith('campaign_list')) {
-        document.getElementById('campaign_list').classList.add('active');
-      } else if (currentPath.endsWith('registration_forms')) {
-        const el = document.getElementById('registration_form_list');
-        if (el) el.classList.add('active');
-      } else if (currentPath.endsWith('users')) {
-        const el = document.getElementById('user_list');
-        if (el) el.classList.add('active');
-      }
+    /* Toasts: window.pkToast('success'|'error'|'info'|'warning', title, description) */
+    window.pkToast = function (category, title, description) {
+      const t = document.getElementById('toaster');
+      const go = () => t.toast ? t.toast({ category: category || 'info', title: title || '', description: description || '' }) : setTimeout(go, 60);
+      go();
+    };
+    {% if messages %}document.addEventListener('DOMContentLoaded', function () {
+      {% for m in messages %}window.pkToast('{% if m.level_tag == "error" %}error{% elif m.level_tag == "warning" %}warning{% elif m.level_tag == "success" %}success{% else %}info{% endif %}', '{{ m|escapejs }}');{% endfor %}
+    });{% endif %}
 
-      // ── Golf Event submenu: highlight the current page and keep the group open ──
-      const golfPages = {
-        'golf_events': 'golf_event_list',
-        'golf_registration_forms': 'golf_participant_form_list',
-        'golf_sponsor_forms': 'golf_sponsor_form_list',
-      };
-      // Builder / entries pages live under the group too, so the parent stays
-      // open and the owning submenu item stays highlighted while you work.
-      const golfSubPages = [
-        ['golf_form_builder', 'golf_form_preview', 'golf_submission_list'],
-      ];
-      let golfActiveId = null;
-      for (const [slug, elId] of Object.entries(golfPages)) {
-        if (currentPath.endsWith(slug)) { golfActiveId = elId; break; }
-      }
-      const inGolfSection = golfActiveId !== null
-        || /\/golf_(form_builder|form_preview|submission_list|submission_detail)\//.test(currentPath + '/');
-      if (golfActiveId) {
-        const el = document.getElementById(golfActiveId);
-        if (el) el.classList.add('active');
-      }
-      if (inGolfSection) {
-        const submenu = document.getElementById('golfSubmenu');
-        const toggle = document.getElementById('golf_menu_toggle');
-        if (submenu) submenu.classList.add('show');
-        if (toggle) {
-          toggle.setAttribute('aria-expanded', 'true');
-          toggle.classList.add('submenu-open');
-        }
-      }
-      // Keep the parent tint in sync when the user opens/closes it by hand.
-      const golfSub = document.getElementById('golfSubmenu');
-      const golfToggle = document.getElementById('golf_menu_toggle');
-      if (golfSub && golfToggle) {
-        golfSub.addEventListener('shown.bs.collapse', () => golfToggle.classList.add('submenu-open'));
-        golfSub.addEventListener('hidden.bs.collapse', () => golfToggle.classList.remove('submenu-open'));
-      }
+    /* Theme */
+    function pkToggleTheme(e) { if (e) e.preventDefault(); const d = document.documentElement.classList.toggle('dark'); try { localStorage.setItem('pk-theme', d ? 'dark' : 'light'); } catch (_) {} document.dispatchEvent(new CustomEvent('basecoat:theme')); }
+    document.querySelectorAll('[data-pk-theme-toggle]').forEach(b => b.addEventListener('click', pkToggleTheme));
 
-      // ── Sidebar collapse toggle ──
-      const sidenav = document.getElementById('sidenav-main');
-      const toggleBtn = document.getElementById('sidenavToggleBtn');
-
-      function applyCollapsed(collapsed) {
-        if (collapsed) {
-          sidenav.classList.add('sidenav-mini');
-          document.body.classList.add('sidenav-collapsed');
-        } else {
-          sidenav.classList.remove('sidenav-mini');
-          document.body.classList.remove('sidenav-collapsed');
-        }
-      }
-
-      // Restore saved state on load
-      applyCollapsed(localStorage.getItem('sidenavCollapsed') === 'true');
-
-      toggleBtn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        const isCollapsed = !sidenav.classList.contains('sidenav-mini');
-        applyCollapsed(isCollapsed);
-        localStorage.setItem('sidenavCollapsed', isCollapsed);
-      });
-
-
-
+    /* Command palette */
+    function pkOpenCommand() { const d = document.getElementById('pk-command'); if (!d.open) { d.showModal(); const i = document.getElementById('pk-command-input'); i.value = ''; i.dispatchEvent(new Event('input')); i.focus(); } }
+    document.addEventListener('keydown', function (e) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); pkOpenCommand(); }
     });
 
+    /* Active navigation item from the URL (same rules as the old shell) */
+    (function () {
+      const path = location.pathname.replace(/\/$/, ''), last = path.split('/').pop();
+      const map = { survey_list: 'survey_list', campaign_list: 'campaign_list', '': 'campaign_list', registration_forms: 'registration_form_list', users: 'user_list',
+        golf_events: 'golf_event_list', golf_registration_forms: 'golf_participant_form_list', golf_sponsor_forms: 'golf_sponsor_form_list' };
+      let id = map[last];
+      if (!id && /\/campaign_dashboard\//.test(path)) id = 'campaign_list';
+      if (!id && /\/(form_builder|survey_submission_list|survey_answer_view)\//.test(path)) id = 'registration_form_list';
+      const el = id && document.getElementById(id);
+      if (el) el.setAttribute('aria-current', 'page');
+      if (/\/golf_/.test(path)) { const g = document.getElementById('golfSubmenu'); if (g) g.open = true; }
+    })();
   </script>
+  {% block extrajs_head %}{% endblock %}
+  {% block extrajs %}{% endblock %}
 </body>
-
 </html>

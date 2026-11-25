@@ -1,519 +1,426 @@
 {% extends 'register/base.html' %}
 {% load static %}
 
+{% block title %}Campaigns · PIKOM Events{% endblock %}
 
+{% block crumbs %}<ol><li><span>Events</span></li><li><i data-lucide="chevron-right"></i></li><li aria-current="page">Campaigns</li></ol>{% endblock %}
+
+{% block extracss %}
+<style>
+  /* ponytail: local fix until input.css raises .badge-* specificity (Basecoat's .badge:not([data-variant]) wins) */
+  .badge.badge-success { background: var(--success-soft); color: var(--success); border-color: transparent; }
+  .badge.badge-muted { background: var(--muted); color: var(--muted-foreground); border-color: transparent; }
+  .badge.badge-info { background: var(--info-soft); color: var(--info); border-color: transparent; }
+  .badge.badge-warning { background: var(--warning-soft); color: var(--warning); border-color: transparent; }
+  .badge.badge-danger { background: var(--danger-soft); color: var(--danger); border-color: transparent; }
+  .badge.badge-teal { background: var(--teal-soft); color: var(--teal); border-color: transparent; }
+  /* DataTables (Bootstrap 5 integration emits .row/.col-*, not .dt-layout-row): shadcn toolbar + footer */
+  .dt-container > .row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; padding: .75rem 1rem; margin: 0; }
+  .dt-container > .row.dt-layout-table { display: block; padding: 0; }
+  .dt-container > .row:first-child { border-bottom: 1px solid var(--border); }
+  .dt-container > .row:not(:first-child):not(.dt-layout-table) { border-top: 1px solid var(--border); }
+  .dt-container .dt-layout-start, .dt-container .dt-layout-end { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
+  .dt-container > .row:first-child .dt-layout-start { width: 100%; justify-content: space-between; }
+  .dt-container .dt-search input { width: min(20rem, 100%); height: 2.25rem; padding-left: 2.25rem !important; background: var(--background) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E") .75rem center/1rem no-repeat !important; }
+  .dt-container .dt-search { flex: 1 1 14rem; }
+  .dt-container .dt-length { display: flex; align-items: center; gap: .5rem; }
+  .dt-container .dt-length select { height: 2.25rem; }
+  table.dataTable, table.dataTable.no-footer, .dt-scroll-body { border-bottom: 0 !important; }
+  @media (max-width: 639px) { .dt-container .dt-search input { width: 100%; } }
+  /* Campaign row: theme-colour accent rail + name + meta line */
+  .cl-title { display: flex; align-items: stretch; gap: .875rem; min-width: 260px; }
+  .cl-name { font-weight: 600; color: var(--foreground); text-decoration: none; line-height: 1.35; }
+  .cl-name:hover { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+  .cl-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .75rem; margin-top: .25rem; font-size: .75rem; color: var(--muted-foreground); }
+  .cl-meta span, .cl-meta a { display: inline-flex; align-items: center; gap: .3rem; }
+  .cl-meta svg { width: .85rem; height: .85rem; }
+  .cl-meta a { color: var(--primary); font-weight: 500; text-decoration: none; }
+  .cl-meta a:hover { text-decoration: underline; }
+  .cl-date { font-weight: 500; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .cl-time { font-size: .75rem; color: var(--muted-foreground); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .cl-actions { display: flex; align-items: center; gap: .125rem; justify-content: flex-end; }
+  #campaigns tbody tr { transition: background-color .12s; }
+  #campaigns tbody tr:hover { background: color-mix(in srgb, var(--muted) 60%, transparent); }
+  .dt-scroll-body thead th .col-filter-btn { display: none; }
+
+
+  /* v3: scrollY tables keep their own header; the global sticky thead hid row 1 */
+  #campaigns_wrapper .dt-scroll-head { position: relative; top: auto; }
+  #campaigns_wrapper .dt-scroll-body table.dataTable > thead { position: static; }
+  /* v3: editorial stat strip (one panel, hairline columns) */
+  .cl-stats { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); border: 1px solid var(--border); border-radius: 1rem; background: var(--card); overflow: hidden; }
+  @media (min-width: 1024px) { .cl-stats { grid-template-columns: repeat(4, minmax(0,1fr)); } }
+  .cl-stat { padding: 1.1rem 1.25rem 1rem; display: grid; gap: .35rem; border-color: var(--border); }
+  .cl-stat + .cl-stat { border-left: 1px solid var(--border); }
+  @media (max-width: 1023px) { .cl-stat:nth-child(3) { border-left: 0; } .cl-stat:nth-child(n+3) { border-top: 1px solid var(--border); } }
+  .cl-stat b { font-family: "DM Sans", var(--font-sans); font-weight: 800; font-size: 2.1rem; line-height: 1; letter-spacing: -.04em; font-variant-numeric: tabular-nums; color: var(--brand-navy); }
+  .dark .cl-stat b { color: var(--foreground); }
+  .cl-stat small { font-size: .75rem; color: var(--muted-foreground); }
+  .cl-stat .live-dot { width: .5rem; height: .5rem; border-radius: 999px; background: var(--success); box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 50%, transparent);  }
+  @keyframes clPulse { 70% { box-shadow: 0 0 0 6px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+  @media (prefers-reduced-motion: reduce) { .cl-stat .live-dot, .cl-phase-live::before { animation: none; } }
+  /* v3: phase segmented filter */
+  .cl-phases { display: inline-flex; gap: .125rem; padding: .2rem; border-radius: .7rem; background: var(--muted); }
+  .cl-phases button { display: inline-flex; align-items: center; gap: .4rem; height: 2rem; padding: 0 .8rem; border: 0; border-radius: .5rem; background: none; font-size: .8125rem; font-weight: 500; color: var(--muted-foreground); cursor: pointer; transition: background-color .15s, color .15s; }
+  .cl-phases button:hover { color: var(--foreground); }
+  .cl-phases button[aria-pressed='true'] { background: var(--background); color: var(--foreground); box-shadow: 0 1px 2px rgba(10,33,84,.1); }
+  .cl-phases button span { font-variant-numeric: tabular-nums; font-size: .72rem; color: var(--muted-foreground); }
+  /* v3: event date tile in the campaign theme colour */
+  .cl-tile { flex: none; width: 3.25rem; border-radius: .7rem; overflow: hidden; text-align: center; border: 1px solid color-mix(in srgb, var(--c, var(--border)) 35%, var(--border)); background: var(--card); }
+  .cl-tile em { display: block; font-style: normal; font-family: var(--font-label); font-size: .66rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; padding: .2rem 0 .15rem; color: #fff; background: var(--c, var(--brand-royal)); }
+  .cl-tile strong { display: block; font-family: "DM Sans", var(--font-sans); font-weight: 800; font-size: 1.3rem; line-height: 1; letter-spacing: -.03em; padding: .3rem 0 .35rem; font-variant-numeric: tabular-nums; }
+  .cl-phase { display: inline-flex; align-items: center; gap: .4rem; font-family: var(--font-label); font-size: .74rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; white-space: nowrap; }
+  .cl-phase::before { content: ""; width: .45rem; height: .45rem; border-radius: 999px; background: currentColor; }
+  .cl-phase-live { color: var(--success); }
+  .cl-phase-live::before {  box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 50%, transparent); }
+  .cl-phase-upcoming { color: var(--brand-royal); }
+  .dark .cl-phase-upcoming { color: #93B8FF; }
+  .cl-phase-ended { color: var(--muted-foreground); }
+  .cl-phase small { display: block; font-family: var(--font-sans); letter-spacing: 0; text-transform: none; font-weight: 400; font-size: .72rem; color: var(--muted-foreground); }
+
+  /* ---- v4 (approved mockup): icon KPI cards, tabbed table panel, pill filters, round row actions; sizes kept compact ---- */
+  .page-title { font-size: clamp(2.2rem, 1.6rem + 1.6vw, 2.9rem) !important; font-weight: 700 !important; letter-spacing: -.03em; color: #0B1739; }
+  .cl-stats { border: 0; background: none; overflow: visible; gap: 1rem; }
+  .cl-stat, .cl-stat + .cl-stat { position: relative; display: flex; align-items: center; gap: 1rem; padding: 1.25rem 1.3rem; border: 1px solid #E6ECF8 !important; border-radius: 1.1rem; background: rgba(255,255,255,.85); box-shadow: 0 10px 24px -18px rgba(30,60,140,.35); overflow: hidden; }
+  .cl-stat::after { content: ""; position: absolute; right: -1.5rem; top: 1.1rem; width: 7.5rem; height: 3.2rem; pointer-events: none; opacity: .55;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--k) 45%, transparent), transparent);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 50' preserveAspectRatio='none'%3E%3Cpath d='M0 50V40C20 40 30 30 48 30S75 8 95 6 120 4 120 4V50Z'/%3E%3C/svg%3E") center/100% 100% no-repeat;
+            mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 50' preserveAspectRatio='none'%3E%3Cpath d='M0 50V40C20 40 30 30 48 30S75 8 95 6 120 4 120 4V50Z'/%3E%3C/svg%3E") center/100% 100% no-repeat; }
+  @media (max-width: 1023px) { .cl-stat:nth-child(n) { border-left: 1px solid #E6ECF8 !important; border-top: 1px solid #E6ECF8 !important; } }
+  .cl-ic { flex: none; display: grid; place-items: center; width: 3.1rem; height: 3.1rem; border-radius: 999px; background: var(--ks); color: var(--k); }
+  .cl-ic svg { width: 1.4rem; height: 1.4rem; }
+  .cl-stat > div { position: relative; z-index: 1; display: grid; gap: .15rem; }
+  .cl-lbl { display: inline-flex; align-items: center; gap: .4rem; font-size: .875rem; font-weight: 500; color: #1E2A47; }
+  .cl-stat b { font-size: 2rem !important; font-weight: 700 !important; color: #0B1739 !important; }
+  .cl-panel { border: 1px solid #E6ECF8; border-radius: 1.1rem; box-shadow: 0 16px 36px -26px rgba(30,60,140,.35); }
+  .cl-tabsrow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; padding: 0 1rem; border-bottom: 1px solid #E6ECF8; }
+  .cl-tabs { display: flex; gap: 1.25rem; }
+  .cl-tabs button { display: inline-flex; align-items: center; gap: .5rem; height: 3.1rem; padding: 0 .25rem; border: 0; border-bottom: 2px solid transparent; background: none; font-size: .9rem; font-weight: 500; color: #4A5570; cursor: pointer; margin-bottom: -1px; }
+  .cl-tabs button svg { width: 1.05rem; height: 1.05rem; }
+  .cl-tabs button[aria-pressed='true'] { color: #1D4FD6; font-weight: 600; border-bottom-color: #1D4FD6; }
+  .cl-gdot { width: .5rem; height: .5rem; border-radius: 99px; background: #16A34A; box-shadow: 0 0 0 3px #DCF5E5; }
+  .cl-phases { background: #fff; border: 1px solid #E6ECF8; border-radius: 999px; padding: .15rem; }
+  .cl-phases button { border-radius: 999px; height: 1.85rem; }
+  .cl-phases button[aria-pressed='true'] { background: #1D4FD6; color: #fff; box-shadow: 0 4px 10px -4px rgba(29,79,214,.6); }
+  .cl-phases button[aria-pressed='true'] span { color: #DCE7FF; }
+  .cl-panel .dt-container > .row:first-child { border-bottom: 0; padding: .9rem 1rem; }
+  .cl-panel .dt-container .dt-search input { border-radius: 999px; width: min(26rem, 100%); background-color: #F7F9FE !important; }
+  .cl-panel .dt-container .dt-search { display: flex; justify-content: flex-start; }
+  .cl-panel .dt-container .dt-search label { display: none; }
+  .cl-panel table.dataTable thead th { background: #F3F6FD; color: #1E2A47; font-weight: 600; }
+  .cl-panel table.dataTable thead th:last-child { text-align: right !important; padding-right: 1.4rem !important; }
+  /* "Show 10 per page" pill, right beside the search box */
+  .cl-panel .dt-container > .row:first-child .dt-layout-start { justify-content: flex-start; gap: .75rem; }
+  .cl-panel .dt-container .dt-search { flex: 0 1 26rem; max-width: 100%; }
+  .cl-panel .dt-container .dt-search input { width: 100% !important; }
+  .cl-panel .dt-container .dt-length { display: inline-flex; align-items: center; gap: .55rem; height: 2.25rem; padding: 0 .3rem 0 .95rem; border: 1px solid #E3E9F6; border-radius: 999px; background: #fff; color: #4A5570; font-size: .875rem; white-space: nowrap; box-shadow: 0 2px 6px -3px rgba(30,60,140,.2); }
+  .cl-panel .dt-container .dt-length label { display: inline-flex; align-items: center; gap: .55rem; margin: 0; padding-right: .7rem; }
+  .cl-panel .dt-container .dt-length select { order: 0; height: 1.7rem !important; width: 4rem; border: 0; border-radius: 999px; background-color: #F3F6FD; padding: 0 .4rem 0 .7rem; font-weight: 600; color: #0B1739; box-shadow: none; }
+  .dark .cl-panel .dt-container .dt-length { background: var(--card); border-color: var(--border); color: var(--muted-foreground); }
+  .dark .cl-panel .dt-container .dt-length select { background-color: var(--muted); color: var(--foreground); }
+  .cl-date { display: inline-flex; align-items: center; gap: .45rem; }
+  .cl-date svg { width: .95rem; height: .95rem; color: #7A879F; }
+  .cl-time { padding-left: 1.4rem; }
+  .cl-actions { gap: .35rem; }
+  .cl-actions > .btn, .cl-actions .cl-more > .btn { width: 2.1rem; height: 2.1rem; border-radius: 999px; border: 1px solid #E3E9F6; background: #fff; box-shadow: 0 2px 6px -3px rgba(30,60,140,.25); }
+  .cl-actions > .btn:hover, .cl-actions .cl-more > .btn:hover { border-color: #BFD0F5; color: #1D4FD6; background: #F5F8FF; }
+  .cl-tile { border-radius: .65rem; box-shadow: 0 4px 10px -6px rgba(30,60,140,.35); }
+  .cl-tile em { font-family: inherit; letter-spacing: .06em; }
+  .cl-phase { font-family: inherit; letter-spacing: .02em; }
+  .dark .cl-stat, .dark .cl-panel, .dark .cl-phases, .dark .cl-actions > .btn, .dark .cl-actions .cl-more > .btn { background: var(--card); border-color: var(--border) !important; }
+  .dark .cl-stat b, .dark .page-title { color: var(--foreground) !important; }
+  .dark .cl-panel table.dataTable thead th { background: var(--muted); color: var(--foreground); }
+
+  /* Campaign modal */
+  .cm-section + .cm-section { border-top: 1px solid var(--border); margin-top: 1.25rem; padding-top: 1.25rem; }
+  .cm-head { display: flex; align-items: center; gap: .75rem; margin-bottom: 1rem; }
+  .cm-head .icon-chip { size: 2rem; width: 2rem; height: 2rem; }
+  .cm-head h3 { font-size: .9375rem; font-weight: 600; margin: 0; }
+  .cm-head p { margin: 0; font-size: .8125rem; color: var(--muted-foreground); }
+  .cm-toggle { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .75rem .875rem; border: 1px solid var(--border); border-radius: var(--radius); background: color-mix(in srgb, var(--muted) 45%, transparent); }
+  .cm-toggle + .cm-toggle { margin-top: .5rem; }
+  .cm-toggle label { font-weight: 500; font-size: .875rem; cursor: pointer; }
+  .cm-toggle small { display: block; color: var(--muted-foreground); font-size: .75rem; font-weight: 400; margin-top: 1px; }
+  .cm-swatches { display: flex; flex-wrap: wrap; gap: .375rem; }
+  .cm-swatches button { width: 1.75rem; height: 1.75rem; border-radius: .5rem; border: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent); cursor: pointer; }
+  .cm-swatches button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  #themeColorValue { display: inline-flex; align-items: center; gap: .5rem; height: 2.25rem; padding: 0 .75rem; border: 1px solid var(--input); border-radius: calc(var(--radius) - 2px); font: 500 .8125rem/1 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  #themeColorSwatch { width: 1.1rem; height: 1.1rem; border-radius: .3rem; border: 1px solid rgba(0,0,0,.15); }
+  #addNewCampaign .modal-dialog { max-width: 44rem; }
+  #addNewCampaign .modal-body { max-height: calc(100vh - 13rem); overflow-y: auto; }
+  #addNewCampaign .flatpickr-input[readonly] { cursor: pointer; background: var(--background); }
+  .invalid-feedback { display: none; margin-top: .375rem; font-size: .8125rem; color: var(--danger); }
+  .is-invalid ~ .invalid-feedback, .was-validated :invalid ~ .invalid-feedback { display: block; }
+  .is-invalid, .was-validated .input:invalid { border-color: var(--danger) !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 18%, transparent) !important; }
+  .help { margin-top: .375rem; font-size: .8125rem; color: var(--muted-foreground); }
+  .select2-container { width: 100% !important; }
+  @media (max-width: 639px) {
+    #addNewCampaign .modal-dialog { margin: .5rem; }
+    #addNewCampaign .modal-footer .btn { flex: 1; }
+  }
+</style>
+{% endblock %}
 
 {% block content %}
-    <main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg ">
-    <!-- Navbar -->
-    <!-- <nav
-      class="navbar navbar-main bg-white navbar-expand-lg px-0 mx-3 shadow-none border-radius-xl position-sticky blur shadow-blur mt-4 left-auto top-1 z-index-sticky"
-      id="navbarBlur" data-scroll="true">
-      <div class="container-fluid py-1 px-3">
-        <div class="me-auto pe-md-3 d-flex align-items-center">
-          <div class="input-group input-group-outline globalsearch">
-            <i class="ti ti-search me-2"></i>
-            <small class="text-muted">Search Ctrl+K</small>
-          </div>
-        </div>
-        <div class="collapse navbar-collapse mt-sm-0 mt-2 me-md-0 me-sm-4" id="navbar">
+  {% now "Y-m-d H:i" as nowstr %}
+  <input type="hidden" id="perm" value="{{ perms.register.add_campaign }}">
 
-          <ul class="navbar-nav d-flex align-items-center ms-auto  justify-content-end">
+  <header class="page-header animate-rise">
+    <div>
+      <span class="pk-pill">Events Dashboard</span>
+      <h1 class="page-title">Campaigns</h1>
+      <p class="page-description">Each campaign is one event: its registration form, emails, check-in and report.</p>
+    </div>
+    {% if perms.register.add_campaign %}
+    <div class="flex w-full gap-2 sm:w-auto">
+      <a href="{% url 'registration_form_list' %}" class="btn" data-variant="outline"><i data-lucide="file-text"></i>Registration Forms</a>
+      <button type="button" class="btn flex-1 sm:flex-none" data-variant="cta" id="newCampaignBtn"><i data-lucide="plus"></i>New Campaign</button>
+    </div>
+    {% endif %}
+  </header>
 
-            <li class="nav-item d-xl-none ps-3 d-flex align-items-center">
-              <a href="javascript:;" class="nav-link text-body p-0" id="iconNavbarSidenav">
-                <div class="sidenav-toggler-inner">
-                  <i class="sidenav-toggler-line"></i>
-                  <i class="sidenav-toggler-line"></i>
-                  <i class="sidenav-toggler-line"></i>
-                </div>
-              </a>
-            </li>
-            <li class="nav-item px-3 d-flex align-items-center d-none">
-              <a href="javascript:;" class="nav-link text-body p-0">
-                <i class="material-symbols-rounded fixed-plugin-button-nav">settings</i>
-              </a>
-            </li>
-            <li class="nav-item dropdown pe-3 d-flex align-items-center">
-              <a href="javascript:;" class="btn mb-0 p-2 border rounded-circle  text-body p-0" id="dropdownMenuButton"
-                data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="material-symbols-rounded">notifications</i>
-              </a>
-              <ul class="dropdown-menu  dropdown-menu-end  px-2 py-3 me-sm-n4" aria-labelledby="dropdownMenuButton">
-                <li class="mb-2">
-                  <a class="dropdown-item border-radius-md" href="javascript:;">
-                    <div class="d-flex py-1">
-                      <div class="my-auto">
-                        <img src="assets/img/team-2.jpg" class="avatar avatar-sm  me-3 ">
+  {% comment %}Quick stats, counted in the template from the campaigns already in context.{% endcomment %}
+  <section class="animate-rise animate-rise-1" aria-label="Quick stats">
+    <div class="cl-stats">
+      <div class="cl-stat" style="--k:#2F6BF0;--ks:#E3ECFE"><span class="cl-ic"><i data-lucide="megaphone"></i></span><div><span class="cl-lbl">Campaigns</span><b>{{ campaigns|length }}</b><small>All events you can manage</small></div></div>
+      <div class="cl-stat" style="--k:#16A34A;--ks:#DCF5E5"><span class="cl-ic"><i data-lucide="calendar-days"></i></span><div><span class="cl-lbl"><span class="live-dot" aria-hidden="true"></span>Live now</span><b id="kpiLive">0</b><small>Between start and end date</small></div></div>
+      <div class="cl-stat" style="--k:#7C3AED;--ks:#EDE5FD"><span class="cl-ic"><i data-lucide="clock"></i></span><div><span class="cl-lbl">Upcoming</span><b id="kpiUpcoming">0</b><small>Not started yet</small></div></div>
+      <div class="cl-stat" style="--k:#2F6BF0;--ks:#E3ECFE"><span class="cl-ic"><i data-lucide="users"></i></span><div><span class="cl-lbl">Registrants</span><b id="kpiRegs">0</b><small>Across all registration forms</small></div></div>
+    </div>
+  </section>
+
+  <div class="card cl-panel gap-0 overflow-hidden p-0 mt-6 animate-rise animate-rise-2">
+  <div class="cl-tabsrow">
+    <div class="cl-tabs" role="group" aria-label="Filter by status">
+      <button type="button" data-active="" aria-pressed="true"><i data-lucide="layout-grid"></i><span>All Campaigns (<span id="tabAll">0</span>)</span></button>
+      <button type="button" data-active="1" aria-pressed="false"><span class="cl-gdot" aria-hidden="true"></span><span>Active (<span id="tabActive">0</span>)</span></button>
+    </div>
+    <div class="cl-phases" role="group" aria-label="Filter by timing">
+      <button type="button" data-phase="" aria-pressed="true">All <span id="phAll">0</span></button>
+      <button type="button" data-phase="live" aria-pressed="false">Live <span id="phLive">0</span></button>
+      <button type="button" data-phase="upcoming" aria-pressed="false">Upcoming <span id="phUp">0</span></button>
+      <button type="button" data-phase="ended" aria-pressed="false">Ended <span id="phEnded">0</span></button>
+    </div>
+  </div>
+    <table id="campaigns" class="table">
+      <thead>
+        {% comment %}
+          Every column except the Action one carries a filter button.
+          data-filter picks the popover: text, date (a from/to range)
+          or choice (a pick-list). data-col-key is the stable handle.
+        {% endcomment %}
+        <tr>
+          <th data-col-key="title" data-filter="text" data-label="Campaign">Campaign</th>
+          <th data-col-key="start" data-filter="date" data-label="Starts">Starts</th>
+          <th data-col-key="end" data-filter="date" data-label="Ends">Ends</th>
+          <th data-col-key="status" data-filter="choice" data-label="Status" data-choices="Active,Inactive">Status</th>
+          <th class="text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if campaigns %}
+          {% for campaign in campaigns %}
+            {% with sd=campaign.start_date|date:"Y-m-d H:i" ed=campaign.end_date|date:"Y-m-d H:i" %}
+            <tr data-phase="{% if sd > nowstr %}upcoming{% elif ed < nowstr %}ended{% else %}live{% endif %}" data-active="{{ campaign.is_active|yesno:'1,0' }}" data-regs="{{ campaign.registration_form.survey_users.count|default:0 }}">
+              <td>
+                <div class="cl-title">
+                  <span class="cl-tile" style="--c: {{ campaign.theme|default:'#1B3AAE' }};" aria-hidden="true"><em>{{ campaign.start_date|date:"M" }}</em><strong>{{ campaign.start_date|date:"j" }}</strong></span>
+                  <div class="py-0.5">
+                    {% if campaign.registration_form %}
+                      <a href="{% url 'survey_submission_list' campaign.registration_form.id %}" class="cl-name" title="View registered participants">{{ campaign.title }}</a>
+                      <div class="cl-meta">
+                        <span class="tabular-nums"><i data-lucide="users"></i>{{ campaign.registration_form.survey_users.count }} registered</span>
+                        <a href="{% url 'form_builder' campaign.registration_form.id %}"><i data-lucide="clipboard-list"></i>Registration form</a>
                       </div>
-                      <div class="d-flex flex-column justify-content-center">
-                        <h6 class="text-sm font-weight-normal mb-1">
-                          <span class="font-weight-bold">New message</span> from Laur
-                        </h6>
-                        <p class="text-xs text-secondary mb-0">
-                          <i class="fa fa-clock me-1"></i>
-                          13 minutes ago
-                        </p>
+                    {% else %}
+                      <a href="{% url 'submission_list' campaign.campaign_code %}" class="cl-name" title="View registrations (legacy)">{{ campaign.title }}</a>
+                      <div class="cl-meta">
+                        <span><i data-lucide="circle-dashed"></i>No registration form</span>
+                        <a href="{% url 'registration_form_list' %}?for_campaign={{ campaign.id }}"><i data-lucide="plus"></i>Create one</a>
                       </div>
-                    </div>
-                  </a>
-                </li>
-                <li class="mb-2">
-                  <a class="dropdown-item border-radius-md" href="javascript:;">
-                    <div class="d-flex py-1">
-                      <div class="my-auto">
-                        <img src="assets/img/small-logos/logo-spotify.svg"
-                          class="avatar avatar-sm bg-gradient-dark  me-3 ">
-                      </div>
-                      <div class="d-flex flex-column justify-content-center">
-                        <h6 class="text-sm font-weight-normal mb-1">
-                          <span class="font-weight-bold">New album</span> by Travis Scott
-                        </h6>
-                        <p class="text-xs text-secondary mb-0">
-                          <i class="fa fa-clock me-1"></i>
-                          1 day
-                        </p>
-                      </div>
-                    </div>
-                  </a>
-                </li>
-                <li>
-                  <a class="dropdown-item border-radius-md" href="javascript:;">
-                    <div class="d-flex py-1">
-                      <div class="avatar avatar-sm bg-gradient-secondary  me-3  my-auto">
-                        <svg width="12px" height="12px" viewBox="0 0 43 36" version="1.1"
-                          xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-                          <title>credit-card</title>
-                          <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-                            <g transform="translate(-2169.000000, -745.000000)" fill="#FFFFFF" fill-rule="nonzero">
-                              <g transform="translate(1716.000000, 291.000000)">
-                                <g transform="translate(453.000000, 454.000000)">
-                                  <path class="color-background"
-                                    d="M43,10.7482083 L43,3.58333333 C43,1.60354167 41.3964583,0 39.4166667,0 L3.58333333,0 C1.60354167,0 0,1.60354167 0,3.58333333 L0,10.7482083 L43,10.7482083 Z"
-                                    opacity="0.593633743"></path>
-                                  <path class="color-background"
-                                    d="M0,16.125 L0,32.25 C0,34.2297917 1.60354167,35.8333333 3.58333333,35.8333333 L39.4166667,35.8333333 C41.3964583,35.8333333 43,34.2297917 43,32.25 L43,16.125 L0,16.125 Z M19.7083333,26.875 L7.16666667,26.875 L7.16666667,23.2916667 L19.7083333,23.2916667 L19.7083333,26.875 Z M35.8333333,26.875 L28.6666667,26.875 L28.6666667,23.2916667 L35.8333333,23.2916667 L35.8333333,26.875 Z">
-                                  </path>
-                                </g>
-                              </g>
-                            </g>
-                          </g>
-                        </svg>
-                      </div>
-                      <div class="d-flex flex-column justify-content-center">
-                        <h6 class="text-sm font-weight-normal mb-1">
-                          Payment successfully completed
-                        </h6>
-                        <p class="text-xs text-secondary mb-0">
-                          <i class="fa fa-clock me-1"></i>
-                          2 days
-                        </p>
-                      </div>
-                    </div>
-                  </a>
-                </li>
-              </ul>
-            </li>
-            <li class="nav-item d-flex align-items-center dropdown">
-              <span class="avatar avatar-sm shadow-lg" id="userMenuButton" data-bs-toggle="dropdown"
-                aria-expanded="false">
-                <img src="assets/img/team-2.jpg" alt="profile_image" class="rounded-circle">
-              </span>
-              <div class="dropdown-menu  dropdown-menu-end  px-2 py-3 me-sm-n4 p-0" aria-labelledby="userMenuButton"
-                style="min-width: 300px;">
-                <div class="dropdown-header p-2 py-1 d-flex gap-2">
-                  <span class="avatar">
-                    <img src="assets/img/team-2.jpg" alt="profile_image" class="rounded-circle">
-                  </span>
-                  <div class="flex-grow text-truncate">
-                    <h6 class="text-sm font-weight-normal mb-1">
-                      <span class="font-weight-bold">Laur</span>
-                    </h6>
-                    <p class="text-xs text-secondary mb-0">
-                      luar@pikom.com
-                    </p>
+                    {% endif %}
                   </div>
                 </div>
-                <hr class="horizontal dark my-1">
-                <div class="">
-                  <a class="dropdown-item border-radius-md" href="javascript:;">
-                    <div class="d-flex py-1">
-                      <div class="my-auto">
-                        <i class="material-symbols-rounded">person</i>
-                      </div>
-                      <div class="d-flex flex-column justify-content-center">
-                        <h6 class="text-sm font-weight-normal mb-1">
-                          Profile
-                        </h6>
-                      </div>
-                    </div>
-                  </a>
+              </td>
+              <td data-date="{{ campaign.start_date|date:'Y-m-d' }}" data-order="{{ campaign.start_date|date:'c' }}">
+                <div class="cl-date"><i data-lucide="calendar"></i>{{ campaign.start_date|date:"d M Y" }}</div>
+                <div class="cl-time">{{ campaign.start_date|date:"h:i A" }}</div>
+              </td>
+              <td data-date="{{ campaign.end_date|date:'Y-m-d' }}" data-order="{{ campaign.end_date|date:'c' }}">
+                <div class="cl-date"><i data-lucide="calendar"></i>{{ campaign.end_date|date:"d M Y" }}</div>
+                <div class="cl-time">{{ campaign.end_date|date:"h:i A" }}</div>
+              </td>
+              <td>
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                  {% if campaign.is_active %}<span class="badge badge-success badge-dot">Active</span>{% else %}<span class="badge badge-muted badge-dot">Inactive</span>{% endif %}
+                  {% if sd > nowstr %}<span class="cl-phase cl-phase-upcoming"><span class="sr-only">Timing: </span>Upcoming</span>
+                  {% elif ed < nowstr %}<span class="cl-phase cl-phase-ended"><span class="sr-only">Timing: </span>Ended</span>
+                  {% else %}<span class="cl-phase cl-phase-live"><span class="sr-only">Timing: </span>Live</span>{% endif %}
                 </div>
-                <div class="">
-                  <a class="dropdown-item border-radius-md" href="javascript:;">
-                    <div class="d-flex py-1">
-                      <div class="my-auto">
-                        <i class="material-symbols-rounded">person</i>
-                      </div>
-                      <div class="d-flex flex-column justify-content-center">
-                        <h6 class="text-sm font-weight-normal mb-1">
-                          Settings
-                        </h6>
-                      </div>
-                    </div>
-                  </a>
-                </div>
-                <div class="">
-                  <a class="dropdown-item border-radius-md" href="javascript:;">
-                    <div class="d-flex py-1">
-                      <div class="my-auto">
-                        <i class="material-symbols-rounded">person</i>
-                      </div>
-                      <div class="d-flex flex-column justify-content-center">
-                        <h6 class="text-sm font-weight-normal mb-1">
-                          Jelp
-                        </h6>
-                      </div>
-                    </div>
-                  </a>
-                </div>
-              </div>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </nav> -->
-    <!-- End Navbar -->
-    <div class="container-fluid py-2">
-
-      <input type="hidden" id="perm" value="{{ perms.register.add_campaign }}">
-
-      <div class="row">
-        <div class="col-8 d-flex justify-content-start align-items-center gap-2">                
-            <div class="ms-3">
-              <h3 class="mb-0 h4 font-weight-bolder opacity-7"><i class="ti ti-list"></i>
-              Campaigns</h3>
-          
-              <nav aria-label="breadcrumb m-0">
-                <ol class="breadcrumb bg-transparent mb-0 pb-0 pt-1 px-0 me-sm-6 me-5">
-                  <li class="breadcrumb-item text-sm"><a class="opacity-5 text-dark" href="javascript:;">List of the campaigns</a></li>
-                  <!-- <li class="breadcrumb-item text-sm text-dark active" aria-current="page">{{campaign.title}}</li> -->
-                </ol>
-              </nav>
-            </div>
-        </div>  
-        <div class="col-4 d-flex justify-content-end align-items-center gap-2">
-          <!-- <div>
-            <div class="d-flex justify-content-end align-items-center gap-2 mt-2">
-              <button type="button"  data-bs-toggle="modal" data-bs-target="#new-form" class="btn btn-sm btn-primary waves-effect"><i class="icon-base ti ti-plus"></i> <span class="d-none d-xl-inline-block">Add New Participant</span></button>
-            </div>
-            <div class="badge bg-white border border-success d-flex align-items-center gap-2 ">
-              <i class="ti ti-user text-success"></i>
-              <span class="fw-semibold small text-success">Participants Checked In:</span>
-              <span class="small text-success">
-                <span id="checkedIn" class="fw-bold">0</span>
-                <span class="text-muted mx-1">/</span>
-                <span id="totalParticipants">0</span>
-              </span>
-            </div>
-          </div> -->
-        </div>
-      </div>  
-
-      <div class="col-12">
-        <div class="card my-2">
-          
-          <div class="card-body px-0 pb-2">
-            <div class="table-responsive p-0">
-              <table id="campaigns" class="table align-items-center mb-0" >
-                <thead>
-                  {% comment %}
-                    Every column except the Action one carries a filter button.
-                    data-filter picks the popover: text, date (a from/to range)
-                    or choice (a pick-list). data-col-key is the stable handle —
-                    column indexes move once the header is dragged, so nothing
-                    addresses a column by number.
-                  {% endcomment %}
-                  <tr>
-                    <!--th class="text-uppercase text-secondary text-sm font-weight-bolder">ID</th-->
-                    <th class="text-uppercase text-secondary text-sm font-weight-bolder"
-                        data-col-key="title" data-filter="text" data-label="Campaign Title">Campaign Title</th>
-                    <th class="text-uppercase text-secondary text-sm font-weight-bolder"
-                        data-col-key="start" data-filter="date" data-label="Start Date">Start Date</th>
-                    <th class="text-uppercase text-secondary text-sm font-weight-bolder"
-                        data-col-key="end" data-filter="date" data-label="End Date">End Date</th>
-                    <!-- <th class="text-uppercase text-secondary text-sm font-weight-bolder">Total Enteries</th> -->
-                    <th class="text-uppercase text-secondary text-sm font-weight-bolder"
-                        data-col-key="status" data-filter="choice" data-label="Status"
-                        data-choices="Active,Inactive">Status</th>
-                    <th class="text-uppercase text-secondary text-sm font-weight-bolder"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% if campaigns %}
-                    {% for campaign in campaigns %}
-                      <tr>
-                        <!--td>
-                          <div class="d-flex align-items-center">
-                            <p class="text-xs font-weight-bold mb-0 me-2">
-                              {{ campaign.campaign_code }}
-                            </p>
-                            <button class="copy-btn icon-btn" data-code="{{ campaign.campaign_code|cut:'-' }}" title="Copy">
-                              <i class="material-symbols-rounded">content_copy</i>
-                            </button>
-                          </div>
-                        </td-->
-
-                        <td>
-                          <div class="d-flex px-2 py-1">
-                            <div class="d-flex flex-column justify-content-center">
-                              {% if campaign.registration_form %}
-                                <a href="{% url 'survey_submission_list' campaign.registration_form.id %}" class="nav-link text-body p-0" title="View registered participants">
-                                  <h6 class="mb-0 text-xs">{{ campaign.title }}</h6>
-                                </a>
-                              {% else %}
-                                <a href="{% url 'submission_list' campaign.campaign_code %}" class="nav-link text-body p-0" title="View registrations (legacy)">
-                                  <h6 class="mb-0 text-xs">{{ campaign.title }}</h6>
-                                </a>
-                              {% endif %}
-                            </div>
-                          </div>
-                        </td>
-                        {% comment %}
-                          data-date is the machine-readable value the date-range
-                          filter compares against, so it never has to parse the
-                          display format back into a date.
-                        {% endcomment %}
-                        <td data-date="{{ campaign.start_date|date:'Y-m-d' }}">
-                          <p class="text-xs font-weight-bold mb-0">{{ campaign.start_date|date:"Y-m-d h:i A"  }}</p>
-                        </td>
-                        <td data-date="{{ campaign.end_date|date:'Y-m-d' }}">
-                          <p class="text-xs font-weight-bold mb-0">{{ campaign.end_date|date:"Y-m-d h:i A"  }}</p>
-                        </td>
-                        <!-- <td class="align-middle text-center">
-                          <span class="text-secondary text-xs font-weight-bold">{{ campaign.total_entries }}</span>
-                        </td> -->
-                        <td class="align-middle text-center text-sm">
-                          {% if campaign.is_active %}
-                            <span class="badge badge-sm bg-gradient-success">Active</span>
-                          {% else %}
-                            <span class="badge badge-sm bg-gradient-danger">Inactive</span>
-                          {% endif %}                            
-                        </td>
-                        <td class="align-middle">
-                          <div class="d-flex gap-2 align-items-center">
-                            <a href="{% url 'campaign_dashboard' campaign.id %}" class="text-body p-0" title="Campaign dashboard">
-                              <i class="material-symbols-rounded">monitoring</i>
-                            </a>
-                            {% if campaign.registration_form %}
-                              <a href="{% url 'survey_submission_list' campaign.registration_form.id %}" class="text-body p-0" title="View registered participants">
-                                <i class="material-symbols-rounded">visibility</i>
-                              </a>
-                            {% else %}
-                              <a href="{% url 'submission_list' campaign.campaign_code %}" class="text-body p-0" title="View registrations (legacy)">
-                                <i class="material-symbols-rounded">visibility</i>
-                              </a>
-                            {% endif %}
-
-                            {% if perms.register.change_campaign %}
-                              <a href="javascript:void(0);" class="text-body p-0 edit-campaign-btn" 
-                              data-id="{{ campaign.id }}" title="Edit">
-                              <i class="material-symbols-rounded">edit</i>
-                            </a>
-                            {% endif %}
-                            
-                            {% if campaign.need_qr %}
-                              <!-- <a href="{% url 'scan' campaign.campaign_code %}" target="_blank" class="text-body p-0" title="QR Code (legacy submission flow)">
-                                <i class="material-symbols-rounded">qr_code</i>
-                              </a> -->
-                            {% endif %}
-
-                            {# ---------- Dynamic registration form (new flow) ---------- #}
-                            {% if campaign.registration_form %}
-                              <a href="{% url 'form_public' campaign.registration_form.slug|default:campaign.registration_form.survey_code %}" target="_blank" class="text-body p-0" title="Open registration form">
-                                <i class="material-symbols-rounded">public</i>
-                              </a>
-                              <a href="javascript:void(0);" class="text-body p-0 copy-form-link-btn"
-                                 data-link="{% url 'form_public' campaign.registration_form.slug|default:campaign.registration_form.survey_code %}"
-                                 title="Copy registration link">
-                                <i class="material-symbols-rounded">link</i>
-                              </a>
-                              <a href="{% url 'form_builder' campaign.registration_form.id %}" class="text-body p-0" title="Build / edit form">
-                                <i class="material-symbols-rounded">tune</i>
-                              </a>
-                              <a href="{% url 'scanform' campaign.registration_form.survey_code %}" target="_blank" class="text-body p-0" title="Check-in scanner (Sunmi / camera)">
-                                <i class="material-symbols-rounded">qr_code_scanner</i>
-                              </a>
-                            {% else %}
-                              <a href="{% url 'registration_form_list' %}?for_campaign={{ campaign.id }}"
-                                 class="text-primary p-0" title="No registration form yet — click to create one">
-                                <i class="material-symbols-rounded">add_box</i>
-                              </a>
-                            {% endif %}
-
-                            {# Legacy entry_url (only shown for old campaigns that still rely on it) #}
-                            {% if campaign.entry_url and not campaign.registration_form %}
-                              <a href="{{ campaign.entry_url }}" target="_blank" class="text-muted p-0" title="Legacy entry form">
-                                <i class="material-symbols-rounded">history</i>
-                              </a>
-                            {% endif %}
-                          </div>
-                        </td>
-
-                      </tr>
-                    {% endfor %}
-                  
+              </td>
+              <td class="text-right">
+                <div class="cl-actions">
+                  <a href="{% url 'campaign_dashboard' campaign.id %}" class="btn" data-variant="ghost" data-size="icon-sm" data-tooltip="Dashboard" aria-label="Dashboard for {{ campaign.title }}"><i data-lucide="chart-column"></i></a>
+                  {% if campaign.registration_form %}
+                    <a href="{% url 'survey_submission_list' campaign.registration_form.id %}" class="btn" data-variant="ghost" data-size="icon-sm" data-tooltip="Registrants" aria-label="Registrants of {{ campaign.title }}"><i data-lucide="users"></i></a>
+                  {% else %}
+                    <a href="{% url 'submission_list' campaign.campaign_code %}" class="btn" data-variant="ghost" data-size="icon-sm" data-tooltip="Registrations (legacy)" aria-label="Registrations of {{ campaign.title }} (legacy)"><i data-lucide="users"></i></a>
                   {% endif %}
-                  
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-      
+                  {% if perms.register.change_campaign %}
+                    <a href="javascript:void(0);" class="btn edit-campaign-btn" data-variant="ghost" data-size="icon-sm" role="button" data-id="{{ campaign.id }}" data-tooltip="Edit campaign" aria-label="Edit {{ campaign.title }}"><i data-lucide="pencil"></i></a>
+                  {% endif %}
 
+                  {# ---------- Dynamic registration form (new flow) ---------- #}
+                  {% if campaign.registration_form %}
+                    <div class="cl-more dropdown">
+                      <button type="button" class="btn" data-variant="ghost" data-size="icon-sm" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" aria-label="More actions for {{ campaign.title }}"><i data-lucide="ellipsis"></i></button>
+                      <ul class="dropdown-menu dropdown-menu-end" data-dropdown-menu-initialized>
+                        <li><a class="dropdown-item" href="{% url 'form_builder' campaign.registration_form.id %}"><i data-lucide="sliders-horizontal"></i>Edit registration form</a></li>
+                        <li><a class="dropdown-item" href="{% url 'form_public' campaign.registration_form.slug|default:campaign.registration_form.survey_code %}" target="_blank" rel="noopener"><i data-lucide="external-link"></i>Open public form</a></li>
+                        <li><a class="dropdown-item copy-form-link-btn" href="javascript:void(0);" data-link="{% url 'form_public' campaign.registration_form.slug|default:campaign.registration_form.survey_code %}"><i data-lucide="link"></i><span>Copy registration link</span></a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{% url 'scanform' campaign.registration_form.survey_code %}" target="_blank" rel="noopener"><i data-lucide="scan-line"></i>Open check-in scanner</a></li>
+                      </ul>
+                    </div>
+                  {% else %}
+                    <a href="{% url 'registration_form_list' %}?for_campaign={{ campaign.id }}" class="btn" data-variant="ghost" data-size="icon-sm" data-tooltip="Create registration form" aria-label="Create a registration form for {{ campaign.title }}" style="color:var(--primary)"><i data-lucide="square-plus"></i></a>
+                  {% endif %}
 
-    </div>
-  </main>
+                  {# Legacy entry_url (only shown for old campaigns that still rely on it) #}
+                  {% if campaign.entry_url and not campaign.registration_form %}
+                    <a href="{{ campaign.entry_url }}" target="_blank" rel="noopener" class="btn" data-variant="ghost" data-size="icon-sm" data-tooltip="Legacy entry form" aria-label="Legacy entry form"><i data-lucide="history"></i></a>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% endwith %}
+          {% endfor %}
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
 
-   <!-- Modal -->
-  <div class="modal fade" id="addNewCampaign" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
-      aria-labelledby="addNewCampaignLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+  <!-- Modal -->
+  <div class="modal fade" id="addNewCampaign" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="addNewCampaignLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <form id="campaignForm" novalidate>
-          <div class="modal-header">            
+          <div class="modal-header">
             <input type="hidden" id="campaignID">
-            <h5 class="modal-title" id="addNewCampaignLabel">Add New Campaign</h5>
+            <div>
+              <h2 class="modal-title" id="addNewCampaignLabel">New campaign</h2>
+              <p class="mt-1 text-sm text-muted-foreground">A campaign groups an event's registration form, emails and check-in.</p>
+            </div>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <div class="row g-3">
-              <div class="col-xl-12 col-lg-12">
-                <div class="mb-3">
-                  <label for="campTitle" class="form-label">Campaign Title</label>
-                  <input type="text" class="form-control border border-1 rounded px-2 py-2" id="campTitle" name="campTitle" placeholder="Campaign Title" required>
+
+            <section class="cm-section">
+              <div class="cm-head"><span class="icon-chip"><i data-lucide="type"></i></span><div><h3>Basics</h3><p>The name staff and registrants see.</p></div></div>
+              <div class="grid gap-4">
+                <div class="grid gap-2">
+                  <label for="campTitle" class="label">Campaign title</label>
+                  <input type="text" class="input" id="campTitle" name="campTitle" placeholder="e.g. Digital Economy Summit 2026" required>
                   <div class="invalid-feedback">Campaign title is required.</div>
                 </div>
-              </div>
-              <div class="col-xl-6 col-lg-12">
-                <div class="mb-3">
-                  <label for="campaignStartDate" class="form-label">Campaign Start Date</label>
-                  <input type="date" class="form-control border border-1 rounded px-2 py-2 timepicker" id="campaignStartDate" name="campaignStartDate" required>
-                  <div class="invalid-feedback">Start date is required.</div>
+                <div class="cm-toggle">
+                  <label for="enableCampaign">Campaign is active<small>Inactive campaigns stop accepting registrations.</small></label>
+                  <input class="input" type="checkbox" role="switch" id="enableCampaign" name="enableCampaign" checked>
                 </div>
               </div>
-              <div class="col-xl-6 col-lg-12">
-                <div class="mb-3">
-                  <label for="campaignEndDate" class="form-label">Campaign End Date</label>
-                  <input type="date" class="form-control border border-1 rounded px-2 py-2 timepicker" id="campaignEndDate" name="campaignEndDate" required>
+            </section>
+
+            <section class="cm-section">
+              <div class="cm-head"><span class="icon-chip bg-info-soft text-info"><i data-lucide="calendar-range"></i></span><div><h3>Schedule</h3><p>Start defaults to 12:00 AM and end to 11:59 PM.</p></div></div>
+              <div class="grid gap-4 sm:grid-cols-2">
+                <div class="grid gap-2">
+                  <label for="campaignStartDate" class="label">Starts</label>
+                  <input type="date" class="input timepicker" id="campaignStartDate" name="campaignStartDate" placeholder="Pick start date and time" required>
+                  <div class="invalid-feedback">Start date is required.</div>
+                </div>
+                <div class="grid gap-2">
+                  <label for="campaignEndDate" class="label">Ends</label>
+                  <input type="date" class="input timepicker" id="campaignEndDate" name="campaignEndDate" placeholder="Pick end date and time" required>
                   <div class="invalid-feedback">End date is required.</div>
                 </div>
               </div>
-                {% comment %}
-              Legacy fields — kept hidden so existing data round-trips through
-                 the edit modal, but no longer shown / required for new campaigns.
-                 The Campaign Page URL and Entry Page URL are now auto-derived
-                 from the campaign's registration form.
-                 {% endcomment %}
-              <div class="col-xl-6 col-lg-6" style="display:none;">
-                <div class="mb-3">
-                  <label for="campaignPageURL" class="form-label">Campaign Page URL (legacy)</label>
-                  <input type="text" class="form-control border border-1 rounded px-2 py-2" id="campaignPageURL" name="campaignPageURL" placeholder="/campaign_page">
-                  <div class="invalid-feedback">Valid URL is required.</div>
-                </div>
-              </div>
-              <div class="col-xl-6 col-lg-6" style="display:none;">
-                <div class="mb-3">
-                  <label for="campaignEntryURL" class="form-label">Entry Page URL (legacy)</label>
-                  <input type="text" class="form-control border border-1 rounded px-2 py-2" id="campaignEntryURL" name="campaignEntryURL" placeholder="/entry_page" onchange="removeSlashAndSetHidden()">
-                  <div class="invalid-feedback">Valid URL is required.</div>
+            </section>
 
-                  <input type="hidden" id="campaignEntryKeyword" name="campaignEntryKeyword" placeholder="pikomgolf2025">
+            <section class="cm-section">
+              <div class="cm-head"><span class="icon-chip bg-violet-soft text-violet"><i data-lucide="users"></i></span><div><h3>Team</h3><p>Who runs this event and who registrants reply to.</p></div></div>
+              <div class="grid gap-4 sm:grid-cols-2">
+                <div class="grid content-start gap-2">
+                  <label for="campaignPICEmail" class="label">Reply-to email</label>
+                  <input type="text" class="input" id="campaignPICEmail" name="campaignPICEmail" placeholder="pic1@mail.com,pic2@mail.com" aria-describedby="picEmailHelp" required>
+                  <div class="invalid-feedback">Enter valid email addresses, separated by commas.</div>
+                  <p class="help" id="picEmailHelp">Separate several addresses with commas, no spaces.</p>
                 </div>
-              </div>
-
-              <div class="col-xl-6 col-lg-6">
-                <div class="mb-3">
-                  <label for="campaignPICEmail" class="form-label">'Reply To' Email</label>
-                  <input type="text" class="form-control border border-1 rounded px-2 py-2" id="campaignPICEmail" name="campaignPICEmail" placeholder="pic1@mail.com,pic2@mail.com" required>
-                  <div class="invalid-feedback">Please enter valid email addresses, separated by commas.</div>
-                </div>
-              </div>
-              <div class="col-xl-6 col-lg-6">
-                <div class="mb-3">
-                  <label for="campaignTeam" class="form-label">Campaign Team</label>                  
-                  <select id="campaignTeam" name="campaignTeam" class="form-select" multiple>
+                <div class="grid content-start gap-2">
+                  <label for="campaignTeam" class="label">Campaign team</label>
+                  <select id="campaignTeam" name="campaignTeam" class="select w-full" multiple>
                     <option value=""></option> <!-- placeholder option for allowClear -->
                     {% for user in users %}
-                      <option value="{{ user.id }}">
-                        {{ user.name }}
-                      </option>
+                      <option value="{{ user.id }}">{{ user.name }}</option>
                     {% endfor %}
                   </select>
                   <div class="invalid-feedback">Please enter valid user.</div>
+                  <p class="help">Team members can see and manage this campaign.</p>
                 </div>
               </div>
-              <div class="col-xl-6 col-lg-6">
-                <div class="mb-3">
-                  <label for="campaignThemeColor" class="form-label">Event Theme Colour</label>
-                  <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <!-- The real colour picker + submitted value. Visually hidden;
-                         opened by the "Choose colour" button, shown via the swatch below. -->
-                    <input type="color" id="campaignThemeColor" name="campaignThemeColor" value="#6c757d"
-                           aria-label="Accent colour" tabindex="-1"
-                           style="position:absolute; width:1px; height:1px; opacity:0; pointer-events:none;">
-                    <button type="button" id="themeColorPick" class="btn btn-sm btn-outline-primary mb-0">
-                      <i class="material-symbols-rounded align-middle" style="font-size:18px;">palette</i>
-                      Choose colour
-                    </button>
-                    <span class="text-muted small">Selected:</span>
-                    <span id="themeColorValue" class="badge text-bg-light border d-inline-flex align-items-center gap-1"
-                          style="font-family:monospace; font-size:.85rem; letter-spacing:.5px;">
-                      <span id="themeColorSwatch"
-                            style="display:inline-block; width:14px; height:14px; border-radius:3px;
-                                   border:1px solid rgba(0,0,0,.25); background:#6c757d;"></span>
-                      <span id="themeColorHex">#6C757D</span>
-                    </span>
-                  </div>
-                  <small class="text-muted">Click the swatch or <strong>Choose colour</strong> to set the accent colour used on the public form and registrant emails.</small>
+            </section>
+
+            <section class="cm-section">
+              <div class="cm-head"><span class="icon-chip bg-warning-soft text-warning"><i data-lucide="palette"></i></span><div><h3>Theme colour</h3><p>Accent used on the public form and registrant emails.</p></div></div>
+              <div class="flex flex-wrap items-center gap-3">
+                <!-- The real colour picker + submitted value. Visually hidden; opened by "Custom". -->
+                <input type="color" id="campaignThemeColor" name="campaignThemeColor" value="#6c757d" aria-label="Accent colour" tabindex="-1" style="position:absolute; width:1px; height:1px; opacity:0; pointer-events:none;">
+                <div class="cm-swatches" role="group" aria-label="Preset colours">
+                  <button type="button" data-color="#1d4ed8" style="background:#1d4ed8" aria-label="Blue"></button>
+                  <button type="button" data-color="#0ea5e9" style="background:#0ea5e9" aria-label="Sky"></button>
+                  <button type="button" data-color="#7c3aed" style="background:#7c3aed" aria-label="Violet"></button>
+                  <button type="button" data-color="#0d9488" style="background:#0d9488" aria-label="Teal"></button>
+                  <button type="button" data-color="#15803d" style="background:#15803d" aria-label="Golf green"></button>
+                  <button type="button" data-color="#d97706" style="background:#d97706" aria-label="Amber"></button>
+                  <button type="button" data-color="#0b2149" style="background:#0b2149" aria-label="Navy"></button>
                 </div>
+                <span id="themeColorValue"><span id="themeColorSwatch" style="background:#6c757d;"></span><span id="themeColorHex">#6C757D</span></span>
+                <button type="button" id="themeColorPick" class="btn" data-variant="outline" data-size="sm"><i data-lucide="pipette"></i>Custom</button>
               </div>
-              <div class="col-xl-12 col-lg-12">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                  <label class="form-check-label" for="enableCampaign">Enable or Disable QR Scanning Page</label>
-                  <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" role="switch" id="enableQR" name="enableQR">
-                  </div>
-                </div>
+            </section>
+
+            <section class="cm-section">
+              <div class="cm-head"><span class="icon-chip bg-teal-soft text-teal"><i data-lucide="scan-line"></i></span><div><h3>Check-in</h3><p>How registrants are checked in on the day.</p></div></div>
+              <div class="cm-toggle">
+                <label for="enableQR">QR scanning page<small>Turn on the QR check-in scanner for this campaign.</small></label>
+                <input class="input" type="checkbox" role="switch" id="enableQR" name="enableQR">
               </div>
-              <div class="col-xl-12 col-lg-12">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                  <label class="form-check-label" for="enableCampaign">Active or Inactive the Campaign</label>
-                  <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" role="switch" id="enableCampaign" name="enableCampaign" checked>
-                  </div>
-                </div>
+              <div class="cm-toggle">
+                <label for="enablePrompt">Show check-in details<small>Show staff the registrant's details when a QR code is scanned.</small></label>
+                <input class="input" type="checkbox" role="switch" id="enablePrompt" name="enablePrompt" checked>
               </div>
-              <div class="col-xl-12 col-lg-12">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                  <label class="form-check-label" for="enablePrompt">Enable Or Disable Check In Info</label>
-                  <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" role="switch" id="enablePrompt" name="enablePrompt" checked>
-                  </div>
-                </div>
-              </div>
+            </section>
+
+            {% comment %}Legacy fields: hidden so existing data round-trips through the edit modal.{% endcomment %}
+            <div style="display:none;">
+              <label for="campaignPageURL">Campaign Page URL (legacy)</label>
+              <input type="text" class="input" id="campaignPageURL" name="campaignPageURL" placeholder="/campaign_page">
+              <div class="invalid-feedback">Valid URL is required.</div>
+              <label for="campaignEntryURL">Entry Page URL (legacy)</label>
+              <input type="text" class="input" id="campaignEntryURL" name="campaignEntryURL" placeholder="/entry_page" onchange="removeSlashAndSetHidden()">
+              <div class="invalid-feedback">Valid URL is required.</div>
+              <input type="hidden" id="campaignEntryKeyword" name="campaignEntryKeyword" placeholder="pikomgolf2025">
             </div>
+
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="closeModalBtn">Close</button>
-            <button type="submit" class="btn btn-primary">Save</button>
+            <button type="button" class="btn" data-variant="outline" data-bs-dismiss="modal" id="closeModalBtn">Cancel</button>
+            <button type="submit" class="btn" data-variant="primary"><i data-lucide="check"></i>Save campaign</button>
           </div>
         </form>
       </div>
     </div>
-</div>
+  </div>
+
 
 
 
@@ -599,10 +506,7 @@
         btn.addEventListener('click', function () {
           const url = window.location.origin + btn.dataset.link;
           navigator.clipboard.writeText(url).then(function () {
-            const icon = btn.querySelector('i');
-            const orig = icon.textContent;
-            icon.textContent = 'check';
-            setTimeout(() => icon.textContent = orig, 1500);
+            window.pkToast('success', 'Registration link copied', url);
           });
         });
       });
@@ -654,13 +558,14 @@
 
               $('#campaignTeam').val(data.selected_users).trigger('change');
 
+              document.getElementById('addNewCampaignLabel').textContent = 'Edit campaign';
               // Open the modal
               const modal = new bootstrap.Modal(document.getElementById('addNewCampaign'));
               modal.show();
             })
             .catch(error => {
               console.error("Error fetching campaign data:", error);
-              alert("Failed to load campaign data.");
+              window.pkToast('error', 'Could not load this campaign', 'Refresh the page and try again.');
             });
         });
       });
@@ -687,17 +592,11 @@
       let permValue = document.getElementById('perm').value;
       let buttonsConfig = [];
 
-      if (permValue === "True") {
-          buttonsConfig.push({
-              text: '<i class="material-symbols-rounded align-middle">add</i> Add New',
-              className: 'btn btn-primary',
-              action: function () {
-                  // Open the modal with id #addNewCampaign
-                  const modal = new bootstrap.Modal(document.getElementById('addNewCampaign'));
-                  modal.show();
-              }
-          });
-      }
+      // "New campaign" lives in the page header (only rendered with add permission).
+      document.getElementById('newCampaignBtn')?.addEventListener('click', function () {
+          document.getElementById('addNewCampaignLabel').textContent = 'New campaign';
+          bootstrap.Modal.getOrCreateInstance(document.getElementById('addNewCampaign')).show();
+      });
      
       const datatable = new DataTable('#campaigns', Object.assign({
         responsive: false,
@@ -729,15 +628,16 @@
           topStart: [
             {
               search: {
-                className: 'form-control form-control-sm',
-                placeholder: 'Search...',
+                className: 'input',
+                placeholder: 'Search campaigns…',
                 ariaLabel: 'Search'
               }
             },
-            'pageLength'   // 👈 this adds the "Show entries" dropdown
+            'pageLength'
           ],
-          topEnd: 'buttons'
+          topEnd: null
         },
+        columnDefs: [{ targets: -1, orderable: false }],
         buttons: buttonsConfig,
         fixedHeader: {
           header: true,
@@ -748,30 +648,37 @@
         scrollCollapse: true,
         language: {
           paginate: {
-            previous: '<i class="material-symbols-rounded">chevron_left</i>',
-            next: '<i class="material-symbols-rounded">chevron_right</i>'
+            previous: '<i data-lucide="chevron-left"></i>',
+            next: '<i data-lucide="chevron-right"></i>'
           },
           searchBuilder: {
             button: 'Add filters',
-            add: '<i class="material-symbols-rounded">add</i>Add filters',
+            add: '<i data-lucide="plus"></i>Add filter',
             title: {
               0: 'Filters',
               _: 'Filters (%d)'
             },
-            delete: '<i class="material-symbols-rounded">delete</i>',
-            right: '<i class="material-symbols-rounded">chevron_right</i>',
-            left: '<i class="material-symbols-rounded">chevron_left</i>',
-            clearAll: '<i class="material-symbols-rounded">x</i>Clear All'
+            delete: '<i data-lucide="trash-2"></i>',
+            right: '<i data-lucide="chevron-right"></i>',
+            left: '<i data-lucide="chevron-left"></i>',
+            clearAll: '<i data-lucide="x"></i>Clear all'
           },
           emptyTable:
-            "<img src='{% static 'user/img/illustrations/notfoundImg3.png' %}' width='180px' alt='No data' /><p class='fs-5 fw-500'>No Record available in table</p>",
-          infoEmpty: '0 Record',
+            "<div class='empty'><header><figure><i data-lucide='megaphone'></i></figure><h3>No campaigns yet</h3><p>Create a campaign for your next event, then add its registration form.</p></header></div>",
+          infoEmpty: 'No campaigns',
+          info: 'Showing _START_ to _END_ of _TOTAL_ campaigns',
+          lengthMenu: 'Show _MENU_ per page',
+          search: '',
           zeroRecords:
-            "<img src='{% static 'user/img/illustrations/notfoundImg3.png' %}' width='180px' alt='No data' /><p class='fs-5 fw-500'>No Record to display</p>"
+            "<div class='empty'><header><figure><i data-lucide='search-x'></i></figure><h3>No matching campaigns</h3><p>Try a different search or clear the column filters.</p></header></div>"
         },
         pagingTag: 'button',
         initComplete: function (settings, json) {
           RegisterTable.enhance(this.api());
+          // Row menus escape the scrolling table body instead of being clipped by it.
+          document.querySelectorAll('#campaigns .cl-actions [data-bs-toggle="dropdown"]').forEach(function (el) {
+            bootstrap.Dropdown.getOrCreateInstance(el, { boundary: document.body, popperConfig: { strategy: 'fixed' } });
+          });
         }
       }, RegisterTable.options()));
 
@@ -898,11 +805,11 @@
               //alert('Campaign saved!');
               location.reload();  
             } else {
-              alert('Failed to save.');
+              window.pkToast('error', 'Campaign not saved', 'Check the details and try again.');
             }
           },
           error: function () {
-            alert('Something went wrong!');
+            window.pkToast('error', 'Something went wrong', 'The campaign was not saved.');
           }
         });
       
@@ -922,6 +829,51 @@
       document.getElementById('campaignThemeColor').click();
     });
     updateThemeColorValue();
+    // Preset swatches set the same colour input the form submits.
+    document.querySelectorAll('.cm-swatches [data-color]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        document.getElementById('campaignThemeColor').value = b.dataset.color;
+        updateThemeColorValue();
+      });
+    });
+    // Quick stats from the rendered rows.
+    (function () {
+      var rows = document.querySelectorAll('#campaigns tbody tr[data-phase]'), live = 0, up = 0, regs = 0;
+      rows.forEach(function (r) { if (r.dataset.phase === 'live') live++; if (r.dataset.phase === 'upcoming') up++; regs += parseInt(r.dataset.regs || '0', 10); });
+      document.getElementById('kpiLive').textContent = live;
+      document.getElementById('kpiUpcoming').textContent = up;
+      document.getElementById('kpiRegs').textContent = regs.toLocaleString();
+      var ended = rows.length - live - up;
+      document.getElementById('phAll').textContent = rows.length;
+      document.getElementById('phLive').textContent = live;
+      document.getElementById('phUp').textContent = up;
+      document.getElementById('phEnded').textContent = ended;
+      document.getElementById('tabAll').textContent = rows.length;
+      document.getElementById('tabActive').textContent = document.querySelectorAll('#campaigns tbody tr[data-active="1"]').length;
+    })();
+    // Timing filter: a DataTables row filter on each row's data-phase.
+    $(function () {
+      var want = '', wantActive = '';
+      DataTable.ext.search.push(function (settings, data, i, raw, counter) {
+        if (settings.nTable.id !== 'campaigns' || (!want && !wantActive)) return true;
+        var tr = settings.aoData[i] && settings.aoData[i].nTr;
+        return !tr || ((!want || tr.dataset.phase === want) && (!wantActive || tr.dataset.active === wantActive));
+      });
+      document.querySelectorAll('.cl-tabs button').forEach(function (b) {
+        b.addEventListener('click', function () {
+          wantActive = b.dataset.active;
+          document.querySelectorAll('.cl-tabs button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+          $('#campaigns').DataTable().draw();
+        });
+      });
+      document.querySelectorAll('.cl-phases button').forEach(function (b) {
+        b.addEventListener('click', function () {
+          want = b.dataset.phase;
+          document.querySelectorAll('.cl-phases button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+          $('#campaigns').DataTable().draw();
+        });
+      });
+    });
 
     document.getElementById('closeModalBtn').addEventListener('click', function () {
       const form = document.getElementById('campaignForm');
@@ -930,7 +882,7 @@
       
       form.reset();
       form.classList.remove('was-validated');
-      const inputs = form.querySelectorAll('.form-control, .form-check-input');
+      const inputs = form.querySelectorAll('.input');
       inputs.forEach(input => {
         input.classList.remove('is-invalid');
       });

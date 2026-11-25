@@ -2,455 +2,282 @@
 {% load static %}
 {% load custom_filters %}
 
+{% block title %}{{ survey_user.name|default:"Respondent" }} · {{ survey.title }}{% endblock %}
+
+{% block crumbs %}
+<ol>
+  <li class="hidden sm:block"><a href="{% url 'campaign_list' %}">Campaigns</a></li>
+  <li class="hidden sm:block"><i data-lucide="chevron-right"></i></li>
+  <li><a href="{% url 'survey_submission_list' survey.id %}">{{ survey.title }}</a></li>
+  <li><i data-lucide="chevron-right"></i></li>
+  <li aria-current="page">{{ survey_user.name|default:"Respondent" }}</li>
+</ol>
+{% endblock %}
+
 {% block extracss %}
 <style>
-    .main-content {
-        height: 100vh;
-        overflow-y: auto;
-    }
-    
-    .question-number {
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        /* font-size: 14px; */
-        margin-right: 1rem;
-        flex-shrink: 0;
-    }
-    
-    .answer-text {
-        line-height: 1.6;
-        margin: 0;
-        white-space: pre-wrap;
-    }
-    
-    .selected-option {
-        padding: 0.5rem 1rem;
-        border-radius: 6px;
-        margin: 0.25rem 0.5rem 0.25rem 0;
-        display: inline-block;
-        font-size: 0.9rem;
-    }
-    
-    .matrix-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 1rem;
-    }
-    
-    .matrix-table th,
-    .matrix-table td {
-        padding: 0.75rem;
-        text-align: left;
-        border-bottom: 1px solid #dee2e6;
-    }
-    
-    .info-item {
-        display: flex;
-        /* justify-content: space-between; */
-        align-items: center;
-        margin-bottom: 0.5rem;
-        padding: 0.5rem 0;
-        border-bottom: 1px solid #f1f3f4;
-        gap: 0.5rem;
-    }
-    
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-        margin-bottom: 2rem;
-    }
-    
-    .stat-number {
-        /* font-size: 2rem; */
-        font-weight: bold;
-        display: block;
-    }
-    
-    .stat-label {
-        /* font-size: 0.9rem; */
-        margin-top: 0.5rem;
-    }
+  .ans-hero-av { width: 3.5rem; height: 3.5rem; border-radius: 999px; display: grid; place-items: center; flex: none;
+    background: var(--accent); color: var(--primary); font-weight: 700; font-size: 1.15rem; letter-spacing: .01em;
+    box-shadow: 0 0 0 4px var(--card), 0 0 0 5px var(--border); }
+  .ans-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem 1rem; font-size: .8125rem; color: var(--muted-foreground); }
+  .ans-meta span { display: inline-flex; align-items: center; gap: .35rem; }
+  .ans-meta svg { width: .9rem; height: .9rem; }
+  .info-list { margin: 0; display: flex; flex-direction: column; }
+  .info-item { display: flex; align-items: flex-start; gap: .75rem; padding: .7rem 0; border-bottom: 1px solid var(--border); min-width: 0; }
+  .info-item:last-child { border-bottom: 0; padding-bottom: 0; }
+  .info-item:first-child { padding-top: 0; }
+  .info-item > svg { width: 1rem; height: 1rem; color: var(--muted-foreground); flex: none; margin-top: .15rem; }
+  .info-item dt { font-size: .75rem; color: var(--muted-foreground); font-weight: 500; }
+  .info-item dd { margin: .1rem 0 0; font-size: .875rem; font-weight: 500; overflow-wrap: anywhere; }
+  .info-item dd a { color: var(--primary); text-decoration: none; } .info-item dd a:hover { text-decoration: underline; }
+  .ans-list { list-style: none; margin: 0; padding: 0; }
+  .ans-item { display: flex; gap: .9rem; padding: 1.1rem 0; border-bottom: 1px solid var(--border); }
+  .ans-item:last-child { border-bottom: 0; padding-bottom: 0; }
+  .ans-item:first-child { padding-top: 0; }
+  .question-number { width: 1.75rem; height: 1.75rem; border-radius: .5rem; display: grid; place-items: center; flex-shrink: 0;
+    background: var(--muted); color: var(--muted-foreground); font-weight: 600; font-size: .75rem; font-variant-numeric: tabular-nums; }
+  .ans-q { font-weight: 600; font-size: .9rem; line-height: 1.4; }
+  .ans-type { color: var(--muted-foreground); font-size: .72rem; font-weight: 500; margin-left: .4rem; white-space: nowrap; }
+  .ans-help { color: var(--muted-foreground); font-size: .8125rem; margin: .15rem 0 0; }
+  .answer-text { line-height: 1.6; margin: 0; white-space: pre-wrap; font-size: .875rem; }
+  .ans-box { margin-top: .6rem; background: color-mix(in srgb, var(--muted) 55%, transparent); border-radius: calc(var(--radius) - 2px); padding: .65rem .85rem; }
+  .selected-option { display: inline-flex; align-items: center; gap: .3rem; padding: .25rem .65rem; border-radius: 999px; margin: .5rem .35rem 0 0;
+    background: var(--accent); color: var(--accent-foreground); font-size: .8125rem; font-weight: 500; }
+  .selected-option svg { width: .85rem; height: .85rem; color: var(--primary); }
+  .ans-none { margin-top: .45rem; color: var(--muted-foreground); font-size: .8125rem; font-style: italic; }
+  .matrix-wrap { margin-top: .6rem; overflow-x: auto; border: 1px solid var(--border); border-radius: calc(var(--radius) - 2px); }
+  .approval-btns .btn { justify-content: flex-start; }
+  .page-header { margin-bottom: 0; }
+  .ans-hero-av { width: 4rem; height: 4rem; font-size: 1.3rem; background: var(--brand-navy); color: #fff; box-shadow: 0 0 0 4px var(--background), 0 0 0 5px var(--brand-orange); }
+  .dark .ans-hero-av { background: color-mix(in srgb, var(--brand-royal) 60%, var(--card)); }
+  .ans-sec { display: flex; flex-direction: column; gap: .75rem; min-width: 0; }
+  .ans-sec > h2 { margin: 0; }
+  .ans-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0 !important; padding: 0 !important; overflow: hidden; }
+  .ans-strip > div { padding: 1rem 1.25rem; border-left: 1px solid var(--border); min-width: 0; display: flex; flex-direction: column; gap: .4rem; }
+  .ans-strip > div:first-child { border-left: 0; }
+  .ans-strip dt { font-family: var(--font-label); font-size: .7rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--muted-foreground); }
+  .ans-strip dd { margin: 0; font-size: .95rem; font-weight: 600; overflow-wrap: anywhere; }
+  .ans-strip dd .badge { font-size: .8rem; }
+  @media (max-width: 767.98px) { .ans-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ans-strip > div:nth-child(3) { border-left: 0; } .ans-strip > div:nth-child(n+3) { border-top: 1px solid var(--border); } }
+  .answers-section > section { padding-top: 1.25rem; }
+  .question-number { background: transparent; box-shadow: inset 0 0 0 1px var(--border); color: var(--brand-royal); font-family: var(--font-label); font-size: .8rem; }
+  .dark .question-number { color: #93B8FF; }
+  .ans-q { font-size: .95rem; }
+  .ans-type { font-family: var(--font-label); text-transform: uppercase; letter-spacing: .1em; font-size: .66rem; padding: .1rem .4rem; border-radius: .3rem; background: var(--muted); }
+  @media (min-width: 1024px) { .ans-side-sticky { position: sticky; top: 4.5rem; } }
 </style>
 {% endblock %}
 
 {% block content %}
-<main class="main-content">
-    <div class="container-fluid py-4">
-        
-        <!-- Survey Header -->
-        
+<div class="mx-auto flex max-w-6xl flex-col gap-6">
 
-        <div class="col-12">
-          <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <!-- <h4 class="opacity-5 text-dark mb-2">{{ survey.title|default:"Survey Response" }}</h4> -->
-                        <!-- {% if survey.description %}
-                            <p class="mb-0">{{ survey.description }}</p>
-                        {% endif %} -->
-
-                         <h3 class="mb-0 h4 font-weight-bolder opacity-7"><i class="ti ti-user"></i>
-                        {{survey.title}}</h3>
-
-                    </div>
-                    <a href="{% url 'survey_submission_list' survey.id %}" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left me-2"></i>
-                        Back to Responses
-                    </a>
-                </div>
-        </div>
-
-        <!-- Approval panel: one-click vetting for the registration currently
-             being viewed. Calls the same /set_survey_user_status/ endpoint as
-             the bulk action on the list page, just with a single id. -->
-        {% if survey.purpose == "registration" %}
-        <div class="card mt-3 mb-4 approval-panel" id="approvalPanel"
-             data-current-status="{{ survey_user.approval_status }}">
-            <div class="card-body py-3">
-                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-                    <div>
-                        <span class="fw-bold me-2">Vetting status:</span>
-                        <span id="approvalStatusBadge"
-                              class="badge {% if survey_user.approval_status == 'approved' %}bg-success{% elif survey_user.approval_status == 'rejected' %}bg-danger{% else %}bg-warning text-dark{% endif %}">
-                            {% if survey_user.approval_status == 'approved' %}Approved
-                            {% elif survey_user.approval_status == 'rejected' %}Rejected
-                            {% else %}Pending review{% endif %}
-                        </span>
-                        <span id="approvalMeta" class="text-muted small ms-2">
-                            {% if survey_user.approved_by %}
-                                by {{ survey_user.approved_by.get_full_name|default:survey_user.approved_by.username }}{% if survey_user.approved_at %} on {{ survey_user.approved_at|date:"M d, Y H:i" }}{% endif %}
-                            {% endif %}
-                        </span>
-                    </div>
-                    <div class="d-flex gap-2 flex-wrap">
-                        <button type="button" class="btn btn-success btn-sm approval-btn"
-                                data-status="approved">
-                            <i class="fas fa-check me-1"></i> Approve
-                        </button>
-                        <button type="button" class="btn btn-outline-danger btn-sm approval-btn"
-                                data-status="rejected">
-                            <i class="fas fa-times me-1"></i> Reject
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary btn-sm approval-btn"
-                                data-status="pending">
-                            <i class="fas fa-undo me-1"></i> Reset to Pending
-                        </button>
-                    </div>
-                </div>
-                <div class="text-muted small mt-2 mb-0">
-                    Approve to make this delegate eligible to receive their QR-code email.
-                    Rejected delegates will never receive a QR.
-                </div>
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- Stats Overview -->
-        <!-- <div class="stats-grid">
-            <div class="card text-center">
-                <div class="card-body">
-                    <span class="stat-number text-primary">{{ answers|length }}</span>
-                    <div class="stat-label text-muted">Questions Answered</div>
-                </div>
-            </div>
-            <div class="card text-center">
-                <div class="card-body">
-                    <span class="stat-number text-primary">{{ survey.questions.count }}</span>
-                    <div class="stat-label text-muted">Total Questions</div>
-                </div>
-            </div>
-            <div class="card text-center">
-                <div class="card-body">
-                    <span class="stat-number text-success">
-                        {% widthratio answers|length survey.questions.count 100 %}%
-                    </span>
-                    <div class="stat-label text-muted">Completion Rate</div>
-                </div>
-            </div>
-        </div> -->
-
-        <!-- User Information -->
-        {% if survey_user %}
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-user-circle me-2"></i>
-                    Respondent Information
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    {% if survey_user.name %}
-                    <div class="col-md-6">
-                        <div class="info-item">
-                            <span class="fw-bold">Name:</span>
-                            <span>{{ survey_user.name }}</span>
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    {% if survey_user.participant_type %}
-                    <div class="col-md-6">
-                        <div class="info-item">
-                            <span class="fw-bold">Participant Type:</span>
-                            <span>{{ survey_user.participant_type }}</span>
-                        </div>
-                    </div>
-                    {% endif %}
-                    
-                    {% if survey_user.email %}
-                    <div class="col-md-6">
-                        <div class="info-item">
-                            <span class="fw-bold">Email:</span>
-                            <span>{{ survey_user.email }}</span>
-                        </div>
-                    </div>
-                    {% endif %}
-                    
-                    {% if survey_user.phone %}
-                    <div class="col-md-6">
-                        <div class="info-item">
-                            <span class="fw-bold">Phone:</span>
-                            <span>{{ survey_user.phone }}</span>
-                        </div>
-                    </div>
-                    {% endif %}
-                    
-                    {% if survey_user.organization %}
-                    <div class="col-md-6">
-                        <div class="info-item">
-                            <span class="fw-bold">Organization:</span>
-                            <span>{{ survey_user.organization }}</span>
-                        </div>
-                    </div>
-                    {% endif %}
-                    
-                    <div class="col-md-6">
-                        <div class="info-item">
-                            <span class="fw-bold">Submitted:</span>
-                            <span>{{ survey_user.created_at|date:"M d, Y H:i" }}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- Non-identity questions only — identity fields are already shown
-             in the Respondent Information card above, so showing them again
-             here just duplicates the same name/email/phone/org rows. -->
-        {% if extra_questions %}
-        <div class="answers-section">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-clipboard-list me-2"></i>
-                        {{ responses_section_title }}
-                    </h5>
-                </div>
-                <div class="card-body">
-                    {% if extra_questions %}
-                        {% for question in extra_questions %}
-                            <div class="card mb-3">
-                                <div class="card-body">
-                                    <div class="d-flex align-items-start">
-                                        <div class="question-number bg-primary text-white">
-                                            {{ question.number }}
-                                        </div>
-                                        <div class="flex-grow-1">
-                                            <div class="fw-bold mb-2">
-                                                {{ question.text|striptags }}
-                                                <span class="badge bg-secondary ms-2">
-                                                    {{ question.get_question_type_display }}
-                                                </span>
-                                                {% if question.is_required %}
-                                                    <span class="text-danger">*</span>
-                                                {% endif %}
-                                            </div>
-                                            
-                                            {% if question.help_text %}
-                                                <p class="text-muted small mb-3">{{ question.help_text }}</p>
-                                            {% endif %}
-
-                                            <!-- Answer Content -->
-                                            {% with answers|get_item:question.id as answer %}
-                                                {% if answer %}
-                                                    <div class="border-start border-3 ps-3 mt-3">
-                                                        {% if question.question_type == "text" or question.question_type == "textarea" %}
-                                                            {% if answer.answer_text %}
-                                                                <div class="bg-light p-3 rounded">
-                                                                    <p class="answer-text mb-0">{{ answer.answer_text }}</p>
-                                                                </div>
-                                                            {% else %}
-                                                                <div class="alert alert-light text-center mb-0">
-                                                                    <em>No response provided</em>
-                                                                </div>
-                                                            {% endif %}
-                                                            
-                                                        {% elif question.question_type == "radio" or question.question_type == "select" %}
-                                                            {% if answer.selected_options %}
-                                                                {% for option in answer.selected_options %}
-                                                                    <span class="selected-option bg-light border">{{ option }}</span>
-                                                                {% endfor %}
-                                                            {% else %}
-                                                                <div class="alert alert-light text-center mb-0">
-                                                                    <em>No option selected</em>
-                                                                </div>
-                                                            {% endif %}
-                                                            
-                                                        {% elif question.question_type == "checkbox" %}
-                                                            {% if answer.selected_options %}
-                                                                {% for option in answer.selected_options %}
-                                                                    {% if option != "on" %}
-                                                                        {% if option != "Other" %}
-                                                                        <!-- <span class="selected-option bg-success bg-opacity-10 border border-success"> -->
-                                                                        <span class="selected-option bg-light border">
-                                                                            <i class="fas fa-check me-1"></i>{{ option }}
-                                                                        </span>
-                                                                        {% else %}
-                                                                            {% if answer.answer_text %}
-                                                                                <span class="selected-option bg-light border">
-                                                                                    <i class="fas fa-check me-1"></i>Other: {{ answer.answer_text }}
-                                                                                </span>
-                                                                            {% else %}
-                                                                                <span class="selected-option bg-light border">
-                                                                                    <i class="fas fa-check me-1"></i>Other
-                                                                                </span>
-                                                                            {% endif %}
-                                                                        {% endif %}                                                                    
-                                                                    {% endif %}
-                                                                {% endfor %}
-                                                            {% else %}
-                                                                <div class="alert alert-light text-center mb-0">
-                                                                    <em>No options selected</em>
-                                                                </div>
-                                                            {% endif %}
-                                                            
-                                                        {% elif question.question_type == "matrix_roles" %}
-                                                            {% if answer.answer_text %}
-                                                                {% with answer.answer_text|parse_json as matrix_data %}
-                                                                    {% if matrix_data %}
-                                                                        <div class="table-responsive">
-                                                                            <table class="table table-striped matrix-table">
-                                                                                <thead class="table-light">
-                                                                                    <tr>
-                                                                                        <th>Category</th>
-                                                                                        <th>Role Example</th>
-                                                                                        <th>Openings</th>
-                                                                                        <th>Urgency</th>
-                                                                                        <th>Difficulty</th>
-                                                                                    </tr>
-                                                                                </thead>
-                                                                                <tbody>
-                                                                                    {% for item in matrix_data %}
-                                                                                        <tr>
-                                                                                            <td class="fw-bold">{{ item.category|default:"-" }}</td>
-                                                                                            <td>{{ item.role_example|default:"-" }}</td>
-                                                                                            <td>
-                                                                                                {% if item.openings %}
-                                                                                                    <span class="badge bg-info">{{ item.openings }}</span>
-                                                                                                {% else %}
-                                                                                                    <span class="text-muted">-</span>
-                                                                                                {% endif %}
-                                                                                            </td>
-                                                                                            <td>
-                                                                                                {% if item.urgency == "High" %}
-                                                                                                    <span class="badge bg-danger">{{ item.urgency }}</span>
-                                                                                                {% elif item.urgency == "Medium" %}
-                                                                                                    <span class="badge bg-warning">{{ item.urgency }}</span>
-                                                                                                {% elif item.urgency == "Low" %}
-                                                                                                    <span class="badge bg-success">{{ item.urgency }}</span>
-                                                                                                {% else %}
-                                                                                                    <span class="text-muted">{{ item.urgency|default:"-" }}</span>
-                                                                                                {% endif %}
-                                                                                            </td>
-                                                                                            <td>
-                                                                                                {% if item.difficulty %}
-                                                                                                    {% if item.difficulty == "1" %}
-                                                                                                        <span class="badge bg-success">Easy</span>
-                                                                                                    {% elif item.difficulty == "2" %}
-                                                                                                        <span class="badge bg-warning">Medium</span>
-                                                                                                    {% elif item.difficulty == "3" %}
-                                                                                                        <span class="badge bg-danger">Hard</span>
-                                                                                                    {% else %}
-                                                                                                        <span class="badge bg-secondary">{{ item.difficulty }}</span>
-                                                                                                    {% endif %}
-                                                                                                {% else %}
-                                                                                                    <span class="text-muted">-</span>
-                                                                                                {% endif %}
-                                                                                            </td>
-                                                                                        </tr>
-                                                                                    {% endfor %}
-                                                                                </tbody>
-                                                                            </table>
-                                                                        </div>
-                                                                    {% else %}
-                                                                        <div class="bg-light p-3 rounded">
-                                                                            <div class="answer-text mb-0">{{ answer.answer_text }}</div>
-                                                                        </div>
-                                                                    {% endif %}
-                                                                {% endwith %}
-                                                            {% else %}
-                                                                <div class="alert alert-light text-center mb-0">
-                                                                    <em>No matrix responses provided</em>
-                                                                </div>
-                                                            {% endif %}
-                                                            
-                                                        {% else %}
-                                                            <div class="alert alert-warning text-center mb-0">
-                                                                <em>Unknown question type</em>
-                                                            </div>
-                                                        {% endif %}
-                                                    </div>
-                                                    
-                                                    <!-- <div class="text-muted small mt-2">
-                                                        <i class="fas fa-clock me-1"></i>
-                                                        Answered on {{ answer.submitted_at|date:"M d, Y H:i" }}
-                                                    </div> -->
-                                                {% else %}
-                                                    <div class="alert alert-warning text-center mt-3">
-                                                        <i class="fas fa-exclamation-circle me-2"></i>
-                                                        <em>No answer provided for this question</em>
-                                                    </div>
-                                                {% endif %}
-                                            {% endwith %}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="alert alert-info text-center">
-                            <i class="fas fa-info-circle me-2"></i>
-                            {{ responses_empty_text }}
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- Action Buttons -->
-        <div class="text-center mt-4 mb-4">
-            <a href="{% url 'survey_submission_list' survey.id %}" class="btn btn-primary me-3">
-                <i class="fas fa-list me-2"></i>
-                Back to Response List
-            </a>
-            <!-- <button onclick="window.print()" class="btn btn-success">
-                <i class="fas fa-print me-2"></i>
-                Print Response
-            </button> -->
-        </div>
+  <header class="page-header animate-rise">
+    <div class="flex min-w-0 items-center gap-5">
+      <span class="ans-hero-av" aria-hidden="true" id="ansAvatar" data-name="{{ survey_user.name|default:survey_user.email }}">?</span>
+      <div class="min-w-0">
+        <p class="pk-micro mb-2"><span><b>[R]</b> Registrant</span><span aria-hidden="true" class="text-border">/</span><span class="truncate">{{ survey.title }}</span></p>
+        <h1 class="page-title truncate">{{ survey_user.name|default:"Respondent" }}</h1>
+        <p class="ans-meta mt-1.5">
+          {% if survey_user.reg_no %}<span class="font-medium tabular-nums text-foreground"><i data-lucide="ticket"></i>{{ survey_user.reg_no }}</span>{% endif %}
+          {% if survey_user.organization %}<span><i data-lucide="building-2"></i>{{ survey_user.organization }}</span>{% endif %}
+          <span><i data-lucide="clock"></i>Submitted {{ survey_user.created_at|date:"j M Y, H:i" }}</span>
+        </p>
+      </div>
     </div>
-</main>
+    <a href="{% url 'survey_submission_list' survey.id %}" class="btn" data-variant="outline">
+      <i data-lucide="arrow-left"></i>Back to registrations
+    </a>
+  </header>
+
+  {% if survey_user %}
+  <dl class="card ans-strip animate-rise animate-rise-1" aria-label="Registration summary">
+    {% if survey.purpose == "registration" %}
+    <div><dt>Status</dt><dd><span id="heroStatusBadge" class="badge badge-dot {% if survey_user.approval_status == 'approved' %}badge-success{% elif survey_user.approval_status == 'rejected' %}badge-danger{% else %}badge-warning{% endif %}">{% if survey_user.approval_status == 'approved' %}Approved{% elif survey_user.approval_status == 'rejected' %}Rejected{% else %}Pending review{% endif %}</span></dd></div>
+    {% endif %}
+    <div><dt>Participant type</dt><dd>{{ survey_user.participant_type|default:"—" }}</dd></div>
+    <div><dt>QR code</dt><dd>{% if survey_user.qr_sent %}<span class="badge badge-success badge-dot">Sent</span>{% else %}<span class="badge badge-muted badge-dot">Not sent</span>{% endif %}</dd></div>
+    <div><dt>Check-in</dt><dd>{% if survey_user.is_checked_in %}<span class="badge badge-success badge-dot">Checked in</span>{% else %}<span class="badge badge-muted badge-dot">Not checked in</span>{% endif %}</dd></div>
+  </dl>
+  {% endif %}
+
+  <div class="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
+
+    <!-- Answers (non-identity questions only: identity fields are in the details card). -->
+    <div class="ans-sec animate-rise animate-rise-2 lg:order-1">
+      <h2 class="pk-micro"><b>[01]</b> Answers</h2>
+      {% if extra_questions %}
+      <section class="card answers-section">
+        <header><h2>{{ responses_section_title }}</h2><p>{{ extra_questions|length }} question{{ extra_questions|length|pluralize }}</p></header>
+        <section>
+          <ol class="ans-list">
+            {% for question in extra_questions %}
+            <li class="ans-item">
+              <div class="question-number" aria-hidden="true">{{ question.number }}</div>
+              <div class="min-w-0 flex-1">
+                <div class="ans-q">
+                  {{ question.text|striptags }}{% if question.is_required %}<span class="text-destructive" aria-label="required"> *</span>{% endif %}
+                  <span class="ans-type">{{ question.get_question_type_display }}</span>
+                </div>
+                {% if question.help_text %}<p class="ans-help">{{ question.help_text }}</p>{% endif %}
+
+                {% with answers|get_item:question.id as answer %}
+                  {% if answer %}
+                    <div>
+                      {% if question.question_type == "text" or question.question_type == "textarea" %}
+                        {% if answer.answer_text %}
+                          <div class="ans-box"><p class="answer-text">{{ answer.answer_text }}</p></div>
+                        {% else %}
+                          <div class="ans-none">No response provided</div>
+                        {% endif %}
+
+                      {% elif question.question_type == "radio" or question.question_type == "select" %}
+                        {% if answer.selected_options %}
+                          {% for option in answer.selected_options %}<span class="selected-option"><i data-lucide="circle-dot"></i>{{ option }}</span>{% endfor %}
+                        {% else %}
+                          <div class="ans-none">No option selected</div>
+                        {% endif %}
+
+                      {% elif question.question_type == "checkbox" %}
+                        {% if answer.selected_options %}
+                          {% for option in answer.selected_options %}
+                            {% if option != "on" %}
+                              {% if option != "Other" %}
+                                <span class="selected-option"><i data-lucide="check"></i>{{ option }}</span>
+                              {% elif answer.answer_text %}
+                                <span class="selected-option"><i data-lucide="check"></i>Other: {{ answer.answer_text }}</span>
+                              {% else %}
+                                <span class="selected-option"><i data-lucide="check"></i>Other</span>
+                              {% endif %}
+                            {% endif %}
+                          {% endfor %}
+                        {% else %}
+                          <div class="ans-none">No options selected</div>
+                        {% endif %}
+
+                      {% elif question.question_type == "matrix_roles" %}
+                        {% if answer.answer_text %}
+                          {% with answer.answer_text|parse_json as matrix_data %}
+                            {% if matrix_data %}
+                              <div class="matrix-wrap">
+                                <table class="table">
+                                  <thead><tr><th>Category</th><th>Role example</th><th>Openings</th><th>Urgency</th><th>Difficulty</th></tr></thead>
+                                  <tbody>
+                                    {% for item in matrix_data %}
+                                    <tr>
+                                      <td class="font-medium">{{ item.category|default:"-" }}</td>
+                                      <td>{{ item.role_example|default:"-" }}</td>
+                                      <td>{% if item.openings %}<span class="badge badge-info">{{ item.openings }}</span>{% else %}<span class="text-muted-foreground">-</span>{% endif %}</td>
+                                      <td>
+                                        {% if item.urgency == "High" %}<span class="badge badge-danger badge-dot">{{ item.urgency }}</span>
+                                        {% elif item.urgency == "Medium" %}<span class="badge badge-warning badge-dot">{{ item.urgency }}</span>
+                                        {% elif item.urgency == "Low" %}<span class="badge badge-success badge-dot">{{ item.urgency }}</span>
+                                        {% else %}<span class="text-muted-foreground">{{ item.urgency|default:"-" }}</span>{% endif %}
+                                      </td>
+                                      <td>
+                                        {% if item.difficulty %}
+                                          {% if item.difficulty == "1" %}<span class="badge badge-success">Easy</span>
+                                          {% elif item.difficulty == "2" %}<span class="badge badge-warning">Medium</span>
+                                          {% elif item.difficulty == "3" %}<span class="badge badge-danger">Hard</span>
+                                          {% else %}<span class="badge badge-muted">{{ item.difficulty }}</span>{% endif %}
+                                        {% else %}<span class="text-muted-foreground">-</span>{% endif %}
+                                      </td>
+                                    </tr>
+                                    {% endfor %}
+                                  </tbody>
+                                </table>
+                              </div>
+                            {% else %}
+                              <div class="ans-box"><div class="answer-text">{{ answer.answer_text }}</div></div>
+                            {% endif %}
+                          {% endwith %}
+                        {% else %}
+                          <div class="ans-none">No matrix responses provided</div>
+                        {% endif %}
+
+                      {% else %}
+                        <div class="ans-none">Unknown question type</div>
+                      {% endif %}
+                    </div>
+                  {% else %}
+                    <div class="ans-none">No answer given</div>
+                  {% endif %}
+                {% endwith %}
+              </div>
+            </li>
+            {% endfor %}
+          </ol>
+        </section>
+      </section>
+      {% else %}
+      <section class="card">
+        <section class="empty py-10">
+          <header>
+            <span class="icon-chip mb-3"><i data-lucide="message-square-dashed"></i></span>
+            <h3 class="text-base font-semibold">No extra answers</h3>
+            <p class="text-sm text-muted-foreground">{{ responses_empty_text|default:"This form only asks for contact details." }}</p>
+          </header>
+        </section>
+      </section>
+      {% endif %}
+    </div>
+
+    <!-- Side: vetting + details -->
+    <aside class="ans-side-sticky flex flex-col gap-6 order-first lg:order-2">
+      <!-- Approval panel: same /set_survey_user_status/ endpoint as the list's bulk action. -->
+      {% if survey.purpose == "registration" %}
+      <div class="ans-sec"><h2 class="pk-micro"><b>[02]</b> Vetting</h2>
+      <section class="card approval-panel" id="approvalPanel" aria-label="Vetting status"
+               data-current-status="{{ survey_user.approval_status }}">
+        <header>
+          <h2 class="sr-only">Vetting status</h2>
+          <p>Approved delegates can receive their QR-code email. Rejected delegates never do.</p>
+        </header>
+        <section class="flex flex-col gap-4">
+          <div class="flex flex-wrap items-center gap-2">
+            <span id="approvalStatusBadge"
+                  class="badge badge-dot {% if survey_user.approval_status == 'approved' %}badge-success{% elif survey_user.approval_status == 'rejected' %}badge-danger{% else %}badge-warning{% endif %}">{% if survey_user.approval_status == 'approved' %}Approved{% elif survey_user.approval_status == 'rejected' %}Rejected{% else %}Pending review{% endif %}</span>
+            <span id="approvalMeta" class="text-xs text-muted-foreground">{% if survey_user.approved_by %}by {{ survey_user.approved_by.get_full_name|default:survey_user.approved_by.username }}{% if survey_user.approved_at %} on {{ survey_user.approved_at|date:"j M Y, H:i" }}{% endif %}{% endif %}</span>
+          </div>
+          <div class="approval-btns grid gap-2">
+            <button type="button" class="btn approval-btn" data-variant="primary" data-status="approved"><i data-lucide="badge-check"></i>Approve</button>
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" class="btn approval-btn" data-variant="outline" data-status="rejected"><i data-lucide="ban" class="text-danger"></i>Reject</button>
+              <button type="button" class="btn approval-btn" data-variant="outline" data-status="pending"><i data-lucide="undo-2"></i>Reset</button>
+            </div>
+          </div>
+        </section>
+      </section>
+      </div>
+      {% endif %}
+
+      {% if survey_user %}
+      <div class="ans-sec"><h2 class="pk-micro"><b>{% if survey.purpose == "registration" %}[03]{% else %}[02]{% endif %}</b> Contact</h2>
+      <section class="card">
+        <section>
+          <dl class="info-list">
+            {% if survey_user.email %}<div class="info-item"><i data-lucide="mail"></i><div class="min-w-0"><dt>Email</dt><dd><a href="mailto:{{ survey_user.email }}">{{ survey_user.email }}</a></dd></div></div>{% endif %}
+            {% if survey_user.phone %}<div class="info-item"><i data-lucide="phone"></i><div class="min-w-0"><dt>Phone</dt><dd class="tabular-nums">{{ survey_user.phone }}</dd></div></div>{% endif %}
+            {% if survey_user.organization %}<div class="info-item"><i data-lucide="building-2"></i><div class="min-w-0"><dt>Organization</dt><dd>{{ survey_user.organization }}</dd></div></div>{% endif %}
+            <div class="info-item"><i data-lucide="calendar-clock"></i><div class="min-w-0"><dt>Submitted</dt><dd class="tabular-nums">{{ survey_user.created_at|date:"j M Y, H:i" }}</dd></div></div>
+          </dl>
+        </section>
+      </section>
+      </div>
+      {% endif %}
+    </aside>
+  </div>
+</div>
 
 <script>
 (function () {
+    // Initials for the header avatar.
+    const av = document.getElementById('ansAvatar');
+    if (av) {
+        const p = (av.dataset.name || '').trim().split(/\s+/).filter(Boolean);
+        if (p.length) av.textContent = ((p[0][0] || '') + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase();
+    }
+
     const panel = document.getElementById('approvalPanel');
     if (!panel) return;  // only present on registration forms
 
@@ -465,9 +292,9 @@
     }
 
     const labels = {
-        approved:  { text: 'Approved',       cls: 'badge bg-success' },
-        rejected:  { text: 'Rejected',       cls: 'badge bg-danger' },
-        pending:   { text: 'Pending review', cls: 'badge bg-warning text-dark' },
+        approved:  { text: 'Approved',       cls: 'badge badge-dot badge-success' },
+        rejected:  { text: 'Rejected',       cls: 'badge badge-dot badge-danger' },
+        pending:   { text: 'Pending review', cls: 'badge badge-dot badge-warning' },
     };
 
     function setBusy(busy) {
@@ -483,10 +310,10 @@
 
         const confirmFn = (window.Swal && Swal.fire)
             ? () => Swal.fire({
-                title: 'Confirm', icon: 'question',
-                text: `${verb} this registration?`,
-                showCancelButton: true, confirmButtonText: 'Yes, proceed',
-                confirmButtonColor: newStatus === 'rejected' ? '#dc3545' : '#198754',
+                title: `${verb} this registration?`, icon: 'question',
+                text: newStatus === 'approved' ? 'They become eligible to receive the QR code.'
+                    : newStatus === 'rejected' ? 'They will not receive a QR code.' : 'The registration goes back to the review queue.',
+                showCancelButton: true, confirmButtonText: verb,
               }).then(r => r.isConfirmed)
             : () => Promise.resolve(confirm(`${verb} this registration?`));
 
@@ -511,18 +338,11 @@
                     const lbl = labels[newStatus] || labels.pending;
                     badge.className = lbl.cls;
                     badge.textContent = lbl.text;
-                    if (meta) {
-                        meta.textContent = newStatus === 'pending'
-                            ? ''
-                            : `by you just now`;
-                    }
+                    const hero = document.getElementById('heroStatusBadge');
+                    if (hero) { hero.className = lbl.cls; hero.textContent = lbl.text; }
+                    if (meta) meta.textContent = newStatus === 'pending' ? '' : 'by you just now';
                     panel.dataset.currentStatus = newStatus;
-                    if (window.Swal) {
-                        Swal.fire({
-                            icon: 'success', title: 'Done', text: data.message || '',
-                            timer: 1400, showConfirmButton: false,
-                        });
-                    }
+                    if (window.pkToast) pkToast('success', 'Status updated', data.message || '');
                 } else {
                     const msg = (data && data.message) || 'Could not update status.';
                     if (window.Swal) Swal.fire({ icon: 'error', title: 'Failed', text: msg });

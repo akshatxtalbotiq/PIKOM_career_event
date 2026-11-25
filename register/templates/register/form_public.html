@@ -6,318 +6,398 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{{ survey.title }}</title>
-  <link rel="stylesheet" href="{% static 'register/assets/css/bootstrap.css' %}">
-  <link rel="stylesheet" href="{% static 'register/assets/css/style.css' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="{% static 'register/sweetalert2/sweetalert2.css' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap">
+  <script>(function(){try{var t=localStorage.getItem('pk-theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}})();</script>
+  <link rel="stylesheet" href="{% static 'register/css/app.css' %}">
   <style>
     :root {
-      --theme: {% if survey.fkcampaign %}{{ survey.fkcampaign.theme }}{% else %}#198754{% endif %};
-      --theme-soft: {% if survey.fkcampaign %}{{ survey.fkcampaign.theme_soft }}{% else %}#e7f4ec{% endif %};
+      /* Campaign colour drives every shadcn token on this page; PIKOM blue when the form has no campaign. */
+      --theme: {% if survey.fkcampaign %}{{ survey.fkcampaign.theme }}{% else %}#1F5FE0{% endif %};
+      --theme-soft: {% if survey.fkcampaign %}{{ survey.fkcampaign.theme_soft }}{% else %}#E3ECFE{% endif %};
+      --primary: var(--theme); --ring: var(--theme); --accent: var(--theme-soft); --accent-foreground: var(--theme);
+      --primary-foreground: #fff;
     }
-    body { background: #f5f7fb; }
-    .form-card { max-width: 920px; margin: 0 auto; }
-    .q-number { font-weight: 600; color: var(--theme); margin-right: 4px; }
+    body { background: var(--background); }
+    a { color: var(--primary); }
+    [data-lucide], .lucide { width: 1.1rem; height: 1.1rem; flex-shrink: 0; }
 
-    /* Form title: kept on a single line. A small script (fitTitle) shrinks
-       the font-size until the whole title fits on one line, down to a floor. */
-    .form-title {
-      font-size: 1.75rem;
-      line-height: 1.2;
-      white-space: nowrap;
-      overflow: hidden;
-    }
+    /* Microsite frame: crisp event-colour rule + brand bar, no washes. */
+    .ms-top { border-top: 4px solid var(--theme); border-bottom: 1px solid var(--border); background: var(--card); }
+    .ms-logo { display: grid; place-items: center; width: 6.75rem; height: 3.6rem; border-radius: .6rem; background: #fff; border: 1px solid var(--border); }
+    .ms-logo img { width: 5.8rem; height: auto; }
+    .ms-hero { border-bottom: 1px solid var(--border); }
+    .pk-eyebrow { color: var(--theme) !important; }
+    .dark .pk-eyebrow, .dark .q-num, .dark .pk-micro b, .dark .gsec > .mb-6 h2::before { color: color-mix(in srgb, var(--theme) 45%, #fff) !important; }
+    .pk-micro b { color: var(--theme); }
+    .ms-dot { width: .45rem; height: .45rem; border-radius: 999px; background: var(--success); box-shadow: 0 0 0 3px var(--success-soft); }
+    .ed-label { display: block; font-family: var(--font-label); font-size: .7rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--muted-foreground); }
+    .ms-h2 { font-family: "DM Sans", var(--font-sans); font-weight: 800; letter-spacing: -.03em; font-size: 1.6rem; line-height: 1.1; }
 
-    /* Theme-coloured submit button (replaces the fixed Bootstrap green) */
-    .btn-theme { background: var(--theme); border-color: var(--theme); color: #fff; }
-    .btn-theme:hover, .btn-theme:focus { background: var(--theme); border-color: var(--theme); color: #fff; filter: brightness(.92); }
-
-    /* Rich "about this event" block under the form title (authored in the
-       form settings with the rich-text editor) */
-    .form-desc { color: #444; font-size: 15px; }
-    .form-desc p { margin: 0 0 .5rem 0; }
-    .form-desc p:last-child { margin-bottom: 0; }
-    .form-desc ul, .form-desc ol { padding-left: 1.4rem; margin: 0 0 .5rem 0; }
+    /* Rich "about this event" block authored in the builder */
+    .form-desc { color: var(--muted-foreground); font-size: 1rem; line-height: 1.65; }
+    .form-desc p { margin: 0 0 .6rem; } .form-desc p:last-child { margin-bottom: 0; }
+    .form-desc ul { list-style: disc; padding-left: 1.3rem; margin: 0 0 .6rem; }
+    .form-desc ol { list-style: decimal; padding-left: 1.3rem; margin: 0 0 .6rem; }
     .form-desc li { margin-bottom: .25rem; }
-    .form-desc strong { color: #222; }
-    .form-desc em, .form-desc small { color: #6b7280; }
-    .form-desc a { color: var(--theme); font-weight: 600; }
-    .form-desc h1, .form-desc h2, .form-desc h3, .form-desc h4 { font-size: 1.05rem; font-weight: 700; color: var(--theme); margin: .75rem 0 .35rem 0; }
-    .form-desc blockquote {
-      margin: .5rem 0; padding: .6rem .9rem;
-      background: var(--theme-soft); border-left: 4px solid var(--theme);
-      border-radius: .25rem; color: #333;
+    .form-desc strong { color: var(--foreground); font-weight: 600; }
+    .form-desc a { font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+    .form-desc h1, .form-desc h2, .form-desc h3, .form-desc h4 { font-family: "DM Sans", var(--font-sans); font-size: 1.3rem; font-weight: 700; letter-spacing: -.02em; line-height: 1.2; color: var(--foreground); margin: 1rem 0 .4rem; }
+    .form-desc blockquote { margin: .6rem 0; padding: .7rem 1rem; background: var(--accent); border-radius: .6rem; color: var(--foreground); }
+
+    /* Question cards */
+    #formAnswers { counter-reset: q; }
+    .q-block { counter-increment: q; transition: border-color .15s, box-shadow .15s; box-shadow: none; position: relative; }
+    .q-block::before { content: ""; position: absolute; left: -1px; top: 1.25rem; bottom: 1.25rem; width: 2px; border-radius: 2px; background: var(--theme); opacity: 0; transition: opacity .15s; }
+    .q-block:focus-within { border-color: color-mix(in srgb, var(--theme) 45%, var(--border)); }
+    .q-block:focus-within::before { opacity: 1; }
+    .q-num::before { content: counter(q, decimal-leading-zero); }
+    .q-num { font-family: var(--font-label); font-weight: 700; letter-spacing: .06em; color: var(--theme); }
+    .q-label p { display: inline; margin: 0; }
+    .q-help p { margin: 0; }
+    .q-req { color: var(--danger); font-weight: 600; margin-left: 2px; }
+    .q-field .input, .q-field .select, .q-field .textarea { font-size: 1rem; }
+    .q-field .input:not([type=radio]):not([type=checkbox]), .q-field select.select { height: 2.75rem; }
+    .q-field .textarea { min-height: 7rem; }
+
+    /* Radio / checkbox options as tappable rows */
+    .q-field .form-check { position: relative; margin: 0 0 .5rem; }
+    .q-field .form-check-input { position: absolute; left: .9rem; top: 50%; transform: translateY(-50%); margin: 0; cursor: pointer; }
+    .q-field .form-check-label { display: block; padding: .75rem 1rem .75rem 2.75rem; border: 1px solid var(--border); border-radius: calc(var(--radius) - 2px);
+      background: var(--card); cursor: pointer; line-height: 1.45; word-break: break-word; transition: border-color .12s, background .12s; }
+    .q-field .form-check-label:hover { border-color: color-mix(in srgb, var(--primary) 40%, var(--border)); }
+    .q-field .form-check:has(.form-check-input:checked) .form-check-label { border-color: var(--primary); background: var(--accent); font-weight: 500;
+      box-shadow: 0 0 0 1px var(--primary) inset; }
+    .q-field .form-check:has(.form-check-input:focus-visible) .form-check-label { outline: 2px solid var(--ring); outline-offset: 2px; }
+    .opt-other { display: flex; align-items: center; gap: .5rem; margin-bottom: .5rem; }
+    .opt-other .form-check { flex: 0 0 auto; margin: 0; }
+    .opt-other .input { flex: 1 1 auto; }
+    .followup-box { padding-left: 1.75rem; margin: .25rem 0 .5rem; }
+    .q-field .form-text { color: var(--muted-foreground); font-size: .8125rem; margin-top: .25rem; }
+
+    /* Error states: shown after a submit attempt (classes driven by the page JS) */
+    .q-error { display: none; align-items: center; gap: .4rem; color: var(--danger); font-size: .875rem; font-weight: 500; margin-top: .75rem; }
+    .is-attempted .q-block:has(:invalid) .q-error, .q-block.q-invalid .q-error { display: flex; }
+    .is-attempted .q-block:has(:invalid), .q-block.q-invalid { border-color: color-mix(in srgb, var(--danger) 55%, var(--border)); box-shadow: 0 0 0 3px var(--danger-soft); }
+    .is-attempted .input:invalid, .is-attempted .select:invalid, .is-attempted .textarea:invalid { border-color: var(--danger); }
+    .is-attempted .form-check:has(:invalid) .form-check-label, .q-invalid .form-check-label { border-color: color-mix(in srgb, var(--danger) 40%, var(--border)); }
+
+    /* Submit bar: card on desktop, pinned to the bottom on phones */
+    @media (max-width: 767.98px) {
+      /* Sticky inside the form: never covers the hero/heading, and takes its own space at the end. */
+      html { scroll-padding-bottom: 6rem; }
+      .pp-submit { position: sticky; bottom: 0; z-index: 40; margin-inline: calc(50% - 50vw); border-radius: 0; border-width: 1px 0 0;
+        padding: .75rem 1rem calc(.75rem + env(safe-area-inset-bottom)); box-shadow: 0 -8px 24px -12px rgba(11,33,73,.25);
+        background: color-mix(in srgb, var(--card) 92%, transparent); backdrop-filter: blur(10px); }
+      .pp-submit .btn { width: 100%; }
     }
 
-    /* Prevent iOS Safari from zooming the viewport when an input is focused. */
-    .form-control, .form-select { font-size: 16px; }
-
-    /* Tighten layout on phones */
-    @media (max-width: 575.98px) {
-      .container-xl { padding-left: 12px; padding-right: 12px; }
-      .py-5 { padding-top: 1.25rem !important; padding-bottom: 1.25rem !important; }
-      .form-card .card-body { padding: 1rem !important; }
-      .followup-box { margin-left: 0.5rem !important; }
-      h3 { font-size: 1.25rem; }
-      .btn-lg { padding: 0.75rem 1.25rem; font-size: 1rem; }
-    }
-
-    /* Long radio/checkbox labels (e.g. consent paragraphs) wrap nicely */
-    .form-check-label { word-break: break-word; }
-
-    /* Event details block */
-    .event-details-table td { padding: 4px 0; font-size: 15px; color: #333; vertical-align: top; }
-    .event-details-table .ed-icon { padding-right: 12px; white-space: nowrap; }
+    /* Dark mode follows the saved console theme / OS, like the rest of the app; the event colour still drives accents. */
+    html.dark { --accent: color-mix(in srgb, var(--theme) 16%, var(--card)); --accent-foreground: color-mix(in srgb, var(--theme) 45%, #fff); }
+    .dark a:not(.btn), .dark .text-primary, .dark .icon-chip { color: color-mix(in srgb, var(--theme) 45%, #fff); }
+    /* Countdown: flat hairline tiles, quiet (overrides the global navy tile). */
+    .pk-countdown > div { background: transparent; color: var(--foreground); border: 1px solid var(--border); border-radius: .5rem; box-shadow: none; min-width: 3.75rem; padding: .55rem .5rem .45rem; }
+    .pk-countdown b { font-family: "DM Sans", var(--font-sans); font-weight: 700; font-size: 1.45rem; }
+    .pk-countdown span { font-family: var(--font-label); color: var(--muted-foreground); }
   </style>
 </head>
-<body>
+<body class="min-h-dvh bg-background text-foreground antialiased">
   {% if preview_mode %}
-    <div class="alert alert-warning text-center mb-0 rounded-0" style="position:sticky;top:0;z-index:1030;">
-      <strong>👁 PREVIEW MODE</strong> — this is exactly what participants will see. Submissions are <strong>NOT saved</strong>.
-      <a href="{% url 'form_builder' survey.id %}" class="alert-link ms-2">← Back to builder</a>
+    <div class="sticky top-0 z-50 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 bg-brand-navy px-4 py-2.5 text-sm text-white" role="status">
+      <span class="inline-flex items-center gap-2"><i data-lucide="eye"></i><strong class="font-semibold">Preview</strong><span class="text-white/75">This is what participants see. Submissions are not saved.</span></span>
+      <a href="{% url 'form_builder' survey.id %}" class="inline-flex h-8 items-center gap-1.5 rounded-full border border-white/30 px-3 font-medium !text-white hover:bg-white/10"><i data-lucide="arrow-left"></i>Back to builder</a>
     </div>
   {% endif %}
 
-  <div class="container-xl py-5">
-    <div class="form-card">
-
-      {% if messages %}
-        {% for message in messages %}
-          <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} shadow-sm">{{ message }}</div>
-        {% endfor %}
-      {% endif %}
-
-      {% if survey.banner %}
-        <div class="mb-3 rounded overflow-hidden shadow-sm">
-          <img src="{{ survey.banner.url }}" alt="{{ survey.title }}" class="img-fluid w-100">
-        </div>
-      {% endif %}
-
+  <div class="ms-top">
+    <div class="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
+      <span class="inline-flex items-center gap-2.5"><span class="ms-logo"><img src="{% static 'user/img/PIKOM.png' %}" alt="PIKOM"></span><span class="pk-micro !text-foreground">PIKOM Events</span></span>
       {% if registration_closed and not preview_mode %}
-        <div class="card shadow-sm rounded mb-3 text-center">
-          <div class="card-body p-5">
-            <div style="font-size:48px; line-height:1; margin-bottom:.5rem;">&#128274;</div>
-            <h3 class="fw-bold mb-2" style="color:var(--theme);">Registration Closed</h3>
-            {% if registration_closed_message %}
-              <div class="form-desc text-center mb-3" style="font-size:15px;">{{ registration_closed_message|safe }}</div>
-            {% else %}
-              <p class="text-muted mb-3" style="font-size:15px;">
-                Registration for <strong>{{ survey.title }}</strong> is now closed and we are no longer accepting new submissions.
-              </p>
-            {% endif %}
-            {% comment %}
-            {% if survey.fkcampaign.pic_email %}
-              <p class="mb-0" style="font-size:15px;">
-                Need assistance or believe this is a mistake? Please contact the organiser at
-                <a href="mailto:{{ survey.fkcampaign.pic_email|striptags|urlencode }}" style="color:var(--theme); font-weight:600;">{{ survey.fkcampaign.pic_email }}</a>.
-              </p>
-            {% else %}
-              <p class="mb-0 text-muted" style="font-size:15px;">
-                Please contact the event organiser if you need assistance.
-              </p>
-            {% endif %}
-            {% endcomment %}
-          </div>
-        </div>
+        <span class="pk-micro">Closed</span>
       {% else %}
-
-      <div class="card shadow-sm rounded mb-3">
-        <div class="card-body p-4">
-          <h3 class="form-title fw-bold mb-2">{{ survey.title }}</h3>
-          {% if survey.description %}
-            <div class="form-desc">{{ survey.description|safe }}</div>
-          {% endif %}
-        </div>
-      </div>
-
-      {% if survey.show_event_details and survey.fkcampaign %}
-        {% with campaign=survey.fkcampaign %}
-        {% if campaign.end_date or campaign.event_time or campaign.venue or campaign.dress_code or campaign.extra_info %}
-        <div class="card shadow-sm rounded mb-3">
-          <div class="card-body p-4">
-            <h6 class="fw-bold text-uppercase text-muted mb-3" style="letter-spacing:.5px;">Event Details</h6>
-            <table class="event-details-table">
-              {% if campaign.end_date %}
-              <tr>
-                <td class="ed-icon">&#128197;</td>
-                <td>{{ campaign.end_date|date:"l, j F Y" }}</td>
-              </tr>
-              {% endif %}
-              {% if campaign.event_time %}
-              <tr>
-                <td class="ed-icon">&#128338;</td>
-                <td>{{ campaign.event_time }}</td>
-              </tr>
-              {% endif %}
-              {% if campaign.venue %}
-              <tr>
-                <td class="ed-icon">&#128205;</td>
-                <td>{{ campaign.venue|linebreaksbr }}</td>
-              </tr>
-              {% endif %}
-              {% if campaign.dress_code %}
-              <tr>
-                <td class="ed-icon">&#128085;</td>
-                <td>{{ campaign.dress_code }}</td>
-              </tr>
-              {% endif %}
-              {% for row in campaign.extra_info %}
-              <tr>
-                <td class="ed-icon">{{ row.icon }}</td>
-                <td>{% if row.label %}<strong>{{ row.label }}</strong> {% endif %}{% if row.link %}<a href="{{ row.link }}" target="_blank" rel="noopener" class="fw-semibold" style="color:var(--theme);">{{ row.value|default:row.link }}</a>{% else %}{{ row.value }}{% endif %}</td>
-              </tr>
-              {% endfor %}
-            </table>
-          </div>
-        </div>
-        {% endif %}
-        {% endwith %}
+        <span class="pk-micro"><span class="ms-dot" aria-hidden="true"></span>{% if survey.purpose == 'registration' %}Registration open{% else %}Feedback open{% endif %}</span>
       {% endif %}
+    </div>
+  </div>
+  <div class="relative">
+  <main class="relative z-10 mx-auto max-w-6xl px-4 pt-8 pb-12 sm:px-6 sm:pt-14 md:pb-16">
+
+    {% if messages %}
+      <div class="mx-auto mb-6 grid max-w-3xl gap-3">
+      {% for message in messages %}
+        <div class="alert {% if message.tags == 'error' %}!border-danger/30 !bg-danger-soft !text-danger{% endif %}" role="alert">
+          <i data-lucide="{% if message.tags == 'error' %}circle-alert{% else %}info{% endif %}"></i>
+          <h2>{{ message }}</h2>
+        </div>
+      {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if survey.banner %}
+      <figure class="mb-8 overflow-hidden rounded-2xl border bg-card shadow-sm sm:mb-10">
+        <img class="block h-auto w-full" src="{{ survey.banner.url }}" alt="{{ survey.title }}">
+      </figure>
+    {% endif %}
+
+    {% if registration_closed and not preview_mode %}
+      <section class="card mx-auto max-w-xl items-center px-6 py-12 text-center sm:px-10">
+        <span class="mx-auto grid size-14 place-items-center rounded-2xl bg-accent text-primary"><i data-lucide="lock" class="!size-6"></i></span>
+        <h1 class="mt-5 text-2xl font-semibold tracking-tight">{% if survey.purpose == 'registration' %}Registration closed{% else %}This form is closed{% endif %}</h1>
+        {% if registration_closed_message %}
+          <div class="form-desc mt-2">{{ registration_closed_message|safe }}</div>
+        {% else %}
+          <p class="mt-2 text-muted-foreground">
+            {% if survey.purpose == 'registration' %}Registration for{% else %}Responses for{% endif %}
+            <strong class="font-semibold text-foreground">{{ survey.title }}</strong> are no longer being accepted.
+          </p>
+        {% endif %}
+      </section>
+    {% else %}
+
+    {% with campaign=survey.fkcampaign %}
+    <div class="grid items-start gap-8 {% if survey.show_event_details and campaign %}{% if campaign.end_date or campaign.event_time or campaign.venue or campaign.dress_code or campaign.extra_info %}lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-10{% else %}mx-auto max-w-3xl{% endif %}{% else %}mx-auto max-w-3xl{% endif %}">
+
+      <div class="min-w-0">
+        <header class="ms-hero animate-rise mb-10 pb-10">
+          {% if campaign and campaign.title and campaign.title != survey.title %}
+            <p class="pk-eyebrow mb-5">{{ campaign.title }}</p>
+          {% else %}
+            <p class="pk-eyebrow mb-5">{% if survey.purpose == 'registration' %}Event registration{% else %}Event feedback{% endif %}</p>
+          {% endif %}
+          <h1 class="form-title pk-display text-[2.6rem] text-balance sm:text-[4rem] lg:text-[4.6rem]">{{ survey.title }}</h1>
+          {% if survey.description %}
+            <div class="form-desc mt-5 max-w-2xl text-[1.0625rem]">{{ survey.description|safe }}</div>
+          {% endif %}
+          {% if survey.purpose == 'registration' and campaign %}{% if campaign.end_date %}
+          <div class="pk-countdown mt-6" data-countdown="{{ campaign.end_date|date:'c' }}" aria-label="Time until the event" hidden>
+            <div><b data-cd="d">0</b><span>Days</span></div><div><b data-cd="h">0</b><span>Hours</span></div><div><b data-cd="m">0</b><span>Minutes</span></div><div><b data-cd="s">0</b><span>Seconds</span></div>
+          </div>
+          {% endif %}{% endif %}
+        </header>
+
+        {% if survey.show_event_details and campaign %}
+          {% if campaign.end_date or campaign.event_time or campaign.venue or campaign.dress_code or campaign.extra_info %}
+          <div class="mb-8 lg:hidden"><aside class="card gap-0 py-0" aria-label="Event details">
+            <ul class="divide-y">
+              {% if campaign.end_date %}<li class="flex items-center gap-3 px-5 py-3.5"><span class="icon-chip"><i data-lucide="calendar-days"></i></span><span class="min-w-0"><span class="ed-label">Date</span><span class="block font-medium">{{ campaign.end_date|date:"l, j F Y" }}</span></span></li>{% endif %}
+              {% if campaign.event_time %}<li class="flex items-center gap-3 px-5 py-3.5"><span class="icon-chip"><i data-lucide="clock"></i></span><span class="min-w-0"><span class="ed-label">Time</span><span class="block font-medium">{{ campaign.event_time }}</span></span></li>{% endif %}
+              {% if campaign.venue %}<li class="flex items-center gap-3 px-5 py-3.5"><span class="icon-chip"><i data-lucide="map-pin"></i></span><span class="min-w-0"><span class="ed-label">Venue</span><span class="block font-medium break-words">{{ campaign.venue|linebreaksbr }}</span></span></li>{% endif %}
+              {% if campaign.dress_code %}<li class="flex items-center gap-3 px-5 py-3.5"><span class="icon-chip"><i data-lucide="shirt"></i></span><span class="min-w-0"><span class="ed-label">Dress code</span><span class="block font-medium">{{ campaign.dress_code }}</span></span></li>{% endif %}
+              {% for row in campaign.extra_info %}<li class="flex items-center gap-3 px-5 py-3.5"><span class="icon-chip"><i class="ed-emoji" data-emoji="{{ row.icon }}" data-link="{% if row.link %}1{% endif %}"></i></span><span class="min-w-0">{% if row.label %}<span class="ed-label">{{ row.label }}</span>{% endif %}<span class="block font-medium break-words">{% if row.link %}<a href="{{ row.link }}" target="_blank" rel="noopener" class="underline underline-offset-2">{{ row.value|default:row.link }}</a>{% else %}{{ row.value }}{% endif %}</span></span></li>{% endfor %}
+            </ul>
+          </aside></div>
+          {% endif %}
+        {% endif %}
 
         <form action="{% if preview_mode %}#{% else %}{% url 'form_submit' survey.id %}{% endif %}" method="post" id="formAnswers" novalidate data-preview="{% if preview_mode %}1{% else %}0{% endif %}">
           {% csrf_token %}
 
-          <div class="card shadow-sm rounded mb-3">
-            <div class="card-body p-4">
+          <div class="mb-5 flex items-end justify-between gap-3">
+            <div>
+              <span class="pk-micro"><b>[{% if survey.show_event_details and campaign %}02{% else %}01{% endif %}]</b> {% if survey.purpose == 'registration' %}Registration form{% else %}Feedback form{% endif %}</span>
+              <h2 class="ms-h2 mt-2">{% if survey.purpose == 'registration' %}Your registration{% else %}Your feedback{% endif %}</h2>
+            </div>
+            <span class="text-sm text-muted-foreground"><span class="q-req" aria-hidden="true">*</span> Required</span>
+          </div>
 
-              {% for q in survey.questions.all %}              
-                {% if q.question_type != 'identity_participant_type' %}
-                <div class="mb-4">
-                  <label class="form-label fw-bold">
-                    
-                      {% if q.is_required %}<span class="text-danger">*</span> {% endif %}
-                      {{ q.text|safe }}
-                    
-                  </label>
-                  {% if q.help_text %}
-                    <div class="text-muted small mb-2">{{ q.help_text|safe }}</div>
+          <div>{# wraps questions + submit bar so the sticky phone bar can't ride up over the section heading #}
+          <div class="grid gap-4">
+          {% for q in survey.questions.all %}
+            {% if q.question_type != 'identity_participant_type' %}
+            <div class="q-block card gap-0 p-5 sm:p-6" data-qid="{{ q.id }}">
+              <div class="mb-4 flex gap-3.5">
+                <span class="q-num mt-0.5 w-7 shrink-0 text-[15px] tabular-nums" aria-hidden="true"></span>
+                <div class="min-w-0">
+                  {% if q.question_type == 'radio' or q.question_type == 'checkbox' %}
+                    <div class="q-label block text-base font-semibold leading-snug" id="q{{ q.id }}_label">{{ q.text|safe }}{% if q.is_required %}<span class="q-req" aria-hidden="true">*</span><span class="visually-hidden"> (required)</span>{% endif %}</div>
+                  {% else %}
+                    <label class="q-label block text-base font-semibold leading-snug" for="q{{ q.id }}" id="q{{ q.id }}_label">{{ q.text|safe }}{% if q.is_required %}<span class="q-req" aria-hidden="true">*</span><span class="visually-hidden"> (required)</span>{% endif %}</label>
                   {% endif %}
-
-                  {# ---------- Identity types (special inputs, no Answer row) ---------- #}
-                  {% if q.question_type == 'identity_name' %}
-                    <input type="text" class="form-control" name="q_{{ q.id }}" {% if q.is_required %}required{% endif %}>
-                  {% elif q.question_type == 'identity_participant_type' %}
-                    <select class="form-select" name="q_{{ q.id }}" {% if q.is_required %}required{% endif %}>
-                      <option value="" disabled selected>Choose participant type...</option>
-                      {% for opt in q.choices %}
-                        <option value="{{ opt }}">{{ opt }}</option>
-                      {% endfor %}
-                    </select>
-                  {% elif q.question_type == 'identity_email' %}
-                    <input type="email" class="form-control" name="q_{{ q.id }}" {% if q.is_required %}required{% endif %}>
-                  {% elif q.question_type == 'identity_phone' %}
-                    <input type="tel" class="form-control" name="q_{{ q.id }}" placeholder="+60 12 345 6789" {% if q.is_required %}required{% endif %}>
-                  {% elif q.question_type == 'identity_organization' %}
-                    <input type="text" class="form-control" name="q_{{ q.id }}" {% if q.is_required %}required{% endif %}>
-
-                  {# ---------- Standard custom types ---------- #}
-                  {% elif q.question_type == 'text' %}
-                    <input type="text" class="form-control" name="q_{{ q.id }}" {% if q.is_required %}required{% endif %}>
-
-                  {% elif q.question_type == 'textarea' %}
-                    <textarea class="form-control" name="q_{{ q.id }}" rows="4" {% if q.is_required %}required{% endif %}></textarea>
-
-                  {% elif q.question_type == 'select' %}
-                    <select class="form-select" name="q_{{ q.id }}" id="q{{ q.id }}"
-                            data-followup-target="q{{ q.id }}_followups"
-                            {% if q.is_required %}required{% endif %}>
-                      <option value="" disabled selected>Choose...</option>
-                      {% for opt in q.choices %}
-                        <option value="{{ opt }}">{{ opt }}</option>
-                      {% endfor %}
-                      {% if q.allow_other %}<option value="Other">Other</option>{% endif %}
-                    </select>
-                    {% if q.allow_other %}
-                      <div id="q{{ q.id }}_other_box" class="mt-2" style="display:none;">
-                        <input type="text" class="form-control" name="q_{{ q.id }}_other" placeholder="Please specify">
-                      </div>
-                    {% endif %}
-                    {# Follow-up inputs for select options #}
-                    <div id="q{{ q.id }}_followups">
-                      {% for opt, placeholder in q.choice_followups.items %}
-                        <div class="followup-box mt-2 ms-3" data-for-value="{{ opt }}" style="display:none;">
-                          <input type="text" class="form-control" name="q_{{ q.id }}_followup_{{ opt }}" placeholder="{{ placeholder }}">
-                        </div>
-                      {% endfor %}
-                    </div>
-
-                  {% elif q.question_type == 'radio' %}
-                    {% for opt in q.choices %}
-                      <div class="form-check">
-                        <input class="form-check-input radio-with-followup" type="radio"
-                               name="q_{{ q.id }}" id="q{{ q.id }}_{{ forloop.counter }}" value="{{ opt }}"
-                               data-group="q{{ q.id }}"
-                               {% if q.is_required %}required{% endif %}>
-                        <label class="form-check-label" for="q{{ q.id }}_{{ forloop.counter }}">{{ opt }}</label>
-                      </div>
-                      {% if q.choice_followups and opt in q.choice_followups %}
-                        <div class="followup-box ms-4 mt-1 mb-2" data-group="q{{ q.id }}" data-for-value="{{ opt }}" style="display:none;">
-                          <input type="text" class="form-control form-control-sm" name="q_{{ q.id }}_followup_{{ opt }}" placeholder="{{ q.choice_followups|get_item:opt }}">
-                        </div>
-                      {% endif %}
-                    {% endfor %}
-                    {% if q.allow_other %}
-                      <div class="d-flex align-items-center mt-2">
-                        <div class="form-check me-2">
-                          <input class="form-check-input" type="radio" name="q_{{ q.id }}" id="q{{ q.id }}_other" value="Other">
-                          <label class="form-check-label" for="q{{ q.id }}_other">Other:</label>
-                        </div>
-                        <input type="text" class="form-control form-control-sm" style="max-width:280px;" name="q_{{ q.id }}_other">
-                      </div>
-                    {% endif %}
-
-                  {% elif q.question_type == 'checkbox' %}
-                    <div data-checkbox-group="q_{{ q.id }}" data-required="{% if q.is_required %}1{% else %}0{% endif %}">
-                      {% for opt in q.choices %}
-                        <div class="form-check">
-                          <input class="form-check-input checkbox-with-followup" type="checkbox"
-                                 name="q_{{ q.id }}" id="q{{ q.id }}_{{ forloop.counter }}" value="{{ opt }}"
-                                 data-group="q{{ q.id }}">
-                          <label class="form-check-label" for="q{{ q.id }}_{{ forloop.counter }}">{{ opt }}</label>
-                        </div>
-                        {% if q.choice_followups and opt in q.choice_followups %}
-                          <div class="followup-box ms-4 mt-1 mb-2" data-group="q{{ q.id }}" data-for-value="{{ opt }}" style="display:none;">
-                            <input type="text" class="form-control form-control-sm" name="q_{{ q.id }}_followup_{{ opt }}" placeholder="{{ q.choice_followups|get_item:opt }}">
-                          </div>
-                        {% endif %}
-                      {% endfor %}
-                      {% if q.allow_other %}
-                        <div class="form-check d-flex align-items-center mt-2">
-                          <input class="form-check-input me-2" type="checkbox" name="q_{{ q.id }}" id="q{{ q.id }}_other_chk" value="Other">
-                          <label class="form-check-label me-2" for="q{{ q.id }}_other_chk">Other:</label>
-                          <input type="text" class="form-control form-control-sm" style="max-width:280px;" name="q_{{ q.id }}_other">
-                        </div>
-                      {% endif %}
-                      {% if q.max_checks %}
-                        <div class="form-text" data-max="{{ q.max_checks }}">Select up to {{ q.max_checks }}.</div>
-                      {% endif %}
-                    </div>
+                  {% if q.help_text %}
+                    <div class="q-help mt-1 text-sm text-muted-foreground">{{ q.help_text|safe }}</div>
                   {% endif %}
                 </div>
-                {% endif %}
-              {% endfor %}
+              </div>
 
+              <div class="q-field sm:pl-[2.6rem]" {% if q.question_type == 'radio' or q.question_type == 'checkbox' %}role="group" aria-labelledby="q{{ q.id }}_label"{% endif %}>
+              {# ---------- Identity types (special inputs, no Answer row) ---------- #}
+              {% if q.question_type == 'identity_name' %}
+                <input type="text" class="input form-control" id="q{{ q.id }}" name="q_{{ q.id }}" autocomplete="name" placeholder="Your full name" {% if q.is_required %}required{% endif %}>
+              {% elif q.question_type == 'identity_participant_type' %}
+                <select class="select form-select w-full" id="q{{ q.id }}" name="q_{{ q.id }}" {% if q.is_required %}required{% endif %}>
+                  <option value="" disabled selected>Choose participant type…</option>
+                  {% for opt in q.choices %}
+                    <option value="{{ opt }}">{{ opt }}</option>
+                  {% endfor %}
+                </select>
+              {% elif q.question_type == 'identity_email' %}
+                <input type="email" class="input form-control" id="q{{ q.id }}" name="q_{{ q.id }}" autocomplete="email" placeholder="name@company.com" {% if q.is_required %}required{% endif %}>
+              {% elif q.question_type == 'identity_phone' %}
+                <input type="tel" class="input form-control" id="q{{ q.id }}" name="q_{{ q.id }}" autocomplete="tel" placeholder="+60 12 345 6789" {% if q.is_required %}required{% endif %}>
+              {% elif q.question_type == 'identity_organization' %}
+                <input type="text" class="input form-control" id="q{{ q.id }}" name="q_{{ q.id }}" autocomplete="organization" {% if q.is_required %}required{% endif %}>
+
+              {# ---------- Standard custom types ---------- #}
+              {% elif q.question_type == 'text' %}
+                <input type="text" class="input form-control" id="q{{ q.id }}" name="q_{{ q.id }}" {% if q.is_required %}required{% endif %}>
+
+              {% elif q.question_type == 'textarea' %}
+                <textarea class="textarea form-control" id="q{{ q.id }}" name="q_{{ q.id }}" rows="4" placeholder="Type your answer" {% if q.is_required %}required{% endif %}></textarea>
+
+              {% elif q.question_type == 'select' %}
+                <select class="select form-select w-full" name="q_{{ q.id }}" id="q{{ q.id }}"
+                        data-followup-target="q{{ q.id }}_followups"
+                        {% if q.is_required %}required{% endif %}>
+                  <option value="" disabled selected>Choose…</option>
+                  {% for opt in q.choices %}
+                    <option value="{{ opt }}">{{ opt }}</option>
+                  {% endfor %}
+                  {% if q.allow_other %}<option value="Other">Other</option>{% endif %}
+                </select>
+                {% if q.allow_other %}
+                  <div id="q{{ q.id }}_other_box" class="mt-2" style="display:none;">
+                    <input type="text" class="input form-control" name="q_{{ q.id }}_other" placeholder="Please specify" aria-label="Other, please specify">
+                  </div>
+                {% endif %}
+                {# Follow-up inputs for select options #}
+                <div id="q{{ q.id }}_followups">
+                  {% for opt, placeholder in q.choice_followups.items %}
+                    <div class="followup-box mt-2" data-for-value="{{ opt }}" style="display:none;">
+                      <input type="text" class="input form-control" name="q_{{ q.id }}_followup_{{ opt }}" placeholder="{{ placeholder }}" aria-label="{{ placeholder }}">
+                    </div>
+                  {% endfor %}
+                </div>
+
+              {% elif q.question_type == 'radio' %}
+                {% for opt in q.choices %}
+                  <div class="form-check">
+                    <input class="input form-check-input radio-with-followup" type="radio"
+                           name="q_{{ q.id }}" id="q{{ q.id }}_{{ forloop.counter }}" value="{{ opt }}"
+                           data-group="q{{ q.id }}"
+                           {% if q.is_required %}required{% endif %}>
+                    <label class="form-check-label" for="q{{ q.id }}_{{ forloop.counter }}">{{ opt }}</label>
+                  </div>
+                  {% if q.choice_followups and opt in q.choice_followups %}
+                    <div class="followup-box" data-group="q{{ q.id }}" data-for-value="{{ opt }}" style="display:none;">
+                      <input type="text" class="input form-control" name="q_{{ q.id }}_followup_{{ opt }}" placeholder="{{ q.choice_followups|get_item:opt }}" aria-label="{{ q.choice_followups|get_item:opt }}">
+                    </div>
+                  {% endif %}
+                {% endfor %}
+                {% if q.allow_other %}
+                  <div class="opt-other">
+                    <div class="form-check">
+                      <input class="input form-check-input" type="radio" name="q_{{ q.id }}" id="q{{ q.id }}_other" value="Other">
+                      <label class="form-check-label" for="q{{ q.id }}_other">Other</label>
+                    </div>
+                    <input type="text" class="input form-control" name="q_{{ q.id }}_other" placeholder="Please specify" aria-label="Other, please specify">
+                  </div>
+                {% endif %}
+
+              {% elif q.question_type == 'checkbox' %}
+                <div data-checkbox-group="q_{{ q.id }}" data-required="{% if q.is_required %}1{% else %}0{% endif %}">
+                  {% for opt in q.choices %}
+                    <div class="form-check">
+                      <input class="input form-check-input checkbox-with-followup" type="checkbox"
+                             name="q_{{ q.id }}" id="q{{ q.id }}_{{ forloop.counter }}" value="{{ opt }}"
+                             data-group="q{{ q.id }}">
+                      <label class="form-check-label" for="q{{ q.id }}_{{ forloop.counter }}">{{ opt }}</label>
+                    </div>
+                    {% if q.choice_followups and opt in q.choice_followups %}
+                      <div class="followup-box" data-group="q{{ q.id }}" data-for-value="{{ opt }}" style="display:none;">
+                        <input type="text" class="input form-control" name="q_{{ q.id }}_followup_{{ opt }}" placeholder="{{ q.choice_followups|get_item:opt }}" aria-label="{{ q.choice_followups|get_item:opt }}">
+                      </div>
+                    {% endif %}
+                  {% endfor %}
+                  {% if q.allow_other %}
+                    <div class="opt-other">
+                      <div class="form-check">
+                        <input class="input form-check-input" type="checkbox" name="q_{{ q.id }}" id="q{{ q.id }}_other_chk" value="Other">
+                        <label class="form-check-label" for="q{{ q.id }}_other_chk">Other</label>
+                      </div>
+                      <input type="text" class="input form-control" name="q_{{ q.id }}_other" placeholder="Please specify" aria-label="Other, please specify">
+                    </div>
+                  {% endif %}
+                  {% if q.max_checks %}
+                    <div class="form-text" data-max="{{ q.max_checks }}">Select up to {{ q.max_checks }}.</div>
+                  {% endif %}
+                </div>
+              {% endif %}
+                <div class="q-error" aria-live="polite"><i data-lucide="circle-alert" class="!size-4"></i><span class="q-error-text">{% if q.question_type == 'checkbox' %}Please select at least one option.{% elif q.question_type == 'radio' or q.question_type == 'select' %}Please choose an option.{% elif q.question_type == 'identity_email' %}Please enter a valid email address.{% else %}This field is required.{% endif %}</span></div>
+              </div>
             </div>
+            {% endif %}
+          {% endfor %}
           </div>
 
-          <div class="text-center mb-5">
-            <button type="submit" class="btn btn-lg btn-theme px-5">
-              {% if preview_mode %}Submit (Preview){% else %}Submit Registration{% endif %}
+          <div class="pp-submit card mt-6 flex-row items-center justify-between gap-4 px-5 py-4 sm:px-6">
+            <p class="hidden text-sm text-muted-foreground md:block">Please check your answers before submitting.</p>
+            <button type="submit" class="btn btn-theme h-11 px-6 text-[15px]">
+              {% if preview_mode %}Submit (preview){% elif survey.purpose == 'registration' %}Submit registration{% else %}Submit response{% endif %}
+              <i data-lucide="arrow-right"></i>
             </button>
           </div>
+          </div>
         </form>
-
-      {% endif %}
-
-      <div class="text-center pb-4" style="font-size:.78rem; color:#9aa3ad; letter-spacing:.02em;">
-        Powered by <span style="font-weight:600; color:#8a93a0;">Talbotiq Technologies</span>
       </div>
 
+      {% if survey.show_event_details and campaign %}
+        {% if campaign.end_date or campaign.event_time or campaign.venue or campaign.dress_code or campaign.extra_info %}
+        <div class="sticky top-6 hidden lg:block"><aside class="card gap-0 py-0" aria-labelledby="edTitle">
+          <header class="border-b px-6 py-4"><h2 id="edTitle" class="pk-micro !text-foreground"><b>[01]</b> Event details</h2></header>
+          <ul class="grid gap-5 px-6 py-5">
+            {% if campaign.end_date %}
+              <li class="flex items-start gap-3"><span class="icon-chip"><i data-lucide="calendar-days"></i></span>
+                <span class="min-w-0"><span class="ed-label">Date</span><span class="block font-medium leading-snug">{{ campaign.end_date|date:"l, j F Y" }}</span></span></li>
+            {% endif %}
+            {% if campaign.event_time %}
+              <li class="flex items-start gap-3"><span class="icon-chip"><i data-lucide="clock"></i></span>
+                <span class="min-w-0"><span class="ed-label">Time</span><span class="block font-medium leading-snug tabular-nums">{{ campaign.event_time }}</span></span></li>
+            {% endif %}
+            {% if campaign.venue %}
+              <li class="flex items-start gap-3"><span class="icon-chip"><i data-lucide="map-pin"></i></span>
+                <span class="min-w-0"><span class="ed-label">Venue</span><span class="block font-medium leading-snug break-words">{{ campaign.venue|linebreaksbr }}</span></span></li>
+            {% endif %}
+            {% if campaign.dress_code %}
+              <li class="flex items-start gap-3"><span class="icon-chip"><i data-lucide="shirt"></i></span>
+                <span class="min-w-0"><span class="ed-label">Dress code</span><span class="block font-medium leading-snug">{{ campaign.dress_code }}</span></span></li>
+            {% endif %}
+            {% for row in campaign.extra_info %}
+              <li class="flex items-start gap-3"><span class="icon-chip"><i class="ed-emoji" data-emoji="{{ row.icon }}" data-link="{% if row.link %}1{% endif %}"></i></span>
+                <span class="min-w-0">{% if row.label %}<span class="ed-label">{{ row.label }}</span>{% endif %}
+                  <span class="block font-medium leading-snug break-words">{% if row.link %}<a href="{{ row.link }}" target="_blank" rel="noopener" class="underline underline-offset-2">{{ row.value|default:row.link }}</a>{% else %}{{ row.value }}{% endif %}</span></span></li>
+            {% endfor %}
+          </ul>
+        </aside></div>
+        {% endif %}
+      {% endif %}
     </div>
+    {% endwith %}
+
+    {% endif %}
+
+    <p class="mt-12 text-center text-xs text-muted-foreground">Powered by <span class="font-semibold">Talbotiq Technologies</span></p>
+  </main>
   </div>
 
-  <script src="{% static 'register/assets/libraries/js/bootstrap.bundle.min.js' %}"></script>
+  <script src="{% static 'register/js/lucide.min.js' %}"></script>
   <script src="{% static 'register/sweetalert2/sweetalert2.js' %}"></script>
   <script>
+    // Organisers pick event-detail icons from an emoji palette in the builder;
+    // show the matching Lucide icon instead.
+    (function () {
+      var MAP = {'📅':'calendar-days','🗓':'calendar','🕒':'clock','⏰':'alarm-clock','📍':'map-pin','🏢':'building-2','🅿':'square-parking',
+        '🚗':'car','🚌':'bus','👕':'shirt','👔':'shirt','🎟':'ticket','🎫':'ticket',
+        '📝':'notebook-pen','📋':'clipboard-list','🔗':'link','🎉':'party-popper','🎁':'gift','🏆':'trophy','🍽':'utensils','☕':'coffee',
+        '🎤':'mic','🎧':'headphones','👥':'users','💡':'lightbulb','⚠':'triangle-alert','✅':'circle-check','ℹ':'info','📞':'phone',
+        '✉':'mail','🌐':'globe','⭐':'star'};
+      document.querySelectorAll('.ed-emoji').forEach(function (el) {
+        var key = (el.dataset.emoji || '').replace(/️/g, '').trim();
+        el.setAttribute('data-lucide', MAP[key] || (el.dataset.link ? 'link' : 'info'));
+      });
+      if (window.lucide) lucide.createIcons();
+    })();
+
     document.querySelectorAll('select.form-select').forEach(sel => {
       sel.addEventListener('change', () => {
         // "Other" free-text toggle
@@ -375,7 +455,41 @@
 
     const formEl = document.getElementById('formAnswers');
     if (formEl) {
+      const themeColor = () => getComputedStyle(document.documentElement).getPropertyValue('--theme').trim() || '#1F5FE0';
+      // A question's inline error clears as soon as the participant answers it.
+      formEl.addEventListener('change', (e) => {
+        const block = e.target.closest('.q-block');
+        if (block) block.classList.remove('q-invalid');
+      });
+
+      // Mark empty required checkbox groups / over-limit groups inline too.
+      function checkGroups() {
+        let firstBad = null, msg = null;
+        document.querySelectorAll('[data-checkbox-group]').forEach(group => {
+          const block = group.closest('.q-block');
+          const errText = block && block.querySelector('.q-error-text');
+          const count = group.querySelectorAll('input[type=checkbox]:checked').length;
+          const hint = group.querySelector('.form-text[data-max]');
+          let bad = false;
+          if (hint && count > parseInt(hint.dataset.max, 10)) {
+            bad = true; msg = msg || { title: 'Too many selections', text: 'You can only select up to ' + hint.dataset.max + ' options.' };
+            if (errText) errText.textContent = 'Select up to ' + hint.dataset.max + ' options.';
+          } else if (group.dataset.required === '1' && count === 0) {
+            bad = true; msg = msg || { title: 'Required', text: 'Please select at least one option.' };
+            if (errText) errText.textContent = 'Please select at least one option.';
+          }
+          if (block) block.classList.toggle('q-invalid', bad);
+          if (bad && !firstBad) firstBad = block;
+        });
+        return { firstBad, msg };
+      }
+
       formEl.addEventListener('submit', (e) => {
+        formEl.classList.add('is-attempted');
+        const groups = checkGroups();
+        const firstInvalid = formEl.querySelector(':invalid');
+        const firstBlock = firstInvalid ? firstInvalid.closest('.q-block') : groups.firstBad;
+
         // Preview mode: validate the form so the user can see required-field
         // errors, then short-circuit instead of POSTing.
         if (formEl.dataset.preview === '1') {
@@ -385,15 +499,15 @@
             formEl.reportValidity();
             return;
           }
+          if (groups.msg) { Swal.fire({ icon: 'warning', title: groups.msg.title, text: groups.msg.text, confirmButtonColor: themeColor() }); return; }
           Swal.fire({
             icon: 'success',
             title: 'Preview submission OK',
             html: 'All required fields look good.<br>Nothing was saved — this is preview mode.',
-            confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--theme').trim() || '#198754',
+            confirmButtonColor: themeColor(),
           });
           return;
         }
-        let blocked = false;
         // Native HTML5 validation for required text/email/phone/radio/select fields.
         // (The form uses novalidate, so we must trigger this ourselves.)
         if (!formEl.checkValidity()) {
@@ -402,51 +516,28 @@
           formEl.reportValidity();
           return;
         }
-        document.querySelectorAll('[data-checkbox-group]').forEach(group => {
-          const hint = group.querySelector('.form-text[data-max]');
-          if (hint) {
-            const max = parseInt(hint.dataset.max, 10);
-            const boxes = group.querySelectorAll('input[type=checkbox]:checked');
-            if (boxes.length > max) {
-              blocked = true;
-              Swal.fire({ icon: 'warning', title: 'Too many selections', text: 'You can only select up to ' + max + ' options.' });
-            }
-          }
-          if (group.dataset.required === '1') {
-            const anyChecked = group.querySelectorAll('input[type=checkbox]:checked').length > 0;
-            if (!anyChecked) {
-              blocked = true;
-              Swal.fire({ icon: 'warning', title: 'Required', text: 'Please select at least one option.' });
-            }
-          }
-        });
-        if (blocked) { e.preventDefault(); e.stopPropagation(); }
+        if (groups.msg) {
+          e.preventDefault();
+          e.stopPropagation();
+          Swal.fire({ icon: 'warning', title: groups.msg.title, text: groups.msg.text, confirmButtonColor: themeColor() })
+            .then(() => { if (firstBlock) firstBlock.scrollIntoView({ behavior: 'smooth', block: 'center' }); });
+        }
       });
     }
-
-    /* Shrink the form title's font until it fits on one line.
-       Starts at the CSS size (1.75rem = 28px) and steps down to a floor
-       of 14px. If it still doesn't fit at the floor, allow wrapping so it
-       never gets unreadably small. */
-    (function fitTitle() {
-      var el = document.querySelector('.form-title');
-      if (!el) return;
-      var MAX = 28, MIN = 14;
-      function fit() {
-        el.style.whiteSpace = 'nowrap';
-        var size = MAX;
-        el.style.fontSize = size + 'px';
-        while (el.scrollWidth > el.clientWidth && size > MIN) {
-          size -= 1;
-          el.style.fontSize = size + 'px';
-        }
-        if (el.scrollWidth > el.clientWidth) {
-          el.style.whiteSpace = 'normal';   // last resort: wrap rather than clip
-        }
-      }
-      fit();
-      window.addEventListener('resize', fit);
-    })();
   </script>
+
+<script>
+  /* Countdown to the event day (hidden once the event has started) */
+  document.querySelectorAll('[data-countdown]').forEach(function (el) {
+    var t = new Date(el.getAttribute('data-countdown')).getTime(); if (isNaN(t)) return;
+    var pad = function (n) { return String(n).padStart(2, '0'); };
+    var tick = function () { var d = t - Date.now(); if (d <= 0) { el.hidden = true; return; } el.hidden = false;
+      el.querySelector('[data-cd=d]').textContent = Math.floor(d / 864e5);
+      el.querySelector('[data-cd=h]').textContent = pad(Math.floor(d / 36e5) % 24);
+      el.querySelector('[data-cd=m]').textContent = pad(Math.floor(d / 6e4) % 60);
+      el.querySelector('[data-cd=s]').textContent = pad(Math.floor(d / 1e3) % 60); };
+    tick(); setInterval(tick, 1000);
+  });
+</script>
 </body>
 </html>
