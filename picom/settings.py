@@ -81,7 +81,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'picom',
-        'USER': 'root',
+        'USER': 'picom_user',
         'PASSWORD': 'admin123',
         'HOST': 'localhost',
         'PORT': '3306',

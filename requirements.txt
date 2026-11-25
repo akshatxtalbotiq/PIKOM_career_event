@@ -70,7 +70,7 @@ pyphen==0.17.2
 pyreportjasper==2.1.4
 python-crontab==3.3.0
 python-dateutil==2.9.0.post0
-python-magic-bin==0.4.14
+python-magic==0.4.27
 pytz==2025.2
 PyYAML==6.0.2
 redis==7.1.1
@@ -94,3 +94,4 @@ weasyprint==65.1
 webencodings==0.5.1
 xlsxwriter==3.2.9
 zopfli==0.4.0
+qrcode[pil]

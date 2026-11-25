@@ -2,6 +2,11 @@
 **/.idea/**
 **/.DS_Store
 
+# Node dependencies and Next.js build output (theme/, frontend/, anywhere)
+node_modules/
+.next/
+
 # UI build tooling
-theme/node_modules/
 .impeccable/
+
+.venv
