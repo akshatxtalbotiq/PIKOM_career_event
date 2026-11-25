@@ -183,6 +183,17 @@
     #addNewCampaign .modal-dialog { margin: .5rem; }
     #addNewCampaign .modal-footer .btn { flex: 1; }
   }
+
+  /* Phones: stat cards stay two-up but drop the icon so labels and numbers fit */
+  @media (max-width: 559.98px) {
+    .cl-stats { gap: .6rem; }
+    .cl-stat, .cl-stat + .cl-stat { padding: .9rem 1rem; gap: .5rem; align-items: flex-start; }
+    .cl-stat .cl-ic { display: none; }
+    .cl-stat > div { min-width: 0; }
+    .cl-stat b { font-size: 1.6rem; }
+    .cl-tabsrow { padding: .5rem 1rem 0; }
+    .cl-phases { max-width: 100%; }
+  }
 </style>
 {% endblock %}
 

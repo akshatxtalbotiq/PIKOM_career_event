@@ -66,6 +66,16 @@
   .ans-q { font-size: .95rem; }
   .ans-type { font-family: var(--font-label); text-transform: uppercase; letter-spacing: .1em; font-size: .66rem; padding: .1rem .4rem; border-radius: .3rem; background: var(--muted); }
   @media (min-width: 1024px) { .ans-side-sticky { position: sticky; top: 4.5rem; } }
+
+  /* Phones: smaller avatar, the name wraps instead of being cut, breadcrumb line truncates inside its box */
+  .page-header .pk-micro { min-width: 0; max-width: 100%; }
+  .page-header .pk-micro .truncate { min-width: 0; }
+  @media (max-width: 639.98px) {
+    .page-header > .flex { gap: .9rem !important; align-items: flex-start !important; }
+    .ans-hero-av { width: 3rem; height: 3rem; font-size: 1rem; }
+    .page-header h1.page-title.truncate { white-space: normal; overflow: visible; text-overflow: clip; font-size: 1.75rem; }
+    .ans-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
 </style>
 {% endblock %}
 

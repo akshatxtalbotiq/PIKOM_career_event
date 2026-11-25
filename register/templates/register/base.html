@@ -49,7 +49,7 @@
     with breadcrumbs and account menu. Light mode only (see the theme script in <head>).
     Sidebar link IDs are kept from the old shell.
   {% endcomment %}
-  <aside class="sidebar pk-sidebar" id="sidenav-main" data-side="left" aria-hidden="false">
+  <aside class="sidebar pk-sidebar" id="sidenav-main" data-side="left" data-breakpoint="1024" aria-hidden="false">
     <nav aria-label="Main navigation">
       <header class="pk-sidebar-head">
         <a href="{% url 'campaign_list' %}" class="pk-brand">
@@ -380,6 +380,22 @@
     .pk-content [role='group']:not(.cl-tabs) > button[aria-pressed]:focus-visible { outline: 2px solid #1A78BD; outline-offset: 1px; }
     .dark .pk-content [role='group']:not(.cl-tabs):has(> button[aria-pressed]) { background: var(--muted) !important; }
     .dark .pk-content [role='group']:not(.cl-tabs) > button[aria-pressed='true'] { background: var(--card) !important; color: var(--foreground) !important; }
+
+    /* ---------- Small screens: shared fixes so no page runs off the right edge ---------- */
+    .pk-content { min-width: 0; }
+    /* Segmented filters scroll sideways instead of being cut off */
+    .pk-content [role='group']:not(.cl-tabs):has(> button[aria-pressed]) { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+    .pk-content [role='group']:not(.cl-tabs):has(> button[aria-pressed])::-webkit-scrollbar { display: none; }
+    .pk-content [role='group']:not(.cl-tabs) > button[aria-pressed] { flex: none; }
+    @media (max-width: 639.98px) {
+      /* Page header actions: full width, wrap onto a second line when they don't fit */
+      .page-header > :not(:first-child) { width: 100%; flex-wrap: wrap; }
+      .page-header > :not(:first-child) > .btn, .page-header > :not(:first-child) > a.btn { flex: 1 1 auto; justify-content: center; }
+      .page-header .page-title { overflow-wrap: anywhere; }
+      /* Long words (URLs, codes, emails) wrap rather than push the layout wider */
+      .pk-content :is(h1, h2, h3, p, dd, td) { overflow-wrap: anywhere; }
+      .pk-content .dt-container td { overflow-wrap: normal; }
+    }
   </style>
 
   <!-- Behaviour: Bootstrap JS (modals/dropdowns/collapse used by page scripts), DataTables & friends -->
@@ -399,6 +415,14 @@
     window.pkIcons = function (root) { if (window.lucide) lucide.createIcons({ attrs: { 'stroke-width': 1.75 }, nameAttr: 'data-lucide', root: root || document }); };
     window.pkIcons();
     if (window.jQuery) $(document).on('draw.dt init.dt', function () { window.pkIcons(); });
+
+    /* Sidebar follows the screen size: crossing below 1024px (window resized, tablet rotated)
+       closes the drawer so it doesn't sit on top of the page; going back above opens it again. */
+    (function () {
+      const mq = window.matchMedia('(min-width: 1024px)');
+      const sync = function () { const sb = document.getElementById('sidenav-main'); if (sb && sb.open) { mq.matches ? sb.open() : sb.close(); } };
+      if (mq.addEventListener) mq.addEventListener('change', sync); else if (mq.addListener) mq.addListener(sync);
+    })();
 
     /* Tooltips for [data-tooltip] in the page body. Basecoat draws them with CSS ::before,
        which gets clipped inside scrolling tables; this one is fixed to the window, so it is

@@ -150,6 +150,13 @@
   }
   /* Phones: one row per entry; the drawer lists every player */
   @media (max-width: 767px) { #golfEntries tbody tr.run-cont { display: none; } }
+
+  /* Phones: the money figure gets a full-width row and a smaller size so it never spills out */
+  @media (max-width: 639.98px) {
+    .ge-kpi-money { grid-column: 1 / -1; }
+    .ge-kpi-money .kpi-value { font-size: 1.4rem; flex-wrap: wrap; white-space: normal; }
+    .ge-kpi .kpi-value { font-size: 1.75rem; }
+  }
 </style>
 {% endblock %}
 
