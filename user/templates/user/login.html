@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
-  <meta name="theme-color" content="#F0F3FF">
+  <meta name="theme-color" content="#FFFFFF">
   <title>Sign in · PIKOM Events</title>
   <link rel="icon" type="image/png" href="{% static 'user/img/favicon.png' %}">
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,134 +13,87 @@
   <style>
     @view-transition { navigation: auto; }
     ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .18s; }
-    /* Built 1:1 from the approved 1600x900 mockup. Desktop draws the page on a 1600x900 stage that scales to the window; phones get a stacked layout. */
-    :root { --ink: #0E1836; --body: #4A5570; --blue: #1965E8; --line: #DFE5F2; }
+    /* Minimal split sign-in: form on the left, a quiet logo-blue panel on the right (hidden on narrow screens). */
+    :root { --ink: #0B1739; --body: #56627C; --line: #DCE4F1; --blue: #1C80C6; --blue-text: #1A78BD; --logo: #47ABE9; }
     html, body { margin: 0; }
-    body.si { font-family: "DM Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); background: #F0F3FF; min-height: 100svh; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+    body.si { font-family: "DM Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); background: #FFFFFF; min-height: 100svh; -webkit-font-smoothing: antialiased; }
+    .si-wrap { display: grid; min-height: 100svh; grid-template-columns: minmax(0, 1fr); }
+    @media (min-width: 1000px) { .si-wrap { grid-template-columns: minmax(30rem, 1fr) minmax(0, 1fr); } }
 
-    .bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
-    .bg svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+    /* ---------- Left: form ---------- */
+    .si-form { position: relative; isolation: isolate; display: flex; flex-direction: column; padding: clamp(1.5rem, 3vw, 2.5rem) clamp(1.25rem, 5vw, 4.5rem); }
+    /* Light event doodles on the white side (same tile as the console), faded out behind the form so fields stay clean. */
+    .si-form::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+      background: url("{% static 'register/images/doodles.svg' %}") 0 0 / 420px 420px repeat;
+      -webkit-mask-image: radial-gradient(ellipse 34rem 30rem at 50% 50%, transparent 35%, #000 80%);
+              mask-image: radial-gradient(ellipse 34rem 30rem at 50% 50%, transparent 35%, #000 80%); }
+    @media print { .si-form::before { display: none; } }
+    .si-logo { display: block; height: 36px; width: auto; align-self: flex-start; }
+    .si-body { flex: 1; display: flex; flex-direction: column; justify-content: center; width: 100%; max-width: 24rem; margin: 0 auto; padding: 2.5rem 0; }
+    h1 { margin: 0; font-size: clamp(1.9rem, 1.5rem + 1vw, 2.3rem); line-height: 1.1; letter-spacing: -.03em; font-weight: 700; color: var(--ink); }
+    .si-lead { margin: .5rem 0 2.25rem; color: var(--body); font-size: .975rem; line-height: 1.5; }
 
-    .stage { position: relative; z-index: 1; }
-    .left { position: relative; }
-    .logo { display: block; height: 66px; width: auto; }
-    .tag { display: inline-flex; align-items: center; gap: .6rem; height: 33px; padding: 0 16px; border-radius: 999px; background: #E6EDFC; color: #1F5FD8; font-weight: 600; font-size: 15px; box-shadow: 0 6px 14px -6px rgba(40,90,200,.35), inset 0 1px 0 rgba(255,255,255,.9); box-sizing: border-box; }
-    .tag i { width: 7px; height: 7px; border-radius: 99px; background: #1F5FD8; }
-    h1 { margin: 0; font-size: 46px; line-height: 1.1; letter-spacing: -.022em; font-weight: 600; color: var(--ink); white-space: nowrap; }
-    h1 em { font-style: normal; color: var(--blue); }
-    .lead { margin: 0; color: var(--body); font-size: 18px; line-height: 1.3; }
-
-    .card { position: relative; box-sizing: border-box; background: rgba(255,255,255,.86);  border: 1px solid rgba(255,255,255,.95); border-radius: 22px; padding: 28px 27px 21px 28px;
-      box-shadow: inset 0 1px 0 #fff, 0 2px 4px rgba(30,60,140,.03), 0 24px 50px -16px rgba(50,90,210,.20), 18px 0 50px -30px rgba(60,110,240,.35); }
-    .card .lbl { display: block; font-weight: 600; font-size: 18px; line-height: 1; margin: 0 0 13px; color: var(--ink); }
-    .fld { position: relative; margin-bottom: 25px; }
-    .fld .ic { position: absolute; left: 17px; top: 50%; transform: translateY(-50%); color: #6E7790; width: 19px; height: 19px; pointer-events: none; }
-    .fld input { width: 100%; height: 53px; border-radius: 17px; border: 1px solid var(--line); background: #F1F4FF; padding: 0 52px; font: inherit; font-size: 16px; color: var(--ink); box-shadow: inset 0 1px 2px rgba(30,60,140,.04); transition: border-color .15s, box-shadow .15s, background-color .15s; box-sizing: border-box; }
-    .fld input::placeholder { color: #6B7385; }
-    .fld input:focus { outline: none; border-color: #1965E8; background: #fff; box-shadow: 0 0 0 4px rgba(25,101,232,.13); }
-    .fld .eye { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border: 0; background: transparent; color: #4F5870; border-radius: 10px; display: grid; place-items: center; cursor: pointer; }
-    .fld .eye:hover { background: rgba(25,101,232,.08); color: var(--blue); }
-    .fld .eye svg { width: 20px; height: 20px; }
+    .lbl { display: block; font-weight: 500; font-size: .875rem; margin: 0 0 .45rem; color: var(--ink); }
+    .fld { position: relative; margin-bottom: 1.15rem; }
+    .fld input { width: 100%; height: 3rem; border-radius: .75rem; border: 1px solid var(--line); background: #fff; padding: 0 1rem; font: inherit; font-size: .975rem; color: var(--ink); box-sizing: border-box; transition: border-color .15s, box-shadow .15s; }
+    .fld.pw input { padding-right: 3rem; }
+    .fld input::placeholder { color: #98A2B6; }
+    .fld input:hover { border-color: #C6D2E6; }
+    .fld input:focus { outline: none; border-color: var(--logo); box-shadow: 0 0 0 4px rgba(71,171,233,.18); }
+    .fld .eye { position: absolute; right: .5rem; top: 50%; transform: translateY(-50%); width: 2.1rem; height: 2.1rem; border: 0; background: transparent; color: #7A869F; border-radius: .55rem; display: grid; place-items: center; cursor: pointer; }
+    .fld .eye:hover { background: #F2F8FD; color: var(--blue); }
+    .fld .eye svg { width: 18px; height: 18px; }
     .fld .eye svg.hidden { display: none; }
-    .opts { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: -6px 0 19px; height: 22px; }
-    .opts label { display: inline-flex; align-items: center; gap: 13px; cursor: pointer; color: var(--ink); font-size: 17px; }
-    .opts input[type=checkbox] { width: 20px; height: 20px; accent-color: #1A62E6; margin: 0 0 0 1px; }
-    .opts a { color: #1F5FD8; font-weight: 500; font-size: 15px; text-decoration: none; }
+    .opts { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: .1rem 0 1.6rem; }
+    .opts label { display: inline-flex; align-items: center; gap: .55rem; cursor: pointer; color: var(--body); font-size: .9rem; }
+    .opts input[type=checkbox] { width: 1rem; height: 1rem; accent-color: var(--blue); margin: 0; }
+    .opts a { color: var(--blue-text); font-weight: 500; font-size: .9rem; text-decoration: none; }
     .opts a:hover { text-decoration: underline; text-underline-offset: 4px; }
-    .go { position: relative; display: block; width: 100%; height: 53px; border: 0; border-radius: 999px; cursor: pointer; color: #fff; font: 500 19px "DM Sans", sans-serif; letter-spacing: -.005em;
-      background: linear-gradient(90deg, #1A449F 0%, #0B2D80 28%, #062370 55%, #0B2C86 78%, #1E55CF 94%, #2A66E6 100%);
-      box-shadow: 0 12px 24px -12px rgba(8,35,112,.65), inset 0 1px 0 rgba(255,255,255,.16), inset 0 -1px 0 rgba(0,0,0,.15); transition: transform .15s, filter .2s; }
-    .go:hover { filter: brightness(1.08); }
+    .go { display: flex; align-items: center; justify-content: center; gap: .5rem; width: 100%; height: 3rem; border: 0; border-radius: .75rem; cursor: pointer; color: #fff; font: 600 .975rem "DM Sans", sans-serif;
+      background: var(--blue); box-shadow: 0 1px 2px rgba(11,23,57,.12); transition: background-color .15s, transform .15s; }
+    .go:hover { background: var(--blue-text); }
     .go:active { transform: translateY(1px); }
-    .go:focus-visible { outline: 3px solid rgba(25,101,232,.45); outline-offset: 3px; }
-    .go .arr { position: absolute; right: 0; top: 0; width: 51px; height: 53px; border-radius: 999px; display: grid; place-items: center; background: radial-gradient(circle at 40% 35%, #3B7BFA, #1A5DEB 70%); box-shadow: 0 0 0 1.5px rgba(255,255,255,.55) inset, -4px 0 12px rgba(10,40,130,.35), 0 0 16px rgba(40,110,250,.45); transition: transform .25s; }
-    .go:hover .arr { transform: translateX(2px); }
-    .go .arr svg { width: 21px; height: 21px; }
+    .go:focus-visible { outline: 3px solid rgba(71,171,233,.5); outline-offset: 3px; }
+    .go svg { width: 1.05rem; height: 1.05rem; transition: transform .2s; }
+    .go:hover svg { transform: translateX(2px); }
     .go[disabled] { opacity: .85; cursor: progress; }
-    .or { display: flex; align-items: center; justify-content: center; gap: 22px; margin: 18px 0 0; color: var(--body); font-size: 15px; line-height: 20px; }
-    .or::before, .or::after { content: ""; width: 130px; height: 1px; background: linear-gradient(90deg, rgba(200,210,228,.2), #CDD5E4, rgba(200,210,228,.2)); }
-    .help { text-align: center; color: #3A4256; font-size: 16px; line-height: 20px; margin: 13px 0 0; }
-    .alert { margin-bottom: 16px; }
-    .ft { color: #5E6478; font-size: 14px; text-align: center; }
+    .help { margin: 1.5rem 0 0; color: var(--body); font-size: .875rem; text-align: center; }
+    .alert { margin-bottom: 1.25rem; }
+    .ft { color: #8A94AA; font-size: .8rem; }
 
-
-    @keyframes bob { 0%, 100% { translate: 0 0; } 50% { translate: 0 -9px; } }
-    @keyframes bob2 { 0%, 100% { translate: 0 0; } 50% { translate: 0 7px; } }
-    @keyframes drift { 0%, 100% { transform: translate(0,0); } 50% { transform: translate(10px,-6px); } }
-    @keyframes shimmer { to { stroke-dashoffset: -1400; } }
-    .glint { animation: shimmer 10s linear infinite; }
-
+    /* ---------- Right: quiet brand panel ---------- */
+    .si-art { display: none; }
     @media (min-width: 1000px) {
-      body.si { height: 100svh; overflow: hidden; }
-      .stage { position: absolute; left: 50%; top: 50%; width: 1600px; height: 900px; margin: -450px 0 0 -800px; transform: scale(var(--k, 1)); transform-origin: 50% 50%; }
-      /* Centred single card (Swayam): no floating cards; bigger card so the page doesn't feel empty */
-      .left { position: absolute; left: 470px; top: 62px; width: 660px; text-align: center; }
-      .logo { margin: 0 auto; height: 70px; }
-      .tag { margin-top: 16px; }
-      h1 { margin-top: 18px; font-size: 48px; }
-      .lead { margin-top: 6px; font-size: 19px; }
-      .card { margin-top: 26px; width: 660px; padding: 36px 38px 30px; text-align: left; border-radius: 26px; }
-      .card .lbl { font-size: 18.5px; margin-bottom: 14px; }
-      .fld { margin-bottom: 26px; }
-      .fld input { height: 58px; font-size: 16.5px; border-radius: 18px; }
-      .opts { margin: -4px 0 22px; }
-      .go { height: 58px; font-size: 20px; }
-      .go .arr { width: 56px; height: 58px; }
-      .or { margin-top: 20px; }
-      .ft { position: absolute; left: 0; right: 0; top: 809px; }
+      .si-art { display: flex; position: relative; margin: .75rem .75rem .75rem 0; border-radius: 1.5rem; overflow: hidden; isolation: isolate;
+        background: linear-gradient(160deg, #5BB6EE 0%, #2B8FD3 50%, #1A72B6 100%); color: #fff; }
     }
-    @media (max-width: 999px) {
-      .stage { max-width: 34rem; margin: 0 auto; padding: 2.25rem 1.25rem 1.5rem; box-sizing: border-box; }
-      .tag { margin-top: 1.75rem; } h1 { margin-top: 1.1rem; font-size: clamp(1.9rem, 7vw, 2.6rem); white-space: normal; } .lead { margin: .35rem 0 1.5rem; }
-      .card { padding: 1.5rem 1.25rem 1.25rem; }
-      .opts label { font-size: 15.5px; } .opts a { font-size: 14.5px; }
-      .ft { margin-top: 2.5rem; }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .rib, .glint { animation: none !important; }
+    .art-bg { position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; }
+    .art-copy { align-self: flex-end; padding: clamp(2rem, 4vw, 3.5rem); }
+    .art-copy h2 { margin: 0; max-width: 26rem; font-size: clamp(1.75rem, 1.2rem + 1.2vw, 2.4rem); line-height: 1.12; letter-spacing: -.03em; font-weight: 600; }
+    .art-copy p { margin: .75rem 0 0; max-width: 24rem; font-size: 1rem; line-height: 1.5; color: rgba(255,255,255,.8); }
+    @keyframes drift { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(18px, -12px); } }
+    .orb { animation: drift 16s ease-in-out infinite; transform-box: fill-box; }
+    .orb.o2 { animation-duration: 20s; animation-delay: -7s; }
+    @media (prefers-reduced-motion: reduce) { .orb { animation: none !important; } }
+    @media (max-width: 999px) { .si-body { padding: 2rem 0 1.5rem; } .si-form .ft { text-align: center; } }
+    @media (min-width: 1800px) {
+      .si-logo { height: 44px; } .si-body { max-width: 28rem; }
+      h1 { font-size: 2.75rem; } .si-lead { font-size: 1.05rem; }
+      .fld input, .go { height: 3.4rem; font-size: 1.02rem; }
+      .art-copy h2 { font-size: 3rem; max-width: 32rem; } .art-copy p { font-size: 1.1rem; max-width: 30rem; }
     }
   </style>
 </head>
 <body class="si">
-  {# Backdrop: wash, corner light, faint grid on the right, glass ribbons (top right, bottom left) #}
-  <div class="bg" aria-hidden="true">
-    <svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
-      <defs>
-        <radialGradient id="wash" cx="1150" cy="420" r="760" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#F6F8FF"/><stop offset=".6" stop-color="#F0F3FF"/><stop offset="1" stop-color="#E9EEFD"/></radialGradient>
-        <linearGradient id="tl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#DDE4FB"/><stop offset="1" stop-color="#EEF2FF" stop-opacity="0"/></linearGradient>
-        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse" x="20" y="10"><path d="M40 0H0V40" fill="none" stroke="#D6E2FB" stroke-width="1"/></pattern>
-        <radialGradient id="gm" cx="800" cy="430" r="720" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff"/><stop offset=".65" stop-color="#fff" stop-opacity=".7"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
-        <mask id="gmask"><rect width="1600" height="900" fill="url(#gm)"/></mask>
-        <linearGradient id="ribB" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3E72EA"/><stop offset=".45" stop-color="#6E9BF3"/><stop offset="1" stop-color="#C9DAFB" stop-opacity=".2"/></linearGradient>
-        <linearGradient id="ribT" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3A72F0"/><stop offset=".6" stop-color="#7EA8F8"/><stop offset="1" stop-color="#DCE7FD" stop-opacity="0"/></linearGradient>
-        <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.2"/></filter>
-        <filter id="haze" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="40"/></filter>
-      </defs>
-      <rect width="1600" height="900" fill="url(#wash)"/>
-      <path d="M0 0H330C180 40 70 140 0 300Z" fill="url(#tl)"/>
-      <path d="M135 0C70 70 25 160 0 250" fill="none" stroke="#FFFFFF" stroke-width="10" opacity=".75"/>
-      <rect x="0" y="0" width="1600" height="900" fill="url(#grid)" mask="url(#gmask)"/>
-      <g>
-        <path d="M0 480C120 560 250 640 420 700S760 830 860 900H0Z" fill="#FFFFFF" opacity=".55"/>
-        <path d="M0 600C70 690 160 760 310 800S570 860 650 900H420C350 875 230 850 130 810S25 740 0 705Z" fill="url(#ribB)"/>
-        <path d="M0 600C80 690 170 760 320 798S580 862 660 900" fill="none" stroke="#FFFFFF" stroke-width="3" opacity=".85"/>
-        <path d="M0 680C40 730 110 790 210 826" fill="none" stroke="#2E62DD" stroke-width="10" opacity=".35"/>
-      </g>
-      <g>
-        <path d="M1600 18C1540 60 1490 120 1462 190C1450 222 1440 245 1430 262C1466 236 1505 190 1540 140C1565 104 1585 78 1600 66Z" fill="url(#ribT)"/>
-        <path d="M1600 14C1540 58 1488 120 1460 192" fill="none" stroke="#FFFFFF" stroke-width="2.5" opacity=".9"/>
-      </g>
-    </svg>
-  </div>
+  <div class="si-wrap">
+    {# ---------- Left: sign-in ---------- #}
+    <main class="si-form">
+      <img class="si-logo" src="{% static 'user/img/PIKOM.png' %}" alt="PIKOM">
 
-  <main class="stage" id="stage">
-    <section class="left" aria-labelledby="signinTitle">
-      <img class="logo" src="{% static 'user/img/PIKOM.png' %}" alt="PIKOM">
-      <span class="tag"><i></i>Events console</span>
-      <h1 id="signinTitle">Sign in to <em>PIKOM Events</em></h1>
-      <p class="lead">Use your staff account.</p>
+      <section class="si-body" aria-labelledby="signinTitle">
+        <h1 id="signinTitle">Welcome back</h1>
+        <p class="si-lead">Sign in to PIKOM Events with your staff account.</p>
 
-      <div class="card">
         {% if messages %}
           <div class="alert" data-variant="destructive" role="alert">
             <i data-lucide="circle-alert"></i>
@@ -153,12 +106,10 @@
           {% csrf_token %}
           <label class="lbl" for="id_username">Username</label>
           <div class="fld">
-            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>
-            <input id="id_username" name="username" type="text" placeholder="Enter your username" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+            <input id="id_username" name="username" type="text" placeholder="Enter your username" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus>
           </div>
           <label class="lbl" for="id_password">Password</label>
-          <div class="fld">
-            <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="10" width="15" height="11" rx="2.5" fill="currentColor" opacity=".85"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><circle cx="12" cy="15.5" r="1.4" fill="#F1F4FF"/></svg>
+          <div class="fld pw">
             <input id="id_password" name="password" type="password" placeholder="Enter your password" autocomplete="current-password" required>
             <button type="button" class="eye" data-reveal aria-controls="id_password" aria-pressed="false" aria-label="Show password">
               <svg data-on viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -171,16 +122,29 @@
             <label for="remember_me"><input type="checkbox" id="remember_me" name="remember_me" checked> Keep me signed in</label>
             <a href="{% url 'password_reset' %}">Forgot password?</a>
           </div>
-          <button type="submit" class="go"><span class="txt">Sign in</span><span class="arr" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></button>
+          <button type="submit" class="go"><span class="txt">Sign in</span><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
         </form>
+
+        <p class="help">No account? Ask an administrator to invite you.</p>
+      </section>
+
+      <footer class="ft">&copy; {% now "Y" %} PIKOM &middot; Built by Talbotiq Technologies</footer>
+    </main>
+
+    {# ---------- Right: quiet brand panel (decorative) ---------- #}
+    <aside class="si-art" aria-hidden="true">
+      <svg class="art-bg" viewBox="0 0 800 900" preserveAspectRatio="xMidYMid slice">
+        <defs><filter id="blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="60"/></filter></defs>
+        <circle class="orb" cx="620" cy="170" r="200" fill="#D6EFFF" opacity=".45" filter="url(#blur)"/>
+        <circle class="orb o2" cx="160" cy="780" r="220" fill="#0F5A96" opacity=".4" filter="url(#blur)"/>
+        <path d="M-40 560C160 470 330 540 470 640S720 780 860 720" fill="none" stroke="#fff" stroke-width="1.2" opacity=".22"/>
+      </svg>
+      <div class="art-copy">
+        <h2>Every PIKOM event, one console.</h2>
+        <p>Campaigns, registrations and on-site check-in, in one place.</p>
       </div>
-      <div class="or">or</div>
-      <p class="help">No account? Ask an administrator to invite you.</p>
-    </section>
-
-
-    <footer class="ft">&copy; {% now "Y" %} PIKOM &middot; Events console &middot; Built by Talbotiq Technologies</footer>
-  </main>
+    </aside>
+  </div>
 
   <script src="{% static 'register/js/lucide.min.js' %}"></script>
   <script>
@@ -193,13 +157,6 @@
       });
     });
     document.querySelectorAll('form[data-busy]').forEach(function (f) { f.addEventListener('submit', function () { var b = f.querySelector('[type=submit]'); if (b) { b.disabled = true; b.setAttribute('aria-busy', 'true'); b.querySelector('.txt').textContent = 'Signing in…'; } }); });
-
-    /* Fit the 1600x900 stage to the window (desktop only) */
-    (function () {
-      var st = document.getElementById('stage');
-      function fit() { st.style.setProperty('--k', Math.min(innerWidth / 1600, innerHeight / 900)); }
-      fit(); addEventListener('resize', fit);
-    })();
   </script>
 </body>
 </html>

@@ -1,0 +1,10 @@
+{% extends "admin/delete_confirmation.html" %}
+{% comment %}Console-style page header for the delete confirmation.{% endcomment %}
+{% block content_title %}
+<div class="pk-head">
+  <div class="pk-head-text">
+    <h1>Delete {{ object_name }}?</h1>
+    <p class="pk-sub">&ldquo;{{ object|truncatechars:70 }}&rdquo; will be permanently removed. This can&rsquo;t be undone.</p>
+  </div>
+</div>
+{% endblock %}

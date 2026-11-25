@@ -272,6 +272,11 @@
 
     /* ---- Smooth shell: one continuous page background; the sidebar floats on it as a rounded card ---- */
     body.pk-inset { background: linear-gradient(180deg, #EEF3FE 0, #F4F7FE 20rem, #F7F9FE 100%) fixed !important; }
+    /* Very faint event doodles on the page canvas only (cards stay plain white). Fixed, so they don't scroll with content. */
+    body.pk-inset::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+      background: url("{% static 'register/images/doodles.svg' %}") 0 0 / 420px 420px repeat;
+      -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,.55) 0, #000 18rem); mask-image: linear-gradient(180deg, rgba(0,0,0,.55) 0, #000 18rem); }
+    @media print { body.pk-inset::before { display: none; } }
     body.pk-inset .pk-main { background: transparent !important; }
     .pk-topbar { background: color-mix(in srgb, #EEF3FE 82%, transparent) !important; backdrop-filter: saturate(1.3) blur(10px) !important; -webkit-backdrop-filter: saturate(1.3) blur(10px) !important; }
     .pk-sidebar { background: transparent !important; border: 0 !important; }
@@ -296,6 +301,9 @@
       font-size: .75rem; font-weight: 500; line-height: 1.35; white-space: nowrap; pointer-events: none; box-shadow: 0 8px 20px -8px rgba(11,23,57,.45);
       opacity: 0; transform: translateY(2px); transition: opacity .12s, transform .12s; }
     .pk-tip.is-on { opacity: 1; transform: none; }
+    /* Boxes: one visible hairline border so cards stand out on the page background. Inner cells of a
+       card (KPI strips, stat rows) keep their own dividers; only the outer box gets this border. */
+    .pk-content :is(.card, .pk-kpi, .cl-stat, .cl-panel, .gx-card) { border: 1px solid #D5E0F0 !important; }
     @media (prefers-reduced-motion: reduce) { .pk-tip { transition: none; } }
     @media (min-width: 48rem) {
       /* Inset from the window edges; the main column's margin (= --sidebar-width) leaves the same gap on its right */

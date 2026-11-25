@@ -1,0 +1,14 @@
+{% extends "admin/change_form.html" %}
+{% load admin_modify %}
+{% comment %}Console-style page header: the record's name (or "New …") on the left, History on the right.{% endcomment %}
+{% block content_title %}
+<div class="pk-head">
+  <div class="pk-head-text">
+    <h1>{% if add %}New {{ opts.verbose_name }}{% else %}{{ original|truncatechars:70 }}{% endif %}</h1>
+    <p class="pk-sub">{% if add %}Fill in the details below, then save.{% else %}Edit {{ opts.verbose_name }} &middot; {{ opts.app_config.verbose_name }}{% endif %}</p>
+  </div>
+  {% if change and not is_popup %}<ul class="object-tools">{% change_form_object_tools %}</ul>{% endif %}
+</div>
+{% endblock %}
+{% block content_subtitle %}{% endblock %}
+{% block object-tools %}{% endblock %}

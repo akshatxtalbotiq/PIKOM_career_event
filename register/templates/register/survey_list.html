@@ -58,8 +58,8 @@
   .sl-few #surveys tbody { display: grid; gap: 1rem; padding: 1rem; }
   @media (min-width: 900px) { .sl-few #surveys tbody { grid-template-columns: repeat(auto-fit, minmax(28rem, 1fr)); } }
   .sl-lbl, .sl-act-lbl { display: none; }
-  .sl-few #surveys tbody tr[data-n] { position: relative; display: grid; grid-template-columns: minmax(0,1fr) auto; grid-template-areas: "title status" "title created" "actions actions"; gap: 0 1.5rem; padding: 1.5rem 1.5rem 0; border: 1px solid #E6ECF8; border-radius: 1.1rem; background: var(--card); overflow: hidden; box-shadow: 0 16px 36px -26px rgba(30,60,140,.35); transition: border-color .15s, box-shadow .15s; }
-  .sl-few #surveys tbody tr[data-n]:hover { background: var(--card); border-color: #CFE0F5; box-shadow: 0 18px 40px -24px rgba(30,60,140,.45); }
+  .sl-few #surveys tbody tr[data-n] { position: relative; display: grid; grid-template-columns: minmax(0,1fr) auto; grid-template-areas: "title status" "title created" "actions actions"; gap: 0 1.5rem; padding: 1.5rem 1.5rem 0; border: 1px solid #E6ECF8; border-radius: 1.1rem; background: var(--card); overflow: hidden; box-shadow: none !important; transition: border-color .15s; }
+  .sl-few #surveys tbody tr[data-n]:hover { background: var(--card); border-color: #CFE0F5; }
   .sl-few #surveys tbody tr[data-n] > td { display: block; padding: 0; border: 0; background: none !important; white-space: normal; min-width: 0; }
   .sl-few #surveys tbody tr[data-n] > td.sl-id { display: none; }
   .sl-few #surveys tbody tr[data-n] > td:nth-child(2) { grid-area: title; display: flex !important; flex-direction: column; justify-content: space-between; gap: 1.5rem; }
@@ -88,11 +88,11 @@
 
   .sl-few .sl-actions { justify-content: flex-start; gap: .4rem; }
   .sl-few .sl-act-lbl { display: inline; }
-  .pk-content .sl-few #surveys tbody td .sl-actions > .btn[data-size='icon-sm'] { width: auto; height: 2.25rem; padding: 0 .9rem; gap: .45rem; border-radius: 999px; border: 1px solid #E3E9F6; background: #fff; color: #1E2A47; font-size: .875rem; font-weight: 500; box-shadow: 0 1px 2px rgba(11,23,57,.05); }
+  .pk-content .sl-few #surveys tbody td .sl-actions > .btn[data-size='icon-sm'] { width: auto; height: 2.25rem; padding: 0 .9rem; gap: .45rem; border-radius: 999px; border: 1px solid #E3E9F6; background: #fff; color: #1E2A47; font-size: .875rem; font-weight: 500; box-shadow: none !important; }
   .pk-content .sl-few #surveys tbody td .sl-actions > .btn[data-size='icon-sm']:hover { border-color: #B5DCF4; color: #1A78BD; background: #F2F9FE; }
   .sl-few .sl-actions .btn svg { width: 1rem; height: 1rem; }
   .sl-few .sl-more { margin-left: auto; }
-  .pk-content .sl-few #surveys tbody td .sl-more > .btn { width: 2.25rem; height: 2.25rem; }
+  .pk-content .sl-few #surveys tbody td .sl-more > .btn { width: 2.25rem; height: 2.25rem; box-shadow: none !important; border: 1px solid #E3E9F6; background: #fff; }
   @media (max-width: 520px) {
     .sl-few #surveys tbody tr[data-n] { grid-template-columns: 1fr; grid-template-areas: "status" "title" "created" "actions"; padding: 1.25rem 1.25rem 0; }
     .sl-few #surveys tbody tr[data-n] > td:nth-child(4) { text-align: left; margin-bottom: .75rem; }

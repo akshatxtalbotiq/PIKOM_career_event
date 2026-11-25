@@ -56,7 +56,6 @@ on this page work even in a session that never posted a form.{% endcomment %}
       <div class="gx-head">
         <div class="gx-kicker">
           {% if event.is_active %}<span class="badge badge-success badge-dot" data-variant="soft">Active</span>{% else %}<span class="badge badge-muted badge-dot" data-variant="soft">Inactive</span>{% endif %}
-          <span class="inline-flex items-center gap-1.5"><span class="size-2.5 shrink-0 rounded-full ring-1 ring-black/10" style="background:{{ event.theme }};" aria-hidden="true"></span>Theme colour</span>
         </div>
         <h2 class="gx-title">{% if pf %}<a href="{% url 'golf_submission_list' pf.id %}">{{ event.title }}</a>{% else %}{{ event.title }}{% endif %}</h2>
         <div class="gx-sub">
@@ -66,34 +65,38 @@ on this page work even in a session that never posted a form.{% endcomment %}
       </div>
       <button type="button" class="btn edit-event-btn self-start" data-variant="outline" data-id="{{ event.id }}" aria-label="Edit {{ event.title }}"><i data-lucide="pencil"></i> Edit event</button>
     </div>
-    <div class="gx-panels">
-      <section class="gx-panel" aria-label="Player registration">
+    <div class="gx-split">
+      <section class="gx-half" aria-label="Player registration">
         <span class="gx-ic"><i data-lucide="user-round"></i></span>
-        <h3>Player registration</h3>
-        <div class="gx-panel-acts">
+        <div class="gx-half-body">
+          <h3>Player registration</h3>
+          {% if pf %}{% with c=pf.registrations.count %}<p class="gx-num"><b>{{ c }}</b> registration{{ c|pluralize }}</p>{% endwith %}
+          {% else %}<p class="gx-num is-empty">No form yet</p>{% endif %}
+        </div>
+        <div class="gx-half-acts">
           {% if pf %}
-            <a href="{% url 'golf_form_builder' pf.id %}" class="btn" data-variant="ghost"><i data-lucide="sliders-horizontal"></i> Form</a>
-            <a href="{% url 'golf_submission_list' pf.id %}" class="btn" data-variant="cta"><i data-lucide="list-checks"></i> Entries</a>
+            <a href="{% url 'golf_form_builder' pf.id %}" class="gx-textlink">Edit form</a>
+            <a href="{% url 'golf_submission_list' pf.id %}" class="btn gx-go" data-variant="outline">View entries<i data-lucide="arrow-right"></i></a>
           {% else %}
-            <a href="{% url 'golf_participant_form_list' %}?for_event={{ event.id }}" class="btn" data-variant="outline"><i data-lucide="circle-plus"></i> Add form</a>
+            <a href="{% url 'golf_participant_form_list' %}?for_event={{ event.id }}" class="btn gx-go" data-variant="outline"><i data-lucide="plus"></i>Add form</a>
           {% endif %}
         </div>
-        {% if pf %}{% with c=pf.registrations.count %}<div class="gx-num"><b>{{ c }}</b><span>registration{{ c|pluralize }}</span></div>{% endwith %}
-        {% else %}<div class="gx-num is-empty"><b>—</b><span>No form yet</span></div>{% endif %}
       </section>
-      <section class="gx-panel" aria-label="Sponsorship">
+      <section class="gx-half" aria-label="Sponsorship">
         <span class="gx-ic is-sponsor"><i data-lucide="handshake"></i></span>
-        <h3>Sponsorship</h3>
-        <div class="gx-panel-acts">
+        <div class="gx-half-body">
+          <h3>Sponsorship</h3>
+          {% if sf %}{% with c=sf.registrations.count %}<p class="gx-num"><b>{{ c }}</b> entr{{ c|pluralize:"y,ies" }}</p>{% endwith %}
+          {% else %}<p class="gx-num is-empty">No form yet</p>{% endif %}
+        </div>
+        <div class="gx-half-acts">
           {% if sf %}
-            <a href="{% url 'golf_form_builder' sf.id %}" class="btn" data-variant="ghost"><i data-lucide="sliders-horizontal"></i> Form</a>
-            <a href="{% url 'golf_submission_list' sf.id %}" class="btn" data-variant="outline"><i data-lucide="list-checks"></i> Entries</a>
+            <a href="{% url 'golf_form_builder' sf.id %}" class="gx-textlink">Edit form</a>
+            <a href="{% url 'golf_submission_list' sf.id %}" class="btn gx-go" data-variant="outline">View entries<i data-lucide="arrow-right"></i></a>
           {% else %}
-            <a href="{% url 'golf_sponsor_form_list' %}?for_event={{ event.id }}" class="btn" data-variant="outline"><i data-lucide="circle-plus"></i> Add form</a>
+            <a href="{% url 'golf_sponsor_form_list' %}?for_event={{ event.id }}" class="btn gx-go" data-variant="outline"><i data-lucide="plus"></i>Add form</a>
           {% endif %}
         </div>
-        {% if sf %}{% with c=sf.registrations.count %}<div class="gx-num"><b>{{ c }}</b><span>entr{{ c|pluralize:"y,ies" }}</span></div>{% endwith %}
-        {% else %}<div class="gx-num is-empty"><b>—</b><span>No form yet</span></div>{% endif %}
       </section>
     </div>
   </article>

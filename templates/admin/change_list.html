@@ -1,0 +1,13 @@
+{% extends "admin/change_list.html" %}
+{% load admin_list %}
+{% comment %}Console-style page header: plural model name + count on the left, the Add button on the right.{% endcomment %}
+{% block content_title %}
+<div class="pk-head">
+  <div class="pk-head-text">
+    <h1>{{ cl.opts.verbose_name_plural|capfirst }}</h1>
+    <p class="pk-sub">{% firstof cl.full_result_count cl.result_count %} total &middot; {{ cl.opts.app_config.verbose_name }}</p>
+  </div>
+  {% if not is_popup %}<ul class="object-tools">{% change_list_object_tools %}</ul>{% endif %}
+</div>
+{% endblock %}
+{% block object-tools %}{% endblock %}

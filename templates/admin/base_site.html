@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap">
 <link rel="icon" type="image/png" href="{% static 'user/img/favicon.png' %}">
-<link rel="stylesheet" href="{% static 'register/css/admin_theme.css' %}">
+<link rel="stylesheet" href="{% static 'register/css/admin_theme.css' %}?v=2026-11-26k">
 {% endblock %}
 
 {% block dark-mode-vars %}{% endblock %}
@@ -23,7 +23,7 @@
   <nav class="pk-side-scroll">
     <div class="pk-side-group">
       <h3>Console</h3>
-      <a href="{% url 'campaign_list' %}"><i data-lucide="arrow-left"></i><span>Back to events console</span></a>
+      <a href="{% url 'campaign_list' %}"><i data-lucide="arrow-left"></i><span>Events console</span></a>
     </div>
     <div class="pk-side-group">
       <h3>Admin</h3>
@@ -31,7 +31,7 @@
     </div>
     {% for app in available_apps %}
     <div class="pk-side-group">
-      <h3>{{ app.name }}</h3>
+      <h3>{% if app.app_label == 'auth' %}Accounts{% else %}{{ app.name }}{% endif %}</h3>
       {% for model in app.models %}
         {% if model.admin_url %}<a href="{{ model.admin_url }}"><i data-lucide="{% if app.app_label == 'auth' %}{% if model.object_name == 'Group' %}shield{% else %}users{% endif %}{% elif model.object_name == 'Campaign' %}megaphone{% elif model.object_name == 'Survey' %}chart-column{% else %}database{% endif %}"></i><span>{{ model.name }}</span></a>{% endif %}
       {% endfor %}
@@ -39,13 +39,15 @@
     {% endfor %}
   </nav>
   <div class="pk-side-foot">
-    <div class="pk-side-user">
-      <span class="pk-avatar" aria-hidden="true">{% firstof user.get_short_name user.get_username as uname %}{{ uname|slice:":1"|upper }}</span>
-      <span class="pk-side-who"><b>{% firstof user.get_full_name user.get_username %}</b><small>Administrator</small></span>
-    </div>
-    <div class="pk-side-links">
-      {% if user.has_usable_password %}<a href="{% url 'admin:password_change' %}"><i data-lucide="key-round"></i><span>Change password</span></a>{% endif %}
-      <form id="logout-form" method="post" action="{% url 'admin:logout' %}">{% csrf_token %}<button type="submit"><i data-lucide="log-out"></i><span>Log out</span></button></form>
+    <div class="pk-side-card">
+      <div class="pk-side-user">
+        <span class="pk-avatar" aria-hidden="true">{% firstof user.get_short_name user.get_username as uname %}{{ uname|slice:":1"|upper }}</span>
+        <span class="pk-side-who"><b>{% firstof user.get_full_name user.get_username %}</b><small>Administrator</small></span>
+      </div>
+      <div class="pk-side-links">
+        {% if user.has_usable_password %}<a class="pk-side-btn" href="{% url 'admin:password_change' %}" title="Change password" aria-label="Change password"><i data-lucide="key-round"></i><span>Change password</span></a>{% endif %}
+        <form id="logout-form" method="post" action="{% url 'admin:logout' %}">{% csrf_token %}<button type="submit" class="pk-side-btn is-out"><i data-lucide="log-out"></i><span>Log out</span></button></form>
+      </div>
     </div>
   </div>
   {% endif %}
@@ -90,6 +92,15 @@
     if (btn) btn.addEventListener('click', function () { open(!document.body.classList.contains('pk-side-open')); });
     if (scrim) scrim.addEventListener('click', function () { open(false); });
     if (window.lucide) lucide.createIcons({ attrs: { 'stroke-width': 1.75 } });
+    /* Modern labels: drop Django's trailing ':' from form labels (label text only, inputs untouched) */
+    document.querySelectorAll('form label, form legend').forEach(function (l) {
+      var t = l.lastChild;
+      if (t && t.nodeType === 3 && /:\s*$/.test(t.nodeValue)) t.nodeValue = t.nodeValue.replace(/:\s*$/, '');
+    });
+    /* Date / Time captions inside datetime fields are plain text nodes, not labels */
+    document.querySelectorAll('p.datetime').forEach(function (p) {
+      p.childNodes.forEach(function (n) { if (n.nodeType === 3 && /:\s*$/.test(n.nodeValue)) n.nodeValue = n.nodeValue.replace(/:\s*$/, ' '); });
+    });
   })();
 </script>
 {% endblock %}

@@ -1,0 +1,10 @@
+{% extends "admin/delete_selected_confirmation.html" %}
+{% comment %}Console-style page header for bulk delete.{% endcomment %}
+{% block content_title %}
+<div class="pk-head">
+  <div class="pk-head-text">
+    <h1>Delete {{ queryset|length }} {{ objects_name }}?</h1>
+    <p class="pk-sub">The selected items and the related items below will be permanently removed. This can&rsquo;t be undone.</p>
+  </div>
+</div>
+{% endblock %}
